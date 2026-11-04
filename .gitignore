@@ -1,0 +1,31 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# PocketBase local development (see pocketbase/README.md)
+# Database contents, uploaded files, and the downloaded executable are ignored.
+# pb_migrations/ is intentionally NOT ignored — schema migrations are committed.
+/pocketbase/pb_data/
+/pocketbase/pocketbase
+/pocketbase/pocketbase.exe
+/pocketbase/*.zip

@@ -1,0 +1,93 @@
+# FliHub roadmap
+
+This roadmap restates the milestone plan from [Milestones.md](../Milestones.md)
+as **planned work**. Nothing listed here is implemented in the foundation
+build. A capability is only marked complete after its user-visible workflow and
+access-control behavior are verified end to end.
+
+## Demonstration scope
+
+The first end-to-end demonstration covers:
+
+1. Organization creation, invitations, roles, and organization switching.
+2. Athletes, teams, leagues, seasons, rosters, venues, and courses.
+3. A two-round disc golf event on a nine-hole course (red then blue basket
+   positions, twelve teams of one male and one female athlete, separate reserve
+   pools, six groups of two teams, one assigned scorekeeper per group).
+4. Mobile scoring and score submission (Draft → Submitted).
+5. Official approval, publication, and correction history (Approved →
+   Published; corrections preserve author, time, reason, previous values, and
+   require reapproval).
+6. Competition standings from published official results.
+7. A six-person fantasy league and an event-specific, eligibility-aware
+   four-round snake draft (independently randomized saved order, 60-second
+   configurable pick timer, manual start by the owner).
+8. Fantasy scoring from published official results only (points = par −
+   strokes across both regulation rounds; roster totals sum four athletes).
+9. Corrections updating competition and fantasy standings without duplicating
+   points.
+10. Branded public organization pages, followed later by embeds and a
+    read-only public API.
+
+## Phases
+
+| Phase | Name                                                          | Status            |
+| ----- | ------------------------------------------------------------- | ----------------- |
+| 0     | Runnable foundation (this PR)                                 | In progress       |
+| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md |
+| 1A    | Organization memberships, roles, and data isolation           | Not started       |
+| 1B    | Configurable onboarding and capability-aware navigation       | Not started       |
+| 1C    | Athlete identity (sport-neutral records)                      | Not started       |
+| 1D    | League, season, division, and event relationships             | Not started       |
+| 1E    | Season rosters, reserve pools, and substitutions              | Not started       |
+| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started       |
+| 1G    | Mobile scorekeeping and submission                            | Not started       |
+| 1H    | Official approval, publication, playoff, and corrections      | Not started       |
+| 1I    | Organization publishing and public competition standings      | Not started       |
+| 2A    | Fantasy membership and event draft preparation                | Not started       |
+| 2B    | Owner-controlled live snake draft                             | Not started       |
+| 2C    | Fantasy scoring, explanations, and correction processing      | Not started       |
+| 2D    | End-to-end demo and System Map                                | Not started       |
+| 2E    | Website embeds                                                | Not started       |
+| 2F    | Read-only public API                                          | Not started       |
+| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred          |
+
+## Organization and permission rules (planned)
+
+- Users may belong to multiple organizations; creating an account grants no
+  organization access.
+- Roles are Owner, Admin, Scorekeeper, and Viewer. Every organization has
+  exactly one primary Owner.
+- Only Owners appoint Admins or change member roles; Admins may invite
+  Scorekeepers and Viewers.
+- Ownership transfer is atomic; the former Owner becomes Admin. The sole Owner
+  cannot leave before transferring ownership.
+- Owners may remove non-owner members; Admins may revoke invitations but cannot
+  remove accepted members; non-owner members may leave voluntarily.
+- Invitations are organization-scoped, expiring, single-use, and must verify
+  the intended authenticated recipient. Copy-link invitations are acceptable
+  initially; email delivery is not claimed.
+- Private records are isolated between organizations.
+- Organization staff roles are separate from fantasy membership and
+  commissioner permissions.
+- Complex membership operations require trusted transactional (server-side)
+  enforcement — never client-side multi-step writes.
+
+## Unresolved questions (recorded, not answered)
+
+These remain open from Milestones.md and must not be guessed in code:
+
+- Exact playoff throw, measurement, precision, and equal-distance rules, and
+  whether playoffs affect fantasy standings.
+- Substitution identity and fantasy ownership effects when a reserve athlete
+  replaces a drafted athlete.
+- Incomplete-draft handling and the final draft preparation/completion window.
+- Exact invitation/acceptance experience and ownership-transfer UX details.
+- Which published fields are public by default and per-organization
+  restrictions.
+
+## Deferred work
+
+Sponsorships, expenses, reimbursements, payments, prizes, trades, waivers,
+custom domains, additional sports, external integrations, and narration
+services are out of scope until separately approved.
