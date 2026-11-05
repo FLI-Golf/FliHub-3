@@ -1,19 +1,19 @@
 /**
- * ElevenLabs narration generator for the Phase 1A walkthrough.
+ * ElevenLabs narration generator for walkthroughs.
  *
  * Reads ELEVENLABS_API_KEY from the git-ignored .env (never printed, never
  * sent anywhere but api.elevenlabs.io). Generates one MP3 per scene from
- * recordings/narration.json and caches results in
- * recordings/output/narration/ so retries never regenerate paid audio:
- * a scene is skipped when text + voice + model are unchanged.
+ * recordings/narration*.json and caches results in recordings/output/ so
+ * retries never regenerate paid audio: a scene is skipped when text + voice
+ * + model are unchanged.
  *
  * Voice selection: prefers a voice already configured in the account's
  * library; otherwise falls back to a clear, neutral premade English voice.
  * No voice is cloned. The chosen voice/model and measured clip durations are
  * recorded in the cache manifest. Reports actual character usage from the
- * subscription endpoint before and after generation.
+ * subscription endpoint when the key permits it.
  *
- * Run: node recordings/narrate.mjs
+ * Run: node recordings/narrate.mjs [1a|1b]   (default 1a)
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -21,9 +21,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+const WALKTHROUGHS = {
+	'1a': { narration: 'narration.json', cacheDir: 'narration' },
+	'1b': { narration: 'narration-1b.json', cacheDir: 'narration-1b' }
+};
+const selected = WALKTHROUGHS[process.argv[2] ?? '1a'];
+if (!selected) {
+	throw new Error(
+		`Unknown walkthrough "${process.argv[2]}" — expected one of: ${Object.keys(WALKTHROUGHS).join(', ')}`
+	);
+}
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const narration = JSON.parse(readFileSync(path.join(root, 'recordings', 'narration.json'), 'utf8'));
-const outDir = path.join(root, 'recordings', 'output', 'narration');
+const narration = JSON.parse(
+	readFileSync(path.join(root, 'recordings', selected.narration), 'utf8')
+);
+const outDir = path.join(root, 'recordings', 'output', selected.cacheDir);
 const cacheFile = path.join(outDir, 'narration-cache.json');
 mkdirSync(outDir, { recursive: true });
 
@@ -129,7 +142,7 @@ for (const scene of narration.scenes) {
 		voiceId: voice.voice_id,
 		voiceName: voice.name,
 		modelId: MODEL_ID,
-		file: `recordings/output/narration/${scene.id}.mp3`,
+		file: `recordings/output/${selected.cacheDir}/${scene.id}.mp3`,
 		durationSeconds: Math.round(measureDurationSeconds(file) * 100) / 100,
 		generatedAt: new Date().toISOString()
 	};

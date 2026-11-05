@@ -29,13 +29,44 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'recordings', 'output');
-const staticDir = path.join(root, 'static', 'walkthroughs');
 
-const SILENT = path.join(outDir, 'phase1a-walkthrough.webm');
-const manifest = JSON.parse(readFileSync(path.join(outDir, 'run-manifest.json'), 'utf8'));
-const narration = JSON.parse(readFileSync(path.join(root, 'recordings', 'narration.json'), 'utf8'));
+// 1a publishes the reviewed asset to static/walkthroughs/; 1b is an
+// UNPUBLISHED review preview and goes to git-ignored static/review/.
+const WALKTHROUGHS = {
+	'1a': {
+		silent: 'phase1a-walkthrough.webm',
+		manifest: 'run-manifest.json',
+		narration: 'narration.json',
+		cacheDir: 'narration',
+		publishDir: path.join(root, 'static', 'walkthroughs'),
+		mp4Name: 'phase1a-walkthrough-narrated.mp4',
+		vttName: 'phase1a-walkthrough.vtt',
+		timelineName: 'narrated-timeline.json'
+	},
+	'1b': {
+		silent: 'phase1b-walkthrough.webm',
+		manifest: 'run-manifest-1b.json',
+		narration: 'narration-1b.json',
+		cacheDir: 'narration-1b',
+		publishDir: path.join(root, 'static', 'review'),
+		mp4Name: 'phase1b-walkthrough-narrated-preview.mp4',
+		vttName: 'phase1b-walkthrough-preview.vtt',
+		timelineName: 'narrated-timeline-1b.json'
+	}
+};
+const W = WALKTHROUGHS[process.argv[2] ?? '1a'];
+if (!W) {
+	throw new Error(
+		`Unknown walkthrough "${process.argv[2]}" — expected one of: ${Object.keys(WALKTHROUGHS).join(', ')}`
+	);
+}
+const staticDir = W.publishDir;
+
+const SILENT = path.join(outDir, W.silent);
+const manifest = JSON.parse(readFileSync(path.join(outDir, W.manifest), 'utf8'));
+const narration = JSON.parse(readFileSync(path.join(root, 'recordings', W.narration), 'utf8'));
 const cache = JSON.parse(
-	readFileSync(path.join(outDir, 'narration', 'narration-cache.json'), 'utf8')
+	readFileSync(path.join(outDir, W.cacheDir, 'narration-cache.json'), 'utf8')
 );
 
 const LEAD_IN = 1.2; // slate settles before narration starts
@@ -82,12 +113,18 @@ for (const scene of scenes) {
 const totalDuration = Math.round(cursor * 100) / 100;
 
 // --- Video: per-scene segments with frame holds --------------------------------
-const segDir = path.join(outDir, 'narrated-segments');
+const segDir = path.join(outDir, `narrated-segments-${W.cacheDir}`);
 mkdirSync(segDir, { recursive: true });
 const segFiles = [];
 for (const scene of scenes) {
 	const segFile = path.join(segDir, `${scene.id}.mp4`);
 	const hold = Math.max(0, scene.target - scene.span);
+	// Overruns change the approved video pacing — they must be flagged, not hidden.
+	if (hold > 0.05) {
+		console.log(
+			`  ⚠ OVERRUN ${scene.id}: narration ${scene.audioDur}s exceeds approved scene span ${scene.span.toFixed(1)}s — holding final frame ${hold.toFixed(1)}s`
+		);
+	}
 	const vf =
 		hold > 0.05
 			? `tpad=stop_mode=clone:stop=${hold.toFixed(2)},fps=30,format=yuv420p`
@@ -118,7 +155,7 @@ for (const scene of scenes) {
 	segFiles.push(segFile);
 }
 
-const videoFull = path.join(outDir, 'phase1a-narrated-video.mp4');
+const videoFull = path.join(outDir, `${W.cacheDir}-video.mp4`);
 const concatList = path.join(segDir, 'concat.txt');
 writeFileSync(concatList, segFiles.map((f) => `file '${f}'`).join('\n'));
 ffmpeg(['-f', 'concat', '-safe', '0', '-i', concatList, '-c', 'copy', videoFull], 'concat video');
@@ -129,7 +166,7 @@ const delays = scenes
 	.map((scene, i) => `[${i}:a]adelay=${Math.round(scene.audioStart * 1000)}:all=1[a${i}]`)
 	.join(';');
 const mix = `${delays};${scenes.map((_, i) => `[a${i}]`).join('')}amix=inputs=${scenes.length}:normalize=0[aout]`;
-const audioFull = path.join(outDir, 'phase1a-narration.m4a');
+const audioFull = path.join(outDir, `${W.cacheDir}-mix.m4a`);
 ffmpeg(
 	[
 		...audioInputs,
@@ -147,7 +184,7 @@ ffmpeg(
 );
 
 // --- Mux ------------------------------------------------------------------------
-const finalMp4 = path.join(outDir, 'phase1a-walkthrough-narrated.mp4');
+const finalMp4 = path.join(outDir, W.mp4Name);
 ffmpeg(
 	[
 		'-i',
@@ -183,21 +220,17 @@ const cues = scenes.map((scene) => {
 	return `${scene.id}\n${start} --> ${end}\n${caption}\n`;
 });
 const vtt = `WEBVTT\n\n${cues.join('\n')}`;
-writeFileSync(path.join(outDir, 'phase1a-walkthrough.vtt'), vtt);
+writeFileSync(path.join(outDir, W.vttName), vtt);
 
-// --- Publish reviewed assets next to the silent original -------------------------
+// --- Publish to the walkthrough's target directory -------------------------------
 mkdirSync(staticDir, { recursive: true });
-copyFileSync(finalMp4, path.join(staticDir, 'phase1a-walkthrough-narrated.mp4'));
-copyFileSync(
-	path.join(outDir, 'phase1a-walkthrough.vtt'),
-	path.join(staticDir, 'phase1a-walkthrough.vtt')
-);
+copyFileSync(finalMp4, path.join(staticDir, W.mp4Name));
+copyFileSync(path.join(outDir, W.vttName), path.join(staticDir, W.vttName));
 
 const timeline = {
-	silentSource:
-		'recordings/output/phase1a-walkthrough.webm (preserved; also static/walkthroughs/phase1a-walkthrough.webm)',
-	output: 'static/walkthroughs/phase1a-walkthrough-narrated.mp4',
-	captions: 'static/walkthroughs/phase1a-walkthrough.vtt',
+	silentSource: `recordings/output/${W.silent}`,
+	output: path.relative(root, path.join(staticDir, W.mp4Name)),
+	captions: path.relative(root, path.join(staticDir, W.vttName)),
 	durationSeconds: totalDuration,
 	voice: cache[scenes[0].id].voiceName,
 	voiceId: cache[scenes[0].id].voiceId,
@@ -211,13 +244,13 @@ const timeline = {
 		sceneDuration: Math.round(s.target * 100) / 100
 	}))
 };
-writeFileSync(path.join(outDir, 'narrated-timeline.json'), JSON.stringify(timeline, null, 2));
+writeFileSync(path.join(outDir, W.timelineName), JSON.stringify(timeline, null, 2));
 
 const sizeMb = (statSync(finalMp4).size / (1024 * 1024)).toFixed(1);
 console.log(`Narrated walkthrough: ${totalDuration}s, ${sizeMb} MB`);
-console.log(`  video: static/walkthroughs/phase1a-walkthrough-narrated.mp4`);
-console.log(`  captions: static/walkthroughs/phase1a-walkthrough.vtt`);
-console.log(`  timeline: recordings/output/narrated-timeline.json`);
+console.log(`  video: ${path.relative(root, path.join(staticDir, W.mp4Name))}`);
+console.log(`  captions: ${path.relative(root, path.join(staticDir, W.vttName))}`);
+console.log(`  timeline: recordings/output/${W.timelineName}`);
 for (const s of scenes) {
 	console.log(
 		`  ${s.id}: scene ${s.target.toFixed(1)}s (was ${s.span.toFixed(1)}s), narration ${s.audioDur}s @ ${s.audioStart}s`

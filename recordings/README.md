@@ -5,24 +5,27 @@ Playwright against a fully disposable stack. Separate from the automated
 acceptance tests (`tests/`): these scripts prioritize readable pacing and
 clear scene transitions for humans.
 
-## Recording the Phase 1A walkthrough
+## Recording a walkthrough
 
 ```sh
-npx playwright install chromium   # one-time browser setup (also ships ffmpeg)
-npm run record:walkthrough
+npx playwright install chromium        # one-time browser setup (also ships ffmpeg)
+npm run record:walkthrough             # Phase 1A (default)
+npm run record:walkthrough-1b          # Phase 1B
 ```
 
-The runner (`run-walkthrough.mjs`):
+The runner (`run-walkthrough.mjs [1a|1b]`):
 
 1. Boots a **disposable** PocketBase (temp dir, committed migrations + hooks),
    a disposable mailpit, and a production preview of the app on dedicated
    ports (8097 / 1127 / 8127 / 5175). Your development services (5173, 8090, 8025) and `pocketbase/pb_data` are never touched.
-2. Seeds fictional demo accounts (Casey, Alex, Sam, Val — `@example.com`) and
-   verifies their emails off-camera via mailpit.
-3. Records `walkthrough.mjs` as a single continuous 1280×720 take with scene
-   slates. Persona switches use prepared session cookies; invitation and
-   verification tokens are blurred or kept off-camera; passwords are always
-   masked by the browser.
+2. Seeds fictional demo accounts (Phase 1A: Casey, Alex, Sam, Val; Phase 1B:
+   Dana, Morgan, Jesse — all `@example.com`) and verifies their emails
+   off-camera via mailpit.
+3. Records the walkthrough script as a single continuous 1280×720 take with
+   scene slates. Persona switches use prepared session cookies; invitation
+   and verification tokens are blurred or kept off-camera; passwords are
+   always masked by the browser. Every scene synchronizes on visible outcomes
+   and logs them with timestamps into the run manifest.
 4. Writes the raw video and a per-scene timing manifest to
    `recordings/output/` (git-ignored), and extracts inspection frames.
 
@@ -89,8 +92,8 @@ Regenerate or assemble:
 
 ```sh
 sudo apt-get install -y ffmpeg   # full FFmpeg (H.264/AAC); one-time
-node recordings/narrate.mjs      # ELEVENLABS_API_KEY read from git-ignored .env
-node recordings/assemble-narrated.mjs
+node recordings/narrate.mjs 1b   # ElevenLabs per scene, hash-cached (arg: 1a default | 1b)
+node recordings/assemble-narrated.mjs 1b   # scene holds + mux + captions (1a → static/walkthroughs/, 1b → static/review/ preview)
 ```
 
 `assemble-narrated.mjs` holds each scene's final frame when its narration

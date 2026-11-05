@@ -3,8 +3,11 @@
  *
  * Boots a fully disposable stack on its own ports — PocketBase (temp data
  * dir, committed migrations + hooks), mailpit, and a production preview of
- * the app — then records recordings/walkthrough.mjs (a single continuous
- * take) and extracts inspection frames with the Playwright-bundled ffmpeg.
+ * the app — then records a walkthrough script (a single continuous take)
+ * and extracts inspection frames with the Playwright-bundled ffmpeg.
+ *
+ * Usage: `node recordings/run-walkthrough.mjs [1a|1b]` (default 1a), or
+ * `npm run record:walkthrough` / `npm run record:walkthrough-1b`.
  *
  * Never touches the development services (5173/8090/8025) or pb_data.
  * Cleanup stops only the processes this runner created.
@@ -12,10 +15,40 @@
  * Prerequisites: `npx playwright install chromium` (also provides ffmpeg).
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
+import {
+	existsSync,
+	mkdtempSync,
+	mkdirSync,
+	readFileSync,
+	readdirSync,
+	rmSync,
+	statSync,
+	writeFileSync
+} from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const WALKTHROUGHS = {
+	'1a': {
+		script: 'walkthrough.mjs',
+		output: 'phase1a-walkthrough.webm',
+		frames: 'frames',
+		manifest: 'run-manifest.json'
+	},
+	'1b': {
+		script: 'walkthrough-1b.mjs',
+		output: 'phase1b-walkthrough.webm',
+		frames: 'frames-1b',
+		manifest: 'run-manifest-1b.json'
+	}
+};
+const walkthrough = WALKTHROUGHS[process.argv[2] ?? '1a'];
+if (!walkthrough) {
+	throw new Error(
+		`Unknown walkthrough "${process.argv[2]}" — expected one of: ${Object.keys(WALKTHROUGHS).join(', ')}`
+	);
+}
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pbBin = path.join(root, 'pocketbase', 'pocketbase');
@@ -141,7 +174,7 @@ try {
 	// Record into a clean output directory so stale segments never leak in.
 	rmSync(outDir, { recursive: true, force: true });
 	mkdirSync(outDir, { recursive: true });
-	const record = spawnSync('node', [path.join(root, 'recordings', 'walkthrough.mjs')], {
+	const record = spawnSync('node', [path.join(root, 'recordings', walkthrough.script)], {
 		stdio: 'inherit',
 		env: {
 			...process.env,
@@ -153,9 +186,8 @@ try {
 	if (record.status !== 0) throw new Error('recording script failed');
 
 	// The recording is a single continuous take — no concatenation needed.
-	const finalVideo = path.join(outDir, 'phase1a-walkthrough.webm');
-	if (!existsSync(finalVideo))
-		throw new Error('recording did not produce phase1a-walkthrough.webm');
+	const finalVideo = path.join(outDir, walkthrough.output);
+	if (!existsSync(finalVideo)) throw new Error(`recording did not produce ${walkthrough.output}`);
 
 	const ffmpeg = findFfmpeg();
 	const sizeMb = (statSync(finalVideo).size / (1024 * 1024)).toFixed(1);
@@ -163,8 +195,16 @@ try {
 	const duration = /Duration: ([0-9:.]+)/.exec(probe.stderr ?? '')?.[1] ?? 'unknown';
 	console.log(`Recorded: ${finalVideo} (${sizeMb} MB, duration ${duration})`);
 
+	// Merge the probed duration into the run manifest so scene tables align.
+	const manifestPath = path.join(outDir, walkthrough.manifest);
+	if (existsSync(manifestPath) && duration !== 'unknown') {
+		const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+		manifest.durationSeconds = parseDuration(duration);
+		writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+	}
+
 	// Inspection frames at evenly spaced timestamps for review.
-	const frameDir = path.join(outDir, 'frames');
+	const frameDir = path.join(outDir, walkthrough.frames);
 	mkdirSync(frameDir, { recursive: true });
 	const totalSec = parseDuration(duration);
 	for (const t of [

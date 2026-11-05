@@ -11,8 +11,11 @@ const WALKTHROUGH_ASSETS: Record<string, string[]> = {
 	'/walkthroughs/phase1a': [
 		'static/walkthroughs/phase1a-walkthrough-narrated.mp4',
 		'static/walkthroughs/phase1a-walkthrough.webm'
+	],
+	'/walkthroughs/phase1b': [
+		'static/walkthroughs/phase1b-walkthrough-narrated.mp4',
+		'static/walkthroughs/phase1b-walkthrough.webm'
 	]
-	// Phase 1B has no reviewed recording yet — intentionally absent.
 };
 
 export const load: PageServerLoad = () => {
