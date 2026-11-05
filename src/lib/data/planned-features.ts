@@ -53,11 +53,11 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1B',
 		status: 'complete',
 		progress:
-			'League, Race/Event, and Custom starter templates with editable capability suggestions; a single shared capability catalog (browser and hooks read the same JSON); validated, audited configuration writes by Owners/Admins; race distances with explicit units; capability-aware navigation with honest planned/upcoming states. Implemented and verified locally on the feature branch (integration + browser checks); not yet merged.',
-		next: 'Walkthrough recording for this phase.',
+			'League, Race/Event, and Custom starter templates with editable capability suggestions; a single shared capability catalog (browser and hooks read the same JSON); validated, audited configuration writes by Owners/Admins; race distances with explicit units; capability-aware navigation with honest planned/upcoming states. Implemented and merged in PR #4. Narrated walkthrough video available.',
+		next: 'Capability workflows land in later phases (1C+).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1b',
-		narration: 'not-started'
+		narration: 'recorded'
 	},
 	{
 		title: 'Athletes, teams, leagues & seasons',

@@ -48,3 +48,6 @@ vite.config.ts.timestamp-*
 # so the walkthrough works after a fresh checkout (see recordings/README.md).
 /recordings/output/
 !/static/walkthroughs/*.webm
+
+# Unpublished walkthrough review previews (temporary, local only)
+/static/review/

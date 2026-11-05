@@ -1,0 +1,37 @@
+WEBVTT
+
+s1-intro
+00:00:01.200 --> 00:00:14.100
+This is FliHub. The first milestone added accounts, organizations, invitations, and roles. This walkthrough covers configurable onboarding: starter templates and capability settings.
+
+s2-league-onboarding
+00:00:16.500 --> 00:00:35.150
+Dana creates the Riverside Disc Golf League with the League template. The template suggests capabilities, and every suggestion is editable. Turning off Events also turns off what depends on it — scoring and standings — and the summary shows the choices before the organization is created.
+
+s3-honest-planned
+00:00:38.100 --> 00:00:52.550
+Enabled capabilities appear in the navigation, clearly labeled Planned — the Athletes page explains what is coming instead of pretending it works. A capability that is not enabled explains that, too.
+
+s4-race-onboarding
+00:00:54.950 --> 00:01:09.420
+The City 10K Series uses the Race/Event template, which suggests marathon and half-marathon distances with explicit units. Dana adds a custom five-mile charity distance. In settings, the saved distances stay editable.
+
+s5-custom-onboarding
+00:01:11.820 --> 00:01:17.800
+The Custom template assumes nothing — the Community Club enables only Athletes, chosen deliberately.
+
+s6-admin-configures
+00:01:20.200 --> 00:01:34.720
+Owners are not the only ones who can configure. Morgan is an Admin, and Admins can change capabilities too. Choosing Fantasy automatically selects the capabilities it depends on, and the change is recorded in the audit trail.
+
+s7-disable-reenable
+00:01:38.000 --> 00:01:50.150
+Disabling a capability removes it from navigation without deleting anything — re-enabling brings it back exactly as it was, and the race distances configured earlier are still intact.
+
+s8-viewer-boundary
+00:01:52.550 --> 00:02:04.850
+Capabilities never grant permissions. Jesse is a Viewer: no Settings link, and the settings page stays read-only. Only Owners and Admins can configure.
+
+s9-outro
+00:02:07.250 --> 00:02:18.720
+Three organizations, three templates, all adjustable later — with honest labels for what is planned and what is upcoming. That is Phase 1B.

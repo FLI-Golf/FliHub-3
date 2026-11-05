@@ -1,0 +1,61 @@
+{
+	"walkthrough": "phase1b",
+	"title": "FliHub Phase 1B walkthrough \u2014 onboarding templates and capability settings",
+	"note": "Silent walkthrough \u2014 narration scripted (recordings/narration-phase1b.md), not authorized or synthesized. Re-record with `npm run record:walkthrough-1b`. Actual per-run offsets land in recordings/output/run-manifest-1b.json.",
+	"scenes": [
+		{
+			"id": "s1-intro",
+			"title": "Intro: capability progress overview",
+			"persona": "dana",
+			"approxSeconds": 12.0
+		},
+		{
+			"id": "s2-league-onboarding",
+			"title": "League template with editable capability suggestions",
+			"persona": "dana",
+			"approxSeconds": 21.6
+		},
+		{
+			"id": "s3-honest-planned",
+			"title": "Enabled but not-yet-built capabilities stay honest",
+			"persona": "dana",
+			"approxSeconds": 15.299999999999997
+		},
+		{
+			"id": "s4-race-onboarding",
+			"title": "Race/Event template with distances",
+			"persona": "dana",
+			"approxSeconds": 15.400000000000006
+		},
+		{
+			"id": "s5-custom-onboarding",
+			"title": "Custom template \u2014 no assumptions",
+			"persona": "dana",
+			"approxSeconds": 8.299999999999997
+		},
+		{
+			"id": "s6-admin-configures",
+			"title": "Admins (not just Owners) may configure",
+			"persona": "morgan",
+			"approxSeconds": 17.799999999999997
+		},
+		{
+			"id": "s7-disable-reenable",
+			"title": "Disabling hides workflows \u2014 it never deletes data",
+			"persona": "morgan\u2192dana",
+			"approxSeconds": 14
+		},
+		{
+			"id": "s8-viewer-boundary",
+			"title": "Capabilities never grant role permissions",
+			"persona": "jesse",
+			"approxSeconds": 12
+		},
+		{
+			"id": "s9-outro",
+			"title": "Three organizations, honestly labeled",
+			"persona": "dana",
+			"approxSeconds": 14
+		}
+	]
+}
