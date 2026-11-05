@@ -13,7 +13,7 @@
  * Prerequisites: `npx playwright install chromium` (see README.md).
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -127,17 +127,29 @@ try {
 	await startPreview({ POCKETBASE_URL: `http://127.0.0.1:${PB_PORT}` });
 
 	mkdirSync(path.join(root, 'tests', 'e2e', 'output'), { recursive: true });
-	const result = spawnSync('node', [path.join(root, 'tests', 'e2e', 'phase1a.spec.mjs')], {
-		stdio: 'inherit',
-		env: {
-			...process.env,
-			FLIHUB_E2E_APP_URL: `http://127.0.0.1:${APP_PORT}`,
-			FLIHUB_E2E_MAILPIT_URL: `http://127.0.0.1:${MAILPIT_API_PORT}`
+	const specs = readdirSync(path.join(root, 'tests', 'e2e'))
+		.filter((f) => f.endsWith('.spec.mjs'))
+		.sort();
+	let status = 0;
+	for (const spec of specs) {
+		console.log(`\n=== ${spec} ===`);
+		const result = spawnSync('node', [path.join(root, 'tests', 'e2e', spec)], {
+			stdio: 'inherit',
+			env: {
+				...process.env,
+				FLIHUB_E2E_APP_URL: `http://127.0.0.1:${APP_PORT}`,
+				FLIHUB_E2E_MAILPIT_URL: `http://127.0.0.1:${MAILPIT_API_PORT}`,
+				FLIHUB_E2E_PB_URL: `http://127.0.0.1:${PB_PORT}`
+			}
+		});
+		if (result.status !== 0) {
+			status = result.status ?? 1;
+			break;
 		}
-	});
+	}
 
 	teardown();
-	process.exit(result.status ?? 1);
+	process.exit(status);
 } catch (err) {
 	if (String(err).includes('executable') || String(err).includes("doesn't exist")) {
 		console.error('Playwright browser missing — run: npx playwright install chromium');

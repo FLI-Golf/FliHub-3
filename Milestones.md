@@ -772,7 +772,9 @@ Public profile and publication defaults are not Phase 1A blockers; they belong t
 
 ## Phase 1B — Configurable onboarding and capability-aware navigation
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-05). Evidence:
+docs/ROADMAP.md "Phase 1B verification record". Walkthrough video for this
+phase is not yet recorded.
 
 ### Goal and user-visible outcome
 

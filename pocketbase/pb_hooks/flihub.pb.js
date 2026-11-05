@@ -23,8 +23,11 @@
  */
 
 // ---------------------------------------------------------------------------
-// POST /api/flihub/organizations { name }
+// POST /api/flihub/organizations { name, template?, capabilities?, raceDistances? }
 // Creates the organization and its single Owner membership atomically.
+// Phase 1B: optional starter template + capability selection during creation.
+// Without a template the organization is created unconfigured (onboarded=false)
+// and can be configured later by an Owner/Admin — Phase 1A callers keep working.
 // ---------------------------------------------------------------------------
 routerAdd(
 	'POST',
@@ -38,8 +41,38 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			// JSVM set() comma-joins arrays on JSON fields — serialize explicitly.
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
+		};
+		// Shared catalog (same JSON the SvelteKit app uses — no forked lists).
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM has no ESM; require() is its only module mechanism
+		const catalog = require(`${__hooks}/../../src/lib/capabilities/catalog.json`);
+		const validCapabilityIds = catalog.capabilities.map((c) => c.id);
+		const dependencyErrors = (ids) => {
+			const chosen = new Set(ids);
+			const missing = [];
+			for (const id of chosen) {
+				const def = catalog.capabilities.find((c) => c.id === id);
+				for (const dep of def?.dependsOn ?? []) {
+					if (!chosen.has(dep)) missing.push(`${id} requires ${dep}`);
+				}
+			}
+			return missing;
+		};
+		const validateDistances = (value) => {
+			if (!Array.isArray(value)) return 'Race distances must be a list.';
+			if (value.length > 10) return 'At most 10 distances.';
+			for (const d of value) {
+				const label = String(d?.label ?? '').trim();
+				const distance = Number(d?.distance);
+				if (!label || label.length > 60) return 'Each distance needs a label (1–60 characters).';
+				if (!Number.isFinite(distance) || distance <= 0 || distance > 2000) {
+					return 'Distances must be positive numbers (max 2000).';
+				}
+				if (!['km', 'mi'].includes(d?.unit)) return 'Distance unit must be km or mi.';
+			}
+			return null;
 		};
 
 		const auth = e.auth;
@@ -52,11 +85,57 @@ routerAdd(
 			});
 		}
 
+		// Optional Phase 1B onboarding payload.
+		const templateId = body.template ? String(body.template) : null;
+		let capabilities = [];
+		let raceDistances = [];
+		let onboarded = false;
+		if (templateId !== null) {
+			const template = catalog.templates.find((t) => t.id === templateId);
+			if (!template) {
+				return e.json(400, { code: 'unknown_template', message: 'Unknown starter template.' });
+			}
+			const requested = Array.isArray(body.capabilities)
+				? body.capabilities.map(String)
+				: template.defaultCapabilities;
+			const unknown = requested.filter((id) => !validCapabilityIds.includes(id));
+			if (unknown.length > 0) {
+				return e.json(400, {
+					code: 'unknown_capability',
+					message: `Unknown capability: ${unknown.join(', ')}`
+				});
+			}
+			const depErrors = dependencyErrors(requested);
+			if (depErrors.length > 0) {
+				return e.json(400, { code: 'missing_dependency', message: depErrors.join('; ') });
+			}
+			capabilities = validCapabilityIds.filter((id) => requested.includes(id));
+
+			if (Array.isArray(body.raceDistances)) {
+				const err = validateDistances(body.raceDistances);
+				if (err) return e.json(400, { code: 'invalid_distance', message: err });
+				raceDistances = body.raceDistances;
+			} else if (template.defaultRaceDistances) {
+				raceDistances = template.defaultRaceDistances;
+			}
+			if (templateId !== 'race-event' && raceDistances.length > 0) {
+				return e.json(400, {
+					code: 'invalid_config',
+					message: 'Race distances only apply to the Race/Event template.'
+				});
+			}
+			onboarded = true;
+		}
+
 		let created = null;
 		e.app.runInTransaction((txApp) => {
 			const orgs = txApp.findCollectionByNameOrId('organizations');
 			const org = new Record(orgs);
 			org.set('name', name);
+			org.set('template', templateId ?? '');
+			org.set('capabilities', JSON.stringify(capabilities));
+			org.set('onboarded', onboarded);
+			org.set('race_distances', JSON.stringify(raceDistances));
 			txApp.save(org);
 
 			const memberships = txApp.findCollectionByNameOrId('memberships');
@@ -66,7 +145,10 @@ routerAdd(
 			membership.set('role', 'owner');
 			txApp.save(membership);
 
-			recordEvent(txApp, org.id, auth.id, 'organization_created', auth.id, null, null);
+			recordEvent(txApp, org.id, auth.id, 'organization_created', auth.id, null, {
+				template: templateId,
+				capabilities
+			});
 			created = { id: org.id, name: org.getString('name') };
 		});
 
@@ -121,7 +203,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 
@@ -322,7 +404,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 
@@ -455,7 +537,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 
@@ -537,7 +619,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 
@@ -619,7 +701,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 
@@ -690,7 +772,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 
@@ -755,7 +837,7 @@ routerAdd(
 			record.set('action', action);
 			if (subjectUserId) record.set('subject_user', subjectUserId);
 			if (subjectEmail) record.set('subject_email', subjectEmail);
-			if (details) record.set('details', details);
+			if (details) record.set('details', JSON.stringify(details));
 			txApp.save(record);
 		};
 

@@ -177,7 +177,7 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 								Open feature
 							</Button>
 						{/if}
-						{#if capability.walkthroughHref && data.walkthroughVideoAvailable}
+						{#if capability.walkthroughHref && data.walkthroughAvailable?.[capability.walkthroughHref]}
 							<Button size="sm" variant="outline" href={capability.walkthroughHref}>
 								Watch walkthrough
 							</Button>

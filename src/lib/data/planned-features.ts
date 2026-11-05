@@ -51,9 +51,13 @@ export const capabilities: Capability[] = [
 		description:
 			'Starter templates (League, Race/Event, Custom) with capability-aware navigation that never bypasses role permissions.',
 		milestone: 'Phase 1B',
-		status: 'planned',
-		progress: 'Not started.',
-		next: 'Organization onboarding templates and capability selection.'
+		status: 'complete',
+		progress:
+			'League, Race/Event, and Custom starter templates with editable capability suggestions; a single shared capability catalog (browser and hooks read the same JSON); validated, audited configuration writes by Owners/Admins; race distances with explicit units; capability-aware navigation with honest planned/upcoming states. Implemented and verified locally on the feature branch (integration + browser checks); not yet merged.',
+		next: 'Walkthrough recording for this phase.',
+		featureHref: '/organizations',
+		walkthroughHref: '/walkthroughs/phase1b',
+		narration: 'not-started'
 	},
 	{
 		title: 'Athletes, teams, leagues & seasons',

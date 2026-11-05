@@ -36,7 +36,7 @@ The first end-to-end demonstration covers:
 | 0     | Runnable foundation                                           | Done                                       |
 | 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                          |
 | 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below) |
-| 1B    | Configurable onboarding and capability-aware navigation       | Not started                                |
+| 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below) |
 | 1C    | Athlete identity (sport-neutral records)                      | Not started                                |
 | 1D    | League, season, division, and event relationships             | Not started                                |
 | 1E    | Season rosters, reserve pools, and substitutions              | Not started                                |
@@ -93,6 +93,29 @@ Remaining Phase 1A limitations: invitation email delivery is not implemented
 (copy-link only); destructive confirmations use the browser `confirm()` dialog
 rather than shadcn-svelte dialogs; Scorekeeper event permissions and Admin
 result approvals belong to later phases.
+
+### Phase 1B verification record
+
+Verified on this branch (2026-11-05), locally (CI has not run for this branch
+yet — no claim about CI is made or implied):
+
+- `npm run test:integration` — 25/25 passing (15 Phase 1A regression + 10
+  Phase 1B): template defaults, editable subsets, dependency closure,
+  Owner/Admin configuration, Scorekeeper/Viewer/outsider denial including
+  direct API, cross-organization isolation, distance validation, persistence
+  across sessions, disable/re-enable data preservation, no role escalation,
+  pre-1B organizations keep working and onboard later.
+- Browser acceptance flow (headless Chromium, `tests/e2e/phase1b.spec.mjs`):
+  League/Race-Event/Custom onboarding, honest planned capability pages,
+  disabled-capability direct-URL denial, settings persistence, viewer
+  read-only settings + 403 direct denial, mobile onboarding at 375px, and the
+  Phase 1A walkthrough regression (narrated video + captions still play).
+- `npm run check`, `npm run lint`, `npm run build` — all passing.
+
+Remaining Phase 1B limitations: no walkthrough video for this phase yet (the
+card shows "Walkthrough coming soon"); race distances are configuration only
+(scoring/timing rules deferred); see docs/CAPABILITIES.md for the catalog and
+permission model.
 
 ## Unresolved questions (recorded, not answered)
 
