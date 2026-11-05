@@ -1,7 +1,13 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
-import { pbErrorMessage, pbErrorStatus, setActiveOrgCookie } from '$lib/server/auth';
+import {
+	pbErrorMessage,
+	pbErrorStatus,
+	setActiveOrgCookie,
+	toOrganizationDTO
+} from '$lib/server/auth';
+import { capabilityDefinitions } from '$lib/capabilities/catalog';
 
 interface MemberDTO {
 	id: string;
@@ -119,8 +125,12 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 	}
 
 	return {
-		organization: { id: params.id, name: String(organization.name ?? '') },
+		organization: toOrganizationDTO(organization),
 		myRole,
+		canManage,
+		enabledCapabilities: capabilityDefinitions.filter((c) =>
+			toOrganizationDTO(organization).capabilities.includes(c.id)
+		),
 		members,
 		invitations,
 		events

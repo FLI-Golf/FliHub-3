@@ -129,6 +129,37 @@ a sequence of browser SDK writes or by hidden UI controls.
   so links work in Codespaces and deployments without touching committed
   settings.
 
+## D10 — Phase 1B capability configuration (approved decisions)
+
+**Choice.** Organizations pick a starter template (League, Race/Event, Custom)
+and a capability selection during onboarding, adjustable later in Settings.
+The capability catalog is a single JSON file (`src/lib/capabilities/catalog.json`)
+loaded by both the SvelteKit app and the PocketBase hooks (via `require` —
+the JSVM has no ESM). Configuration writes go through a trusted hook
+(`POST /api/flihub/organizations/{id}/configure`); the organizations
+collection's update rule is locked so configuration cannot bypass validation
+via direct record writes.
+
+**Approved by the project owner (2026-11-05):**
+
+- Owners AND Admins may configure organization capabilities.
+- Scorekeepers and Viewers cannot change capabilities.
+- Capabilities never grant permissions beyond the user's organization role.
+- Disabling a capability preserves its records and configuration.
+- Starter templates suggest defaults; organizations adjust them during
+  onboarding and later.
+- League, Race/Event, and Custom are the initial templates.
+
+**Consequences.**
+
+- Capability IDs and dependency closure are validated server-side; race
+  distances require explicit km/mi units and positive values.
+- Configuration changes are audited in `membership_events`
+  (`configuration_changed`, with before/after values).
+- Enabling a planned/upcoming capability adds a labeled navigation entry,
+  never a fake workflow. No catalog capability is implemented software yet.
+- Pre-1B organizations keep working unconfigured; setup is offered, not forced.
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a

@@ -3,6 +3,7 @@ import type { Cookies } from '@sveltejs/kit';
 import { ClientResponseError } from 'pocketbase';
 import type PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
+import type { RaceDistance, TemplateId } from '$lib/capabilities/catalog';
 
 /**
  * Server-side helpers for Phase 1A authentication and organization state.
@@ -25,6 +26,40 @@ export interface UserDTO {
 export interface OrganizationDTO {
 	id: string;
 	name: string;
+	/** Starter template id, or '' when the organization was created without one. */
+	template: TemplateId | '';
+	/** Enabled capability ids (validated server-side against the catalog). */
+	capabilities: string[];
+	/** Whether onboarding has been completed. Existing orgs stay false until setup. */
+	onboarded: boolean;
+	/** Race/Event distance configuration (race-event template only). */
+	raceDistances: RaceDistance[];
+}
+
+/** Parses a PocketBase JSON field defensively (may arrive as string or value). */
+function jsonList<T>(value: unknown): T[] {
+	if (Array.isArray(value)) return value as T[];
+	if (typeof value === 'string' && value.trim() !== '') {
+		try {
+			const parsed = JSON.parse(value);
+			return Array.isArray(parsed) ? parsed : [];
+		} catch {
+			return [];
+		}
+	}
+	return [];
+}
+
+/** Serializes an organization record for the browser. */
+export function toOrganizationDTO(record: RecordModel): OrganizationDTO {
+	return {
+		id: record.id,
+		name: String(record.name ?? ''),
+		template: (String(record.template ?? '') || '') as OrganizationDTO['template'],
+		capabilities: jsonList<string>(record.capabilities),
+		onboarded: Boolean(record.onboarded),
+		raceDistances: jsonList<RaceDistance>(record.race_distances)
+	};
 }
 
 export interface MembershipDTO {
@@ -59,10 +94,16 @@ export async function listMyMemberships(pb: PocketBase, userId: string): Promise
 		return {
 			id: m.id,
 			role: String(m.role) as OrgRole,
-			organization: {
-				id: String(m.organization),
-				name: String(org?.name ?? '')
-			}
+			organization: org
+				? toOrganizationDTO(org)
+				: {
+						id: String(m.organization),
+						name: '',
+						template: '' as const,
+						capabilities: [],
+						onboarded: false,
+						raceDistances: []
+					}
 		};
 	});
 }

@@ -2,14 +2,23 @@ import { existsSync } from 'node:fs';
 import type { PageServerLoad } from './$types';
 
 /**
- * The Phase 1A walkthrough card links to the video only when a reviewed
- * playback asset exists on disk (see recordings/README.md). Otherwise the
- * card shows "Walkthrough coming soon" — never a broken link.
+ * Maps walkthrough routes to their reviewed playback assets (see
+ * recordings/README.md). A card links to its walkthrough only when the asset
+ * exists on disk; otherwise it shows "Walkthrough coming soon" — never a
+ * broken link.
  */
+const WALKTHROUGH_ASSETS: Record<string, string[]> = {
+	'/walkthroughs/phase1a': [
+		'static/walkthroughs/phase1a-walkthrough-narrated.mp4',
+		'static/walkthroughs/phase1a-walkthrough.webm'
+	]
+	// Phase 1B has no reviewed recording yet — intentionally absent.
+};
+
 export const load: PageServerLoad = () => {
-	return {
-		walkthroughVideoAvailable:
-			existsSync('static/walkthroughs/phase1a-walkthrough-narrated.mp4') ||
-			existsSync('static/walkthroughs/phase1a-walkthrough.webm')
-	};
+	const available: Record<string, boolean> = {};
+	for (const [route, assets] of Object.entries(WALKTHROUGH_ASSETS)) {
+		available[route] = assets.some((asset) => existsSync(asset));
+	}
+	return { walkthroughAvailable: available };
 };

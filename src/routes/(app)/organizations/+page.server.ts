@@ -1,17 +1,29 @@
 import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import {
 	listMyMemberships,
 	pbErrorMessage,
 	pbErrorStatus,
 	setActiveOrgCookie
 } from '$lib/server/auth';
+import { capabilityDefinitions, templates } from '$lib/capabilities/catalog';
+
+export const load: PageServerLoad = () => {
+	// The catalog JSON is shared with the PocketBase hooks — no forked lists.
+	return {
+		catalog: {
+			templates,
+			capabilities: capabilityDefinitions
+		}
+	};
+};
 
 export const actions: Actions = {
 	/**
 	 * Creates an organization through the trusted PocketBase hook, which
-	 * atomically creates the Owner membership. The new organization becomes
-	 * the active one.
+	 * atomically creates the Owner membership. Phase 1B: optionally carries the
+	 * starter template, capability selection, and race distances. The new
+	 * organization becomes the active one.
 	 */
 	create: async ({ locals, request, cookies }) => {
 		if (!locals.pb || !locals.user) {
@@ -20,11 +32,26 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 
+		const template = String(form.get('template') ?? '');
+		const body: Record<string, unknown> = { name };
+		if (template) {
+			body.template = template;
+			body.capabilities = form.getAll('capability').map(String);
+			const rawDistances = String(form.get('raceDistances') ?? '');
+			if (rawDistances) {
+				try {
+					body.raceDistances = JSON.parse(rawDistances);
+				} catch {
+					return fail(400, { message: 'Invalid race distance configuration.', name });
+				}
+			}
+		}
+
 		let organizationId: string;
 		try {
 			const result = await locals.pb.send<{ id: string }>('/api/flihub/organizations', {
 				method: 'POST',
-				body: { name }
+				body
 			});
 			organizationId = result.id;
 		} catch (err) {

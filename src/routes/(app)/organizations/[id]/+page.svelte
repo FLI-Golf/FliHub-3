@@ -8,6 +8,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import OrgNav from '$lib/components/OrgNav.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -54,7 +55,32 @@
 			<h1 class="text-2xl font-semibold tracking-tight">{data.organization.name}</h1>
 			<Badge variant="secondary">Your role: {roleLabel(data.myRole)}</Badge>
 		</div>
+		<OrgNav
+			orgId={data.organization.id}
+			enabledCapabilities={data.enabledCapabilities}
+			canManage={data.canManage}
+			current="overview"
+		/>
 	</div>
+
+	{#if !data.organization.onboarded && canManage}
+		<Alert.Root>
+			<AlertCircle class="size-4" />
+			<Alert.Title>Setup pending</Alert.Title>
+			<Alert.Description>
+				This organization predates onboarding. Review its template and capabilities to finish setup
+				— existing memberships and records are preserved.
+				<Button
+					variant="outline"
+					size="sm"
+					class="ml-2"
+					href={resolve('/(app)/organizations/[id]/settings', { id: data.organization.id })}
+				>
+					Complete setup
+				</Button>
+			</Alert.Description>
+		</Alert.Root>
+	{/if}
 
 	{#if message}
 		<Alert.Root variant="destructive">

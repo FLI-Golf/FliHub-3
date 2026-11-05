@@ -41,18 +41,36 @@
 	{#if primary}
 		<Card.Root>
 			<Card.Content class="flex flex-col gap-4 pt-6">
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- static asset path, not a route -->
-				<video controls preload="metadata" src={primary.src} class="w-full rounded-md border">
-					{#if data.narrated?.captionsSrc}
+				{#if data.narrated}
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- static asset path, not a route -->
+					<video
+						controls
+						preload="metadata"
+						src={data.narrated.src}
+						class="w-full rounded-md border"
+					>
+						<!-- Real captions, generated with the narrated cut. -->
 						<track
 							kind="captions"
-							src={data.narrated.captionsSrc}
+							src={data.narrated.captionsSrc ?? ''}
 							label="English captions"
 							default
 						/>
-					{/if}
-					Your browser does not support embedded video — use the download link below.
-				</video>
+						Your browser does not support embedded video — use the download link below.
+					</video>
+				{:else}
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- static asset path, not a route -->
+					<!-- eslint-disable-next-line svelte/no-unused-svelte-ignore -- the a11y_media_has_caption ignore below IS used by svelte-check (verified: warning fires without it); eslint's svelte parser does not model that warning -->
+					<!-- svelte-ignore a11y_media_has_caption -- the silent original has no audio track, so there is nothing to caption (WCAG captions apply to audio content) -->
+					<video
+						controls
+						preload="metadata"
+						src={data.silent?.src}
+						class="w-full rounded-md border"
+					>
+						Your browser does not support embedded video — use the download link below.
+					</video>
+				{/if}
 				<div class="flex flex-wrap items-center gap-3">
 					{#if data.narrated}
 						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- static asset path, not a route -->

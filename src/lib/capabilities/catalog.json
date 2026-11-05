@@ -1,0 +1,123 @@
+{
+	"comment": "Single source of truth for the FliHub capability catalog. Consumed by the SvelteKit app (src/lib/capabilities/catalog.ts) and by the PocketBase hooks (pb_hooks/flihub_capabilities.pb.js) via a shared JSON require — do not fork this list.",
+	"templates": [
+		{
+			"id": "league",
+			"label": "League",
+			"description": "Ongoing league play with teams, seasons, and standings.",
+			"defaultCapabilities": [
+				"athletes",
+				"teams",
+				"leagues-seasons",
+				"venues-courses",
+				"events",
+				"scoring-results",
+				"standings"
+			]
+		},
+		{
+			"id": "race-event",
+			"label": "Race/Event",
+			"description": "Distance events with athletes, results, and standings.",
+			"defaultCapabilities": [
+				"athletes",
+				"venues-courses",
+				"events",
+				"scoring-results",
+				"standings"
+			],
+			"defaultRaceDistances": [
+				{ "key": "marathon", "label": "Marathon", "distance": 42.195, "unit": "km" },
+				{ "key": "half-marathon", "label": "Half marathon", "distance": 21.0975, "unit": "km" }
+			]
+		},
+		{
+			"id": "custom",
+			"label": "Custom",
+			"description": "Start from nothing and choose capabilities deliberately.",
+			"defaultCapabilities": []
+		}
+	],
+	"capabilities": [
+		{
+			"id": "athletes",
+			"label": "Athletes",
+			"description": "Sport-neutral athlete records for your organization.",
+			"availability": "planned",
+			"milestone": "Phase 1C",
+			"dependsOn": []
+		},
+		{
+			"id": "teams",
+			"label": "Teams & rosters",
+			"description": "Teams, season rosters, and reserve pools.",
+			"availability": "planned",
+			"milestone": "Phases 1D–1E",
+			"dependsOn": ["athletes"]
+		},
+		{
+			"id": "leagues-seasons",
+			"label": "Leagues & seasons",
+			"description": "Leagues, seasons, and divisions.",
+			"availability": "planned",
+			"milestone": "Phase 1D",
+			"dependsOn": []
+		},
+		{
+			"id": "venues-courses",
+			"label": "Venues & courses",
+			"description": "Physical locations and course layouts.",
+			"availability": "planned",
+			"milestone": "Phases 1D–1F",
+			"dependsOn": []
+		},
+		{
+			"id": "events",
+			"label": "Events",
+			"description": "Events, rounds, and group assignments.",
+			"availability": "planned",
+			"milestone": "Phases 1D–1F",
+			"dependsOn": []
+		},
+		{
+			"id": "scoring-results",
+			"label": "Scoring & official results",
+			"description": "Score submission, approval, and published official results.",
+			"availability": "planned",
+			"milestone": "Phases 1G–1H",
+			"dependsOn": ["events"]
+		},
+		{
+			"id": "standings",
+			"label": "Competition standings",
+			"description": "Standings computed from approved, published results.",
+			"availability": "planned",
+			"milestone": "Phase 1I",
+			"dependsOn": ["scoring-results"]
+		},
+		{
+			"id": "fantasy",
+			"label": "Fantasy leagues",
+			"description": "Fantasy leagues, drafts, and scoring from published results.",
+			"availability": "planned",
+			"milestone": "Phases 2A–2C",
+			"dependsOn": ["standings"]
+		},
+		{
+			"id": "sponsorships",
+			"label": "Sponsorships",
+			"description": "Sponsorship sales and tracking.",
+			"availability": "upcoming",
+			"milestone": "Phase 3+ (deferred)",
+			"dependsOn": []
+		},
+		{
+			"id": "reimbursements",
+			"label": "Reimbursements & expenses",
+			"description": "Expense tracking and reimbursements.",
+			"availability": "upcoming",
+			"milestone": "Phase 3+ (deferred)",
+			"dependsOn": []
+		}
+	]
+}
