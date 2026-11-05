@@ -93,6 +93,42 @@ connect to or modify any existing production PocketBase instance. Local
 PocketBase data, uploaded files, downloaded binaries, and local credentials are
 git-ignored.
 
+## D9 — Phase 1A invariants enforced in PocketBase hooks, not the browser
+
+**Choice.** Organization creation, invitations, role changes, member removal,
+leaving, and ownership transfer are implemented as authenticated custom
+endpoints in `pocketbase/pb_hooks/flihub.pb.js`, each running inside a
+PocketBase transaction. The `organizations`, `memberships`, `invitations`,
+and `membership_events` collections have locked create/update/delete rules,
+so ordinary API requests cannot forge memberships, escalate roles, or assign
+ownership. Read access is enforced by collection rules (members see only
+their own organizations; Owners/Admins see invitations and the audit trail).
+
+**Why.** Atomicity and role invariants (exactly one Owner per organization,
+Admin cannot grant ownership, single-use invitations) cannot be guaranteed by
+a sequence of browser SDK writes or by hidden UI controls.
+
+**Consequences.**
+
+- Invitation tokens are 48-character cryptographically random strings, stored
+  as sha256 hashes (the hash field is API-hidden), single-use, expiring after
+  `FLIHUB_INVITE_TTL_HOURS` hours (default 168). Acceptance requires the
+  signed-in account's verified email to match the invitation recipient; the
+  lookup endpoint reveals only whether the caller matches, never the
+  recipient address. Email delivery is not implemented — invitations are
+  shared via a copy-link workflow.
+- Handlers re-read the caller's membership and role on every call, so
+  demotion/removal takes effect on the next request despite valid sessions.
+- Every change is recorded in `membership_events` (actor, time, action);
+  tokens and passwords are never logged.
+- PocketBase's JS runtime (v0.40) executes route handlers isolated from the
+  hook file's top-level scope — handlers must be self-contained (verified
+  empirically; shared top-level helpers throw `ReferenceError`).
+- Local verification emails are captured by mailpit (SMTP `127.0.0.1:1025`);
+  the `appurl.pb.js` mailer hook rewrites the link base to `FLIHUB_APP_URL`
+  so links work in Codespaces and deployments without touching committed
+  settings.
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a

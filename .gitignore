@@ -29,3 +29,14 @@ vite.config.ts.timestamp-*
 /pocketbase/pocketbase
 /pocketbase/pocketbase.exe
 /pocketbase/*.zip
+/pocketbase/mailpit
+/pocketbase/CHANGELOG.md
+/pocketbase/LICENSE.md
+
+# Test artifacts (E2E screenshots, Playwright reports/traces/videos/session state)
+/tests/e2e/output/
+/test-results/
+/playwright-report/
+/playwright/.auth/
+/playwright/.cache/
+*.webm

@@ -1,12 +1,11 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { AlertCircle, CircleCheck, Construction, Map, Server } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { plannedFeatures } from '$lib/data/planned-features';
 	import type { PageProps } from './$types';
@@ -17,7 +16,7 @@
 <!-- Hero -->
 <section class="flex flex-col items-start gap-4 py-6 sm:py-10">
 	<div class="flex flex-wrap items-center gap-2">
-		<Badge>Foundation milestone</Badge>
+		<Badge>Phase 1A — accounts & organizations</Badge>
 		<Badge variant="outline">SvelteKit</Badge>
 		<Badge variant="outline">Tailwind CSS</Badge>
 		<Badge variant="outline">shadcn-svelte</Badge>
@@ -27,13 +26,18 @@
 		FliHub — sports organization management
 	</h1>
 	<p class="max-w-2xl text-lg text-muted-foreground">
-		A configurable platform for sports organizations with connected fantasy competitions. This build
-		is the runnable foundation: application shell, design system, and backend integration
-		groundwork. The features below are planned, not yet available.
+		A configurable platform for sports organizations with connected fantasy competitions. Accounts,
+		organizations, invitations, and roles are available; competitions and fantasy features below are
+		planned, not yet available.
 	</p>
 	<div class="flex flex-wrap gap-2">
-		<Button href="#planned-features">View planned features</Button>
-		<Button variant="outline" href="#setup">Development setup</Button>
+		{#if data.user}
+			<Button href={resolve('/(app)/organizations')}>Open your organizations</Button>
+		{:else}
+			<Button href={resolve('/(auth)/register')}>Create account</Button>
+			<Button variant="outline" href={resolve('/(auth)/login')}>Sign in</Button>
+		{/if}
+		<Button variant="outline" href="#planned-features">View planned features</Button>
 	</div>
 </section>
 
@@ -49,9 +53,9 @@
 			<Alert.Title>PocketBase URL configured</Alert.Title>
 			<Alert.Description>
 				This server is configured to use the PocketBase instance at
-				<code class="rounded bg-muted px-1 py-0.5 text-sm">{data.pocketbase.url}</code>.
-				Authentication and data collections are not implemented yet — they arrive with the
-				membership milestone.
+				<code class="rounded bg-muted px-1 py-0.5 text-sm">{data.pocketbase.url}</code>. Accounts
+				and organization membership are live; competition data collections arrive with later
+				milestones.
 			</Alert.Description>
 		</Alert.Root>
 	{:else}
@@ -132,8 +136,7 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 		<h2 class="text-xl font-semibold tracking-tight">Planned capabilities</h2>
 	</div>
 	<p class="max-w-2xl text-muted-foreground">
-		Every item below is planned work from the project milestones. None of it is implemented in this
-		foundation build.
+		Every item below is planned work from the project milestones. None of it is implemented yet.
 	</p>
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each plannedFeatures as feature (feature.title)}
@@ -165,35 +168,46 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">What works today</Card.Title>
-				<Card.Description>Verified in this foundation build.</Card.Description>
+				<Card.Description>Delivered in Phase 1A.</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-					<li>Responsive application shell and this welcome page.</li>
-					<li>Strict TypeScript, linting, formatting, and production build checks.</li>
-					<li>Per-request PocketBase client foundation (no shared auth state).</li>
-					<li>Environment placeholder configuration with secret-free examples.</li>
+					<li>
+						Email/password registration with verification email (captured by mailpit locally).
+					</li>
+					<li>
+						Sign-in/out via a hardened httpOnly session cookie, validated server-side on every
+						request.
+					</li>
+					<li>
+						Organization creation with a single Owner; roles: Owner, Admin, Scorekeeper, Viewer.
+					</li>
+					<li>Expiring, single-use, recipient-verified copy-link invitations.</li>
+					<li>
+						Organization switching, role changes, ownership transfer, removal and leaving — enforced
+						transactionally server-side with an audit trail.
+					</li>
+					<li>Private records isolated between organizations by collection API rules.</li>
 				</ul>
 			</Card.Content>
 		</Card.Root>
 		<Card.Root>
 			<Card.Header>
-				<Card.Title class="text-base">Authentication — planned</Card.Title>
+				<Card.Title class="text-base">Get started</Card.Title>
 				<Card.Description>
-					Sign-in arrives with the membership milestone (Phase 1A). This form is a non-functional
-					placeholder.
+					Create an account, verify your email, then create an organization or accept an invitation.
 				</Card.Description>
 			</Card.Header>
-			<Card.Content>
-				<form class="flex flex-col gap-3">
-					<div class="flex flex-col gap-1.5">
-						<Label for="email-placeholder">Email</Label>
-						<Input id="email-placeholder" type="email" placeholder="you@example.com" disabled />
-					</div>
-					<Button disabled title="Authentication arrives with the membership milestone">
-						Sign in (not yet available)
-					</Button>
-				</form>
+			<Card.Content class="flex flex-col gap-3">
+				{#if data.user}
+					<p class="text-sm text-muted-foreground">
+						Signed in as {data.user.email}.
+					</p>
+					<Button href={resolve('/(app)/organizations')}>Open your organizations</Button>
+				{:else}
+					<Button href={resolve('/(auth)/register')}>Create account</Button>
+					<Button variant="outline" href={resolve('/(auth)/login')}>Sign in</Button>
+				{/if}
 			</Card.Content>
 		</Card.Root>
 	</div>

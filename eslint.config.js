@@ -42,6 +42,18 @@ export default defineConfig(
 		}
 	},
 	{
+		// PocketBase hooks and migrations run in PocketBase's goja JSVM runtime,
+		// not Node or the browser. They use the triple-slash types reference and
+		// JSVM callback signatures that the app's TypeScript-oriented rules don't model.
+		files: ['pocketbase/pb_hooks/**/*.js', 'pocketbase/pb_migrations/**/*.js'],
+		rules: {
+			'@typescript-eslint/triple-slash-reference': 'off',
+			'@typescript-eslint/no-unused-vars': 'off',
+			'no-useless-assignment': 'off',
+			'no-empty': 'off'
+		}
+	},
+	{
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
 		rules: {}

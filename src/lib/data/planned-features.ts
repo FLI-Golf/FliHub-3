@@ -2,23 +2,19 @@
  * Planned capabilities for FliHub, derived from Milestones.md.
  *
  * Everything listed here is planned work — none of it is implemented yet.
- * The welcome page renders this list so visitors see an honest picture of
- * the project's current state.
+ * Phase 1A (accounts, organizations, invitations, roles) was delivered and
+ * is therefore intentionally absent from this list. The welcome page
+ * renders the list so visitors see an honest picture of the project's
+ * current state.
  */
 export interface PlannedFeature {
 	title: string;
 	description: string;
-	/** Phase reference from Milestones.md, e.g. "Phase 1A". */
+	/** Phase reference from Milestones.md, e.g. "Phase 1B". */
 	milestone: string;
 }
 
 export const plannedFeatures: PlannedFeature[] = [
-	{
-		title: 'Organizations, invitations & roles',
-		description:
-			'Multi-organization membership with invitation-based access and Owner, Admin, Scorekeeper, and Viewer roles. Creating an account grants no organization access.',
-		milestone: 'Phase 1A'
-	},
 	{
 		title: 'Configurable onboarding',
 		description:
