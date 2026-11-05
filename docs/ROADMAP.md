@@ -31,28 +31,28 @@ The first end-to-end demonstration covers:
 
 ## Phases
 
-| Phase | Name                                                          | Status            |
-| ----- | ------------------------------------------------------------- | ----------------- |
-| 0     | Runnable foundation (this PR)                                 | In progress       |
-| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md |
-| 1A    | Organization memberships, roles, and data isolation           | Not started       |
-| 1B    | Configurable onboarding and capability-aware navigation       | Not started       |
-| 1C    | Athlete identity (sport-neutral records)                      | Not started       |
-| 1D    | League, season, division, and event relationships             | Not started       |
-| 1E    | Season rosters, reserve pools, and substitutions              | Not started       |
-| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started       |
-| 1G    | Mobile scorekeeping and submission                            | Not started       |
-| 1H    | Official approval, publication, playoff, and corrections      | Not started       |
-| 1I    | Organization publishing and public competition standings      | Not started       |
-| 2A    | Fantasy membership and event draft preparation                | Not started       |
-| 2B    | Owner-controlled live snake draft                             | Not started       |
-| 2C    | Fantasy scoring, explanations, and correction processing      | Not started       |
-| 2D    | End-to-end demo and System Map                                | Not started       |
-| 2E    | Website embeds                                                | Not started       |
-| 2F    | Read-only public API                                          | Not started       |
-| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred          |
+| Phase | Name                                                          | Status                                     |
+| ----- | ------------------------------------------------------------- | ------------------------------------------ |
+| 0     | Runnable foundation                                           | Done                                       |
+| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                          |
+| 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below) |
+| 1B    | Configurable onboarding and capability-aware navigation       | Not started                                |
+| 1C    | Athlete identity (sport-neutral records)                      | Not started                                |
+| 1D    | League, season, division, and event relationships             | Not started                                |
+| 1E    | Season rosters, reserve pools, and substitutions              | Not started                                |
+| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started                                |
+| 1G    | Mobile scorekeeping and submission                            | Not started                                |
+| 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
+| 1I    | Organization publishing and public competition standings      | Not started                                |
+| 2A    | Fantasy membership and event draft preparation                | Not started                                |
+| 2B    | Owner-controlled live snake draft                             | Not started                                |
+| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                |
+| 2D    | End-to-end demo and System Map                                | Not started                                |
+| 2E    | Website embeds                                                | Not started                                |
+| 2F    | Read-only public API                                          | Not started                                |
+| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred                                   |
 
-## Organization and permission rules (planned)
+## Organization and permission rules (Phase 1A — implemented)
 
 - Users may belong to multiple organizations; creating an account grants no
   organization access.
@@ -64,14 +64,35 @@ The first end-to-end demonstration covers:
   cannot leave before transferring ownership.
 - Owners may remove non-owner members; Admins may revoke invitations but cannot
   remove accepted members; non-owner members may leave voluntarily.
-- Invitations are organization-scoped, expiring, single-use, and must verify
-  the intended authenticated recipient. Copy-link invitations are acceptable
-  initially; email delivery is not claimed.
+- Invitations are organization-scoped, expiring (default 7 days,
+  `FLIHUB_INVITE_TTL_HOURS`), single-use, and must verify the intended
+  authenticated recipient. Invitations are shared by copy-link; **email
+  delivery of invitations is not implemented**.
 - Private records are isolated between organizations.
 - Organization staff roles are separate from fantasy membership and
   commissioner permissions.
-- Complex membership operations require trusted transactional (server-side)
-  enforcement — never client-side multi-step writes.
+- Complex membership operations are enforced by trusted transactional
+  PocketBase hooks (`pocketbase/pb_hooks/flihub.pb.js`) — never client-side
+  multi-step writes.
+
+### Phase 1A verification record
+
+Verified on this branch (2026-11-05), locally:
+
+- `npm run test:integration` — 15/15 passing against a disposable PocketBase
+  - mailpit (isolation, role matrix, invitation lifecycle, single-owner
+    invariant, concurrency, audit trail).
+- Browser acceptance flow (headless Chromium): register → verify email →
+  sign in → create organization → invite → recipient registers through the
+  preserved invite destination and accepts → switch organizations → role
+  boundaries (Scorekeeper has no management UI; Admin cannot invite Admins) →
+  atomic ownership transfer → sign out; mobile-width spot check.
+- `npm run check`, `npm run lint`, `npm run build` — all passing.
+
+Remaining Phase 1A limitations: invitation email delivery is not implemented
+(copy-link only); destructive confirmations use the browser `confirm()` dialog
+rather than shadcn-svelte dialogs; Scorekeeper event permissions and Admin
+result approvals belong to later phases.
 
 ## Unresolved questions (recorded, not answered)
 

@@ -6,10 +6,11 @@ using a new stack — see [docs/DECISIONS.md](docs/DECISIONS.md) for why and
 [docs/MIGRATION.md](docs/MIGRATION.md) for what still needs to be imported from
 the previous prototype.
 
-> **Status: foundation milestone.** The app runs, the checks pass, and the
-> PocketBase groundwork is in place. Authentication, organizations,
-> competitions, scoring, and fantasy features are **planned, not implemented**.
-> See [docs/ROADMAP.md](docs/ROADMAP.md) and [Milestones.md](Milestones.md).
+> **Status: Phase 1A.** Accounts, organizations, invitations, and roles are
+> implemented and verified locally (integration suite + browser acceptance
+> flow). Competitions, scoring, and fantasy features are **planned, not
+> implemented**. See [docs/ROADMAP.md](docs/ROADMAP.md) and
+> [Milestones.md](Milestones.md).
 
 ## Stack
 
@@ -39,14 +40,38 @@ configured PocketBase instance the welcome page shows how to set one up.
 
 ## Scripts
 
-| Command           | Purpose                           |
-| ----------------- | --------------------------------- |
-| `npm run dev`     | Start the development server      |
-| `npm run check`   | Svelte + strict TypeScript checks |
-| `npm run lint`    | Prettier check and ESLint         |
-| `npm run format`  | Format all files with Prettier    |
-| `npm run build`   | Production build                  |
-| `npm run preview` | Preview the production build      |
+| Command                    | Purpose                                                          |
+| -------------------------- | ---------------------------------------------------------------- |
+| `npm run dev`              | Start the development server                                     |
+| `npm run pocketbase`       | Start the local PocketBase instance (migrations + hooks applied) |
+| `npm run check`            | Svelte + strict TypeScript checks                                |
+| `npm run lint`             | Prettier check and ESLint                                        |
+| `npm run format`           | Format all files with Prettier                                   |
+| `npm run build`            | Production build                                                 |
+| `npm run preview`          | Preview the production build                                     |
+| `npm run test`             | Integration + browser E2E tests                                  |
+| `npm run test:integration` | Access-control tests vs. disposable PocketBase + mailpit         |
+| `npm run test:e2e`         | Browser acceptance flow vs. a disposable full stack              |
+
+## Testing
+
+Both suites are self-contained: they boot disposable PocketBase and mailpit
+instances in a temp directory and never touch `pocketbase/pb_data` or any
+running dev services. The E2E suite builds the app and serves the production
+build via `vite preview` (rather than a second dev server) so it runs reliably
+in memory-constrained containers.
+
+```sh
+npm run test:integration   # API rules, hooks, roles, invitations, concurrency
+
+# One-time browser setup for the E2E suite:
+npx playwright install chromium            # browser binary
+sudo npx playwright install-deps chromium  # system libraries (Linux only)
+
+npm run test:e2e           # headless Chromium acceptance flow
+```
+
+E2E screenshots are written to `tests/e2e/output/` (git-ignored).
 
 ## PocketBase (local development)
 
@@ -55,24 +80,34 @@ this repository and no paid service is required:
 
 ```sh
 # 1. Download PocketBase from https://pocketbase.io and put the binary in pocketbase/
-./pocketbase/pocketbase serve
+#    (do the same with a mailpit binary so verification emails are captured)
+npm run pocketbase
+./pocketbase/mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025
 
 # 2. In another terminal, configure the app and restart the dev server
 cp .env.example .env
 npm run dev
 ```
 
-Full details, including what is git-ignored and the rules around credentials,
-live in [pocketbase/README.md](pocketbase/README.md).
+Migrations and trusted hooks apply automatically. mailpit captures auth emails
+at <http://127.0.0.1:8025>. Full details, including what is git-ignored and
+the rules around credentials, live in
+[pocketbase/README.md](pocketbase/README.md).
 
 ## Environment variables
 
 Configuration is read from `.env` (git-ignored). `.env.example` documents every
 variable and contains no secrets.
 
-| Variable         | Scope       | Purpose                             |
-| ---------------- | ----------- | ----------------------------------- |
-| `POCKETBASE_URL` | server-only | Base URL of the PocketBase instance |
+| Variable                    | Scope       | Purpose                                                    |
+| --------------------------- | ----------- | ---------------------------------------------------------- |
+| `POCKETBASE_URL`            | server-only | Base URL of the PocketBase instance                        |
+| `POCKETBASE_ADMIN_EMAIL`    | server-only | Superuser email, reserved for future trusted operations    |
+| `POCKETBASE_ADMIN_PASSWORD` | server-only | Superuser password, reserved for future trusted operations |
+
+Phase 1A enforcement runs inside PocketBase hooks and never uses superuser
+credentials; the admin variables are declared but not currently read by app
+code, and must never become the normal application identity.
 
 ## Project structure
 

@@ -37,5 +37,12 @@ export function createPocketBaseClient(): PocketBase | null {
 	if (!url) {
 		return null;
 	}
-	return new PocketBase(url);
+	const pb = new PocketBase(url);
+	// This client is created fresh per request and is shared by that request's
+	// layout and page loads, which SvelteKit runs concurrently. The SDK's
+	// default auto-cancellation is a browser-navigation optimization that would
+	// cancel one of those parallel in-flight requests with a spurious
+	// ClientResponseError(0) AbortError, so it is disabled for server use.
+	pb.autoCancellation(false);
+	return pb;
 }
