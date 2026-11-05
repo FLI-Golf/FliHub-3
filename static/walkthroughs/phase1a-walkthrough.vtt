@@ -1,0 +1,33 @@
+WEBVTT
+
+s1-intro
+00:00:01.200 --> 00:00:14.160
+This is FliHub, a platform for running sports organizations and their fantasy competitions. This walkthrough covers the first milestone: accounts, organizations, invitations, and roles.
+
+s2-register-create-org
+00:00:16.560 --> 00:00:36.470
+Casey Rivera creates an account with an email and password. FliHub sends a verification email right away. After signing in, Casey has no memberships yet — an account alone grants access to nothing. Casey creates the Riverside Disc Golf Club and automatically becomes its Owner.
+
+s3-invite-members
+00:00:45.560 --> 00:01:01.390
+As Owner, Casey invites Sam Ortiz as a Scorekeeper. FliHub creates a single-use invitation link that expires in seven days; Casey copies it and sends it to Sam directly. Invitation emails themselves are not sent yet.
+
+s4-accept-scorekeeper
+00:01:03.790 --> 00:01:21.790
+Sam opens the link, already signed in with a verified email address — the invitation only works for the exact recipient. One click, and Sam joins as a Scorekeeper. Scorekeepers can see the member list, but cannot manage invitations or roles.
+
+s5-admin-and-viewer
+00:01:24.190 --> 00:01:40.070
+Alex Chen accepts as Admin. Admins can invite Scorekeepers and Viewers, but only the Owner can invite Admins or change roles. Val Kim joins as a Viewer, with the same read-only member view.
+
+s6-org-switching
+00:01:42.470 --> 00:01:57.360
+Casey also runs the City League. Users can belong to several organizations at once, see only the ones they belong to, and switch between them — the active organization and Casey's role are always visible in the header.
+
+s7-transfer-ownership
+00:01:59.760 --> 00:02:16.840
+Every organization has exactly one Owner. When Casey transfers ownership to Alex, the change is atomic: Alex becomes Owner and Casey becomes Admin — the organization is never without an Owner.
+
+s8-progress-overview
+00:02:19.240 --> 00:02:32.690
+The overview page tracks capability progress honestly: Phase 1A is complete and verified, and upcoming phases are shown as planned. That is the whole walkthrough — thanks for watching.

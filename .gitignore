@@ -40,3 +40,11 @@ vite.config.ts.timestamp-*
 /playwright/.auth/
 /playwright/.cache/
 *.webm
+
+# Walkthrough recording output (raw segments, frames, narration cache,
+# assembled intermediates) stays untracked.
+# EXCEPTION (intentional, versioned playback assets): the reviewed silent
+# original, narrated cut, and captions in static/walkthroughs/ ARE committed
+# so the walkthrough works after a fresh checkout (see recordings/README.md).
+/recordings/output/
+!/static/walkthroughs/*.webm

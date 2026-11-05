@@ -7,10 +7,16 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { plannedFeatures } from '$lib/data/planned-features';
+	import { capabilities, capabilityStatusMeta } from '$lib/data/planned-features';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	const narrationLabels: Record<string, string> = {
+		'not-started': 'not started',
+		scripted: 'scripted',
+		recorded: 'recorded'
+	};
 </script>
 
 <!-- Hero -->
@@ -129,27 +135,57 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 
 <Separator class="my-6" />
 
-<!-- Planned features -->
+<!-- Capability progress -->
 <section id="planned-features" class="flex flex-col gap-4 py-4">
 	<div class="flex items-center gap-2">
 		<Map class="size-5" />
-		<h2 class="text-xl font-semibold tracking-tight">Planned capabilities</h2>
+		<h2 class="text-xl font-semibold tracking-tight">Capability progress</h2>
 	</div>
 	<p class="max-w-2xl text-muted-foreground">
-		Every item below is planned work from the project milestones. None of it is implemented yet.
+		What works today, what is being built, and what is coming next. A capability is marked Complete
+		only after its workflow and access control are verified end to end.
 	</p>
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-		{#each plannedFeatures as feature (feature.title)}
+		{#each capabilities as capability (capability.title)}
+			{@const meta = capabilityStatusMeta[capability.status]}
 			<Card.Root class="flex flex-col">
 				<Card.Header>
 					<div class="flex items-start justify-between gap-2">
-						<Card.Title class="text-base">{feature.title}</Card.Title>
-						<Badge variant="secondary" class="shrink-0">Planned</Badge>
+						<Card.Title class="text-base">{capability.title}</Card.Title>
+						<Badge variant="secondary" class={`shrink-0 ${meta.badgeClass}`}>
+							{meta.label}
+						</Badge>
 					</div>
-					<Card.Description>{feature.description}</Card.Description>
+					<Card.Description>{capability.description}</Card.Description>
 				</Card.Header>
-				<Card.Content class="mt-auto">
-					<p class="text-xs text-muted-foreground">{feature.milestone}</p>
+				<Card.Content class="mt-auto flex flex-col gap-2">
+					<p class="text-sm text-muted-foreground">{capability.progress}</p>
+					{#if capability.next}
+						<p class="text-sm">
+							<span class="font-medium">Next:</span>
+							<span class="text-muted-foreground"> {capability.next}</span>
+						</p>
+					{/if}
+					{#if capability.narration}
+						<p class="text-xs text-muted-foreground">
+							Narration: {narrationLabels[capability.narration]}
+						</p>
+					{/if}
+					<div class="flex flex-wrap items-center gap-2 pt-1">
+						{#if capability.featureHref}
+							<Button size="sm" variant="outline" href={capability.featureHref}>
+								Open feature
+							</Button>
+						{/if}
+						{#if capability.walkthroughHref && data.walkthroughVideoAvailable}
+							<Button size="sm" variant="outline" href={capability.walkthroughHref}>
+								Watch walkthrough
+							</Button>
+						{:else if capability.walkthroughHref}
+							<span class="text-xs text-muted-foreground">Walkthrough coming soon</span>
+						{/if}
+					</div>
+					<p class="text-xs text-muted-foreground">{capability.milestone}</p>
 				</Card.Content>
 			</Card.Root>
 		{/each}
