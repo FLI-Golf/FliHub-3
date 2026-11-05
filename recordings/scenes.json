@@ -1,0 +1,55 @@
+{
+	"walkthrough": "phase1a",
+	"title": "FliHub Phase 1A walkthrough — accounts, organizations, invitations, and roles",
+	"note": "Silent walkthrough — narration planned. Narration script: recordings/narration-phase1a.md. Timings are approximate; re-record with `npm run record:walkthrough`.",
+	"scenes": [
+		{
+			"id": "s1-intro",
+			"title": "Welcome and capability overview",
+			"persona": null,
+			"approxSeconds": 6
+		},
+		{
+			"id": "s2-register-create-org",
+			"title": "Create an account and your organization",
+			"persona": "casey",
+			"approxSeconds": 40
+		},
+		{
+			"id": "s3-invite-members",
+			"title": "Invite a member with a role",
+			"persona": "casey",
+			"approxSeconds": 16
+		},
+		{
+			"id": "s4-accept-scorekeeper",
+			"title": "Accepting an invitation as a Scorekeeper",
+			"persona": "sam",
+			"approxSeconds": 16
+		},
+		{
+			"id": "s5-admin-and-viewer",
+			"title": "Admin and Viewer join; role differences",
+			"persona": "alex+val",
+			"approxSeconds": 26
+		},
+		{
+			"id": "s6-org-switching",
+			"title": "A second organization and switching",
+			"persona": "casey",
+			"approxSeconds": 18
+		},
+		{
+			"id": "s7-transfer-ownership",
+			"title": "Transfer ownership",
+			"persona": "casey+alex",
+			"approxSeconds": 20
+		},
+		{
+			"id": "s8-progress-overview",
+			"title": "Capability progress overview",
+			"persona": null,
+			"approxSeconds": 8
+		}
+	]
+}
