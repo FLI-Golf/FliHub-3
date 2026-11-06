@@ -43,7 +43,7 @@
 			"id": "athletes",
 			"label": "Athletes",
 			"description": "Sport-neutral athlete records for your organization.",
-			"availability": "planned",
+			"availability": "available",
 			"milestone": "Phase 1C",
 			"dependsOn": []
 		},

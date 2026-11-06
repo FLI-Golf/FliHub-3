@@ -8,9 +8,9 @@
  */
 import raw from './catalog.json';
 
-export type CapabilityAvailability = 'planned' | 'upcoming';
-// No capability is "available" yet in Phase 1B — available means the software
-// workflow exists, which is honestly not the case for any catalog entry yet.
+export type CapabilityAvailability = 'available' | 'planned' | 'upcoming';
+// "available" means the workflow exists and works (athletes, Phase 1C).
+// "planned"/"upcoming" stay honestly non-functional in the UI.
 
 export type TemplateId = 'league' | 'race-event' | 'custom';
 
@@ -90,6 +90,7 @@ export const availabilityMeta: Record<
 	CapabilityAvailability,
 	{ label: string; badgeClass: string }
 > = {
+	available: { label: 'Available', badgeClass: 'border-transparent bg-green-600 text-white' },
 	planned: { label: 'Planned', badgeClass: 'border-transparent bg-blue-600 text-white' },
 	upcoming: { label: 'Upcoming', badgeClass: 'border-transparent bg-amber-500 text-white' }
 };

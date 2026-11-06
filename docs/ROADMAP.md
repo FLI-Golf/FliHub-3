@@ -37,7 +37,7 @@ The first end-to-end demonstration covers:
 | 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                          |
 | 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below) |
 | 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below) |
-| 1C    | Athlete identity (sport-neutral records)                      | Not started                                |
+| 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below) |
 | 1D    | League, season, division, and event relationships             | Not started                                |
 | 1E    | Season rosters, reserve pools, and substitutions              | Not started                                |
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started                                |
@@ -112,10 +112,34 @@ yet — no claim about CI is made or implied):
   Phase 1A walkthrough regression (narrated video + captions still play).
 - `npm run check`, `npm run lint`, `npm run build` — all passing.
 
-Remaining Phase 1B limitations: no walkthrough video for this phase yet (the
-card shows "Walkthrough coming soon"); race distances are configuration only
+Remaining Phase 1B limitations: race distances are configuration only
 (scoring/timing rules deferred); see docs/CAPABILITIES.md for the catalog and
-permission model.
+permission model. The narrated walkthrough video for Phase 1B was added in
+PR #5.
+
+### Phase 1C verification record
+
+Verified on this branch (2026-11-05), locally (CI runs on the PR):
+
+- `npm run test:integration` — 30/30 passing (25 Phase 1A/1B regression + 5
+  Phase 1C): capability-gated writes (hook denies when disabled, including
+  direct API), organization scoping (cross-org reads/writes denied), role
+  enforcement (Owner/Admin write; Scorekeeper/Viewer read-only), disable →
+  preserve → re-enable, required identity fields, sport-neutral record shape.
+- Browser acceptance flow (headless Chromium, `tests/e2e/phase1c.spec.mjs`):
+  onboarding with the athletes capability, manager reachable from
+  organization navigation, create/edit/archive/restore, CSV import, viewer
+  read-only + direct-API denial, disable/re-enable preservation, mobile at
+  375px. Phase 1A and 1B specs pass unchanged (1B's "planned page" assertion
+  moved from Athletes to Teams when Athletes became available).
+- `npm run check`, `npm run build` — exit 0; Prettier/ESLint — exit 0
+  (combined lint can be SIGTERM'd under this container's memory pressure —
+  suspected resource kill, not a rule failure; each half passes separately).
+
+Remaining Phase 1C limitations: CSV import creates one record per row (no
+duplicate matching — open product decision); no cross-organization athlete
+participation (open decision); no photo/flag imports (no source data in this
+repository); final pilot eligibility fields undecided.
 
 ## Unresolved questions (recorded, not answered)
 

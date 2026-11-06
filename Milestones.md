@@ -839,7 +839,10 @@ A new organization can choose League, Race/Event, or Custom as a starting point,
 
 ## Phase 1C — Athlete identity
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-05). Evidence:
+docs/ROADMAP.md "Phase 1C verification record". Open product decisions remain
+as recorded below (duplicate-import matching, cross-organization visibility,
+final eligibility fields).
 
 ### Goal and user-visible outcome
 

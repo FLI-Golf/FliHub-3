@@ -60,12 +60,24 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
-		title: 'Athletes, teams, leagues & seasons',
+		title: 'Athlete identity',
 		description:
-			'Sport-neutral athlete records, season rosters, reserve pools, divisions, and event relationships.',
-		milestone: 'Phases 1C–1F',
+			'Sport-neutral athlete records with organization-scoped identity, CSV import, and role-based management. Athletes are records, not accounts.',
+		milestone: 'Phase 1C',
+		status: 'complete',
+		progress:
+			'Create, edit, archive/restore, and CSV-import sport-neutral athletes from the organization navigation (Athletes capability). Owner/Admin manage; Scorekeeper/Viewer read-only; direct API writes are capability-gated; disabling preserves records. Verified by 5 integration tests and a browser acceptance flow on the feature branch; not yet merged.',
+		next: 'Identity matching rules for duplicate imports (open product decision); cross-organization athlete participation.',
+		featureHref: '/organizations',
+		narration: 'not-started'
+	},
+	{
+		title: 'Teams, leagues & seasons',
+		description: 'Season rosters, reserve pools, divisions, leagues, and event relationships.',
+		milestone: 'Phases 1D–1F',
 		status: 'planned',
-		progress: 'Not started.'
+		progress: 'Not started.',
+		next: 'League, season, division, and event relationships (Phase 1D).'
 	},
 	{
 		title: 'Disc golf demonstration event',
