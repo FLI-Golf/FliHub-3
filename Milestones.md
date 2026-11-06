@@ -260,7 +260,7 @@ These items are useful for planning but must remain visibly labeled as proposed:
 - Who can see draft picks while a draft is active?
 - What happens if a participant leaves a fantasy league mid-draft?
 - What happens to an incomplete fantasy draft at roster lock?
-- What are the exact playoff throw, measurement, precision, and equal-distance rules? (Shortest remaining throw-to-basket distance is the agreed general principle; exact rules still need verification before playoff implementation.)
+- What are the exact playoff measurement precision and equal-distance rules? (The shootout format itself is now recorded in Section 4.8: one throw per teammate, measured distance to the basket with an explicit unit, converted to a common unit and summed, lowest team total wins. Equal-total tiebreaking and measurement precision remain open before playoff implementation.)
 - Does the playoff affect competition standings only, fantasy standings, or neither?
 - What is the final name and relationship between FLI Golf Fantasy and FLI Fantasy Gaming?
 
@@ -271,7 +271,27 @@ The following were previously listed as unresolved questions and are now recorde
 - Scorekeepers may score all groups in their assigned event (Section 4.3).
 - Fantasy scoring covers both regulation nine-hole rounds (Section 4.4).
 - Shared fantasy rankings mean tied positions are allowed; visibility is a separate future concern (Section 4.4).
-- The playoff uses shortest remaining throw-to-basket distance as the general principle; exact rules remain to be verified before implementation (Section 4.6).
+- The playoff uses shortest remaining throw-to-basket distance as the general principle; the team shootout format is recorded in Section 4.8, with equal-total tiebreaking and precision still to be verified before implementation (Section 4.6).
+
+### 4.8 Future playoff shootout (recorded 2026-11-06 — documentation only)
+
+The tie-breaking shootout format for the disc golf demonstration, recorded
+ahead of its Phase 1H implementation:
+
+- Each of the two teammates throws once.
+- The distance from each disc's resting position to the basket is recorded
+  with an explicit unit.
+- Both distances are converted to a common unit and added together.
+- The lowest team total wins.
+- Two tied teams therefore produce four measured throws.
+- Equal-total tiebreaking remains an open decision (Section 4.6), as does
+  measurement precision.
+
+Boundaries: the shootout may reference an existing course hole and basket
+position; it adds no physical hole record and does not affect regular round
+stroke scores. Playoff implementation, playoff score entry, and live
+scorekeeper reassignment stay outside Phase 1F — this subsection is
+documentation only.
 
 ## 6. Milestone summary
 
@@ -1050,7 +1070,10 @@ Organizations can assign athletes and teams to the competition structure created
 
 ## Phase 1F — Course layouts, rounds, groups, and assignments
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-06). Evidence:
+docs/ROADMAP.md "Phase 1F verification record". Model decisions approved by
+Dustin and recorded as D14 in docs/DECISIONS.md; the two content/behavior
+questions below remain open without blocking the model.
 
 ### Goal and user-visible outcome
 
@@ -1116,8 +1139,12 @@ An administrator can configure the nine-hole disc golf course, two basket-positi
 
 ### Open decisions blocking this phase
 
-- Final hole-eight content.
-- Whether scorekeepers may be reassigned during a live event.
+- Final hole-eight content. **Still open** — the demo will use a neutral
+  placeholder hole name until the content is confirmed (D14); nothing in the
+  model depends on it.
+- Whether scorekeepers may be reassigned during a live event. **Deferred to
+  Phase 1G** (D14) — no live scoring exists yet to reassign during;
+  assignment changes already leave archived rows behind.
 
 The cross-group scorekeeper access rule is already agreed in Section 4.3: authorized scorekeepers may enter and submit scores across all groups in their assigned event.
 

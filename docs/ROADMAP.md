@@ -40,7 +40,7 @@ The first end-to-end demonstration covers:
 | 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below) |
 | 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
 | 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below) |
-| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started                                |
+| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Implemented — verified locally (see below) |
 | 1G    | Mobile scorekeeping and submission                            | Not started                                |
 | 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
 | 1I    | Organization publishing and public competition standings      | Not started                                |
@@ -209,12 +209,74 @@ Verified on this branch (2026-11-06), locally (CI runs on the PR):
   the direct API, mobile at 375px. Full suite (1A–1E specs): exit 0.
 - `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
 
+### Phase 1F verification record
+
+Verified on this branch (2026-11-06), locally (CI runs on the PR):
+
+- Decisions: all six open rules approved by Dustin and recorded as D14 —
+  courses only (venues stay planned), sport-neutral labeled hole positions
+  with explicit units, demo numbers as pilot configuration, season-linked
+  events required for group team/athlete assignment, any member assignable as
+  a group's scorekeeper (score-entry permissions are 1G), and lifecycle rows
+  as the assignment change record.
+- `npm run test:integration` — 62/62 passing (53 Phase 1A–1E regression + 9
+  Phase 1F): capability-gated writes (venues-courses vs events), course
+  layout invariants (unique active hole numbers and position labels, archived
+  numbers reusable, positive distances with explicit units, no fabricated
+  range limits), ordered rounds per event, scorekeeper-must-be-member (viewer
+  role assignable, outsider rejected), event derived from the group (client
+  values ignored), season-linked-event requirement with same-season entries,
+  eligibility from rosters + event-scoped substitutions (reserve blocked
+  without a substitution, assignable only for the event with one;
+  substituted-out athlete blocked for that event only, restore re-checked),
+  named round positions requiring coverage on every active hole of the
+  selected course (red on 9/9 saves; blue on 8/9 rejected naming hole 9;
+  unknown labels and course-less named labels rejected; blank still saves;
+  saved rounds unaffected by later position archives, status-only updates
+  unblocked, same-label edits not re-validated),
+  season roster and reserve pool untouched by assignments, one group per
+  event per team and per athlete, assignment rewiring blocked (archive and
+  recreate), cross-org reads/writes/links denied, role enforcement, disable →
+  preserve → re-enable.
+- Migrations: full chain from empty on a disposable PocketBase (suite boot),
+  and an upgrade rehearsal from the merged Phase 1E schema with seeded
+  roster/event fixtures — 6/6 assertions (records and links preserved; new
+  collections usable on legacy data).
+- Browser acceptance (`tests/e2e/phase1f.spec.mjs`, 19 assertions): working
+  course manager with honest "venues planned" label, par-3 default, red/blue
+  positions with different distances, two rounds with an intermission marker,
+  group with member scorekeeper, team assignment via season entry, eligible
+  athlete filtering (reserve absent until a substitution, substituted-out
+  athlete removed, reserve labeled and assignable afterwards), season roster
+  preserved, viewer read-only in the UI and denied at the direct API, mobile
+  at 375px. Full suite (1A–1F specs): exit 0 (1B's planned-panel example
+  moved from Venues & courses to Scoring & official results, since Venues &
+  courses is now a working page).
+- Format verification (`tests/e2e/phase1f-formats.spec.mjs`, 21 assertions):
+  (A) a single nine-hole event built entirely through the organizer UI — one
+  course, nine named holes each with one chosen position, one event with
+  exactly one round, the position picked from the course's actual labels, and
+  no second round or intermission marker; (B) the FLI two-round demo — one
+  course with exactly nine physical hole records (par 3, red/blue positions
+  all within 220–425 ft, hole 8 on placeholder demo naming), round 1 red →
+  intermission → round 2 replaying the same nine holes at blue (18 holes of
+  play from nine hole records), six groups of two teams and four athletes
+  with one scorekeeper each — saved configuration verified via the API and
+  the organizer view verified in the browser for both rounds and the break.
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
+
 ## Unresolved questions (recorded, not answered)
 
 These remain open from Milestones.md and must not be guessed in code:
 
-- Exact playoff throw, measurement, precision, and equal-distance rules, and
-  whether playoffs affect fantasy standings.
+- Exact playoff measurement precision and equal-distance (equal-total) rules,
+  and whether playoffs affect fantasy standings. The team shootout format
+  itself is recorded in Milestones.md §4.8 (documentation only — not
+  implemented).
+- Scoring-time resolution when a round's named basket position is missing or
+  archived on some hole after the round was saved (round coverage is
+  validated at save time only — D14 Decision 7); define with Phase 1G
+  scoring.
 - Substitution identity and fantasy ownership effects when a reserve athlete
   replaces a drafted athlete.
 - Incomplete-draft handling and the final draft preparation/completion window.

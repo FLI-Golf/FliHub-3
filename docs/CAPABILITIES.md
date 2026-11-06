@@ -21,7 +21,7 @@ same file — there is no forked list:
 | `athletes`        | Athletes                   | available    | —               | Phase 1C            |
 | `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E        |
 | `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D            |
-| `venues-courses`  | Venues & courses           | planned      | —               | Phases 1D–1F        |
+| `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F        |
 | `events`          | Events                     | available    | —               | Phases 1D–1F        |
 | `scoring-results` | Scoring & official results | planned      | events          | Phases 1G–1H        |
 | `standings`       | Competition standings      | planned      | scoring-results | Phase 1I            |
@@ -150,3 +150,35 @@ covered as well as the UI. Status fields (planned/active/completed/archived)
 are scheduling/status foundations only — no automated transitions, and no
 standings, official results, fantasy scoring, registration, or payments in
 this phase.
+
+## Available capability behavior: event operations (Phase 1F)
+
+Phase 1F (decisions recorded as D14) turned two more capabilities into
+working workflows:
+
+- **Venues & courses** — a course-layout manager: courses with numbered,
+  named holes (par defaults suggested at 3 in the UI) and labeled positions
+  (e.g. "red"/"blue") carrying a positive distance with an explicit unit.
+  Venue records (physical locations) remain planned and are labeled as such.
+- **Events (event operations)** — ordered rounds per event (optional course
+  and position label; the demo plays red, an intermission, then blue): a
+  round's position may stay blank for planning, but a NAMED position must
+  exist on every active hole of the round's selected course — the UI offers
+  only complete labels (incomplete ones are shown with their coverage and
+  missing holes) and the hook rejects partial or unknown labels on create and
+  update, while saved rounds are never rewritten by later position archives.
+  Event groups carry one scorekeeper each (any organization member —
+  score-entry permissions arrive with 1G), team assignment goes through
+  season entries (season-linked events only), and athlete assignment is
+  resolved from Phase 1E season rosters plus event-scoped substitutions: a
+  reserve is assignable only for the event whose substitution brought them
+  in, a substituted-out athlete is blocked for that event only, and
+  assignments never change the season roster.
+
+Demo numbers (nine holes, six groups, two teams + four athletes per group)
+are pilot configuration verified in the demo build, never model constraints.
+The `flihub_event_ops.pb.js` hook enforces the capability gates, same-org
+targets, group-derived event fields, scorekeeper membership, eligibility,
+and assignment immutability (archive and recreate — every change leaves a
+row). One active group per event per team and per athlete is enforced by
+partial unique indexes.

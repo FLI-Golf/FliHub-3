@@ -293,6 +293,73 @@ branding, logos, photos, and flags where available" clause is inapplicable:
 this repository has no such source data (recorded for 1C in docs/ROADMAP.md),
 so pools carry names only — nothing fabricated.
 
+## D14 — Phase 1F event operations (2026-11-06; approved by Dustin)
+
+**Decision 1 — courses only.** The `venues-courses` capability becomes a
+working course-layout manager (courses → numbered/named holes → labeled
+positions); venue records (physical locations) remain planned and are
+honestly labeled as such on the page. No venue entity exists.
+
+**Decision 2 — sport-neutral hole positions.** Each hole carries labeled
+position rows (e.g. "red"/"blue") with a positive distance and an explicit
+unit (feet/meters/yards), mirroring D10's explicit race-distance units —
+never fixed red/blue columns.
+
+**Decision 3 — demo numbers are pilot configuration.** Nine holes, par 3,
+the 220–425 ft range, six groups, two teams + four athletes per group, and
+one scorekeeper per group are verified in the disc golf demo build, not
+hard-coded as model constraints. The shared model enforces only generic
+invariants: positive distances, unique active hole numbers / position labels
+/ round numbers / group names per parent, and one active group per event per
+team and per athlete (partial unique indexes).
+
+**Decision 4 — season-linked events only.** Group team/athlete assignment
+requires a season-linked event: teams join groups through their season
+entries (entry season must equal the event season), and rosters/substitutions
+are season-scoped. Rounds and groups themselves can exist on any event.
+Independent-event participation is a later, separately-decided feature.
+
+**Decision 5 — scorekeeper assignment.** Any organization member may be
+assigned as a group's one scorekeeper (hook-validated membership); role-based
+score-entry permissions arrive with Phase 1G, and live-event reassignment
+rules stay open until then.
+
+**Decision 6 — assignment changes are recorded via lifecycle.** group_teams
+and group_athletes rows are immutable except `status` (archive and recreate),
+with created/updated autodates — every change leaves a row. A formal
+event-ops audit trail is deferred to 1G when "after scoring begins" becomes
+real.
+
+**Decision 7 — named round positions require full coverage (2026-11-06).** A
+round may leave its position blank (valid for planning and for courses
+without labeled positions), but a NAMED position must exist on EVERY active
+hole of the round's selected course, and therefore requires a selected
+course. Enforced in the hook on create and on update (direct API included)
+with coded errors naming the missing holes (`position_incomplete`,
+`position_unknown`, `position_requires_course`); the UI offers only complete
+labels and shows incomplete ones disabled with their coverage and missing
+holes. Coverage re-validates only when the round's position or course
+CHANGES: archiving a hole position later never rewrites or blocks saved
+rounds (status-only updates like archiving the round keep working), and how
+scoring resolves a position that disappeared after the round was saved is an
+open Phase 1G rule (recorded in docs/ROADMAP.md).
+
+**Eligibility (builds on D13).** `event` on group_teams/group_athletes is
+derived from the group, never client-trusted. A group athlete must belong to
+an entry actively assigned to the same group; a rostered athlete is eligible
+unless a substitution for THIS event replaced them; a non-rostered athlete is
+eligible only when a substitution for THIS event brought them in — so a
+reserve appears only for the event where the substitution applies, and
+assignments never touch roster_memberships. Restores re-run the check.
+Eligibility is hook-enforced (read-then-write); ordering races between a
+concurrent substitution and an assignment are accepted for 1F and revisited
+with 1G scoring protections.
+
+**Still open (not invented here).** Final hole-eight content (the demo uses a
+neutral placeholder name until confirmed); scorekeeper live-event
+reassignment (1G); the event start-time save bug is tracked separately and
+blocks no 1F workflow (rounds are ordinal, not timestamped).
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a
