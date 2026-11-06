@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1c",
+	"title": "FliHub Phase 1C walkthrough — athlete identity and private fields",
+	"note": "Silent walkthrough — narration scripted (recordings/narration-phase1c.md). Record with `npm run record:walkthrough-1c`. Actual per-run offsets land in recordings/output/run-manifest-1c.json.",
+	"scenes": [
+		{
+			"id": "s1-owner-create",
+			"title": "Owner creates an athlete with private contact/eligibility fields",
+			"persona": "sam",
+			"approxSeconds": 24.0
+		},
+		{
+			"id": "s2-viewer-readonly",
+			"title": "Viewer sees identity only — no private fields, no editing controls",
+			"persona": "val",
+			"approxSeconds": 18.0
+		},
+		{
+			"id": "s3-archive-restore",
+			"title": "Owner archives and restores the same record",
+			"persona": "sam",
+			"approxSeconds": 15.0
+		},
+		{
+			"id": "s4-csv-import",
+			"title": "CSV import for bulk roster entry",
+			"persona": "sam",
+			"approxSeconds": 11.0
+		}
+	]
+}
