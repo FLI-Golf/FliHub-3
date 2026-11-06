@@ -179,6 +179,11 @@ The following decisions are treated as the working direction for milestone plann
 - Round one uses red basket positions.
 - After intermission, the same nine holes use blue basket positions.
 - Distances may differ by basket position.
+- FLI demo setup note (2026-11-06): the second pass reuses physical holes 1–9
+  (displayed as 10–18 on a future scorecard). Red and Blue distances may be
+  equal when a basket moves laterally, and a typical FLI setup may differ by
+  only 10–12 ft. This is setup guidance, not a limit; scorecard
+  implementation is Phase 1G.
 
 ### 4.3 Scoring and official-results decisions
 

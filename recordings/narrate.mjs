@@ -26,7 +26,8 @@ const WALKTHROUGHS = {
 	'1b': { narration: 'narration-1b.json', cacheDir: 'narration-1b' },
 	'1c': { narration: 'narration-1c.json', cacheDir: 'narration-1c' },
 	'1d': { narration: 'narration-1d.json', cacheDir: 'narration-1d' },
-	'1e': { narration: 'narration-1e.json', cacheDir: 'narration-1e' }
+	'1e': { narration: 'narration-1e.json', cacheDir: 'narration-1e' },
+	'1f': { narration: 'narration-1f.json', cacheDir: 'narration-1f' }
 };
 const selected = WALKTHROUGHS[process.argv[2] ?? '1a'];
 if (!selected) {

@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1f",
+	"title": "FliHub Phase 1F walkthrough — event operations",
+	"note": "Silent walkthrough — narration scripted (recordings/narration-phase1f.md). Record with `npm run record:walkthrough-1f`. Actual per-run offsets land in recordings/output/run-manifest-1f.json.",
+	"scenes": [
+		{
+			"id": "s1-course-layout",
+			"title": "A nine-hole course with Red and Blue positions and explicit distances",
+			"persona": "riley",
+			"approxSeconds": 17.0
+		},
+		{
+			"id": "s2-single-round",
+			"title": "A single-round event — one round, no intermission",
+			"persona": "riley",
+			"approxSeconds": 16.0
+		},
+		{
+			"id": "s3-two-rounds",
+			"title": "The FLI demo: Red, intermission, Blue — 18 holes on nine",
+			"persona": "riley",
+			"approxSeconds": 18.0
+		},
+		{
+			"id": "s4-groups",
+			"title": "Six groups with teams, athletes, and an assigned scorekeeper",
+			"persona": "riley",
+			"approxSeconds": 18.0
+		}
+	]
+}
