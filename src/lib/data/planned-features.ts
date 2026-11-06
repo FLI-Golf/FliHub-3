@@ -92,10 +92,11 @@ export const capabilities: Capability[] = [
 		milestone: 'Phases 1E–1F',
 		status: 'in-progress',
 		progress:
-			'Phase 1E implemented: season rosters attached to team entries (one active spot per athlete per season, enforced down to concurrent writes, history preserved through archive), reserve pools with optional gender restriction (pilot configuration) structurally excluded from scheduling, and append-only substitutions that leave rosters intact — managed from the Teams & rosters page. Verified on this branch by 11 integration tests, migration upgrade rehearsals, and a 17-assertion browser flow; not yet merged. Phase 1F (venues/courses, rounds, groups) not started.',
+			'Phase 1E merged in PR #11: season rosters attached to team entries (one active spot per athlete per season, enforced down to concurrent writes, history preserved through archive), reserve pools with optional gender restriction (pilot configuration) structurally excluded from scheduling, and append-only substitutions that leave rosters intact — managed from the Teams & rosters page and verified by 11 integration tests, migration upgrade rehearsals, and a 17-assertion browser flow. Narrated walkthrough video available. Phase 1F event operations (venues/courses, rounds, groups) remain planned, not started.',
 		next: 'Venues/courses, rounds, and group assignments (Phase 1F).',
 		featureHref: '/organizations',
-		narration: 'not-started'
+		walkthroughHref: '/walkthroughs/phase1e',
+		narration: 'recorded'
 	},
 	{
 		title: 'Disc golf demonstration event',

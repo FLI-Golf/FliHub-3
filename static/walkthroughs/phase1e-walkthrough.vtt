@@ -1,0 +1,17 @@
+WEBVTT
+
+s1-season-roster
+00:00:01.200 --> 00:00:15.910
+Back at Lakeside Golf Collective, Riley opens the Summer 2026 season roster. The Blue Heron Flyers carry their regular athletes, Ava Stone and Sam Finch — assigned to this season, so participation always stays with the season.
+
+s2-reserve-pool
+00:00:19.400 --> 00:00:30.160
+Reserves live outside the teams. The season's own men's reserve pool holds Ben Reed — ready to fill in, but excluded from ordinary scheduling until he is officially called on.
+
+s3-substitution
+00:00:34.300 --> 00:00:49.240
+For the Week 3 event, Ava can't play. Riley records a substitution: the event, Ava out, Ben in, plus the reason — one append-only record that names exactly who replaced whom.
+
+s4-roster-intact
+00:00:51.640 --> 00:01:06.500
+And nothing else moved. Ava is still on the season roster, and Ben is still in the reserve pool — the substitution applies to that one event only, so the season's participation history stays intact.
