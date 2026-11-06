@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1e",
+	"title": "FliHub Phase 1E walkthrough — season rosters, reserve pools, and substitutions",
+	"note": "Silent walkthrough — narration scripted (recordings/narration-phase1e.md). Record with `npm run record:walkthrough-1e`. Actual per-run offsets land in recordings/output/run-manifest-1e.json.",
+	"scenes": [
+		{
+			"id": "s1-season-roster",
+			"title": "A team's season roster with its regular athletes",
+			"persona": "riley",
+			"approxSeconds": 17.0
+		},
+		{
+			"id": "s2-reserve-pool",
+			"title": "The season's separate reserve pool and the reserve who will fill in",
+			"persona": "riley",
+			"approxSeconds": 16.0
+		},
+		{
+			"id": "s3-substitution",
+			"title": "Substitution recorded for one season-linked event",
+			"persona": "riley",
+			"approxSeconds": 18.0
+		},
+		{
+			"id": "s4-roster-intact",
+			"title": "Roster and reserve pool unchanged after the substitution",
+			"persona": "riley",
+			"approxSeconds": 17.0
+		}
+	]
+}

@@ -1,0 +1,25 @@
+{
+	"comment": "Machine-readable twin of narration-phase1e.md. `tts` is the ElevenLabs synthesis input (FliHub spelled 'Fly Hub'); `caption` keeps the correct spelling. Also used by walkthrough-1e.mjs to pace scene holds (local word-count estimate, no API).",
+	"scenes": [
+		{
+			"id": "s1-season-roster",
+			"caption": "Back at Lakeside Golf Collective, Riley opens the Summer 2026 season roster. The Blue Heron Flyers carry their regular athletes, Ava Stone and Sam Finch — assigned to this season, so participation always stays with the season.",
+			"tts": "Back at Lakeside Golf Collective, Riley opens the Summer twenty twenty-six season roster. The Blue Heron Flyers carry their regular athletes, Ava Stone and Sam Finch — assigned to this season, so participation always stays with the season."
+		},
+		{
+			"id": "s2-reserve-pool",
+			"caption": "Reserves live outside the teams. The season's own men's reserve pool holds Ben Reed — ready to fill in, but excluded from ordinary scheduling until he is officially called on.",
+			"tts": "Reserves live outside the teams. The season's own men's reserve pool holds Ben Reed — ready to fill in, but excluded from ordinary scheduling until he is officially called on."
+		},
+		{
+			"id": "s3-substitution",
+			"caption": "For the Week 3 event, Ava can't play. Riley records a substitution: the event, Ava out, Ben in, plus the reason — one append-only record that names exactly who replaced whom.",
+			"tts": "For the Week Three event, Ava can't play. Riley records a substitution: the event, Ava out, Ben in, plus the reason — one append-only record that names exactly who replaced whom."
+		},
+		{
+			"id": "s4-roster-intact",
+			"caption": "And nothing else moved. Ava is still on the season roster, and Ben is still in the reserve pool — the substitution applies to that one event only, so the season's participation history stays intact.",
+			"tts": "And nothing else moved. Ava is still on the season roster, and Ben is still in the reserve pool — the substitution applies to that one event only, so the season's participation history stays intact."
+		}
+	]
+}
