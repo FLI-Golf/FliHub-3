@@ -19,10 +19,10 @@ same file — there is no forked list:
 | Capability        | Label                      | Availability | Depends on      | Milestone           |
 | ----------------- | -------------------------- | ------------ | --------------- | ------------------- |
 | `athletes`        | Athletes                   | available    | —               | Phase 1C            |
-| `teams`           | Teams & rosters            | planned      | athletes        | Phases 1D–1E        |
-| `leagues-seasons` | Leagues & seasons          | planned      | —               | Phase 1D            |
+| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E        |
+| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D            |
 | `venues-courses`  | Venues & courses           | planned      | —               | Phases 1D–1F        |
-| `events`          | Events                     | planned      | —               | Phases 1D–1F        |
+| `events`          | Events                     | available    | —               | Phases 1D–1F        |
 | `scoring-results` | Scoring & official results | planned      | events          | Phases 1G–1H        |
 | `standings`       | Competition standings      | planned      | scoring-results | Phase 1I            |
 | `fantasy`         | Fantasy leagues            | planned      | standings       | Phases 2A–2C        |
@@ -33,9 +33,9 @@ Three layers are kept separate:
 
 - **Organization selection** — a capability is enabled or disabled for the
   organization.
-- **Software availability** — planned or upcoming in the catalog (nothing in
-  the catalog is implemented software yet; enabling one never makes it look
-  implemented — navigation entries are labeled).
+- **Software availability** — planned or upcoming in the catalog (enabling a
+  planned/upcoming one never makes it look implemented — navigation entries
+  are labeled).
 - **User authorization** — role permissions from Phase 1A are unchanged;
   enabling capabilities never grants permissions beyond a member's role.
 
@@ -110,3 +110,31 @@ private separation is documented for the future public-pages phase (1I) — no
 public surface exists yet, so nothing leaks today. CSV import creates one
 record per row; duplicate identity matching is a documented open product
 decision.
+
+## Available capability behavior: competition structure (Phase 1D)
+
+Three capabilities became working workflows in Phase 1D (decisions recorded
+as D12):
+
+- **Teams & rosters** — organization-scoped teams (create, rename,
+  archive/restore). Season rosters and reserve pools are Phase 1E scope and
+  remain planned.
+- **Leagues & seasons** — leagues, seasons (with optional start/end dates),
+  divisions, and season entries. Teams enter a season directly; each entry
+  carries one optional division assignment, so entries can exist before
+  divisions are finalized and seasons can run division-less. Duplicate
+  entries per (season, team) are rejected, and a division can only be
+  assigned within its own season.
+- **Events** — events belong to at most one season or run independently
+  (optional season relation), always organization-scoped.
+
+Every organization member reads competition records; only Owners/Admins
+write. There is no permanent delete — archive/restore only, with delete
+rules locked. The `flihub_competitions.pb.js` hook enforces the capability
+gate on writes, same-organization relation targets, division-in-season
+assignment, and parent-link immutability (a division's season and an entry's
+season/team cannot change after creation), so direct API requests are
+covered as well as the UI. Status fields (planned/active/completed/archived)
+are scheduling/status foundations only — no automated transitions, and no
+standings, official results, fantasy scoring, registration, or payments in
+this phase.

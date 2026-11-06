@@ -9,7 +9,8 @@
 import raw from './catalog.json';
 
 export type CapabilityAvailability = 'available' | 'planned' | 'upcoming';
-// "available" means the workflow exists and works (athletes, Phase 1C).
+// "available" means the workflow exists and works (athletes in Phase 1C;
+// teams, leagues & seasons, and events in Phase 1D).
 // "planned"/"upcoming" stay honestly non-functional in the UI.
 
 export type TemplateId = 'league' | 'race-event' | 'custom';

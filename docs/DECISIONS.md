@@ -195,6 +195,39 @@ duplicate imports (CSV import currently creates one record per row, labeled in
 the UI); cross-organization athlete participation/visibility; final pilot
 eligibility fields. See docs/ROADMAP.md unresolved questions.
 
+## D12 — Phase 1D competition structure (2026-11-06; approved by Dustin)
+
+**Decision 1 — season entry direction.** Teams enter a season directly via
+`season_entries`; each entry carries ONE optional division assignment.
+Entries can exist before divisions are finalized, and seasons can run
+division-less. A unique (season, team) index prevents duplicate entries, and
+the `flihub_competitions.pb.js` hook rejects a division assignment outside
+the entry's season.
+
+**Decision 2 — event competition membership.** An event belongs to at most
+one season (optional relation; empty = independent event) and stays
+organization-scoped either way. Multi-competition event membership is
+outside Phase 1D.
+
+**Model.** `teams`, `leagues`, `seasons` (league + optional startsOn/endsOn),
+`divisions` (season), `season_entries` (season, team, optional division),
+`events` (optional season). All organization-scoped. Status fields are
+foundations only — no automated transitions in Phase 1D (teams, leagues,
+divisions, entries: active/archived; seasons, events:
+planned/active/completed/archived).
+
+**Integrity (hook-enforced, `flihub_competitions.pb.js`).** Capability gate
+per collection (teams→`teams`; leagues/seasons/divisions/season_entries→
+`leagues-seasons`; events→`events`); every relation target must belong to
+the same organization; a division's season and an entry's season/team are
+immutable after creation (archive and recreate instead), so parent edits
+cannot invalidate existing links; season start must be on or before end.
+
+**Access.** Any organization member reads; only Owners/Admins write; delete
+is locked on all six collections — archive/restore only (extends the D11
+lifecycle). Out of scope per Milestones.md: standings, official result
+approval, fantasy scoring, registration, payments.
+
 - League, Race/Event, and Custom are the initial templates.
 
 **Consequences.**

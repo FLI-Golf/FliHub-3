@@ -107,15 +107,16 @@ try {
 	await p.screenshot({ path: path.join(OUT, '1b-02-league-org.png') });
 
 	// ---- Capability destination pages ----------------------------------------
-	// Athletes became a working workflow in Phase 1C; Teams stays planned and
-	// must keep its honest planned panel with no fake CRUD controls.
+	// Athletes (1C) and Teams/Leagues & seasons/Events (1D) became working
+	// workflows; Venues & courses stays planned and must keep its honest
+	// planned panel with no fake CRUD controls.
 	console.log('Step 3: capability pages are honest, not fake CRUD');
-	await p.click('nav >> text=Teams');
+	await p.click('nav >> text=Venues');
 	await p.waitForSelector('text=Planned');
 	const capText = await p.locator('main').innerText();
-	expect(capText.includes('Teams'), 'teams capability page reachable from nav');
+	expect(capText.includes('Venues'), 'venues capability page reachable from nav');
 	expect(
-		!capText.includes('Add team') && !capText.includes('Create team'),
+		!capText.includes('Add venue') && !capText.includes('Create course'),
 		'no fake CRUD controls on planned page'
 	);
 	// A capability that is NOT enabled rejects direct-URL access with an explanation.
