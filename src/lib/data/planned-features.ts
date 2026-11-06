@@ -29,6 +29,9 @@ export interface Capability {
 	/** Walkthrough route; rendered as a link only when the video asset exists
 	 * (see src/routes/+page.server.ts), otherwise "Walkthrough coming soon". */
 	walkthroughHref?: string;
+	/** Optional link text override — e.g. when a card reuses another phase's
+	 * video and viewers should know what it covers. */
+	walkthroughLabel?: string;
 	narration?: NarrationStatus;
 }
 
@@ -117,8 +120,12 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1F',
 		status: 'in-progress',
 		progress:
-			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G adds the phone scoring view that identifies the round, group, teams, and athletes (implemented on this branch; not yet merged). Official results remain Phase 1H.',
-		next: 'Mobile scorekeeping for the two rounds (Phase 1G).'
+			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G added the phone scoring view that identifies the round, group, teams, and athletes (merged in PR #17). Official results remain Phase 1H.',
+		next: 'Mobile scorekeeping for the two rounds (Phase 1G).',
+		// Reuses the approved Phase 1F recording — it covers the event SETUP
+		// (course, rounds, groups), not scoring; the label says so.
+		walkthroughHref: '/walkthroughs/phase1f',
+		walkthroughLabel: 'Watch event setup walkthrough (Phase 1F)'
 	},
 	{
 		title: 'Mobile scorekeeping',
@@ -127,10 +134,11 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1G',
 		status: 'in-progress',
 		progress:
-			'Phone-first scorecard resolved from the Phase 1F setup: event, rounds with hole counts derived from their course (the FLI demo shows Round 1 · 9 holes · Red, an intermission, Round 2 · 9 holes · Blue — the second pass displays 10–18 while scores stay keyed by round and physical hole), groups, teams, and athletes. Per-athlete integer strokes with draft save/resume; missing scores are visible, block submission, and are never stored as zero; every change is logged with its author; Submitted locks against silent overwrites with Owner/Admin-only recorded reopen. Entry requires the Scorekeeper role plus a group assignment in the event (event-wide, per the agreed cross-group rule) — Viewers stay read-only even when listed as a group\u2019s scorekeeper. Implemented and verified on this branch by 5 integration tests, an upgrade rehearsal, and a 21-assertion phone browser flow; not yet merged.',
+			'Phone-first scorecard resolved from the Phase 1F setup: event, rounds with hole counts derived from their course (the FLI demo shows Round 1 · 9 holes · Red, an intermission, Round 2 · 9 holes · Blue — the second pass displays 10–18 while scores stay keyed by round and physical hole), groups, teams, and athletes. Per-athlete integer strokes with draft save/resume; missing scores are visible, block submission, and are never stored as zero; every change is logged with its author; Submitted locks against silent overwrites with Owner/Admin-only reopen requiring a recorded reason; once scoring starts, a group\u2019s athlete lineup is fixed. Entry requires the Scorekeeper role plus a group assignment in the event (event-wide, per the agreed cross-group rule) — Viewers stay read-only even when listed as a group\u2019s scorekeeper. Merged in PR #17 and verified by 5 integration tests and a 21-assertion phone browser flow. Narrated walkthrough video available.',
 		next: 'Official approval, publication, and corrections (Phase 1H).',
 		featureHref: '/organizations',
-		narration: 'not-started'
+		walkthroughHref: '/walkthroughs/phase1g',
+		narration: 'recorded'
 	},
 	{
 		title: 'Official results & corrections',

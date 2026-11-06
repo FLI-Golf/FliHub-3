@@ -1,0 +1,25 @@
+{
+	"comment": "Machine-readable twin of narration-phase1g.md. `tts` is the ElevenLabs synthesis input (FliHub spelled 'Fly Hub', 1H spoken 'one-H'); `caption` keeps the correct spelling. Also used by walkthrough-1g.mjs to pace scene holds (local word-count estimate, no API).",
+	"scenes": [
+		{
+			"id": "s1-phone-scorecard",
+			"caption": "Casey, the assigned scorekeeper, opens the FLI demonstration event on a phone. The scorecard already knows the setup: Round 1 · 9 holes · Red, an intermission, then Round 2 · 9 holes · Blue — with Group 1's two teams and their four athletes.",
+			"tts": "Casey, the assigned scorekeeper, opens the F L I demonstration event on a phone. The scorecard already knows the setup: Round one, nine holes at Red, an intermission, then Round two, nine holes at Blue — with Group one's two teams and their four athletes."
+		},
+		{
+			"id": "s2-draft-and-submit",
+			"caption": "On hole 1 of Round 1, Casey enters strokes — every entry saves as a draft. One score is still blank, and the card says exactly why that matters: missing scores block submission and never count as zero. Casey fills it in, and Round 1 is submitted.",
+			"tts": "On hole one of Round one, Casey enters strokes — every entry saves as a draft. One score is still blank, and the card says exactly why that matters: missing scores block submission and never count as zero. Casey fills it in, and Round one is submitted."
+		},
+		{
+			"id": "s3-second-pass",
+			"caption": "After the intermission, Round 2 replays the same nine physical holes at the Blue positions. The card displays holes 10 through 18 — displayed hole 10 is physical hole 1 on the second pass — and each round's scores stay separate.",
+			"tts": "After the intermission, Round two replays the same nine physical holes at the Blue positions. The card displays holes ten through eighteen — displayed hole ten is physical hole one on the second pass — and each round's scores stay separate."
+		},
+		{
+			"id": "s4-final-hole",
+			"caption": "Later in the round, the card is nearly complete. Casey enters the final scores on hole 18 and submits Round 2. Submitted scorecards are locked against silent changes — official approval and published results arrive in Phase 1H.",
+			"tts": "Later in the round, the card is nearly complete. Casey enters the final scores on hole eighteen and submits Round two. Submitted scorecards are locked against silent changes — official approval and published results arrive in Phase one-H."
+		}
+	]
+}

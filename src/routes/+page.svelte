@@ -179,7 +179,7 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 						{/if}
 						{#if capability.walkthroughHref && data.walkthroughAvailable?.[capability.walkthroughHref]}
 							<Button size="sm" variant="outline" href={capability.walkthroughHref}>
-								Watch walkthrough
+								{capability.walkthroughLabel ?? 'Watch walkthrough'}
 							</Button>
 						{:else if capability.walkthroughHref}
 							<span class="text-xs text-muted-foreground">Walkthrough coming soon</span>
