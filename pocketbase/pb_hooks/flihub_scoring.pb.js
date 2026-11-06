@@ -81,6 +81,18 @@ onRecordCreateRequest((e) => {
 			'round_without_course: Scoring needs the round to reference a course — its holes define the scorecard cells.'
 		);
 	}
+	// 1H (D16): once the event has an approved or published official result,
+	// no new scorecard can appear — reopen the result first.
+	const results = e.app.findRecordsByFilter('event_results', 'event = {:event}', '', 1, 0, {
+		event: eventId
+	});
+	if (results.length > 0 && results[0].getString('status') !== 'correcting') {
+		throw new BadRequestError(
+			'result_locked: The event has an ' +
+				results[0].getString('status') +
+				' official result — reopen the result (with a reason) before changing its scoring.'
+		);
+	}
 	// Scorecards always start as drafts with no submission stamp.
 	e.record.set('status', 'draft');
 	e.record.set('submittedBy', '');
@@ -176,6 +188,18 @@ onRecordUpdateRequest((e) => {
 		// non-draft cards). A reason is required — from the UI form and the
 		// direct API alike — and is recorded in the change history. Clears the
 		// stamp; scores and their authorship are untouched.
+		// 1H (D16): while the event's official result is approved or published,
+		// scorecards stay locked — the result must be reopened first.
+		const results = e.app.findRecordsByFilter('event_results', 'event = {:event}', '', 1, 0, {
+			event: e.record.getString('event')
+		});
+		if (results.length > 0 && results[0].getString('status') !== 'correcting') {
+			throw new BadRequestError(
+				'result_locked: The event has an ' +
+					results[0].getString('status') +
+					' official result — reopen the result (with a reason) before reopening a scorecard.'
+			);
+		}
 		const body = e.requestInfo().body || {};
 		reopenReason = String(body.reason ?? '').trim();
 		if (!reopenReason) {

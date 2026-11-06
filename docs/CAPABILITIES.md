@@ -186,8 +186,9 @@ partial unique indexes.
 ## Available capability behavior: mobile scorekeeping (Phase 1G)
 
 Phase 1G (decisions recorded as D15) turned the scoring half of
-**Scoring & official results** into a working workflow; approval,
-publication, and corrections remain planned for Phase 1H.
+**Scoring & official results** into a working workflow; Phase 1H (D16) added
+official approval, publication, and corrections. Competition standings and
+fantasy consumption remain planned for later phases.
 
 - **Permission matrix** — ordinary score entry requires BOTH the Scorekeeper
   role AND an active assignment as a group's scorekeeper in at least one
@@ -218,3 +219,37 @@ publication, and corrections remain planned for Phase 1H.
 The `flihub_scoring.pb.js` hook enforces the capability gate, server-side
 derivation (event/round/group/entry/enteredBy are never client-trusted),
 submission completeness, and the change log.
+
+## Available capability behavior: official results and corrections (Phase 1H)
+
+Phase 1H (decisions recorded as D16) added the official-results half of
+**Scoring & official results**; standings and fantasy consumption remain
+planned.
+
+- **Event-level results** — one official result per event, approvable by an
+  Owner/Admin only when every active round references a course and every
+  (active round × active group) scorecard is Submitted (missing scores never
+  count as zero and block approval through submission). Approval snapshots
+  per-athlete and per-team totals into an append-only result version;
+  publication stamps that version. Scorekeepers submit but cannot approve —
+  there is no self-approval permission mechanism.
+- **No silent changes, no unpublish** — while a result is approved or
+  published, the event's scorecards are locked (no reopen, no new
+  scorecards) until the result itself is reopened with a recorded reason,
+  which visibly marks it "under correction" while the last published version
+  stays on record. Corrections flow through the 1G scorecard reopen, then
+  reapproval appends exactly one new version carrying the correction reason
+  — previous values, approver, timestamps, and publication stamps are
+  preserved, so the standings input changes exactly once per correction.
+  Re-approving or re-publishing the same state is rejected (idempotent
+  reprocessing), and `result_versions`/`result_changes` reject all client
+  writes, so approval, publication, author, and correction metadata cannot
+  be forged.
+- **Visibility** — organization members read results, versions, and the
+  audit history; published results are read-only for ordinary users. Public
+  pages arrive with Phase 1I.
+
+The `flihub_results.pb.js` hook enforces the capability gate, the
+completeness check, the totals snapshots, the transition rules, and the
+locked audit log; the review UI lives at
+`/organizations/[id]/events/[event]/results`.

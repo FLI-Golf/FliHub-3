@@ -452,8 +452,8 @@ try {
 	expect(
 		capText.includes('FLI Demonstration Event') &&
 			capText.includes('Open scoring') &&
-			capText.includes('Phase 1H'),
-		'scoring page lists ready events and keeps approval honestly in Phase 1H'
+			capText.includes('Official results'),
+		'scoring page lists ready events with their official-results entry point'
 	);
 	await k.screenshot({ path: path.join(OUT, '1g-phone-scorecard.png'), fullPage: true });
 

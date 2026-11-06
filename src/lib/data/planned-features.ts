@@ -142,8 +142,11 @@ export const capabilities: Capability[] = [
 		description:
 			'Approval and publication with versioned corrections that preserve author, time, reason, and previous values.',
 		milestone: 'Phase 1H',
-		status: 'planned',
-		progress: 'Not started.'
+		status: 'in-progress',
+		progress:
+			'Event-level official results reviewed and approved by Owners/Admins only when every (round × group) scorecard is Submitted — missing scores block approval and never count as zero. Approval snapshots per-athlete and per-team totals into an append-only version; publication stamps it; while approved or published, the event\u2019s scorecards are locked. There is no unpublish: reopening requires a recorded reason, visibly marks the result under correction (the last published version stays on record), and corrections flow through the scorecard reopen, reapproval (exactly one new version carrying the reason), and republication. Version and audit collections reject all client writes, so approval, publication, author, and correction metadata cannot be forged. Implemented and verified on this branch by 5 integration tests and a browser flow; not yet merged. Standings and fantasy consumption remain planned; the playoff shootout stays documentation-only.',
+		next: 'Competition standings and public pages (Phase 1I); fantasy consumes published results only (Phase 2).',
+		featureHref: '/organizations'
 	},
 	{
 		title: 'Competition standings',

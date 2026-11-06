@@ -474,17 +474,20 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	let scoringData = null;
 	if (capability.id === 'scoring-results' && enabled) {
 		const filter = `organization = "${params.id}"`;
-		const [eventRows, seasonRows, roundRows, groupRows, scorecardRows] = await Promise.all([
-			pb.collection('events').getFullList({ filter, sort: 'name' }),
-			pb
-				.collection('seasons')
-				.getFullList({ filter, sort: 'name' })
-				.catch(() => []),
-			pb.collection('rounds').getFullList({ filter, sort: 'number' }),
-			pb.collection('event_groups').getFullList({ filter, sort: 'name' }),
-			pb.collection('scorecards').getFullList({ filter, sort: 'created' })
-		]);
+		const [eventRows, seasonRows, roundRows, groupRows, scorecardRows, resultRows] =
+			await Promise.all([
+				pb.collection('events').getFullList({ filter, sort: 'name' }),
+				pb
+					.collection('seasons')
+					.getFullList({ filter, sort: 'name' })
+					.catch(() => []),
+				pb.collection('rounds').getFullList({ filter, sort: 'number' }),
+				pb.collection('event_groups').getFullList({ filter, sort: 'name' }),
+				pb.collection('scorecards').getFullList({ filter, sort: 'created' }),
+				pb.collection('event_results').getFullList({ filter })
+			]);
 		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
+		const resultByEvent = new Map(resultRows.map((r) => [String(r.event), r]));
 		scoringData = {
 			events: eventRows
 				.filter((ev) => String(ev.status) !== 'archived')
@@ -497,6 +500,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 						(g) => String(g.event) === ev.id && String(g.status) === 'active'
 					).length;
 					const cards = scorecardRows.filter((c) => String(c.event) === ev.id);
+					const result = resultByEvent.get(ev.id) ?? null;
 					return {
 						id: ev.id,
 						name: String(ev.name ?? ''),
@@ -504,7 +508,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 						roundCount,
 						groupCount,
 						scorecardCount: cards.length,
-						submittedCount: cards.filter((c) => String(c.status) === 'submitted').length
+						submittedCount: cards.filter((c) => String(c.status) === 'submitted').length,
+						resultStatus: result ? String(result.status) : null,
+						resultVersion: result ? Number(result.currentVersion) : null
 					};
 				})
 				.filter((ev) => ev.roundCount > 0 && ev.groupCount > 0),
