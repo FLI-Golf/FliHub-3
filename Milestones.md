@@ -305,12 +305,12 @@ documentation only.
 | 0A       | Current-state audit and decision register                | In progress | Verified inventory, decisions, dependencies, and acceptance map                                                                |
 | 0B       | Early recording foundation                               | Not started | Playwright verification, safe demo setup, repeatable browser recording, and artifact download                                  |
 | 0C       | Narration and assembly                                   | Not started | Manually generated ElevenLabs narration, synchronized footage, captions, and downloadable final video                          |
-| 1A       | Organization memberships, roles, and data isolation      | In progress | Invitation-based organization access with Owner, Admin, Scorekeeper, and Viewer roles                                          |
-| 1B       | Configurable onboarding and capability-aware navigation  | Not started | Starter templates and role-aware navigation without permission bypasses                                                        |
-| 1C       | Athlete identity                                         | Not started | Sport-neutral athlete records and organization-scoped identity                                                                 |
-| 1D       | League, season, division, and event relationships        | Not started | Competition structure connecting teams, seasons, divisions, and events                                                         |
-| 1E       | Season rosters, reserve pools, and substitutions         | Not started | Historical roster assignments and disc golf reserve handling                                                                   |
-| 1F       | Course layouts, rounds, groups, and assignments          | Not started | Two-round, red/blue basket event setup with six groups and scorekeepers                                                        |
+| 1A       | Organization memberships, roles, and data isolation      | Complete    | Invitation-based organization access with Owner, Admin, Scorekeeper, and Viewer roles                                          |
+| 1B       | Configurable onboarding and capability-aware navigation  | Complete    | Starter templates and role-aware navigation without permission bypasses                                                        |
+| 1C       | Athlete identity                                         | Complete    | Sport-neutral athlete records and organization-scoped identity                                                                 |
+| 1D       | League, season, division, and event relationships        | Complete    | Competition structure connecting teams, seasons, divisions, and events                                                         |
+| 1E       | Season rosters, reserve pools, and substitutions         | Complete    | Historical roster assignments and disc golf reserve handling                                                                   |
+| 1F       | Course layouts, rounds, groups, and assignments          | Complete    | Two-round, red/blue basket event setup with six groups and scorekeepers                                                        |
 | 1G       | Mobile scorekeeping and submission                       | Not started | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
 | 1H       | Official approval, publication, playoff, and corrections | Not started | Approved and published results with versioned corrections                                                                      |
 | 1I       | Organization publishing and public competition standings | Not started | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
@@ -1075,9 +1075,10 @@ Organizations can assign athletes and teams to the competition structure created
 
 ## Phase 1F — Course layouts, rounds, groups, and assignments
 
-**Status:** Implemented and verified locally (2026-11-06). Evidence:
-docs/ROADMAP.md "Phase 1F verification record". Model decisions approved by
-Dustin and recorded as D14 in docs/DECISIONS.md; the two content/behavior
+**Status:** Complete — implemented, verified, and merged (feature PR #14;
+narrated walkthrough PR #15). Evidence: docs/ROADMAP.md "Phase 1F
+verification record". Model decisions approved by Dustin and recorded as D14
+in docs/DECISIONS.md; the two content/behavior
 questions below remain open without blocking the model.
 
 ### Goal and user-visible outcome

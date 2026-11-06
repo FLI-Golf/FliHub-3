@@ -40,7 +40,7 @@ The first end-to-end demonstration covers:
 | 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below) |
 | 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
 | 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below) |
-| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Implemented — verified locally (see below) |
+| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)              |
 | 1G    | Mobile scorekeeping and submission                            | Not started                                |
 | 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
 | 1I    | Organization publishing and public competition standings      | Not started                                |
