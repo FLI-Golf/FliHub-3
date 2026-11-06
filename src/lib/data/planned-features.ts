@@ -66,7 +66,7 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1C',
 		status: 'complete',
 		progress:
-			'Create, edit, archive/restore, and CSV-import sport-neutral athletes from the organization navigation (Athletes capability). Owner/Admin manage; Scorekeeper/Viewer read-only; direct API writes are capability-gated; disabling preserves records. Verified by 5 integration tests and a browser acceptance flow on the feature branch; not yet merged.',
+			'Create, edit, archive/restore, and CSV-import sport-neutral athletes from the organization navigation (Athletes capability). Private contact and eligibility fields (email, phone, eligibility notes) are managed and visible only to Owners/Admins; Scorekeepers/Viewers receive identity only. Direct API writes are capability-gated; disabling preserves records. Merged in PR #6; PR #7 prevents cross-organization reassignment of athlete records.',
 		next: 'Identity matching rules for duplicate imports (open product decision); cross-organization athlete participation.',
 		featureHref: '/organizations',
 		narration: 'not-started'
@@ -78,7 +78,7 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1D',
 		status: 'complete',
 		progress:
-			'Leagues, seasons (optional schedule dates), divisions, direct season team entries with an optional division assignment, and independent or season-linked events — managed from the organization navigation. Owner/Admin manage; Scorekeeper/Viewer read-only; capability-gated writes; cross-organization links rejected; duplicate season entries prevented; parent links immutable; archive/restore only. Verified by 9 integration tests and a browser acceptance flow on the feature branch; not yet merged.',
+			'Leagues, seasons (optional schedule dates), divisions, direct season team entries with an optional division assignment, and independent or season-linked events — managed from the organization navigation. Owner/Admin manage; Scorekeeper/Viewer read-only; capability-gated writes; cross-organization links and record reassignment rejected; duplicate season entries prevented; parent links immutable; archive/restore only. Implemented and verified on this branch by 10 integration tests and a browser acceptance flow; not yet merged.',
 		next: 'Season rosters and reserve pools (Phase 1E); venues/courses, rounds, and group assignments (Phase 1F).',
 		featureHref: '/organizations',
 		narration: 'not-started'
