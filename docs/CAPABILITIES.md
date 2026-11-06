@@ -23,7 +23,7 @@ same file — there is no forked list:
 | `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D            |
 | `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F        |
 | `events`          | Events                     | available    | —               | Phases 1D–1F        |
-| `scoring-results` | Scoring & official results | planned      | events          | Phases 1G–1H        |
+| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H        |
 | `standings`       | Competition standings      | planned      | scoring-results | Phase 1I            |
 | `fantasy`         | Fantasy leagues            | planned      | standings       | Phases 2A–2C        |
 | `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred) |
@@ -182,3 +182,39 @@ targets, group-derived event fields, scorekeeper membership, eligibility,
 and assignment immutability (archive and recreate — every change leaves a
 row). One active group per event per team and per athlete is enforced by
 partial unique indexes.
+
+## Available capability behavior: mobile scorekeeping (Phase 1G)
+
+Phase 1G (decisions recorded as D15) turned the scoring half of
+**Scoring & official results** into a working workflow; approval,
+publication, and corrections remain planned for Phase 1H.
+
+- **Permission matrix** — ordinary score entry requires BOTH the Scorekeeper
+  role AND an active assignment as a group's scorekeeper in at least one
+  active group of the event; the grant covers every group of that event
+  (§4.3) and no other event. Owners/Admins may also enter and correct draft
+  scores. Viewers are read-only even when listed as a group's scorekeeper —
+  the UI labels those assignments as having no scoring access. Enforced in
+  the collection API rules (memberships + event_groups joins, re-evaluated
+  per request, so reassignment takes effect immediately).
+- **Scorecards and scores** — one scorecard per (round, group) with a
+  Draft → Submitted lifecycle; per-athlete positive-integer strokes keyed by
+  (round, PHYSICAL hole), so a second pass may display holes 10–18 while
+  rounds' scores never mix; hole counts beside each round derive from the
+  round's course; missing scores are absent rows — never zero — and block
+  submission with a count; rounds must reference a course to be scorable.
+- **No silent overwrites** — Submitted locks score writes for everyone;
+  only Owners/Admins reopen to Draft, and reopening requires a reason that is
+  recorded in the change history, preserving prior values and recorded
+  authorship. Once scoring starts for a group (its first scorecard exists),
+  the group's athlete lineup is fixed — assignments cannot be added,
+  archived, or restored through the UI or the direct API — while scorekeeper
+  reassignment stays allowed. Every mutation appends to the locked,
+  hook-written `score_changes` log (entered/updated with previous and new
+  values, submitted, reopened with its reason — with author). A clearly
+  labeled demo-fill control writes ordinary draft scores for the fictional
+  demo.
+
+The `flihub_scoring.pb.js` hook enforces the capability gate, server-side
+derivation (event/round/group/entry/enteredBy are never client-trusted),
+submission completeness, and the change log.

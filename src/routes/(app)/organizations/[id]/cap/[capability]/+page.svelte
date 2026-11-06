@@ -13,6 +13,7 @@
 	import EventsManager from '$lib/components/EventsManager.svelte';
 	import EventOpsManager from '$lib/components/EventOpsManager.svelte';
 	import CoursesManager from '$lib/components/CoursesManager.svelte';
+	import ScoringManager from '$lib/components/ScoringManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
@@ -120,6 +121,13 @@
 			canManage={data.canManage}
 			myRole={data.myRole}
 			{form}
+		/>
+	{:else if data.capability.id === 'scoring-results' && data.capability.availability === 'available' && data.scoringData}
+		<ScoringManager
+			organizationId={data.organization.id}
+			events={data.scoringData.events}
+			canScore={data.scoringData.canScore}
+			myRole={data.myRole}
 		/>
 	{:else}
 		<Card.Root class="max-w-2xl">

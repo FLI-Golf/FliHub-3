@@ -82,8 +82,8 @@
 		{
 			"id": "scoring-results",
 			"label": "Scoring & official results",
-			"description": "Score submission, approval, and published official results.",
-			"availability": "planned",
+			"description": "Mobile score entry and submission; approval and official results arrive with Phase 1H.",
+			"availability": "available",
 			"milestone": "Phases 1G–1H",
 			"dependsOn": ["events"]
 		},

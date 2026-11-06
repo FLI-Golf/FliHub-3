@@ -141,6 +141,14 @@
 	const teamsOf = (groupId: string) => activeGroupTeams.filter((gt) => gt.group === groupId);
 	const athletesOf = (groupId: string) => activeGroupAthletes.filter((ga) => ga.group === groupId);
 
+	/** D15: a Viewer listed as a group's scorekeeper has no scoring access. */
+	const scorekeeperRole = (userId: string | null) =>
+		userId ? (members.find((m) => m.userId === userId)?.role ?? '') : '';
+	const scorekeeperHasAccess = (userId: string | null) => {
+		const role = scorekeeperRole(userId);
+		return role === 'scorekeeper' || role === 'owner' || role === 'admin';
+	};
+
 	/** Entries not yet assigned to any active group of this event. */
 	const unassignedEntries = $derived(
 		seasonEntries.filter((en) => !activeGroupTeams.some((gt) => gt.entry === en.id))
@@ -373,6 +381,12 @@
 										<ClipboardCheck class="mr-1 size-3" />
 										{group.scorekeeperName}
 									</Badge>
+									{#if !scorekeeperHasAccess(group.scorekeeper)}
+										<Badge variant="secondary"
+											>no scoring access ({scorekeeperRole(group.scorekeeper) ||
+												'not a member'})</Badge
+										>
+									{/if}
 								{:else}
 									<Badge variant="secondary">No scorekeeper assigned</Badge>
 								{/if}

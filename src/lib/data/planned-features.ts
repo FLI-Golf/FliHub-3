@@ -117,7 +117,7 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1F',
 		status: 'in-progress',
 		progress:
-			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. What remains belongs to later phases: the Milestones demo step "the phone scoring view can identify the round, group, teams, and athletes" needs Phase 1G mobile scoring to exist, and official results are Phase 1H.',
+			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G adds the phone scoring view that identifies the round, group, teams, and athletes (implemented on this branch; not yet merged). Official results remain Phase 1H.',
 		next: 'Mobile scorekeeping for the two rounds (Phase 1G).'
 	},
 	{
@@ -125,9 +125,12 @@ export const capabilities: Capability[] = [
 		description:
 			'Phone-friendly scoring with per-hole strokes and a Draft → Submitted workflow. Missing scores never become zero.',
 		milestone: 'Phase 1G',
-		status: 'planned',
-		progress: 'Not started.',
-		next: 'Scorekeeper event permissions arrive with this phase.'
+		status: 'in-progress',
+		progress:
+			'Phone-first scorecard resolved from the Phase 1F setup: event, rounds with hole counts derived from their course (the FLI demo shows Round 1 · 9 holes · Red, an intermission, Round 2 · 9 holes · Blue — the second pass displays 10–18 while scores stay keyed by round and physical hole), groups, teams, and athletes. Per-athlete integer strokes with draft save/resume; missing scores are visible, block submission, and are never stored as zero; every change is logged with its author; Submitted locks against silent overwrites with Owner/Admin-only recorded reopen. Entry requires the Scorekeeper role plus a group assignment in the event (event-wide, per the agreed cross-group rule) — Viewers stay read-only even when listed as a group\u2019s scorekeeper. Implemented and verified on this branch by 5 integration tests, an upgrade rehearsal, and a 21-assertion phone browser flow; not yet merged.',
+		next: 'Official approval, publication, and corrections (Phase 1H).',
+		featureHref: '/organizations',
+		narration: 'not-started'
 	},
 	{
 		title: 'Official results & corrections',

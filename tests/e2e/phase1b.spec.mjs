@@ -93,8 +93,9 @@ try {
 		!(await p.isChecked('input[name="capability"][value="fantasy"]')),
 		'league template leaves fantasy unchecked'
 	);
-	// Uncheck standings; fantasy depends on standings and must not submit half-open.
-	await p.uncheck('input[name="capability"][value="standings"]');
+	// Defaults are editable: drop Venues & courses (nothing depends on it);
+	// Standings stays enabled as the remaining honestly-Planned capability.
+	await p.uncheck('input[name="capability"][value="venues-courses"]');
 	await p.click('button:has-text("Create organization")');
 	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
 	await p.waitForSelector('text=Your role: Owner');
@@ -107,16 +108,16 @@ try {
 	await p.screenshot({ path: path.join(OUT, '1b-02-league-org.png') });
 
 	// ---- Capability destination pages ----------------------------------------
-	// Athletes (1C), Teams/Leagues & seasons/Events (1D), and Venues & courses
-	// (1F) became working workflows; Scoring & official results stays planned
-	// and must keep its honest planned panel with no fake CRUD controls.
+	// Athletes (1C), Teams/Leagues & seasons/Events (1D), Venues & courses
+	// (1F), and Scoring (1G) became working workflows; Competition standings
+	// stays planned and must keep its honest planned panel with no fake CRUD.
 	console.log('Step 3: capability pages are honest, not fake CRUD');
-	await p.click('nav >> text=Scoring');
+	await p.click('nav >> text=Standings');
 	await p.waitForSelector('text=Planned');
 	const capText = await p.locator('main').innerText();
-	expect(capText.includes('Scoring'), 'scoring capability page reachable from nav');
+	expect(capText.includes('standings'), 'standings capability page reachable from nav');
 	expect(
-		!capText.includes('Add score') && !capText.includes('Submit score'),
+		!capText.includes('Add standing') && !capText.includes('Publish standings'),
 		'no fake CRUD controls on planned page'
 	);
 	// A capability that is NOT enabled rejects direct-URL access with an explanation.

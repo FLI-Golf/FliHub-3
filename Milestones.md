@@ -258,8 +258,8 @@ These items are useful for planning but must remain visibly labeled as proposed:
 - Can an event count toward multiple seasons or competitions?
 - How are race distances, annual races, and custom activities represented?
 - What is the exact substitution identity and fantasy ownership behavior when a reserve athlete replaces a drafted athlete?
-- Which scorekeeper can edit a submitted score before approval?
-- How are scores locked during a live event?
+- Which scorekeeper can edit a submitted score before approval? (Resolved 2026-11-06, D15: none — a submitted scorecard is immutable; only an Owner/Admin may reopen it to Draft with a required reason recorded in the change history, with values and authorship preserved.)
+- How are scores locked during a live event? (Resolved 2026-11-06, D15: Draft scorecards stay editable by authorized scorers; Submitted is locked for everyone; approval-stage locks arrive with Phase 1H.)
 - What constitutes an official result version?
 - How are standings recalculated after a correction?
 - Who can see draft picks while a draft is active?
@@ -1148,15 +1148,22 @@ An administrator can configure the nine-hole disc golf course, two basket-positi
 - Final hole-eight content. **Still open** — the demo will use a neutral
   placeholder hole name until the content is confirmed (D14); nothing in the
   model depends on it.
-- Whether scorekeepers may be reassigned during a live event. **Deferred to
-  Phase 1G** (D14) — no live scoring exists yet to reassign during;
-  assignment changes already leave archived rows behind.
+- Whether scorekeepers may be reassigned during a live event. **Resolved in
+  Phase 1G (D15):** yes — Owners/Admins may reassign a group's scorekeeper at
+  any time before 1H approval; the permission rules re-evaluate per request,
+  so access moves immediately, past score changes keep their recorded author,
+  and assignment changes leave archived rows behind. Athlete lineups are the
+  opposite: once scoring starts for a group (its first scorecard exists), the
+  group's athlete assignments are fixed — no additions, archiving, or
+  restores through the UI or the direct API.
 
 The cross-group scorekeeper access rule is already agreed in Section 4.3: authorized scorekeepers may enter and submit scores across all groups in their assigned event.
 
 ## Phase 1G — Mobile scorekeeping and submission
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-06). Evidence:
+docs/ROADMAP.md "Phase 1G verification record". Permission and lifecycle
+decisions approved by Dustin and recorded as D15 in docs/DECISIONS.md.
 
 ### Goal and user-visible outcome
 
@@ -1224,8 +1231,14 @@ Authorized scorekeepers can enter individual strokes by hole on a phone, save pr
 
 ### Open decisions blocking this phase
 
-- Whether scorekeepers can edit after submission and before approval.
-- Exact stroke validation bounds by sport and format.
+- ~~Whether scorekeepers can edit after submission and before approval.~~
+  **Resolved (D15, approved):** no — Submitted is immutable for everyone;
+  only an Owner/Admin may reopen a scorecard to Draft, and the reopen
+  requires a reason recorded in the change history while prior values and
+  authorship are preserved.
+- ~~Exact stroke validation bounds by sport and format.~~
+  **Resolved (D15, approved):** the shared model enforces positive integers
+  only; sport/format bounds are pilot configuration (D13/D14 precedent).
 
 The cross-group scorekeeper access rule is already agreed in Section 4.3: authorized scorekeepers may enter and submit scores across all groups in their assigned event.
 

@@ -360,6 +360,66 @@ neutral placeholder name until confirmed); scorekeeper live-event
 reassignment (1G); the event start-time save bug is tracked separately and
 blocks no 1F workflow (rounds are ordinal, not timestamped).
 
+## D15 — Phase 1G mobile scorekeeping (2026-11-06; approved by Dustin)
+
+**Decision 1 — scoring permission matrix.** Ordinary score entry requires
+BOTH the Scorekeeper role AND an active assignment as a group's scorekeeper
+in at least one active group of the event; that grant is EVENT-WIDE (across
+all groups of that event, per the agreed §4.3 cross-group rule) and does not
+extend to any other event. Owners/Admins are the "permitted administrators"
+and may also enter and correct draft scores. Viewers remain read-only even
+when listed as a group's scorekeeper — the assignment alone grants nothing,
+and the UI labels such assignments as having no scoring access. Enforced in
+the collection API rules (memberships role + event_groups assignment joins),
+re-evaluated on every request, so reassigning a group's scorekeeper takes
+effect immediately.
+
+**Decision 2 — Draft → Submitted lifecycle.** One scorecard per (round,
+group). Scores are per-athlete, per-PHYSICAL-hole, per-round positive
+integers; a missing value is an absent row — never stored or interpreted as
+zero — and submission is rejected while any (group athlete × active course
+hole) cell is missing. Submitting records who and when. Submitted scorecards
+are immutable to everyone through the collection rules (`scorecard.status =
+'draft'` is part of every score write rule): nothing is silently
+overwritten. Only an Owner/Admin may REOPEN a submitted scorecard back to
+Draft; reopening requires a stated reason (enforced in the hook for the UI
+and the direct API alike) that is recorded in the change history, and it
+changes nothing else — prior score values and their recorded authorship are
+preserved (verified by test). Once scoring starts for a group — its first
+scorecard exists — the group's athlete lineup is fixed: group athlete
+assignments can no longer be added, archived, or restored, through the UI or
+the direct API, while scorekeeper reassignment on the group stays allowed.
+Official approval, publication, and corrections remain Phase 1H.
+
+**Decision 3 — authorship and history.** `enteredBy` on every score is set
+from the authenticated caller (client values overwritten), and every
+mutation appends a `score_changes` row (entered/updated with previous and
+new value, submitted, reopened — with author). The log is append-only:
+create/update/delete rules are locked; rows are written internally by the
+scoring hook.
+
+**Decision 4 — rounds, holes, and numbering.** A scorecard requires its
+round to reference a course (no course → no holes to score →
+`round_without_course`). The hole count shown beside each round is DERIVED
+from the round's course (its active holes), never hard-coded. A later round
+may DISPLAY continued numbering (the FLI demo's second pass shows 10–18)
+while every score stays keyed by (round, physical hole 1–9); rounds' scores
+never mix. A single nine-hole round displays 1–9 with no intermission.
+Eighteen holes is a traditional golf example, not a universal round length.
+Scoring-time position display falls back non-blocking when a round's named
+position is missing on a hole (a visible note — score entry is never blocked
+by display metadata).
+
+**Decision 5 — bounds and demo controls.** The shared model enforces only
+positive integer strokes; sport/format bounds are pilot configuration
+(D13/D14 precedent). Demo score generation exists as a clearly labeled
+demo-only control that fills missing DRAFT cells for the fictional demo; it
+uses the caller's own permissions and writes ordinary draft scores.
+
+**Capability.** Scoring collections gate on `scoring-results` (now available
+for the 1G half; approval/publication stay planned for 1H). Any organization
+member reads; delete is locked everywhere.
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a
