@@ -51,7 +51,7 @@
 			</Card.Title>
 			<Card.Description>
 				Organization teams. Teams are entered into seasons from the Leagues &amp; seasons page;
-				season rosters arrive in Phase 1E.
+				their season rosters and reserve pools are managed below.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">

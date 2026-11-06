@@ -971,7 +971,9 @@ An organization can operate leagues that contain seasons, seasons that contain d
 
 ## Phase 1E — Season rosters, reserve pools, and substitutions
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-06). Evidence:
+docs/ROADMAP.md "Phase 1E verification record". All four blocking decisions
+approved by Dustin and recorded as D13 in docs/DECISIONS.md.
 
 ### Goal and user-visible outcome
 
@@ -1033,9 +1035,18 @@ Organizations can assign athletes and teams to the competition structure created
 
 ### Open decisions blocking this phase
 
-- Final pilot roster eligibility fields.
-- Exact substitution record fields needed by competition operations.
-- Whether reserve pools are represented as teams, pools, or another format.
+- ~~Final pilot roster eligibility fields.~~
+  **Deferred (D13, approved):** Phase 1E uses existing athlete identity only
+  (gender for pool restrictions) and adds no eligibility fields; the final
+  pilot eligibility fields remain an open product decision.
+- ~~Exact substitution record fields needed by competition operations.~~
+  **Resolved (D13, approved):** organization, event, season entry,
+  athleteOut, athleteIn, optional reason, hook-recorded author, and
+  timestamps; append-only (update and delete locked).
+- ~~Whether reserve pools are represented as teams, pools, or another format.~~
+  **Resolved (D13, approved):** first-class pool records with member rows and
+  an optional gender restriction; pools are structurally not teams, so they
+  are excluded from ordinary scheduling by shape.
 
 ## Phase 1F — Course layouts, rounds, groups, and assignments
 

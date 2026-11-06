@@ -88,17 +88,116 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	// relationships are readable by every organization member; only Owners and
 	// Admins write (collection rules), with the capability gate and same-org /
 	// division-in-season integrity enforced by the flihub_competitions hook.
+	// Phase 1E (D13) adds season rosters, reserve pools, and substitutions to
+	// the same capability, enforced by the flihub_rosters hook.
 	let teams = null;
+	let rosters = null;
 	if (capability.id === 'teams' && enabled) {
-		const rows = await pb.collection('teams').getFullList({
-			filter: `organization = "${params.id}"`,
-			sort: 'name'
-		});
-		teams = rows.map((t) => ({
+		const filter = `organization = "${params.id}"`;
+		const [
+			teamRows,
+			seasonRows,
+			entryRows,
+			athleteRows,
+			membershipRows,
+			poolRows,
+			reserveRows,
+			substitutionRows,
+			eventRows
+		] = await Promise.all([
+			pb.collection('teams').getFullList({ filter, sort: 'name' }),
+			pb
+				.collection('seasons')
+				.getFullList({ filter, sort: 'name' })
+				.catch(() => []),
+			pb
+				.collection('season_entries')
+				.getFullList({ filter, sort: 'id' })
+				.catch(() => []),
+			pb
+				.collection('athletes')
+				.getFullList({ filter, sort: 'lastName,firstName' })
+				.catch(() => []),
+			pb.collection('roster_memberships').getFullList({ filter, sort: 'created' }),
+			pb.collection('reserve_pools').getFullList({ filter, sort: 'name' }),
+			pb.collection('reserve_members').getFullList({ filter, sort: 'created' }),
+			pb.collection('substitutions').getFullList({ filter, sort: '-created' }),
+			pb.collection('events').getFullList({ filter: `${filter} && season != ""`, sort: 'name' })
+		]);
+		teams = teamRows.map((t) => ({
 			id: t.id,
 			name: String(t.name ?? ''),
 			status: (String(t.status) || 'active') as 'active' | 'archived'
 		}));
+		const teamName = new Map(teamRows.map((t) => [t.id, String(t.name ?? '')]));
+		const athleteName = new Map(
+			athleteRows.map((a) => [
+				a.id,
+				String(a.displayName ?? '') ||
+					`${String(a.firstName ?? '')} ${String(a.lastName ?? '')}`.trim()
+			])
+		);
+		const eventName = new Map(eventRows.map((ev) => [ev.id, String(ev.name ?? '')]));
+		const entryTeam = new Map(entryRows.map((en) => [en.id, String(en.team ?? '')]));
+		rosters = {
+			seasons: seasonRows.map((s) => ({
+				id: s.id,
+				name: String(s.name ?? ''),
+				status: (String(s.status) || 'planned') as 'planned' | 'active' | 'completed' | 'archived'
+			})),
+			entries: entryRows.map((en) => ({
+				id: en.id,
+				season: String(en.season ?? ''),
+				team: String(en.team ?? ''),
+				teamName: teamName.get(String(en.team ?? '')) ?? '',
+				status: (String(en.status) || 'active') as 'active' | 'archived'
+			})),
+			athletes: athleteRows.map((a) => ({
+				id: a.id,
+				name: athleteName.get(a.id) ?? '',
+				gender: String(a.gender ?? '') || null,
+				status: (String(a.status) || 'active') as 'active' | 'archived'
+			})),
+			memberships: membershipRows.map((m) => ({
+				id: m.id,
+				entry: String(m.entry ?? ''),
+				season: String(m.season ?? ''),
+				athlete: String(m.athlete ?? ''),
+				athleteName: athleteName.get(String(m.athlete ?? '')) ?? '',
+				status: (String(m.status) || 'active') as 'active' | 'archived'
+			})),
+			pools: poolRows.map((p) => ({
+				id: p.id,
+				season: String(p.season ?? ''),
+				name: String(p.name ?? ''),
+				gender: String(p.gender ?? '') || null,
+				status: (String(p.status) || 'active') as 'active' | 'archived'
+			})),
+			reserves: reserveRows.map((r) => ({
+				id: r.id,
+				pool: String(r.pool ?? ''),
+				season: String(r.season ?? ''),
+				athlete: String(r.athlete ?? ''),
+				athleteName: athleteName.get(String(r.athlete ?? '')) ?? '',
+				status: (String(r.status) || 'active') as 'active' | 'archived'
+			})),
+			substitutions: substitutionRows.map((s) => ({
+				id: s.id,
+				event: String(s.event ?? ''),
+				eventName: eventName.get(String(s.event ?? '')) ?? '',
+				entry: String(s.entry ?? ''),
+				teamName: teamName.get(entryTeam.get(String(s.entry ?? '')) ?? '') ?? '',
+				athleteOutName: athleteName.get(String(s.athleteOut ?? '')) ?? '',
+				athleteInName: athleteName.get(String(s.athleteIn ?? '')) ?? '',
+				reason: String(s.reason ?? '') || null,
+				created: String(s.created ?? '')
+			})),
+			events: eventRows.map((ev) => ({
+				id: ev.id,
+				season: String(ev.season ?? ''),
+				name: String(ev.name ?? '')
+			}))
+		};
 	}
 
 	let competition = null;
@@ -184,6 +283,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		enabledCapabilities: capabilityDefinitions.filter((c) => dto.capabilities.includes(c.id)),
 		athletes,
 		teams,
+		rosters,
 		competition,
 		eventsData
 	};
@@ -689,5 +789,134 @@ export const actions: Actions = {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
 		return { restored: true };
+	},
+
+	// --- Phase 1E: season rosters (D13: roster rows belong to the entry; ------
+	// the flihub_rosters hook derives season and enforces exclusivity) --------
+	addRosterMember: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('roster_memberships').create({
+				organization: params.id,
+				entry: String(form.get('entry') ?? ''),
+				athlete: String(form.get('athlete') ?? ''),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	// Removal is an archive: the row is the preserved participation history.
+	removeRosterMember: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('membership') ?? '');
+		try {
+			await locals.pb.collection('roster_memberships').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	restoreRosterMember: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('membership') ?? '');
+		try {
+			await locals.pb.collection('roster_memberships').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	// --- Phase 1E: reserve pools (optional gender restriction is pilot --------
+	// configuration, enforced at join time by the hook) ------------------------
+	createReservePool: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('reserve_pools').create({
+				organization: params.id,
+				season: String(form.get('season') ?? ''),
+				name: String(form.get('name') ?? '').trim(),
+				gender: String(form.get('gender') ?? '') || null,
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	archiveReservePool: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('pool') ?? '');
+		try {
+			await locals.pb.collection('reserve_pools').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	unarchiveReservePool: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('pool') ?? '');
+		try {
+			await locals.pb.collection('reserve_pools').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	addReserveMember: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('reserve_members').create({
+				organization: params.id,
+				pool: String(form.get('pool') ?? ''),
+				athlete: String(form.get('athlete') ?? ''),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	removeReserveMember: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('member') ?? '');
+		try {
+			await locals.pb.collection('reserve_members').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	// --- Phase 1E: substitutions (append-only; the hook validates the event, --
+	// roster spot, and reserve membership, and records the author) -------------
+	recordSubstitution: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('substitutions').create({
+				organization: params.id,
+				event: String(form.get('event') ?? ''),
+				entry: String(form.get('entry') ?? ''),
+				athleteOut: String(form.get('athleteOut') ?? ''),
+				athleteIn: String(form.get('athleteIn') ?? ''),
+				reason: String(form.get('reason') ?? '').trim()
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
 	}
 };
