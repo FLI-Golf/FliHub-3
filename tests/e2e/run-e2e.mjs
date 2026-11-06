@@ -46,8 +46,13 @@ function start(name, cmd, args, env = {}) {
 /** Builds the app and serves it with `vite preview`; resolves once listening. */
 async function startPreview(env = {}) {
 	const viteBin = path.join(root, 'node_modules', '.bin', 'vite');
-	const build = spawnSync(viteBin, ['build'], { cwd: root, stdio: 'inherit' });
-	if (build.status !== 0) throw new Error('vite build failed');
+	// E2E_SKIP_BUILD=1 reuses an existing, separately verified production build.
+	// Escape hatch for memory-constrained environments where spawning a second
+	// build inside the runner gets the process killed despite a good build.
+	if (process.env.E2E_SKIP_BUILD !== '1') {
+		const build = spawnSync(viteBin, ['build'], { cwd: root, stdio: 'inherit' });
+		if (build.status !== 0) throw new Error('vite build failed');
+	}
 
 	const proc = spawn(
 		viteBin,
@@ -127,9 +132,14 @@ try {
 	await startPreview({ POCKETBASE_URL: `http://127.0.0.1:${PB_PORT}` });
 
 	mkdirSync(path.join(root, 'tests', 'e2e', 'output'), { recursive: true });
-	const specs = readdirSync(path.join(root, 'tests', 'e2e'))
+	// Optional positional arg filters to specs whose filename contains it
+	// (e.g. `node tests/e2e/run-e2e.mjs 1c` runs only phase1c.spec.mjs).
+	const specFilter = process.argv[2] ?? '';
+	let specs = readdirSync(path.join(root, 'tests', 'e2e'))
 		.filter((f) => f.endsWith('.spec.mjs'))
 		.sort();
+	if (specFilter) specs = specs.filter((f) => f.includes(specFilter));
+	if (specs.length === 0) throw new Error(`no e2e specs matched filter "${specFilter}"`);
 	let status = 0;
 	for (const spec of specs) {
 		console.log(`\n=== ${spec} ===`);

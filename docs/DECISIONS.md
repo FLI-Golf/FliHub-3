@@ -148,6 +148,53 @@ via direct record writes.
 - Disabling a capability preserves its records and configuration.
 - Starter templates suggest defaults; organizations adjust them during
   onboarding and later.
+
+## D11 — Phase 1C athlete identity model (2026-11-05)
+
+**Choice.** Athletes are sport-neutral records in a dedicated `athletes`
+collection, scoped to one organization. They are records, not accounts.
+
+**Fields.** Public display: firstName, lastName, displayName, gender,
+nationality. Private (organization-scoped contact/eligibility): email, phone,
+eligibilityNotes. Lifecycle: status active/archived. There is deliberately no
+team, division, league, season, event, pairing, or score field — competition
+structure belongs to Phases 1D–1F, and disc-golf pairing is a later
+competition-format rule, not an athlete-model rule.
+
+**Privacy model (revised 2026-11-06).** Contact and eligibility fields are
+restricted to Owners and Admins; Scorekeepers and Viewers read athlete
+identity only. Enforced at the field boundary on the backend: the three
+private fields live in a companion `athlete_private` collection (one row per
+athlete, unique index, cascade-deleted with the athlete) whose
+list/view/create/update rules require an Owner/Admin membership in the
+organization, and they no longer exist on `athletes` at all — so list,
+detail, and relation-expansion responses structurally cannot leak them to
+lesser roles. The app merges the companion row into page data only for
+Owners/Admins. Verified per role (list, detail, expansion, app page data,
+outsider) by an integration regression test and the Phase 1C E2E spec.
+
+**Lifecycle (reviewed 2026-11-06).** Archive and restore only — the documented
+Phase 1C lifecycle has no permanent delete, so the athletes delete rule is
+locked (superuser-only) and the UI offers no delete control.
+
+**Enforcement.** Collection API rules: any organization member reads;
+only Owners/Admins write (create rule failures surface as 400; update/delete
+as 403/404). A separate `flihub_athletes.pb.js` hook rejects athlete writes
+when the `athletes` capability is disabled, including direct API requests;
+reads of preserved records stay open because disabling a capability hides the
+workflow, never the data.
+
+**JSVM notes (verified empirically on v0.40).** Record-hook registration is
+handler-first (`onRecordCreateRequest(fn, 'collection')`), and hook handlers
+are serialized and re-evaluated per invocation with only `$app` bound — they
+must be fully self-contained (extends D9). JSON fields read as `types.JSONRaw`;
+`String(raw)` yields the JSON text.
+
+**Open product decisions (not invented here).** Identity matching rules for
+duplicate imports (CSV import currently creates one record per row, labeled in
+the UI); cross-organization athlete participation/visibility; final pilot
+eligibility fields. See docs/ROADMAP.md unresolved questions.
+
 - League, Race/Event, and Custom are the initial templates.
 
 **Consequences.**

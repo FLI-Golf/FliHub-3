@@ -6,10 +6,11 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import OrgNav from '$lib/components/OrgNav.svelte';
+	import AthletesManager from '$lib/components/AthletesManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 
 	const meta = $derived(availabilityMeta[data.capability.availability]);
 </script>
@@ -51,6 +52,13 @@
 				</Button>
 			</div>
 		{/if}
+	{:else if data.capability.id === 'athletes' && data.capability.availability === 'available' && data.athletes}
+		<AthletesManager
+			athletes={data.athletes}
+			canManage={data.canManage}
+			myRole={data.myRole}
+			{form}
+		/>
 	{:else}
 		<Card.Root class="max-w-2xl">
 			<Card.Header>

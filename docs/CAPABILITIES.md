@@ -18,7 +18,7 @@ same file — there is no forked list:
 
 | Capability        | Label                      | Availability | Depends on      | Milestone           |
 | ----------------- | -------------------------- | ------------ | --------------- | ------------------- |
-| `athletes`        | Athletes                   | planned      | —               | Phase 1C            |
+| `athletes`        | Athletes                   | available    | —               | Phase 1C            |
 | `teams`           | Teams & rosters            | planned      | athletes        | Phases 1D–1E        |
 | `leagues-seasons` | Leagues & seasons          | planned      | —               | Phase 1D            |
 | `venues-courses`  | Venues & courses           | planned      | —               | Phases 1D–1F        |
@@ -85,5 +85,28 @@ here.
 ## Deferred decisions
 
 - Race scoring and timing rules (Phase 1G/1H scope).
-- Whether "available" capabilities should gate writes once those workflows
-  exist (each future phase wires its own enforcement).
+- ~~Whether "available" capabilities should gate writes once those workflows
+  exist~~ — answered in Phase 1C: available capabilities gate their writes
+  (athletes does, via `pb_hooks/flihub_athletes.pb.js`); reads of preserved
+  records stay open to organization members.
+
+## Available capability behavior: athletes (Phase 1C)
+
+When the `athletes` capability is enabled, its navigation destination is a
+working athlete manager (list, create, edit, archive/restore, CSV import).
+Owners and Admins manage; Scorekeepers and Viewers read. The same rule set
+is enforced by the athletes collection API rules, and the capability gate on
+writes is enforced by a PocketBase hook, so direct API requests are covered
+as well as the UI. There is no permanent delete in Phase 1C — the lifecycle
+is archive/restore only and the collection's delete rule is locked.
+
+Athlete records are sport-neutral and organization-scoped. Identity fields
+(firstName, lastName, displayName, gender, nationality) live on `athletes`
+and are readable by every organization member. Contact/eligibility fields
+(email, phone, eligibilityNotes) live in a companion `athlete_private`
+collection whose API rules restrict them to Owners and Admins — enforced on
+list, detail, relation expansion, and app page data alike. Public display vs
+private separation is documented for the future public-pages phase (1I) — no
+public surface exists yet, so nothing leaks today. CSV import creates one
+record per row; duplicate identity matching is a documented open product
+decision.
