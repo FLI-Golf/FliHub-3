@@ -102,10 +102,10 @@ export const capabilities: Capability[] = [
 		description:
 			'Course layouts with holes and labeled positions, ordered event rounds, groups with team and athlete assignments, and per-group scorekeepers.',
 		milestone: 'Phase 1F',
-		status: 'in-progress',
+		status: 'complete',
 		progress:
 			'Courses with numbered/named holes and labeled positions (explicit units; venue records remain planned), ordered rounds whose named position must cover every active hole of its course (blank stays valid for planning; the chooser shows incomplete labels with their missing holes), event groups with one scorekeeper each (any member — score-entry permissions arrive in 1G), and group team/athlete assignments resolved from Phase 1E season rosters plus event-scoped substitutions: a reserve is assignable only for the event where the substitution applies, and assignments never change the season roster. Single-round events work with no intermission; the two-round demo format is verified separately. Merged in PR #14 and verified by 9 integration tests plus two browser flows (19 + 21 assertions). Demo counts are pilot configuration. Narrated walkthrough video available.',
-		next: 'The disc golf demonstration event build; score entry and submission (Phase 1G).',
+		next: 'Mobile scorekeeping — score entry and submission (Phase 1G).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1f',
 		narration: 'recorded'
@@ -117,7 +117,7 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1F',
 		status: 'in-progress',
 		progress:
-			'The configuration workflow is verified end to end and merged in PR #14: one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), round 1 at red, an intermission, round 2 replaying the same nine holes at blue — 18 holes of play from nine hole records — plus six groups of two teams and four athletes with a scorekeeper each. The demonstration completes when mobile scoring (1G) and official results (1H) exist.',
+			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. What remains belongs to later phases: the Milestones demo step "the phone scoring view can identify the round, group, teams, and athletes" needs Phase 1G mobile scoring to exist, and official results are Phase 1H.',
 		next: 'Mobile scorekeeping for the two rounds (Phase 1G).'
 	},
 	{
