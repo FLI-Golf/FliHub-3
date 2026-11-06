@@ -41,6 +41,12 @@ const WALKTHROUGHS = {
 		output: 'phase1b-walkthrough.webm',
 		frames: 'frames-1b',
 		manifest: 'run-manifest-1b.json'
+	},
+	'1c': {
+		script: 'walkthrough-1c.mjs',
+		output: 'phase1c-walkthrough.webm',
+		frames: 'frames-1c',
+		manifest: 'run-manifest-1c.json'
 	}
 };
 const walkthrough = WALKTHROUGHS[process.argv[2] ?? '1a'];
