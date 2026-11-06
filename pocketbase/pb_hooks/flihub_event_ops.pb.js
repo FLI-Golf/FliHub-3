@@ -601,6 +601,17 @@ onRecordCreateRequest((e) => {
 			'event_not_in_season: Group athlete assignment requires a season-linked event.'
 		);
 	}
+	// 1G (D15): once scoring starts for a group — its first scorecard exists —
+	// the athlete lineup is fixed, through the UI and the direct API alike.
+	// Scorekeeper reassignment on the group stays allowed (event_groups).
+	const scoringStarted = e.app.findRecordsByFilter('scorecards', 'group = {:group}', '', 1, 0, {
+		group: e.record.getString('group')
+	});
+	if (scoringStarted.length > 0) {
+		throw new BadRequestError(
+			'lineup_locked: Scoring has started for this group — its athlete lineup is fixed.'
+		);
+	}
 	// The athlete's team entry must itself be actively assigned to this group.
 	const teamInGroup = e.app.findRecordsByFilter(
 		'group_teams',
@@ -693,6 +704,18 @@ onRecordUpdateRequest((e) => {
 		throw new BadRequestError(
 			'immutable_relation: A group athlete assignment cannot be rewired; archive it and create a new assignment.'
 		);
+	}
+	// 1G (D15): once scoring starts for a group, archiving or restoring an
+	// athlete assignment is blocked too — the lineup is fixed either way.
+	if (original && original.getString('status') !== e.record.getString('status')) {
+		const scoringStarted = e.app.findRecordsByFilter('scorecards', 'group = {:group}', '', 1, 0, {
+			group: e.record.getString('group')
+		});
+		if (scoringStarted.length > 0) {
+			throw new BadRequestError(
+				'lineup_locked: Scoring has started for this group — its athlete lineup is fixed.'
+			);
+		}
 	}
 	// Restoring to active re-runs the eligibility check — a substitution may
 	// have changed who belongs in this event since the row was archived.

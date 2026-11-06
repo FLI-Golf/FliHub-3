@@ -41,7 +41,7 @@ The first end-to-end demonstration covers:
 | 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
 | 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below) |
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)              |
-| 1G    | Mobile scorekeeping and submission                            | Not started                                |
+| 1G    | Mobile scorekeeping and submission                            | Implemented — verified locally (see below) |
 | 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
 | 1I    | Organization publishing and public competition standings      | Not started                                |
 | 2A    | Fantasy membership and event draft preparation                | Not started                                |
@@ -265,6 +265,56 @@ Verified on this branch (2026-11-06), locally (CI runs on the PR):
   the organizer view verified in the browser for both rounds and the break.
 - `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
 
+### Phase 1G verification record
+
+Verified on this branch (2026-11-06), locally (CI runs on the PR):
+
+- Decisions: approved by Dustin and recorded as D15 — ordinary score entry
+  requires BOTH the Scorekeeper role AND an active group assignment in the
+  event (event-wide, cross-group per §4.3; Viewers read-only even when listed
+  as a group's scorekeeper, labeled in the UI); Owners/Admins may enter and
+  correct drafts; Submitted is immutable for everyone with Owner/Admin-only
+  audited reopen that requires a reason recorded in the change history; once
+  a group's scoring starts (its first scorecard exists) the athlete lineup is
+  fixed while scorekeeper reassignment stays allowed; positive-integer
+  strokes (bounds are pilot configuration);
+  missing scores are absent rows, never zero; scoring-time position gaps are
+  a non-blocking display note; labeled demo-fill control.
+- `npm run test:integration` — 67/67 passing (62 Phase 1A–1F regression + 5
+  Phase 1G): capability gate, the full permission matrix (cross-group entry
+  within the assigned event, denial in another event, unassigned scorekeeper
+  denied, viewer-as-scorekeeper denied, immediate effect of reassignment at
+  the direct API), server-side derivation (event/round/group/entry/enteredBy
+  never client-trusted), one score per (round, athlete, PHYSICAL hole) with
+  per-round separation, zero/non-integer strokes rejected, rounds without a
+  course rejected, missing-cells submission rejection with counts, submitted
+  locks for scorekeepers AND admins (no silent overwrite), scorekeeper reopen
+  denied, reopen without a reason rejected, Owner reopen (with reason)
+  preserving score values and recorded authorship with the reason in the log,
+  lineup locked once scoring starts (group athlete additions and archiving
+  rejected at the direct API) while scorekeeper reassignment still works,
+  append-only hook-written change log (entered/updated with prev→new/
+  submitted/reopened; direct writes locked), cross-org scoping and outsiders.
+- Migrations: full chain from empty (suite boot) and an upgrade rehearsal
+  from the merged Phase 1F schema — 5/5 (legacy assignments preserved;
+  scorecards, scores, and submission work on legacy data).
+- Browser acceptance (`tests/e2e/phase1g.spec.mjs`, 21 assertions, 375 px):
+  the phone scorecard identifies event/round/group/teams/athletes from the
+  1F setup; "Round 1 · 9 holes · red — intermission — Round 2 · 9 holes ·
+  blue" with hole counts derived from the course; draft save/resume; missing
+  scores visible, labeled never-zero, and blocking Submit; labeled demo-fill;
+  submission stamps the submitter; cross-group entry in the same event; the
+  second pass displays 10–18 while the API confirms storage at (round 2,
+  physical hole 1) with round 1 untouched; viewer read-only in UI and at the
+  direct API with the no-scoring-access label; Owner reopen requires a
+  reason, preserves values, and shows the reason in the authored change
+  history; a single nine-hole round renders
+  with no intermission; the Scoring page lists ready events and keeps
+  approval in Phase 1H. Full suite (1A–1G specs): exit 0 (1B's editable-
+  defaults example now unchecks Venues & courses, keeping Standings as the
+  planned-panel example since Scoring became a working page).
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
+
 ## Unresolved questions (recorded, not answered)
 
 These remain open from Milestones.md and must not be guessed in code:
@@ -273,10 +323,6 @@ These remain open from Milestones.md and must not be guessed in code:
   and whether playoffs affect fantasy standings. The team shootout format
   itself is recorded in Milestones.md §4.8 (documentation only — not
   implemented).
-- Scoring-time resolution when a round's named basket position is missing or
-  archived on some hole after the round was saved (round coverage is
-  validated at save time only — D14 Decision 7); define with Phase 1G
-  scoring.
 - Substitution identity and fantasy ownership effects when a reserve athlete
   replaces a drafted athlete.
 - Incomplete-draft handling and the final draft preparation/completion window.

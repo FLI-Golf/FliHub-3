@@ -469,6 +469,53 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		};
 	}
 
+	// Phase 1G: scoring entry points (D15). Score entry itself lives on the
+	// phone scorecard route; this page lists which events are ready.
+	let scoringData = null;
+	if (capability.id === 'scoring-results' && enabled) {
+		const filter = `organization = "${params.id}"`;
+		const [eventRows, seasonRows, roundRows, groupRows, scorecardRows] = await Promise.all([
+			pb.collection('events').getFullList({ filter, sort: 'name' }),
+			pb
+				.collection('seasons')
+				.getFullList({ filter, sort: 'name' })
+				.catch(() => []),
+			pb.collection('rounds').getFullList({ filter, sort: 'number' }),
+			pb.collection('event_groups').getFullList({ filter, sort: 'name' }),
+			pb.collection('scorecards').getFullList({ filter, sort: 'created' })
+		]);
+		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
+		scoringData = {
+			events: eventRows
+				.filter((ev) => String(ev.status) !== 'archived')
+				.map((ev) => {
+					const roundCount = roundRows.filter(
+						(r) =>
+							String(r.event) === ev.id && String(r.status) === 'active' && String(r.course ?? '')
+					).length;
+					const groupCount = groupRows.filter(
+						(g) => String(g.event) === ev.id && String(g.status) === 'active'
+					).length;
+					const cards = scorecardRows.filter((c) => String(c.event) === ev.id);
+					return {
+						id: ev.id,
+						name: String(ev.name ?? ''),
+						seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
+						roundCount,
+						groupCount,
+						scorecardCount: cards.length,
+						submittedCount: cards.filter((c) => String(c.status) === 'submitted').length
+					};
+				})
+				.filter((ev) => ev.roundCount > 0 && ev.groupCount > 0),
+			canScore:
+				myRole === 'owner' ||
+				myRole === 'admin' ||
+				(myRole === 'scorekeeper' &&
+					groupRows.some((g) => String(g.scorekeeper) === user.id && String(g.status) === 'active'))
+		};
+	}
+
 	return {
 		organization: dto,
 		myRole,
@@ -481,7 +528,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		rosters,
 		competition,
 		eventsData,
-		coursesData
+		coursesData,
+		scoringData
 	};
 };
 
