@@ -96,6 +96,17 @@ const WALKTHROUGHS = {
 		mp4Name: 'phase1f-walkthrough-narrated-preview.mp4',
 		vttName: 'phase1f-walkthrough-preview.vtt',
 		timelineName: 'narrated-timeline-1f.json'
+	},
+	// Like 1b–1f, 1g is an UNPUBLISHED review preview in git-ignored static/review/.
+	'1g': {
+		silent: 'phase1g-walkthrough.webm',
+		manifest: 'run-manifest-1g.json',
+		narration: 'narration-1g.json',
+		cacheDir: 'narration-1g',
+		publishDir: path.join(root, 'static', 'review'),
+		mp4Name: 'phase1g-walkthrough-narrated-preview.mp4',
+		vttName: 'phase1g-walkthrough-preview.vtt',
+		timelineName: 'narrated-timeline-1g.json'
 	}
 };
 const W = WALKTHROUGHS[process.argv[2] ?? '1a'];

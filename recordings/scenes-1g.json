@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1g",
+	"title": "FliHub Phase 1G walkthrough — mobile scorekeeping",
+	"note": "Silent walkthrough — narration scripted (recordings/narration-phase1g.md). Record with `npm run record:walkthrough-1g`. Actual per-run offsets land in recordings/output/run-manifest-1g.json. Phone-sized viewport; the scorekeeper is on camera, intervening holes are prefilled with fictional scores off-camera.",
+	"scenes": [
+		{
+			"id": "s1-phone-scorecard",
+			"title": "The assigned scorekeeper opens the event: rounds, group, teams, athletes",
+			"persona": "casey",
+			"approxSeconds": 20.0
+		},
+		{
+			"id": "s2-draft-and-submit",
+			"title": "Hole 1 draft entry, a blank score blocks submission, then Round 1 submits",
+			"persona": "casey",
+			"approxSeconds": 24.0
+		},
+		{
+			"id": "s3-second-pass",
+			"title": "Intermission, then Round 2 · 9 holes · Blue — displayed hole 10 is physical hole 1",
+			"persona": "casey",
+			"approxSeconds": 19.0
+		},
+		{
+			"id": "s4-final-hole",
+			"title": "Later in the round: final scores on hole 18, Round 2 submitted",
+			"persona": "casey",
+			"approxSeconds": 20.0
+		}
+	]
+}
