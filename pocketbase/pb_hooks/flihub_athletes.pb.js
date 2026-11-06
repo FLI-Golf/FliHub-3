@@ -6,8 +6,9 @@
  * write, any member reads). These hooks add the orthogonal capability gate:
  * the organization must have the `athletes` capability enabled, or the write
  * is rejected — including direct API requests. Reads of preserved records are
- * not blocked: disabling a capability hides the workflow, never the data.
- *
+ * not blocked: disabling a capability hides the workflow, never the data. * Additionally, a record's organization is immutable on update — the
+ * persisted record is the source of truth, so records cannot be relocated
+ * into an organization the actor may not even belong to (orphaning links). *
  * PocketBase v0.40 JSVM notes (verified empirically):
  * - Hook registration is handler-first: onRecordCreateRequest(fn, 'athletes').
  * - Handlers are serialized and re-evaluated per invocation with only `$app`
@@ -43,6 +44,17 @@ onRecordUpdateRequest((e) => {
 	if (!caps.includes('athletes')) {
 		throw new BadRequestError(
 			'capability_disabled: The Athletes capability is not enabled for this organization.'
+		);
+	}
+	// Integrity: organization is immutable on update (persisted record is the
+	// source of truth).
+	const originalAthlete = e.record.original();
+	if (
+		originalAthlete &&
+		originalAthlete.getString('organization') !== e.record.getString('organization')
+	) {
+		throw new BadRequestError(
+			'immutable_relation: A record cannot be moved to another organization.'
 		);
 	}
 	e.next();
@@ -98,6 +110,17 @@ onRecordUpdateRequest((e) => {
 	if (!caps.includes('athletes')) {
 		throw new BadRequestError(
 			'capability_disabled: The Athletes capability is not enabled for this organization.'
+		);
+	}
+	// Integrity: organization is immutable on update (persisted record is the
+	// source of truth).
+	const originalPrivate = e.record.original();
+	if (
+		originalPrivate &&
+		originalPrivate.getString('organization') !== e.record.getString('organization')
+	) {
+		throw new BadRequestError(
+			'immutable_relation: A record cannot be moved to another organization.'
 		);
 	}
 	e.next();
