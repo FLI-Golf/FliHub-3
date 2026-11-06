@@ -16,6 +16,7 @@
 		"record:walkthrough-1c": "node recordings/run-walkthrough.mjs 1c",
 		"record:walkthrough-1d": "node recordings/run-walkthrough.mjs 1d",
 		"record:walkthrough-1e": "node recordings/run-walkthrough.mjs 1e",
+		"record:walkthrough-1f": "node recordings/run-walkthrough.mjs 1f",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

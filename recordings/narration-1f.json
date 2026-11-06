@@ -1,0 +1,25 @@
+{
+	"comment": "Machine-readable twin of narration-phase1f.md. `tts` is the ElevenLabs synthesis input (FliHub spelled 'Fly Hub', 1G spoken 'one-G'); `caption` keeps the correct spelling. Also used by walkthrough-1f.mjs to pace scene holds (local word-count estimate, no API).",
+	"scenes": [
+		{
+			"id": "s1-course-layout",
+			"caption": "Riley's nine-hole course at Lakeside is laid out hole by hole — each one named, with Red and Blue basket positions carrying their own distances in feet. One course, two ways to play it.",
+			"tts": "Riley's nine-hole course at Lakeside is laid out hole by hole — each one named, with Red and Blue basket positions carrying their own distances in feet. One course, two ways to play it."
+		},
+		{
+			"id": "s2-single-round",
+			"caption": "Not every event needs two rounds. Club Night plays this course as a single round at the Red positions — one round on the schedule, and no intermission in sight.",
+			"tts": "Not every event needs two rounds. Club Night plays this course as a single round at the Red positions — one round on the schedule, and no intermission in sight."
+		},
+		{
+			"id": "s3-two-rounds",
+			"caption": "The FLI demonstration event plays the same nine physical holes twice: Round 1 at Red, an intermission break, then Round 2 at Blue — eighteen holes of play on a nine-hole course.",
+			"tts": "The F L I demonstration event plays the same nine physical holes twice: Round one at Red, an intermission break, then Round two at Blue — eighteen holes of play on a nine-hole course."
+		},
+		{
+			"id": "s4-groups",
+			"caption": "Six groups are staffed for the event. Group 1 pairs two teams and their four rostered athletes, with Casey assigned as the scorekeeper — assignments made now, so Phase 1G scoring can pick them up.",
+			"tts": "Six groups are staffed for the event. Group one pairs two teams and their four rostered athletes, with Casey assigned as the scorekeeper — assignments made now, so Phase one-G scoring can pick them up."
+		}
+	]
+}

@@ -27,6 +27,10 @@ const WALKTHROUGH_ASSETS: Record<string, string[]> = {
 	'/walkthroughs/phase1e': [
 		'static/walkthroughs/phase1e-walkthrough-narrated.mp4',
 		'static/walkthroughs/phase1e-walkthrough.webm'
+	],
+	'/walkthroughs/phase1f': [
+		'static/walkthroughs/phase1f-walkthrough-narrated.mp4',
+		'static/walkthroughs/phase1f-walkthrough.webm'
 	]
 };
 
