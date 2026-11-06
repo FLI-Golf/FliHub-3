@@ -66,10 +66,11 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1C',
 		status: 'complete',
 		progress:
-			'Create, edit, archive/restore, and CSV-import sport-neutral athletes from the organization navigation (Athletes capability). Owner/Admin manage; Scorekeeper/Viewer read-only; direct API writes are capability-gated; disabling preserves records. Verified by 5 integration tests and a browser acceptance flow on the feature branch; not yet merged.',
+			'Create, edit, archive/restore, and CSV-import sport-neutral athletes from the organization navigation (Athletes capability). Private contact and eligibility fields (email, phone, eligibility notes) are managed and visible only to Owners/Admins; Scorekeepers/Viewers receive identity only. Direct API writes are capability-gated; disabling preserves records. Merged in PR #6; PR #7 prevents cross-organization reassignment of athlete records. Narrated walkthrough video available.',
 		next: 'Identity matching rules for duplicate imports (open product decision); cross-organization athlete participation.',
 		featureHref: '/organizations',
-		narration: 'not-started'
+		walkthroughHref: '/walkthroughs/phase1c',
+		narration: 'recorded'
 	},
 	{
 		title: 'Teams, leagues & seasons',
