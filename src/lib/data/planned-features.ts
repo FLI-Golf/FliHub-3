@@ -79,10 +79,11 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1D',
 		status: 'complete',
 		progress:
-			'Leagues, seasons (optional schedule dates), divisions, direct season team entries with an optional division assignment, and independent or season-linked events — managed from the organization navigation. Owner/Admin manage; Scorekeeper/Viewer read-only; capability-gated writes; cross-organization links and record reassignment rejected; duplicate season entries prevented; parent links immutable; archive/restore only. Implemented and verified on this branch by 10 integration tests and a browser acceptance flow; not yet merged.',
+			'Leagues, seasons (optional schedule dates), divisions, direct season team entries with an optional division assignment, and independent or season-linked events — managed from the organization navigation. Owner/Admin manage; Scorekeeper/Viewer read-only; capability-gated writes; cross-organization links and record reassignment rejected; duplicate season entries prevented; parent links immutable; archive/restore only. Merged in PR #9 and verified by 10 integration tests plus a browser acceptance flow. Narrated walkthrough video available.',
 		next: 'Season rosters and reserve pools (Phase 1E); venues/courses, rounds, and group assignments (Phase 1F).',
 		featureHref: '/organizations',
-		narration: 'not-started'
+		walkthroughHref: '/walkthroughs/phase1d',
+		narration: 'recorded'
 	},
 	{
 		title: 'Season rosters & event operations',

@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1d",
+	"title": "FliHub Phase 1D walkthrough — competition structure",
+	"note": "Silent walkthrough — narration scripted (recordings/narration-phase1d.md). Record with `npm run record:walkthrough-1d`. Actual per-run offsets land in recordings/output/run-manifest-1d.json.",
+	"scenes": [
+		{
+			"id": "s1-league-season",
+			"title": "Organizer creates a league and a division-less season",
+			"persona": "riley",
+			"approxSeconds": 22.0
+		},
+		{
+			"id": "s2-direct-entry",
+			"title": "Team entered directly into the season — no division assigned",
+			"persona": "riley",
+			"approxSeconds": 14.0
+		},
+		{
+			"id": "s3-division-assign",
+			"title": "Division created later and assigned to the existing entry",
+			"persona": "riley",
+			"approxSeconds": 15.0
+		},
+		{
+			"id": "s4-events",
+			"title": "Season-linked event vs independent event",
+			"persona": "riley",
+			"approxSeconds": 18.0
+		}
+	]
+}
