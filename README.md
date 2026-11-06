@@ -126,6 +126,8 @@ pocketbase/                  Local PocketBase home (binary and data are git-igno
 
 ## Documentation
 
+- [docs/CTG-HANDOFF.md](docs/CTG-HANDOFF.md) — onboarding guide for CTG
+  developers (access, local/Codespace setup, fresh database, demo data)
 - [Milestones.md](Milestones.md) — product milestone plan (reference document)
 - [docs/ROADMAP.md](docs/ROADMAP.md) — planned phases and unresolved questions
 - [docs/DECISIONS.md](docs/DECISIONS.md) — architecture and policy decisions
