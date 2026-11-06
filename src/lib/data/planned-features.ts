@@ -57,7 +57,6 @@ export const capabilities: Capability[] = [
 		status: 'complete',
 		progress:
 			'League, Race/Event, and Custom starter templates with editable capability suggestions; a single shared capability catalog (browser and hooks read the same JSON); validated, audited configuration writes by Owners/Admins; race distances with explicit units; capability-aware navigation with honest planned/upcoming states. Implemented and merged in PR #4. Narrated walkthrough video available.',
-		next: 'Capability workflows land in later phases (1C+).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1b',
 		narration: 'recorded'
@@ -83,7 +82,6 @@ export const capabilities: Capability[] = [
 		status: 'complete',
 		progress:
 			'Leagues, seasons (optional schedule dates), divisions, direct season team entries with an optional division assignment, and independent or season-linked events — managed from the organization navigation. Owner/Admin manage; Scorekeeper/Viewer read-only; capability-gated writes; cross-organization links and record reassignment rejected; duplicate season entries prevented; parent links immutable; archive/restore only. Merged in PR #9 and verified by 10 integration tests plus a browser acceptance flow. Narrated walkthrough video available.',
-		next: 'Season rosters and reserve pools (Phase 1E); venues/courses, rounds, and group assignments (Phase 1F).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1d',
 		narration: 'recorded'
@@ -108,7 +106,6 @@ export const capabilities: Capability[] = [
 		status: 'complete',
 		progress:
 			'Courses with numbered/named holes and labeled positions (explicit units; venue records remain planned), ordered rounds whose named position must cover every active hole of its course (blank stays valid for planning; the chooser shows incomplete labels with their missing holes), event groups with one scorekeeper each (any member — score-entry permissions arrive in 1G), and group team/athlete assignments resolved from Phase 1E season rosters plus event-scoped substitutions: a reserve is assignable only for the event where the substitution applies, and assignments never change the season roster. Single-round events work with no intermission; the two-round demo format is verified separately. Merged in PR #14 and verified by 9 integration tests plus two browser flows (19 + 21 assertions). Demo counts are pilot configuration. Narrated walkthrough video available.',
-		next: 'Mobile scorekeeping — score entry and submission (Phase 1G).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1f',
 		narration: 'recorded'
@@ -121,7 +118,7 @@ export const capabilities: Capability[] = [
 		status: 'in-progress',
 		progress:
 			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G added the phone scoring view that identifies the round, group, teams, and athletes (merged in PR #17). Official results remain Phase 1H.',
-		next: 'Mobile scorekeeping for the two rounds (Phase 1G).',
+		next: 'Official approval and published results complete the demonstration (Phase 1H).',
 		// Reuses the approved Phase 1F recording — it covers the event SETUP
 		// (course, rounds, groups), not scoring; the label says so.
 		walkthroughHref: '/walkthroughs/phase1f',
@@ -132,7 +129,7 @@ export const capabilities: Capability[] = [
 		description:
 			'Phone-friendly scoring with per-hole strokes and a Draft → Submitted workflow. Missing scores never become zero.',
 		milestone: 'Phase 1G',
-		status: 'in-progress',
+		status: 'complete',
 		progress:
 			'Phone-first scorecard resolved from the Phase 1F setup: event, rounds with hole counts derived from their course (the FLI demo shows Round 1 · 9 holes · Red, an intermission, Round 2 · 9 holes · Blue — the second pass displays 10–18 while scores stay keyed by round and physical hole), groups, teams, and athletes. Per-athlete integer strokes with draft save/resume; missing scores are visible, block submission, and are never stored as zero; every change is logged with its author; Submitted locks against silent overwrites with Owner/Admin-only reopen requiring a recorded reason; once scoring starts, a group\u2019s athlete lineup is fixed. Entry requires the Scorekeeper role plus a group assignment in the event (event-wide, per the agreed cross-group rule) — Viewers stay read-only even when listed as a group\u2019s scorekeeper. Merged in PR #17 and verified by 5 integration tests and a 21-assertion phone browser flow. Narrated walkthrough video available.',
 		next: 'Official approval, publication, and corrections (Phase 1H).',

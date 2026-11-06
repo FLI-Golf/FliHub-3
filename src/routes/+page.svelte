@@ -22,7 +22,7 @@
 <!-- Hero -->
 <section class="flex flex-col items-start gap-4 py-6 sm:py-10">
 	<div class="flex flex-wrap items-center gap-2">
-		<Badge>Phase 1A — accounts & organizations</Badge>
+		<Badge>Through Phase 1G — mobile scorekeeping</Badge>
 		<Badge variant="outline">SvelteKit</Badge>
 		<Badge variant="outline">Tailwind CSS</Badge>
 		<Badge variant="outline">shadcn-svelte</Badge>
@@ -32,9 +32,11 @@
 		FliHub — sports organization management
 	</h1>
 	<p class="max-w-2xl text-lg text-muted-foreground">
-		A configurable platform for sports organizations with connected fantasy competitions. Accounts,
-		organizations, invitations, and roles are available; competitions and fantasy features below are
-		planned, not yet available.
+		A configurable platform for sports organizations with connected fantasy competitions. Verified
+		today: accounts, organizations, invitations and roles, configurable onboarding, athlete records,
+		competition structure, season rosters with reserve pools, event operations (courses, rounds,
+		groups), and phone-first scorekeeping. Official results, standings, and fantasy features below
+		are planned, not yet available.
 	</p>
 	<div class="flex flex-wrap gap-2">
 		{#if data.user}
@@ -59,9 +61,11 @@
 			<Alert.Title>PocketBase URL configured</Alert.Title>
 			<Alert.Description>
 				This server is configured to use the PocketBase instance at
-				<code class="rounded bg-muted px-1 py-0.5 text-sm">{data.pocketbase.url}</code>. Accounts
-				and organization membership are live; competition data collections arrive with later
-				milestones.
+				<code class="rounded bg-muted px-1 py-0.5 text-sm">{data.pocketbase.url}</code>. This
+				reports configuration only — it does not check which collections that instance has.
+				Collection migrations ship with the repository (see
+				<code class="rounded bg-muted px-1 py-0.5 text-sm">pocketbase/pb_migrations/</code>);
+				feature availability is shown in the capability progress below.
 			</Alert.Description>
 		</Alert.Root>
 	{:else}
@@ -204,26 +208,38 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">What works today</Card.Title>
-				<Card.Description>Delivered in Phase 1A.</Card.Description>
+				<Card.Description>Delivered and verified across Phases 1A–1G.</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
 					<li>
-						Email/password registration with verification email (captured by mailpit locally).
+						Accounts with verified email, hardened server-validated sessions, organizations with
+						Owner/Admin/Scorekeeper/Viewer roles, copy-link invitations, and audited membership
+						changes (1A).
 					</li>
 					<li>
-						Sign-in/out via a hardened httpOnly session cookie, validated server-side on every
-						request.
+						Configurable onboarding templates with capability-aware navigation that never bypasses
+						role permissions (1B).
 					</li>
 					<li>
-						Organization creation with a single Owner; roles: Owner, Admin, Scorekeeper, Viewer.
+						Sport-neutral athlete records with CSV import and Owner/Admin-only private fields (1C).
 					</li>
-					<li>Expiring, single-use, recipient-verified copy-link invitations.</li>
 					<li>
-						Organization switching, role changes, ownership transfer, removal and leaving — enforced
-						transactionally server-side with an audit trail.
+						Leagues, seasons, divisions, direct season team entries, and independent or
+						season-linked events (1D).
 					</li>
-					<li>Private records isolated between organizations by collection API rules.</li>
+					<li>
+						Season rosters, reserve pools, and append-only event substitutions that preserve
+						participation history (1E).
+					</li>
+					<li>
+						Courses with labeled basket positions, ordered rounds, and staffed event groups with
+						assigned scorekeepers (1F).
+					</li>
+					<li>
+						Phone-first score entry with Draft → Submitted scorecards, missing-never-zero
+						submission, and locked submissions with reasoned, audited reopen (1G).
+					</li>
 				</ul>
 			</Card.Content>
 		</Card.Root>

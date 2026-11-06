@@ -41,7 +41,7 @@ The first end-to-end demonstration covers:
 | 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
 | 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below) |
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)              |
-| 1G    | Mobile scorekeeping and submission                            | Implemented — verified locally (see below) |
+| 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)              |
 | 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
 | 1I    | Organization publishing and public competition standings      | Not started                                |
 | 2A    | Fantasy membership and event draft preparation                | Not started                                |
