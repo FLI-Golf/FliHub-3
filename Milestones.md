@@ -311,7 +311,7 @@ documentation only.
 | 1D       | League, season, division, and event relationships        | Complete    | Competition structure connecting teams, seasons, divisions, and events                                                         |
 | 1E       | Season rosters, reserve pools, and substitutions         | Complete    | Historical roster assignments and disc golf reserve handling                                                                   |
 | 1F       | Course layouts, rounds, groups, and assignments          | Complete    | Two-round, red/blue basket event setup with six groups and scorekeepers                                                        |
-| 1G       | Mobile scorekeeping and submission                       | Not started | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
+| 1G       | Mobile scorekeeping and submission                       | Complete    | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
 | 1H       | Official approval, publication, playoff, and corrections | Not started | Approved and published results with versioned corrections                                                                      |
 | 1I       | Organization publishing and public competition standings | Not started | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
 | 2A       | Fantasy membership and event draft preparation           | Not started | Six-person fantasy membership and per-event draft preparation                                                                  |
@@ -1161,7 +1161,8 @@ The cross-group scorekeeper access rule is already agreed in Section 4.3: author
 
 ## Phase 1G — Mobile scorekeeping and submission
 
-**Status:** Implemented and verified locally (2026-11-06). Evidence:
+**Status:** Complete — implemented, verified, and merged (feature PR #17;
+narrated walkthrough PR #18). Evidence:
 docs/ROADMAP.md "Phase 1G verification record". Permission and lifecycle
 decisions approved by Dustin and recorded as D15 in docs/DECISIONS.md.
 
