@@ -84,6 +84,97 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		});
 	}
 
+	// Phase 1D: competition structure (decisions recorded as D12). Identity and
+	// relationships are readable by every organization member; only Owners and
+	// Admins write (collection rules), with the capability gate and same-org /
+	// division-in-season integrity enforced by the flihub_competitions hook.
+	let teams = null;
+	if (capability.id === 'teams' && enabled) {
+		const rows = await pb.collection('teams').getFullList({
+			filter: `organization = "${params.id}"`,
+			sort: 'name'
+		});
+		teams = rows.map((t) => ({
+			id: t.id,
+			name: String(t.name ?? ''),
+			status: (String(t.status) || 'active') as 'active' | 'archived'
+		}));
+	}
+
+	let competition = null;
+	if (capability.id === 'leagues-seasons' && enabled) {
+		const filter = `organization = "${params.id}"`;
+		const [leagueRows, seasonRows, divisionRows, entryRows, teamRows] = await Promise.all([
+			pb.collection('leagues').getFullList({ filter, sort: 'name' }),
+			pb.collection('seasons').getFullList({ filter, sort: 'name' }),
+			pb.collection('divisions').getFullList({ filter, sort: 'name' }),
+			// NB: 1C/1D collections have no created/updated autodate fields (only the
+			// 1A collections do), so sorting by 'created' would 400 — use stable id.
+			pb.collection('season_entries').getFullList({ filter, sort: 'id' }),
+			pb.collection('teams').getFullList({ filter, sort: 'name' })
+		]);
+		const leagueName = new Map(leagueRows.map((l) => [l.id, String(l.name ?? '')]));
+		const teamName = new Map(teamRows.map((t) => [t.id, String(t.name ?? '')]));
+		const divisionName = new Map(divisionRows.map((d) => [d.id, String(d.name ?? '')]));
+		competition = {
+			leagues: leagueRows.map((l) => ({
+				id: l.id,
+				name: String(l.name ?? ''),
+				status: (String(l.status) || 'active') as 'active' | 'archived'
+			})),
+			seasons: seasonRows.map((s) => ({
+				id: s.id,
+				league: String(s.league ?? ''),
+				leagueName: leagueName.get(String(s.league ?? '')) ?? '',
+				name: String(s.name ?? ''),
+				status: (String(s.status) || 'planned') as 'planned' | 'active' | 'completed' | 'archived',
+				startsOn: String(s.startsOn ?? '') || null,
+				endsOn: String(s.endsOn ?? '') || null
+			})),
+			divisions: divisionRows.map((d) => ({
+				id: d.id,
+				season: String(d.season ?? ''),
+				name: String(d.name ?? ''),
+				status: (String(d.status) || 'active') as 'active' | 'archived'
+			})),
+			entries: entryRows.map((en) => ({
+				id: en.id,
+				season: String(en.season ?? ''),
+				team: String(en.team ?? ''),
+				teamName: teamName.get(String(en.team ?? '')) ?? '',
+				division: String(en.division ?? '') || null,
+				divisionName: divisionName.get(String(en.division ?? '')) ?? null,
+				status: (String(en.status) || 'active') as 'active' | 'archived'
+			})),
+			teams: teamRows.map((t) => ({
+				id: t.id,
+				name: String(t.name ?? ''),
+				status: (String(t.status) || 'active') as 'active' | 'archived'
+			}))
+		};
+	}
+
+	let eventsData = null;
+	if (capability.id === 'events' && enabled) {
+		const filter = `organization = "${params.id}"`;
+		const [eventRows, seasonRows] = await Promise.all([
+			pb.collection('events').getFullList({ filter, sort: 'startsAt,name' }),
+			pb.collection('seasons').getFullList({ filter, sort: 'name' })
+		]);
+		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
+		eventsData = {
+			events: eventRows.map((ev) => ({
+				id: ev.id,
+				season: String(ev.season ?? '') || null,
+				seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
+				name: String(ev.name ?? ''),
+				startsAt: String(ev.startsAt ?? '') || null,
+				status: (String(ev.status) || 'planned') as 'planned' | 'active' | 'completed' | 'archived'
+			})),
+			seasons: seasonRows.map((s) => ({ id: s.id, name: String(s.name ?? '') }))
+		};
+	}
+
 	return {
 		organization: dto,
 		myRole,
@@ -91,7 +182,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		capability,
 		enabled,
 		enabledCapabilities: capabilityDefinitions.filter((c) => dto.capabilities.includes(c.id)),
-		athletes
+		athletes,
+		teams,
+		competition,
+		eventsData
 	};
 };
 
@@ -275,5 +369,325 @@ export const actions: Actions = {
 			}
 		}
 		return { imported };
+	},
+
+	// --- Phase 1D: teams ------------------------------------------------------
+	// Collection rules enforce Owner/Admin; the flihub_competitions hook
+	// enforces the capability gate. Failures surface as form errors.
+	createTeam: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('teams').create({
+				organization: params.id,
+				name: String(form.get('name') ?? '').trim(),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	renameTeam: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('teams').update(String(form.get('team') ?? ''), {
+				name: String(form.get('name') ?? '').trim()
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	archiveTeam: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('team') ?? '');
+		try {
+			await locals.pb.collection('teams').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	unarchiveTeam: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('team') ?? '');
+		try {
+			await locals.pb.collection('teams').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	// --- Phase 1D: leagues ----------------------------------------------------
+	createLeague: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('leagues').create({
+				organization: params.id,
+				name: String(form.get('name') ?? '').trim(),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	renameLeague: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('leagues').update(String(form.get('league') ?? ''), {
+				name: String(form.get('name') ?? '').trim()
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	archiveLeague: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('league') ?? '');
+		try {
+			await locals.pb.collection('leagues').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	unarchiveLeague: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('league') ?? '');
+		try {
+			await locals.pb.collection('leagues').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	// --- Phase 1D: seasons ----------------------------------------------------
+	createSeason: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('seasons').create({
+				organization: params.id,
+				league: String(form.get('league') ?? ''),
+				name: String(form.get('name') ?? '').trim(),
+				status: 'planned',
+				startsOn: String(form.get('startsOn') ?? '') || null,
+				endsOn: String(form.get('endsOn') ?? '') || null
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	updateSeason: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		const status = String(form.get('status') ?? 'planned');
+		if (!['planned', 'active', 'completed'].includes(status)) {
+			return fail(400, { message: 'Season status must be planned, active, or completed.' });
+		}
+		try {
+			await locals.pb.collection('seasons').update(String(form.get('season') ?? ''), {
+				name: String(form.get('name') ?? '').trim(),
+				status,
+				startsOn: String(form.get('startsOn') ?? '') || null,
+				endsOn: String(form.get('endsOn') ?? '') || null
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	archiveSeason: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('season') ?? '');
+		try {
+			await locals.pb.collection('seasons').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	// Restoring returns an archived season to 'planned' — the least-committed
+	// state; the organizer advances it explicitly.
+	unarchiveSeason: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('season') ?? '');
+		try {
+			await locals.pb.collection('seasons').update(id, { status: 'planned' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	// --- Phase 1D: divisions --------------------------------------------------
+	createDivision: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('divisions').create({
+				organization: params.id,
+				season: String(form.get('season') ?? ''),
+				name: String(form.get('name') ?? '').trim(),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	archiveDivision: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('division') ?? '');
+		try {
+			await locals.pb.collection('divisions').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	unarchiveDivision: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('division') ?? '');
+		try {
+			await locals.pb.collection('divisions').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	// --- Phase 1D: season entries (D12: one entry per team per season; -----
+	// optional division must belong to the entry's season — hook-enforced) ---
+	addEntry: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('season_entries').create({
+				organization: params.id,
+				season: String(form.get('season') ?? ''),
+				team: String(form.get('team') ?? ''),
+				division: String(form.get('division') ?? '') || null,
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	assignEntryDivision: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('season_entries').update(String(form.get('entry') ?? ''), {
+				division: String(form.get('division') ?? '') || null
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	withdrawEntry: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('entry') ?? '');
+		try {
+			await locals.pb.collection('season_entries').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	restoreEntry: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('entry') ?? '');
+		try {
+			await locals.pb.collection('season_entries').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	// --- Phase 1D: events (D12: one optional season; empty = independent) -----
+	createEvent: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('events').create({
+				organization: params.id,
+				season: String(form.get('season') ?? '') || null,
+				name: String(form.get('name') ?? '').trim(),
+				status: 'planned',
+				startsAt: String(form.get('startsAt') ?? '') || null
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	updateEvent: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		const status = String(form.get('status') ?? 'planned');
+		if (!['planned', 'active', 'completed'].includes(status)) {
+			return fail(400, { message: 'Event status must be planned, active, or completed.' });
+		}
+		try {
+			await locals.pb.collection('events').update(String(form.get('event') ?? ''), {
+				name: String(form.get('name') ?? '').trim(),
+				season: String(form.get('season') ?? '') || null,
+				startsAt: String(form.get('startsAt') ?? '') || null,
+				status
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	archiveEvent: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('event') ?? '');
+		try {
+			await locals.pb.collection('events').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	unarchiveEvent: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('event') ?? '');
+		try {
+			await locals.pb.collection('events').update(id, { status: 'planned' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
 	}
 };

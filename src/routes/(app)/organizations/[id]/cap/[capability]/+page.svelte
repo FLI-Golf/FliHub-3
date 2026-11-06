@@ -7,6 +7,9 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import OrgNav from '$lib/components/OrgNav.svelte';
 	import AthletesManager from '$lib/components/AthletesManager.svelte';
+	import TeamsManager from '$lib/components/TeamsManager.svelte';
+	import CompetitionsManager from '$lib/components/CompetitionsManager.svelte';
+	import EventsManager from '$lib/components/EventsManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
@@ -55,6 +58,27 @@
 	{:else if data.capability.id === 'athletes' && data.capability.availability === 'available' && data.athletes}
 		<AthletesManager
 			athletes={data.athletes}
+			canManage={data.canManage}
+			myRole={data.myRole}
+			{form}
+		/>
+	{:else if data.capability.id === 'teams' && data.capability.availability === 'available' && data.teams}
+		<TeamsManager teams={data.teams} canManage={data.canManage} myRole={data.myRole} {form} />
+	{:else if data.capability.id === 'leagues-seasons' && data.capability.availability === 'available' && data.competition}
+		<CompetitionsManager
+			leagues={data.competition.leagues}
+			seasons={data.competition.seasons}
+			divisions={data.competition.divisions}
+			entries={data.competition.entries}
+			teams={data.competition.teams}
+			canManage={data.canManage}
+			myRole={data.myRole}
+			{form}
+		/>
+	{:else if data.capability.id === 'events' && data.capability.availability === 'available' && data.eventsData}
+		<EventsManager
+			events={data.eventsData.events}
+			seasons={data.eventsData.seasons}
 			canManage={data.canManage}
 			myRole={data.myRole}
 			{form}

@@ -72,12 +72,25 @@ export const capabilities: Capability[] = [
 		narration: 'not-started'
 	},
 	{
-		title: 'Teams, leagues & seasons',
-		description: 'Season rosters, reserve pools, divisions, leagues, and event relationships.',
-		milestone: 'Phases 1D–1F',
+		title: 'Competition structure',
+		description:
+			'Leagues, seasons, divisions, team entries, and events with organization-scoped relationships. Teams enter seasons directly; events belong to one season or run independently.',
+		milestone: 'Phase 1D',
+		status: 'complete',
+		progress:
+			'Leagues, seasons (optional schedule dates), divisions, direct season team entries with an optional division assignment, and independent or season-linked events — managed from the organization navigation. Owner/Admin manage; Scorekeeper/Viewer read-only; capability-gated writes; cross-organization links rejected; duplicate season entries prevented; parent links immutable; archive/restore only. Verified by 9 integration tests and a browser acceptance flow on the feature branch; not yet merged.',
+		next: 'Season rosters and reserve pools (Phase 1E); venues/courses, rounds, and group assignments (Phase 1F).',
+		featureHref: '/organizations',
+		narration: 'not-started'
+	},
+	{
+		title: 'Season rosters & event operations',
+		description:
+			'Season rosters, reserve pools, substitutions, venues/courses, rounds, and group assignments.',
+		milestone: 'Phases 1E–1F',
 		status: 'planned',
 		progress: 'Not started.',
-		next: 'League, season, division, and event relationships (Phase 1D).'
+		next: 'Season rosters and reserve pools (Phase 1E).'
 	},
 	{
 		title: 'Disc golf demonstration event',

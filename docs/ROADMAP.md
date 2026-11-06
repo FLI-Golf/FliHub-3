@@ -38,7 +38,7 @@ The first end-to-end demonstration covers:
 | 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below) |
 | 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below) |
 | 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below) |
-| 1D    | League, season, division, and event relationships             | Not started                                |
+| 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
 | 1E    | Season rosters, reserve pools, and substitutions              | Not started                                |
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started                                |
 | 1G    | Mobile scorekeeping and submission                            | Not started                                |
@@ -140,6 +140,35 @@ Remaining Phase 1C limitations: CSV import creates one record per row (no
 duplicate matching — open product decision); no cross-organization athlete
 participation (open decision); no photo/flag imports (no source data in this
 repository); final pilot eligibility fields undecided.
+
+### Phase 1D verification record
+
+Verified on this branch (2026-11-06), locally (CI runs on the PR):
+
+- Decisions: both blocking questions approved by Dustin and recorded as D12 —
+  teams enter a season directly with one optional division assignment;
+  events belong to one season or run independently.
+- `npm run test:integration` — 40/40 passing (31 Phase 1A–1C regression + 9
+  Phase 1D): capability-gated writes, organization scoping (cross-org reads,
+  writes, and relation targets denied), role enforcement (Owner/Admin write;
+  Scorekeeper/Viewer read-only; outsiders see nothing), duplicate (season,
+  team) entry rejection, division-in-season assignment, parent-link
+  immutability (division season; entry season/team), schedule date
+  validation, disable → preserve → re-enable, archive preservation, and
+  locked deletes on all six collections.
+- Migrations: full chain from empty on a disposable PocketBase (suite boot +
+  19/19 hook/rules smoke), and an upgrade rehearsal from the merged Phase 1C
+  schema (d325150) with seeded athlete/private fixtures — 13/13 assertions
+  (exact IDs, statuses, organization links, and private values preserved;
+  new collections queryable). No private values printed.
+- Browser acceptance (`tests/e2e/phase1d.spec.mjs`, 20 assertions):
+  onboarding with the three capabilities, league + division-less season,
+  direct team entry before divisions exist, late division assignment,
+  independent + season-linked events, archive/restore preservation, viewer
+  read-only + direct-API denial, mobile at 375px. Full suite (1A–1D specs):
+  88 assertions, exit 0 (1B's planned-panel example moved from Teams to
+  Venues & courses, since Teams is now a working page).
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
 
 ## Unresolved questions (recorded, not answered)
 

@@ -51,7 +51,7 @@
 			"id": "teams",
 			"label": "Teams & rosters",
 			"description": "Teams, season rosters, and reserve pools.",
-			"availability": "planned",
+			"availability": "available",
 			"milestone": "Phases 1D–1E",
 			"dependsOn": ["athletes"]
 		},
@@ -59,7 +59,7 @@
 			"id": "leagues-seasons",
 			"label": "Leagues & seasons",
 			"description": "Leagues, seasons, and divisions.",
-			"availability": "planned",
+			"availability": "available",
 			"milestone": "Phase 1D",
 			"dependsOn": []
 		},
@@ -75,7 +75,7 @@
 			"id": "events",
 			"label": "Events",
 			"description": "Events, rounds, and group assignments.",
-			"availability": "planned",
+			"availability": "available",
 			"milestone": "Phases 1D–1F",
 			"dependsOn": []
 		},

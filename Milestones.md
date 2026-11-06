@@ -901,7 +901,9 @@ Organizations can import or create sport-neutral athletes without requiring acco
 
 ## Phase 1D — League, season, division, and event relationships
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-06). Evidence:
+docs/ROADMAP.md "Phase 1D verification record". Both blocking decisions
+approved by Dustin and recorded as D12 in docs/DECISIONS.md.
 
 ### Goal and user-visible outcome
 
@@ -958,8 +960,14 @@ An organization can operate leagues that contain seasons, seasons that contain d
 
 ### Open decisions blocking this phase
 
-- Whether a team enters both season and division or only division.
-- Whether an event may count toward multiple competitions.
+- ~~Whether a team enters both season and division or only division.~~
+  **Resolved (D12, approved):** teams enter a season directly; each season
+  entry carries one optional division assignment, so entries can exist before
+  divisions are finalized and seasons can run division-less.
+- ~~Whether an event may count toward multiple competitions.~~
+  **Resolved (D12, approved):** an event belongs to at most one season or
+  runs independently (optional season relation); multi-competition event
+  membership is outside Phase 1D.
 
 ## Phase 1E — Season rosters, reserve pools, and substitutions
 
