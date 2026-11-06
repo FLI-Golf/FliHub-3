@@ -260,7 +260,7 @@ These items are useful for planning but must remain visibly labeled as proposed:
 - What is the exact substitution identity and fantasy ownership behavior when a reserve athlete replaces a drafted athlete?
 - Which scorekeeper can edit a submitted score before approval? (Resolved 2026-11-06, D15: none — a submitted scorecard is immutable; only an Owner/Admin may reopen it to Draft with a required reason recorded in the change history, with values and authorship preserved.)
 - How are scores locked during a live event? (Resolved 2026-11-06, D15: Draft scorecards stay editable by authorized scorers; Submitted is locked for everyone; approval-stage locks arrive with Phase 1H.)
-- What constitutes an official result version?
+- What constitutes an official result version? (Resolved 2026-11-06, D16: an append-only snapshot of per-athlete and per-team totals taken at each (re)approval, carrying the correction reason, approver, timestamps, and publication stamps; the result record points at the current version.)
 - How are standings recalculated after a correction?
 - Who can see draft picks while a draft is active?
 - What happens if a participant leaves a fantasy league mid-draft?
@@ -1245,7 +1245,11 @@ The cross-group scorekeeper access rule is already agreed in Section 4.3: author
 
 ## Phase 1H — Official approval, publication, playoff, and corrections
 
-**Status:** Not started
+**Status:** Implemented and verified locally (2026-11-06) — official results
+and corrections only; playoff implementation remains outside this phase (the
+§4.8 shootout stays documentation-only). Evidence: docs/ROADMAP.md "Phase 1H
+verification record". Lifecycle and authority decisions approved by Dustin
+and recorded as D16 in docs/DECISIONS.md.
 
 ### Goal and user-visible outcome
 
@@ -1321,8 +1325,15 @@ Owners and administrators can review submitted scores, approve and publish offic
 
 - Exact playoff mechanics.
 - Whether the playoff is competition-only or also affects fantasy ties.
-- Final correction and reopening authority.
-- Whether published results can be unpublished.
+- ~~Final correction and reopening authority.~~
+  **Resolved (D16, approved):** Owners/Admins only — approve, publish,
+  reopen (required reason), and reapprove; every action is logged with
+  author, version, and reason; no self-approval permission mechanism exists.
+- ~~Whether published results can be unpublished.~~
+  **Resolved (D16, approved):** no — reopening (with a recorded reason)
+  visibly marks the result "under correction" while the last published
+  version stays on record; the only path forward is correct → reapprove →
+  republish.
 
 ## Phase 1I — Organization publishing and public competition standings
 

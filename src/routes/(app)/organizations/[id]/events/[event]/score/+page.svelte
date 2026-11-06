@@ -306,7 +306,7 @@
 								<ClipboardCheck class="size-4" />
 								Submitted — locked against silent changes.
 							</p>
-							{#if data.canManage}
+							{#if data.canManage && (!data.resultStatus || data.resultStatus === 'correcting')}
 								<form method="POST" action="?/reopenScorecard" class="flex items-center gap-2">
 									<input type="hidden" name="scorecard" value={scorecard.id} />
 									<input
@@ -319,6 +319,11 @@
 									/>
 									<Button variant="outline" size="sm" type="submit">Reopen to draft</Button>
 								</form>
+							{:else if data.resultStatus && data.resultStatus !== 'correcting'}
+								<p class="text-sm text-muted-foreground">
+									The event's official result is {data.resultStatus} — reopen the result (with a reason)
+									before reopening a scorecard.
+								</p>
 							{/if}
 						</div>
 					{/if}

@@ -31,26 +31,26 @@ The first end-to-end demonstration covers:
 
 ## Phases
 
-| Phase | Name                                                          | Status                                     |
-| ----- | ------------------------------------------------------------- | ------------------------------------------ |
-| 0     | Runnable foundation                                           | Done                                       |
-| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                          |
-| 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below) |
-| 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below) |
-| 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below) |
-| 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
-| 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below) |
-| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)              |
-| 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)              |
-| 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
-| 1I    | Organization publishing and public competition standings      | Not started                                |
-| 2A    | Fantasy membership and event draft preparation                | Not started                                |
-| 2B    | Owner-controlled live snake draft                             | Not started                                |
-| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                |
-| 2D    | End-to-end demo and System Map                                | Not started                                |
-| 2E    | Website embeds                                                | Not started                                |
-| 2F    | Read-only public API                                          | Not started                                |
-| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred                                   |
+| Phase | Name                                                          | Status                                                       |
+| ----- | ------------------------------------------------------------- | ------------------------------------------------------------ |
+| 0     | Runnable foundation                                           | Done                                                         |
+| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                                            |
+| 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below)                   |
+| 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below)                   |
+| 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below)                   |
+| 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below)                   |
+| 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below)                   |
+| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)                                |
+| 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)                                |
+| 1H    | Official approval, publication, playoff, and corrections      | Implemented — verified locally (see below; playoff excluded) |
+| 1I    | Organization publishing and public competition standings      | Not started                                                  |
+| 2A    | Fantasy membership and event draft preparation                | Not started                                                  |
+| 2B    | Owner-controlled live snake draft                             | Not started                                                  |
+| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                                  |
+| 2D    | End-to-end demo and System Map                                | Not started                                                  |
+| 2E    | Website embeds                                                | Not started                                                  |
+| 2F    | Read-only public API                                          | Not started                                                  |
+| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred                                                     |
 
 ## Organization and permission rules (Phase 1A — implemented)
 
@@ -313,6 +313,55 @@ Verified on this branch (2026-11-06), locally (CI runs on the PR):
   approval in Phase 1H. Full suite (1A–1G specs): exit 0 (1B's editable-
   defaults example now unchecks Venues & courses, keeping Standings as the
   planned-panel example since Scoring became a working page).
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
+
+### Phase 1H verification record
+
+Verified on this branch (2026-11-06), locally (CI runs on the PR):
+
+- Decisions: approved by Dustin and recorded as D16 — event-level official
+  results (one per event, approvable only when every active round has a
+  course and every (round × group) scorecard is Submitted); Owner/Admin-only
+  approve/publish/reopen/reapprove with no self-approval mechanism; reopening
+  requires a recorded reason and there is NO unpublish — the published
+  version stays on record while the result is visibly "under correction";
+  totals are snapshotted per version so later edits can never silently change
+  a published result; the result record carries a hook-maintained
+  `publishedVersion` pointer, so the UI and the direct API always distinguish
+  the official published version from a newer approved-but-unpublished one;
+  members read, published results are read-only for
+  ordinary users; standings/fantasy/playoff stay outside 1H (the version
+  totals are the standings input).
+- `npm run test:integration` — 72/72 passing (67 Phase 1A–1G regression + 5
+  Phase 1H): capability gate; Viewer/Scorekeeper approval, publication, and
+  reopen denied in rules; client-sent status/version/reason metadata
+  overwritten; result_versions and result_changes locked against direct
+  writes and edits; approval blocked with counts while scorecards are missing
+  or unsubmitted and when an active round has no course; version-1 totals
+  snapshot checked; duplicate results prevented (unique event); re-approve/
+  re-publish of the same state rejected (idempotent); scorecard reopen and
+  new scorecards blocked under an approved/published result (result_locked);
+  reasoned result reopen → 1G scorecard correction → reapproval producing
+  exactly one new version carrying the reason with the previous version's
+  totals and publication stamps untouched; the result_changes log reads
+  approved v1 → published v1 → reopened v1 → approved v2 → published v2;
+  cross-organization references and outsider access denied.
+- Browser acceptance (`tests/e2e/phase1h.spec.mjs`): the FLI demo's four
+  submitted scorecards reviewed read-only by a Viewer (no approve control;
+  direct API denied); Owner approval snapshotting team totals (108) as v1;
+  publication stamped with author; the score page explaining the result lock
+  and the direct API rejecting scorecard reopen under a published result;
+  unpublish and reasonless reopen rejected; a reasoned reopen showing "Under
+  correction" with the reason; a hole corrected 3 → 5 through the 1G flow;
+  reapproval producing v2 (total 110) while v1 keeps its values and
+  publication stamp; version forgery rejected; republication with the full
+  audit trail visible. Viewer-session official-result continuity verified at
+  every stage: after v1 publishes the Viewer sees 108 as the official total;
+  the official total stays v1/108 mid-correction AND after v2 is approved
+  but not yet published (the pending v2 is explicitly labeled not official,
+  and the direct API keeps publishedVersion = 1 with no publication stamp on
+  v2); after republication the Viewer sees 110 with v1 intact at 108 in the
+  version history. Full suite (1A–1H specs): exit 0.
 - `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
 
 ## Unresolved questions (recorded, not answered)

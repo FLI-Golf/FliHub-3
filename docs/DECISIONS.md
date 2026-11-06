@@ -420,6 +420,54 @@ uses the caller's own permissions and writes ordinary draft scores.
 for the 1G half; approval/publication stay planned for 1H). Any organization
 member reads; delete is locked everywhere.
 
+## D16 — Phase 1H official results and corrections (2026-11-06; approved by Dustin)
+
+**Decision 1 — event-level official results.** One official result per event
+(unique). An Owner/Admin may approve it only when every (active round with a
+course × active group) scorecard of the event is Submitted — a missing
+scorecard or a missing score blocks approval (missing never counts as zero).
+Approval snapshots per-athlete and per-team (entry) totals per round and
+overall into an immutable result VERSION; publication makes that version the
+official published result. Scorekeepers submit but cannot approve — there is
+no self-approval permission mechanism in 1H (approval is strictly role-based
+Owner/Admin).
+
+**Decision 2 — no unpublish; corrections are the only path.** A published
+(or approved) result cannot be silently withdrawn or edited. Reopening a
+result requires a stated reason and visibly marks it "under correction"; the
+last published version stays on record. While a result is approved or
+published, the event's scorecards cannot be reopened and no new scorecard can
+be created — the result must be reopened first. The only way forward is:
+reopen result (reason) → reopen scorecard (reason, 1G flow) → correct →
+resubmit → REAPPROVE (creates version N+1 carrying the correction reason) →
+republish. Published totals are snapshots, so later score edits can never
+silently change a published result. The result record carries an explicit
+`publishedVersion` pointer (hook-maintained) so the UI and the direct API
+always distinguish the OFFICIAL published version from a newer approved-but-
+unpublished one: until republication, members — including Viewers — keep
+seeing the last published version as the official result.
+
+**Decision 3 — authority and audit.** Approve, publish, reopen, and
+reapprove are Owner/Admin only, enforced in the collection API rules and the
+server-side hook (the direct API behaves identically to the UI). Every
+action is appended to a locked, hook-written `result_changes` log with
+author, version, and reason; result versions are append-only and preserve
+previous values, author, timestamp, and reason. Reprocessing is idempotent:
+re-approving is rejected while approved, republishing is rejected while
+published, and the unique (result, version) key prevents duplicate versions
+— a correction changes the standings input (the current version's totals)
+exactly once.
+
+**Decision 4 — visibility.** In 1H, results (approved and published, with
+their version history and audit trail) are readable by organization members
+only; published results are read-only for ordinary users. Public pages and
+public standings remain Phase 1I. Standings, fantasy scoring, and the
+playoff shootout stay outside 1H; the published version totals are the
+standings input for later phases.
+
+**Capability.** Official-result collections gate on `scoring-results` (the
+1H half of the capability).
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a

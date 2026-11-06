@@ -47,7 +47,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		athleteRows,
 		scorecardRows,
 		scoreRows,
-		changeRows
+		changeRows,
+		resultRows
 	] = await Promise.all([
 		pb.collection('rounds').getFullList({ filter: eventFilter, sort: 'number' }),
 		pb.collection('course_holes').getFullList({ filter, sort: 'number' }),
@@ -68,7 +69,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			.catch(() => []),
 		pb.collection('scorecards').getFullList({ filter: eventFilter, sort: 'created' }),
 		pb.collection('scores').getFullList({ filter: eventFilter, sort: 'created' }),
-		pb.collection('score_changes').getFullList({ filter: eventFilter, sort: '-created' })
+		pb.collection('score_changes').getFullList({ filter: eventFilter, sort: '-created' }),
+		pb.collection('event_results').getFullList({ filter: eventFilter })
 	]);
 
 	const memberName = new Map(
@@ -149,6 +151,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		myRole,
 		canManage,
 		canScore,
+		resultStatus: resultRows.length > 0 ? String(resultRows[0].status) : null,
 		event: {
 			id: event.id,
 			name: String(event.name ?? ''),
