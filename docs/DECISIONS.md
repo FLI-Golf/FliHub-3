@@ -240,6 +240,59 @@ approval, fantasy scoring, registration, payments.
   never a fake workflow. No catalog capability is implemented software yet.
 - Pre-1B organizations keep working unconfigured; setup is offered, not forced.
 
+## D13 — Phase 1E season rosters, reserve pools, and substitutions (2026-11-06; approved by Dustin)
+
+**Decision 1 — roster ownership.** A roster row (`roster_memberships`) belongs
+to a team's season entry, directly modeling "who played for which team in
+which season" and inheriting D12's entry immutability. The row's `season` is
+denormalized for the exclusivity index but always DERIVED from the entry by
+the `flihub_rosters.pb.js` hook — never trusted from the client.
+
+**Decision 2 — reserve pool representation.** Reserve pools are first-class
+records (`reserve_pools` + `reserve_members`), not flagged teams: pools can
+never receive season entries, so exclusion from ordinary scheduling is
+structural rather than a filter every Phase 1F query must remember. A pool
+may carry an optional gender restriction enforced at join time; the
+restriction (like the demo's separate male/female pools, 12-team and
+24-athlete counts) is **pilot configuration, not a universal rule** — the
+shared model stays sport-neutral.
+
+**Decision 3 — one active spot per athlete per season.** An athlete holds at
+most one active roster membership OR one active reserve membership per
+season, enforced by partial unique indexes on (season, athlete) WHERE
+status = 'active' in both tables plus a cross-table hook check, backstopped
+by SQLite triggers (`phase1e_exclusivity_triggers` migration) that re-run the
+cross-table check inside the serialized write itself — a hook check alone is
+read-then-write and lost a reproduced race between concurrent direct API
+requests (creates and restores). Archived
+rows are exempt — they are the preserved participation history, and restoring
+one re-checks exclusivity. Different seasons are independent spots. The disc
+golf one-male/one-female team composition stays a demo verification, never a
+model constraint.
+
+**Decision 4 — substitutions in 1E scope, append-only.** Fields: organization,
+event, season entry, athleteOut, athleteIn, optional reason, recordedBy
+(hook-set from the authenticated caller, client values overwritten), and
+created/updated autodates. Create-only for Owners/Admins; update and delete
+are locked for everyone. The hook requires the event to be season-linked to
+the entry's season (an independent event has no roster context), athleteOut
+to hold an active roster spot on that entry, and athleteIn to be an active
+reserve member in that season. A substitution changes nothing else — rosters
+and pools are untouched; it applies to its event only. Fantasy replacement
+ownership effects remain excluded (open product decision).
+
+**Access.** Any organization member reads; only Owners/Admins write; delete
+is locked on all four collections (extends the D11/D12 lifecycle). All four
+are gated on the `teams` capability ("Teams & rosters"). Parent links and a
+record's organization are immutable on update — archive and recreate instead.
+
+**Not invented here.** Final pilot roster eligibility fields stay undecided —
+Phase 1E uses existing athlete identity only (gender for pool restrictions)
+and adds no eligibility fields. Milestones.md's "existing CSV-derived
+branding, logos, photos, and flags where available" clause is inapplicable:
+this repository has no such source data (recorded for 1C in docs/ROADMAP.md),
+so pools carry names only — nothing fabricated.
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a

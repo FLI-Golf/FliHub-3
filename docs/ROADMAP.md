@@ -39,7 +39,7 @@ The first end-to-end demonstration covers:
 | 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below) |
 | 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below) |
 | 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below) |
-| 1E    | Season rosters, reserve pools, and substitutions              | Not started                                |
+| 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below) |
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Not started                                |
 | 1G    | Mobile scorekeeping and submission                            | Not started                                |
 | 1H    | Official approval, publication, playoff, and corrections      | Not started                                |
@@ -168,6 +168,45 @@ Verified on this branch (2026-11-06), locally (CI runs on the PR):
   read-only + direct-API denial, mobile at 375px. Full suite (1A–1D specs):
   88 assertions, exit 0 (1B's planned-panel example moved from Teams to
   Venues & courses, since Teams is now a working page).
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
+
+### Phase 1E verification record
+
+Verified on this branch (2026-11-06), locally (CI runs on the PR):
+
+- Decisions: all four blocking questions approved by Dustin and recorded as
+  D13 — roster rows belong to the team's season entry; reserve pools are
+  first-class records (never teams, so scheduling exclusion is structural);
+  one active spot per athlete per season across rosters and pools; and
+  append-only substitutions whose event must be season-linked to the entry's
+  season. Demo counts and gendered pools are pilot configuration, not
+  universal rules.
+- `npm run test:integration` — 53/53 passing (42 Phase 1A–1D regression + 11
+  Phase 1E): capability-gated writes on all four collections, season derived
+  from the entry/pool (client values ignored), one-active-spot exclusivity
+  (partial unique indexes + cross-table hook check, both directions, restore
+  re-checked), concurrency regression — concurrent roster/reserve creates and
+  restores for the same athlete from two independent authorized sessions end
+  with exactly one active spot (a reproduced hook-level race, 4/20 creates and
+  2/20 restores, fixed by SQLite exclusivity triggers that re-run the
+  cross-table check inside the serialized write), participation history
+  preserved through archive and re-add, pool gender restriction at join time
+  with immutable restriction, append-only
+  substitutions (owner update/delete denied) with hook-set recordedBy
+  (spoofing ignored) and side-effect isolation (roster and pool rows
+  unchanged), independent/wrong-season events rejected, unrostered or
+  non-reserve athletes rejected, cross-org reads/writes/links denied, role
+  enforcement, parent-link immutability, disable → preserve → re-enable.
+- Migrations: full chain from empty on a disposable PocketBase (suite boot),
+  and an upgrade rehearsal from the merged Phase 1D schema with seeded
+  league/season/entry/athlete/event fixtures — 7/7 assertions (exact IDs and
+  links preserved; roster and pool usable on legacy records).
+- Browser acceptance (`tests/e2e/phase1e.spec.mjs`, 17 assertions): athlete
+  assigned to a team's season entry from the Teams & rosters page, male-only
+  reserve pool with candidate filtering, substitution recorded with event +
+  both athletes + reason while the roster stays intact, removal shown as
+  "Past member" (history preserved), viewer read-only in the UI and denied at
+  the direct API, mobile at 375px. Full suite (1A–1E specs): exit 0.
 - `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
 
 ## Unresolved questions (recorded, not answered)

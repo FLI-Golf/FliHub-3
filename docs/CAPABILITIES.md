@@ -117,8 +117,20 @@ Three capabilities became working workflows in Phase 1D (decisions recorded
 as D12):
 
 - **Teams & rosters** — organization-scoped teams (create, rename,
-  archive/restore). Season rosters and reserve pools are Phase 1E scope and
-  remain planned.
+  archive/restore). Phase 1E (decisions recorded as D13) added season
+  rosters, reserve pools, and substitutions under this same capability:
+  roster rows belong to a team's season entry (season derived server-side,
+  never client-trusted); an athlete holds at most one active spot per season
+  across rosters and reserve pools (archived rows are the preserved
+  participation history); reserve pools are first-class records — never
+  teams, so they are structurally excluded from ordinary scheduling — with an
+  optional join-time gender restriction (pilot configuration, not a universal
+  rule); and substitutions are append-only event-scoped records (who replaced
+  whom, for which season-linked event, recorded author) that leave rosters
+  and pools untouched. Enforced by the `flihub_rosters.pb.js` hook plus
+  partial unique indexes, with SQLite triggers re-running the cross-table
+  exclusivity check inside the serialized write so concurrent direct API
+  requests cannot create a second active spot.
 - **Leagues & seasons** — leagues, seasons (with optional start/end dates),
   divisions, and season entries. Teams enter a season directly; each entry
   carries one optional division assignment, so entries can exist before

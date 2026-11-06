@@ -8,6 +8,7 @@
 	import OrgNav from '$lib/components/OrgNav.svelte';
 	import AthletesManager from '$lib/components/AthletesManager.svelte';
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
+	import RostersManager from '$lib/components/RostersManager.svelte';
 	import CompetitionsManager from '$lib/components/CompetitionsManager.svelte';
 	import EventsManager from '$lib/components/EventsManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
@@ -62,8 +63,20 @@
 			myRole={data.myRole}
 			{form}
 		/>
-	{:else if data.capability.id === 'teams' && data.capability.availability === 'available' && data.teams}
+	{:else if data.capability.id === 'teams' && data.capability.availability === 'available' && data.teams && data.rosters}
 		<TeamsManager teams={data.teams} canManage={data.canManage} myRole={data.myRole} {form} />
+		<RostersManager
+			seasons={data.rosters.seasons}
+			entries={data.rosters.entries}
+			athletes={data.rosters.athletes}
+			memberships={data.rosters.memberships}
+			pools={data.rosters.pools}
+			reserves={data.rosters.reserves}
+			substitutions={data.rosters.substitutions}
+			events={data.rosters.events}
+			canManage={data.canManage}
+			{form}
+		/>
 	{:else if data.capability.id === 'leagues-seasons' && data.capability.availability === 'available' && data.competition}
 		<CompetitionsManager
 			leagues={data.competition.leagues}

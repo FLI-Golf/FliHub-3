@@ -90,9 +90,12 @@ export const capabilities: Capability[] = [
 		description:
 			'Season rosters, reserve pools, substitutions, venues/courses, rounds, and group assignments.',
 		milestone: 'Phases 1E–1F',
-		status: 'planned',
-		progress: 'Not started.',
-		next: 'Season rosters and reserve pools (Phase 1E).'
+		status: 'in-progress',
+		progress:
+			'Phase 1E implemented: season rosters attached to team entries (one active spot per athlete per season, enforced down to concurrent writes, history preserved through archive), reserve pools with optional gender restriction (pilot configuration) structurally excluded from scheduling, and append-only substitutions that leave rosters intact — managed from the Teams & rosters page. Verified on this branch by 11 integration tests, migration upgrade rehearsals, and a 17-assertion browser flow; not yet merged. Phase 1F (venues/courses, rounds, groups) not started.',
+		next: 'Venues/courses, rounds, and group assignments (Phase 1F).',
+		featureHref: '/organizations',
+		narration: 'not-started'
 	},
 	{
 		title: 'Disc golf demonstration event',
