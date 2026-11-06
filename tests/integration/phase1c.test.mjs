@@ -317,3 +317,65 @@ test('privacy: contact/eligibility fields are restricted to Owners and Admins', 
 		'outsider athlete detail denied'
 	);
 });
+
+test('organization is immutable on update for athletes and athlete_private', async () => {
+	// Regression: org A's Owner could previously PATCH either record's
+	// organization into org B (no membership there), orphaning links. Now
+	// rejected at the API boundary with the persisted record as source of truth.
+	const ownerA = await registerVerifiedUser(uniqueEmail('moveA'), 'Owner A');
+	const orgA = await createOrgFull(ownerA, {
+		name: 'Move Org A',
+		template: 'custom',
+		capabilities: ['athletes']
+	});
+	const ownerB = await registerVerifiedUser(uniqueEmail('moveB'), 'Owner B');
+	const orgB = await createOrgFull(ownerB, {
+		name: 'Move Org B',
+		template: 'custom',
+		capabilities: ['athletes']
+	});
+
+	const athlete = await createAthlete(ownerA, orgA.id);
+	const priv = await ownerA.collection('athlete_private').create({
+		athlete: athlete.id,
+		organization: orgA.id,
+		email: 'move.fixture@example.com'
+	});
+
+	// Both relocation attempts are rejected.
+	await assert.rejects(
+		ownerA.collection('athletes').update(athlete.id, { organization: orgB.id }),
+		(err) =>
+			err.status === 400 &&
+			/immutable_relation/i.test(String(err.response?.message ?? err.message)),
+		'athletes organization move rejected'
+	);
+	await assert.rejects(
+		ownerA.collection('athlete_private').update(priv.id, { organization: orgB.id }),
+		(err) =>
+			err.status === 400 &&
+			/immutable_relation/i.test(String(err.response?.message ?? err.message)),
+		'athlete_private organization move rejected'
+	);
+
+	// Re-read: organization and the athlete link are unchanged.
+	const athleteAfter = await ownerA.collection('athletes').getOne(athlete.id);
+	const privAfter = await ownerA.collection('athlete_private').getOne(priv.id);
+	assert.equal(athleteAfter.organization, orgA.id, 'athlete stays in org A');
+	assert.equal(privAfter.organization, orgA.id, 'private record stays in org A');
+	assert.equal(privAfter.athlete, athlete.id, 'private record keeps its athlete link');
+
+	// Positive controls: ordinary same-org edits still succeed.
+	await ownerA.collection('athletes').update(athlete.id, { nationality: 'Canada' });
+	await ownerA.collection('athlete_private').update(priv.id, { phone: '+1-555-0111' });
+	assert.equal(
+		(await ownerA.collection('athletes').getOne(athlete.id)).nationality,
+		'Canada',
+		'normal athlete edit still works'
+	);
+	assert.equal(
+		(await ownerA.collection('athlete_private').getOne(priv.id)).phone,
+		'+1-555-0111',
+		'private-field edit still works'
+	);
+});
