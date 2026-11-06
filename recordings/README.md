@@ -12,6 +12,7 @@ npx playwright install chromium        # one-time browser setup (also ships ffmp
 npm run record:walkthrough             # Phase 1A (default)
 npm run record:walkthrough-1b          # Phase 1B
 npm run record:walkthrough-1c          # Phase 1C
+npm run record:walkthrough-1d          # Phase 1D
 ```
 
 The runner (`run-walkthrough.mjs [1a|1b]`):
@@ -93,8 +94,8 @@ Regenerate or assemble:
 
 ```sh
 sudo apt-get install -y ffmpeg   # full FFmpeg (H.264/AAC); one-time
-node recordings/narrate.mjs 1b   # ElevenLabs per scene, hash-cached (arg: 1a default | 1b | 1c)
-node recordings/assemble-narrated.mjs 1b   # scene holds + mux + captions (1a → static/walkthroughs/, 1b/1c → static/review/ preview until approved)
+node recordings/narrate.mjs 1b   # ElevenLabs per scene, hash-cached (arg: 1a default | 1b | 1c | 1d)
+node recordings/assemble-narrated.mjs 1b   # scene holds + mux + captions (1a → static/walkthroughs/, 1b/1c/1d → static/review/ preview until approved)
 ```
 
 `assemble-narrated.mjs` holds each scene's final frame when its narration

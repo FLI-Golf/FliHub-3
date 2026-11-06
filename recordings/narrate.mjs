@@ -24,7 +24,8 @@ import { spawnSync } from 'node:child_process';
 const WALKTHROUGHS = {
 	'1a': { narration: 'narration.json', cacheDir: 'narration' },
 	'1b': { narration: 'narration-1b.json', cacheDir: 'narration-1b' },
-	'1c': { narration: 'narration-1c.json', cacheDir: 'narration-1c' }
+	'1c': { narration: 'narration-1c.json', cacheDir: 'narration-1c' },
+	'1d': { narration: 'narration-1d.json', cacheDir: 'narration-1d' }
 };
 const selected = WALKTHROUGHS[process.argv[2] ?? '1a'];
 if (!selected) {

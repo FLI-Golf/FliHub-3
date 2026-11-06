@@ -1,0 +1,25 @@
+{
+	"comment": "Machine-readable twin of narration-phase1d.md. `tts` is the ElevenLabs synthesis input (FliHub spelled 'Fly Hub'); `caption` keeps the correct spelling. Also used by walkthrough-1d.mjs to pace scene holds (local word-count estimate, no API).",
+	"scenes": [
+		{
+			"id": "s1-league-season",
+			"caption": "Riley, the organizer at Lakeside Golf Collective, creates a league, then a season inside it with start and end dates. There are no divisions yet — FliHub simply runs the season division-less until the organizer needs them.",
+			"tts": "Riley, the organizer at Lakeside Golf Collective, creates a league, then a season inside it with start and end dates. There are no divisions yet — Fly Hub simply runs the season division-less until the organizer needs them."
+		},
+		{
+			"id": "s2-direct-entry",
+			"caption": "Teams don't wait for divisions. Riley enters the Blue Heron Flyers directly into the season, and the entry shows exactly that: no division assigned.",
+			"tts": "Teams don't wait for divisions. Riley enters the Blue Heron Flyers directly into the season, and the entry shows exactly that: no division assigned."
+		},
+		{
+			"id": "s3-division-assign",
+			"caption": "When the structure firms up, Riley creates an Open division and assigns the existing entry to it. The same entry now carries the Open badge in place of \"no division assigned\".",
+			"tts": "When the structure firms up, Riley creates an Open division and assigns the existing entry to it. The same entry now carries the Open badge in place of no division assigned."
+		},
+		{
+			"id": "s4-events",
+			"caption": "Events work both ways. The Harvest Open stands alone, marked Independent, while Week 1 is linked to the season and wears its season badge — so an organizer can tell them apart at a glance.",
+			"tts": "Events work both ways. The Harvest Open stands alone, marked Independent, while Week One is linked to the season and wears its season badge — so an organizer can tell them apart at a glance."
+		}
+	]
+}
