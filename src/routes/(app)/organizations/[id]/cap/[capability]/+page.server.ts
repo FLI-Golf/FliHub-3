@@ -256,11 +256,79 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	let eventsData = null;
 	if (capability.id === 'events' && enabled) {
 		const filter = `organization = "${params.id}"`;
-		const [eventRows, seasonRows] = await Promise.all([
+		const [
+			eventRows,
+			seasonRows,
+			roundRows,
+			groupRows,
+			groupTeamRows,
+			groupAthleteRows,
+			entryRows,
+			teamRows,
+			athleteRows,
+			membershipRows,
+			rosterRows,
+			substitutionRows,
+			courseRows,
+			courseHoleRows,
+			holePositionRows
+		] = await Promise.all([
 			pb.collection('events').getFullList({ filter, sort: 'startsAt,name' }),
-			pb.collection('seasons').getFullList({ filter, sort: 'name' })
+			pb.collection('seasons').getFullList({ filter, sort: 'name' }),
+			pb.collection('rounds').getFullList({ filter, sort: 'number' }),
+			pb.collection('event_groups').getFullList({ filter, sort: 'name' }),
+			pb.collection('group_teams').getFullList({ filter, sort: 'created' }),
+			pb.collection('group_athletes').getFullList({ filter, sort: 'created' }),
+			pb
+				.collection('season_entries')
+				.getFullList({ filter, sort: 'id' })
+				.catch(() => []),
+			pb
+				.collection('teams')
+				.getFullList({ filter, sort: 'name' })
+				.catch(() => []),
+			pb
+				.collection('athletes')
+				.getFullList({ filter, sort: 'lastName,firstName' })
+				.catch(() => []),
+			pb.collection('memberships').getFullList({ filter, expand: 'user' }),
+			pb
+				.collection('roster_memberships')
+				.getFullList({ filter, sort: 'created' })
+				.catch(() => []),
+			pb
+				.collection('substitutions')
+				.getFullList({ filter, sort: '-created' })
+				.catch(() => []),
+			pb
+				.collection('courses')
+				.getFullList({ filter, sort: 'name' })
+				.catch(() => []),
+			pb
+				.collection('course_holes')
+				.getFullList({ filter, sort: 'number' })
+				.catch(() => []),
+			pb
+				.collection('hole_positions')
+				.getFullList({ filter, sort: 'label' })
+				.catch(() => [])
 		]);
 		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
+		const teamName = new Map(teamRows.map((t) => [t.id, String(t.name ?? '')]));
+		const athleteName = new Map(
+			athleteRows.map((a) => [
+				a.id,
+				String(a.displayName ?? '') ||
+					`${String(a.firstName ?? '')} ${String(a.lastName ?? '')}`.trim()
+			])
+		);
+		const courseName = new Map(courseRows.map((c) => [c.id, String(c.name ?? '')]));
+		const memberName = new Map(
+			membershipRows.map((m) => [
+				String(m.user),
+				String((m.expand?.user as { name?: unknown } | undefined)?.name ?? '') || String(m.user)
+			])
+		);
 		eventsData = {
 			events: eventRows.map((ev) => ({
 				id: ev.id,
@@ -270,7 +338,134 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				startsAt: String(ev.startsAt ?? '') || null,
 				status: (String(ev.status) || 'planned') as 'planned' | 'active' | 'completed' | 'archived'
 			})),
-			seasons: seasonRows.map((s) => ({ id: s.id, name: String(s.name ?? '') }))
+			seasons: seasonRows.map((s) => ({ id: s.id, name: String(s.name ?? '') })),
+			// Phase 1F event operations (D14).
+			rounds: roundRows.map((r) => ({
+				id: r.id,
+				event: String(r.event ?? ''),
+				number: Number(r.number ?? 0),
+				name: String(r.name ?? '') || null,
+				course: String(r.course ?? '') || null,
+				courseName: courseName.get(String(r.course ?? '')) ?? null,
+				positionLabel: String(r.positionLabel ?? '') || null,
+				status: (String(r.status) || 'active') as 'active' | 'archived'
+			})),
+			groups: groupRows.map((g) => ({
+				id: g.id,
+				event: String(g.event ?? ''),
+				name: String(g.name ?? ''),
+				scorekeeper: String(g.scorekeeper ?? '') || null,
+				scorekeeperName: memberName.get(String(g.scorekeeper ?? '')) ?? null,
+				status: (String(g.status) || 'active') as 'active' | 'archived'
+			})),
+			groupTeams: groupTeamRows.map((gt) => ({
+				id: gt.id,
+				group: String(gt.group ?? ''),
+				event: String(gt.event ?? ''),
+				entry: String(gt.entry ?? ''),
+				status: (String(gt.status) || 'active') as 'active' | 'archived'
+			})),
+			groupAthletes: groupAthleteRows.map((ga) => ({
+				id: ga.id,
+				group: String(ga.group ?? ''),
+				event: String(ga.event ?? ''),
+				entry: String(ga.entry ?? ''),
+				athlete: String(ga.athlete ?? ''),
+				athleteName: athleteName.get(String(ga.athlete ?? '')) ?? '',
+				status: (String(ga.status) || 'active') as 'active' | 'archived'
+			})),
+			entries: entryRows.map((en) => ({
+				id: en.id,
+				season: String(en.season ?? ''),
+				team: String(en.team ?? ''),
+				teamName: teamName.get(String(en.team ?? '')) ?? '',
+				status: (String(en.status) || 'active') as 'active' | 'archived'
+			})),
+			rosterMemberships: rosterRows.map((m) => ({
+				entry: String(m.entry ?? ''),
+				athlete: String(m.athlete ?? ''),
+				athleteName: athleteName.get(String(m.athlete ?? '')) ?? '',
+				status: (String(m.status) || 'active') as 'active' | 'archived'
+			})),
+			substitutions: substitutionRows.map((s) => ({
+				event: String(s.event ?? ''),
+				entry: String(s.entry ?? ''),
+				athleteOut: String(s.athleteOut ?? ''),
+				athleteIn: String(s.athleteIn ?? ''),
+				athleteInName: athleteName.get(String(s.athleteIn ?? '')) ?? ''
+			})),
+			members: membershipRows.map((m) => ({
+				userId: String(m.user),
+				name: memberName.get(String(m.user)) ?? String(m.user),
+				role: String(m.role ?? '')
+			})),
+			// Active courses with each position label's coverage across the
+			// course's active holes, so the round form offers complete labels and
+			// shows exactly which holes are missing from incomplete ones.
+			courses: courseRows
+				.filter((c) => String(c.status) === 'active')
+				.map((c) => {
+					const activeHoles = courseHoleRows.filter(
+						(h) => String(h.course) === c.id && String(h.status) === 'active'
+					);
+					const holeIds = new Set(activeHoles.map((h) => h.id));
+					const holeNumber = new Map(activeHoles.map((h) => [h.id, Number(h.number ?? 0)]));
+					const holesByLabel = new Map<string, Set<string>>();
+					for (const p of holePositionRows) {
+						if (!holeIds.has(String(p.hole)) || String(p.status) !== 'active') continue;
+						const label = String(p.label ?? '');
+						if (!label) continue;
+						if (!holesByLabel.has(label)) holesByLabel.set(label, new Set());
+						holesByLabel.get(label)?.add(String(p.hole));
+					}
+					const labels = [...holesByLabel.entries()]
+						.map(([label, covered]) => ({
+							label,
+							total: activeHoles.length,
+							missing: activeHoles
+								.filter((h) => !covered.has(h.id))
+								.map((h) => holeNumber.get(h.id) ?? 0)
+								.sort((a, b) => a - b)
+						}))
+						.sort((a, b) => a.label.localeCompare(b.label));
+					return { id: c.id, name: String(c.name ?? ''), labels };
+				})
+		};
+	}
+
+	// Phase 1F: course layouts (D14). Courses only — venue records remain
+	// planned. Any member reads; Owners/Admins write (collection rules), with
+	// the capability gate and same-org integrity in the flihub_event_ops hook.
+	let coursesData = null;
+	if (capability.id === 'venues-courses' && enabled) {
+		const filter = `organization = "${params.id}"`;
+		const [courseRows, holeRows, positionRows] = await Promise.all([
+			pb.collection('courses').getFullList({ filter, sort: 'name' }),
+			pb.collection('course_holes').getFullList({ filter, sort: 'number' }),
+			pb.collection('hole_positions').getFullList({ filter, sort: 'label' })
+		]);
+		coursesData = {
+			courses: courseRows.map((c) => ({
+				id: c.id,
+				name: String(c.name ?? ''),
+				status: (String(c.status) || 'active') as 'active' | 'archived'
+			})),
+			holes: holeRows.map((h) => ({
+				id: h.id,
+				course: String(h.course ?? ''),
+				number: Number(h.number ?? 0),
+				name: String(h.name ?? ''),
+				par: Number(h.par ?? 0),
+				status: (String(h.status) || 'active') as 'active' | 'archived'
+			})),
+			positions: positionRows.map((p) => ({
+				id: p.id,
+				hole: String(p.hole ?? ''),
+				label: String(p.label ?? ''),
+				distance: Number(p.distance ?? 0),
+				unit: String(p.unit ?? ''),
+				status: (String(p.status) || 'active') as 'active' | 'archived'
+			}))
 		};
 	}
 
@@ -285,7 +480,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		teams,
 		rosters,
 		competition,
-		eventsData
+		eventsData,
+		coursesData
 	};
 };
 
@@ -918,5 +1114,244 @@ export const actions: Actions = {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
 		return { created: true };
+	},
+
+	// --- Phase 1F: courses (D14: courses only; venues remain planned) ---------
+	createCourse: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('courses').create({
+				organization: params.id,
+				name: String(form.get('name') ?? '').trim(),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	archiveCourse: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('course') ?? '');
+		try {
+			await locals.pb.collection('courses').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	unarchiveCourse: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('course') ?? '');
+		try {
+			await locals.pb.collection('courses').update(id, { status: 'active' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { restored: true };
+	},
+
+	addHole: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('course_holes').create({
+				organization: params.id,
+				course: String(form.get('course') ?? ''),
+				number: Number(form.get('number') ?? 0),
+				name: String(form.get('name') ?? '').trim(),
+				par: Number(form.get('par') ?? 3),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	updateHole: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('course_holes').update(String(form.get('hole') ?? ''), {
+				name: String(form.get('name') ?? '').trim(),
+				par: Number(form.get('par') ?? 3)
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	archiveHole: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('hole') ?? '');
+		try {
+			await locals.pb.collection('course_holes').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	addPosition: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('hole_positions').create({
+				organization: params.id,
+				hole: String(form.get('hole') ?? ''),
+				label: String(form.get('label') ?? '').trim(),
+				distance: Number(form.get('distance') ?? 0),
+				unit: String(form.get('unit') ?? 'feet'),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	archivePosition: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('position') ?? '');
+		try {
+			await locals.pb.collection('hole_positions').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	// --- Phase 1F: rounds ------------------------------------------------------
+	addRound: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('rounds').create({
+				organization: params.id,
+				event: String(form.get('event') ?? ''),
+				number: Number(form.get('number') ?? 0),
+				name: String(form.get('name') ?? '').trim(),
+				course: String(form.get('course') ?? '') || null,
+				positionLabel: String(form.get('positionLabel') ?? '').trim(),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	archiveRound: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('round') ?? '');
+		try {
+			await locals.pb.collection('rounds').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	// --- Phase 1F: groups and assignments (D14 eligibility is hook-enforced) ---
+	createGroup: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('event_groups').create({
+				organization: params.id,
+				event: String(form.get('event') ?? ''),
+				name: String(form.get('name') ?? '').trim(),
+				scorekeeper: String(form.get('scorekeeper') ?? '') || null,
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	setGroupScorekeeper: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('event_groups').update(String(form.get('group') ?? ''), {
+				scorekeeper: String(form.get('scorekeeper') ?? '') || null
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { updated: true };
+	},
+
+	archiveGroup: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('group') ?? '');
+		try {
+			await locals.pb.collection('event_groups').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	addGroupTeam: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('group_teams').create({
+				organization: params.id,
+				group: String(form.get('group') ?? ''),
+				entry: String(form.get('entry') ?? ''),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	// Removal is an archive: assignment rows are the change record (D14).
+	removeGroupTeam: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('assignment') ?? '');
+		try {
+			await locals.pb.collection('group_teams').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
+	},
+
+	addGroupAthlete: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			await locals.pb.collection('group_athletes').create({
+				organization: params.id,
+				group: String(form.get('group') ?? ''),
+				entry: String(form.get('entry') ?? ''),
+				athlete: String(form.get('athlete') ?? ''),
+				status: 'active'
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { created: true };
+	},
+
+	removeGroupAthlete: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const id = String((await request.formData()).get('assignment') ?? '');
+		try {
+			await locals.pb.collection('group_athletes').update(id, { status: 'archived' });
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { archived: true };
 	}
 };

@@ -11,6 +11,8 @@
 	import RostersManager from '$lib/components/RostersManager.svelte';
 	import CompetitionsManager from '$lib/components/CompetitionsManager.svelte';
 	import EventsManager from '$lib/components/EventsManager.svelte';
+	import EventOpsManager from '$lib/components/EventOpsManager.svelte';
+	import CoursesManager from '$lib/components/CoursesManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
@@ -92,6 +94,29 @@
 		<EventsManager
 			events={data.eventsData.events}
 			seasons={data.eventsData.seasons}
+			canManage={data.canManage}
+			myRole={data.myRole}
+			{form}
+		/>
+		<EventOpsManager
+			events={data.eventsData.events}
+			rounds={data.eventsData.rounds}
+			groups={data.eventsData.groups}
+			groupTeams={data.eventsData.groupTeams}
+			groupAthletes={data.eventsData.groupAthletes}
+			entries={data.eventsData.entries}
+			rosterMemberships={data.eventsData.rosterMemberships}
+			substitutions={data.eventsData.substitutions}
+			members={data.eventsData.members}
+			courses={data.eventsData.courses}
+			canManage={data.canManage}
+			{form}
+		/>
+	{:else if data.capability.id === 'venues-courses' && data.capability.availability === 'available' && data.coursesData}
+		<CoursesManager
+			courses={data.coursesData.courses}
+			holes={data.coursesData.holes}
+			positions={data.coursesData.positions}
 			canManage={data.canManage}
 			myRole={data.myRole}
 			{form}

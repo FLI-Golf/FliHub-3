@@ -66,8 +66,8 @@
 		{
 			"id": "venues-courses",
 			"label": "Venues & courses",
-			"description": "Physical locations and course layouts.",
-			"availability": "planned",
+			"description": "Course layouts with holes and positions; venue records planned.",
+			"availability": "available",
 			"milestone": "Phases 1D–1F",
 			"dependsOn": []
 		},

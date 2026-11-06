@@ -86,25 +86,38 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
-		title: 'Season rosters & event operations',
+		title: 'Season rosters & reserve pools',
 		description:
-			'Season rosters, reserve pools, substitutions, venues/courses, rounds, and group assignments.',
-		milestone: 'Phases 1E–1F',
-		status: 'in-progress',
+			'Season rosters attached to team entries, separate reserve pools, and append-only event substitutions that never rewrite participation history.',
+		milestone: 'Phase 1E',
+		status: 'complete',
 		progress:
-			'Phase 1E merged in PR #11: season rosters attached to team entries (one active spot per athlete per season, enforced down to concurrent writes, history preserved through archive), reserve pools with optional gender restriction (pilot configuration) structurally excluded from scheduling, and append-only substitutions that leave rosters intact — managed from the Teams & rosters page and verified by 11 integration tests, migration upgrade rehearsals, and a 17-assertion browser flow. Narrated walkthrough video available. Phase 1F event operations (venues/courses, rounds, groups) remain planned, not started.',
-		next: 'Venues/courses, rounds, and group assignments (Phase 1F).',
+			'Season rosters attached to team entries (one active spot per athlete per season, enforced down to concurrent writes, history preserved through archive), reserve pools with optional gender restriction (pilot configuration) structurally excluded from scheduling, and append-only substitutions that leave rosters intact — managed from the Teams & rosters page. Merged in PR #11 and verified by 11 integration tests, migration upgrade rehearsals, and a 17-assertion browser flow. Narrated walkthrough video available.',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1e',
 		narration: 'recorded'
+	},
+	{
+		title: 'Event operations',
+		description:
+			'Course layouts with holes and labeled positions, ordered event rounds, groups with team and athlete assignments, and per-group scorekeepers.',
+		milestone: 'Phase 1F',
+		status: 'in-progress',
+		progress:
+			'Courses with numbered/named holes and labeled positions (explicit units; venue records remain planned), ordered rounds whose named position must cover every active hole of its course (blank stays valid for planning; the chooser shows incomplete labels with their missing holes), event groups with one scorekeeper each (any member — score-entry permissions arrive in 1G), and group team/athlete assignments resolved from Phase 1E season rosters plus event-scoped substitutions: a reserve is assignable only for the event where the substitution applies, and assignments never change the season roster. Single-round events work with no intermission; the two-round demo format is verified separately. Implemented and verified on this branch; not yet merged. Demo counts are pilot configuration.',
+		next: 'The disc golf demonstration event build; score entry and submission (Phase 1G).',
+		featureHref: '/organizations',
+		narration: 'not-started'
 	},
 	{
 		title: 'Disc golf demonstration event',
 		description:
 			'A two-round event on a nine-hole course with red/blue basket positions, six groups, and assigned scorekeepers.',
 		milestone: 'Phase 1F',
-		status: 'planned',
-		progress: 'Not started.'
+		status: 'in-progress',
+		progress:
+			'The configuration workflow is verified end to end on this branch (not yet merged): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), round 1 at red, an intermission, round 2 replaying the same nine holes at blue — 18 holes of play from nine hole records — plus six groups of two teams and four athletes with a scorekeeper each. The demonstration completes when mobile scoring (1G) and official results (1H) exist.',
+		next: 'Mobile scorekeeping for the two rounds (Phase 1G).'
 	},
 	{
 		title: 'Mobile scorekeeping',
