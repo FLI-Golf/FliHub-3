@@ -93,9 +93,11 @@ try {
 		!(await p.isChecked('input[name="capability"][value="fantasy"]')),
 		'league template leaves fantasy unchecked'
 	);
-	// Defaults are editable: drop Venues & courses (nothing depends on it);
-	// Standings stays enabled as the remaining honestly-Planned capability.
+	// Defaults are editable: drop Venues & courses (nothing depends on it) and
+	// add Fantasy (its standings dependency is a league default) as the
+	// honestly-Planned capability — Standings became a working page in 1I.
 	await p.uncheck('input[name="capability"][value="venues-courses"]');
+	await p.check('input[name="capability"][value="fantasy"]');
 	await p.click('button:has-text("Create organization")');
 	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
 	await p.waitForSelector('text=Your role: Owner');
@@ -109,19 +111,19 @@ try {
 
 	// ---- Capability destination pages ----------------------------------------
 	// Athletes (1C), Teams/Leagues & seasons/Events (1D), Venues & courses
-	// (1F), and Scoring (1G) became working workflows; Competition standings
+	// (1F), Scoring (1G), and Standings (1I) became working workflows; Fantasy
 	// stays planned and must keep its honest planned panel with no fake CRUD.
 	console.log('Step 3: capability pages are honest, not fake CRUD');
-	await p.click('nav >> text=Standings');
+	await p.click('nav >> text=Fantasy');
 	await p.waitForSelector('text=Planned');
 	const capText = await p.locator('main').innerText();
-	expect(capText.includes('standings'), 'standings capability page reachable from nav');
+	expect(capText.includes('Fantasy'), 'fantasy capability page reachable from nav');
 	expect(
-		!capText.includes('Add standing') && !capText.includes('Publish standings'),
+		!capText.includes('Create league') && !capText.includes('Start draft'),
 		'no fake CRUD controls on planned page'
 	);
 	// A capability that is NOT enabled rejects direct-URL access with an explanation.
-	await p.goto(`${leagueUrl}/cap/fantasy`);
+	await p.goto(`${leagueUrl}/cap/venues-courses`);
 	const disabledText = await p.locator('main').innerText();
 	expect(
 		disabledText.includes('not enabled') || disabledText.includes('Not enabled'),

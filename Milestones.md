@@ -313,7 +313,7 @@ documentation only.
 | 1F       | Course layouts, rounds, groups, and assignments          | Complete    | Two-round, red/blue basket event setup with six groups and scorekeepers                                                        |
 | 1G       | Mobile scorekeeping and submission                       | Complete    | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
 | 1H       | Official approval, publication, playoff, and corrections | Complete    | Approved and published results with versioned corrections                                                                      |
-| 1I       | Organization publishing and public competition standings | Not started | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
+| 1I       | Organization publishing and public competition standings | In progress | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
 | 2A       | Fantasy membership and event draft preparation           | Not started | Six-person fantasy membership and per-event draft preparation                                                                  |
 | 2B       | Owner-controlled live snake draft                        | Not started | Four-round, eligibility-aware, manually started draft                                                                          |
 | 2C       | Fantasy scoring, explanations, and correction processing | Not started | Versioned fantasy points from approved results with safe reprocessing                                                          |
@@ -1338,7 +1338,13 @@ Owners and administrators can review submitted scores, approve and publish offic
 
 ## Phase 1I — Organization publishing and public competition standings
 
-**Status:** Not started
+**Status:** In progress — implemented and verified locally on the feature
+branch (2026-11-07): branded public page at `/o/<slug>`, trusted slug/
+branding/publish management, per-record publication flags, the shared
+publication-rule layer (`pocketbase/pb_hooks/public_rules.js`), public and
+member standings from published official results, and the D16 correction
+lifecycle on the public surface. Decisions recorded as D17. Logo is a URL
+(upload deferred); athlete self-service opt-out remains open.
 
 ### Goal and user-visible outcome
 
@@ -1425,12 +1431,37 @@ The same publication rules that gate the hosted public page also gate the later 
 
 ### Open decisions blocking this phase
 
-- Which organization branding fields are required vs. optional for publish.
-- Slug format, length limits, and reserved-word list.
-- Public default settings: whether a newly published page is visible by default or requires an explicit publish action (the latter is assumed).
-- Correction visibility wording on the public page.
-- Public athlete profile fields and whether athletes can opt out.
-- Whether unpublish reverts to a hidden state or a coming-soon placeholder.
+- ~~Which organization branding fields are required vs. optional for publish.~~
+  **Resolved (D17, approved):** only the organization name is required;
+  tagline, logo URL, and theme colors are optional.
+- ~~Slug format, length limits, and reserved-word list.~~
+  **Resolved (D17, approved):** 3–50 lowercase letters/digits with single
+  interior hyphens, globally unique, reserved-word list of app routes plus
+  `flihub`, Owner/Admin-changeable through the trusted endpoint only.
+- ~~Public default settings: whether a newly published page is visible by default or requires an explicit publish action (the latter is assumed).~~
+  **Resolved (D17, approved):** explicit publish action required; nothing is
+  public by default, and publication is per-record.
+- ~~Correction visibility wording on the public page.~~
+  **Resolved (D17, approved):** a "Corrected" badge with the republication
+  date on results republished at version > 1; reasons stay members-only.
+- Public athlete profile fields are the D11 display set (resolved); whether
+  athletes can opt out themselves remains open — publication is
+  org-controlled per record for now.
+- ~~Whether unpublish reverts to a hidden state or a coming-soon placeholder.~~
+  **Resolved (D17, approved):** hidden — a 404 indistinguishable from an
+  unknown slug; unpublishing deletes nothing.
+- Cross-event standings aggregation and ties (new, resolved as D17):
+  seasons sum total strokes across events with a published official result —
+  lowest leads; a team or athlete is ranked only with a result in every
+  event counted in that view, and incomplete participation shows Unranked
+  with its strokes and an event count ("1 of 2 events" — missing results
+  never add strokes); equal published totals among ranked rows share a rank
+  (1, 1, 3). A tie that
+  needs a single winner is resolved after the round where it occurs (Round
+  1, Round 2, or later) via the closest-to-the-basket shootout, which stays
+  recorded future work outside Phase 1I. Color-coding against par (under
+  red, even blue, over black) is a display preference only and never
+  affects ranking.
 
 ## Phase 2A — Fantasy membership and event draft preparation
 
@@ -1757,6 +1788,7 @@ An organization can embed lightweight, branded public widgets on its own externa
 ### In scope
 
 - Embeddable widgets for the published sections available on the hosted public page.
+- A score ticker widget for the bottom of the organization's own website, showing published scores and standings (recorded 2026-11-07; same publication rules — no live/unpublished data unless a separately approved live-feed capability exists).
 - Embed snippet generation in the organization management view.
 - Reuse of the Phase 1I publication rules, public slug, and branding.
 - Responsive embed sizing and theme alignment with the host page.

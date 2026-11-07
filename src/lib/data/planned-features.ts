@@ -153,8 +153,11 @@ export const capabilities: Capability[] = [
 		title: 'Competition standings',
 		description: 'Standings produced only from approved and published official results.',
 		milestone: 'Phase 1I',
-		status: 'planned',
-		progress: 'Not started.'
+		status: 'in-progress',
+		progress:
+			'Implemented and verified locally on the Phase 1I branch (D17): seasons sum total strokes across events with a currently published official result — lowest total leads, ties share a position (no invented tie-break), and scores display relative to par. Pending corrected versions never count; a republished correction replaces the previous contribution exactly once. Members see standings on the Standings capability page; the public page shows them for per-record published events only.',
+		next: 'Merge and CI; fantasy consumes published results only (Phase 2).',
+		featureHref: '/organizations'
 	},
 	{
 		title: 'Fantasy league & snake draft',
@@ -177,8 +180,10 @@ export const capabilities: Capability[] = [
 		description:
 			'Hosted public organization pages, followed later by website embeds and a read-only public API.',
 		milestone: 'Phases 1I, 2E–2F',
-		status: 'planned',
-		progress: 'Not started.'
+		status: 'in-progress',
+		progress:
+			'The hosted page is implemented and verified locally on the Phase 1I branch: a unique reserved slug at /o/<slug>, organization branding (name, tagline, logo URL, theme colors), capability-gated sections, and explicit per-record publication enforced by a single shared publication-rule layer — unpublished pages are hidden 404s, private athlete contact data is never readable publicly, and corrected results carry a dated Corrected badge. Website embeds (2E) and the read-only public API (2F) will reuse the same rules verbatim and remain planned.',
+		next: 'Merge and CI; embeds and the public API reuse the Phase 1I publication rules (Phases 2E–2F).'
 	}
 ];
 

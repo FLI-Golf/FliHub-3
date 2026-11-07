@@ -468,6 +468,74 @@ standings input for later phases.
 **Capability.** Official-result collections gate on `scoring-results` (the
 1H half of the capability).
 
+## D17 — Phase 1I public pages and competition standings (2026-11-07; approved by Dustin)
+
+**Decision 1 — standings rules.** Competition standings are computed from
+the currently PUBLISHED official result version of each eligible event (the
+D16 `publishedVersion` pointer): an approved-but-unpublished correction
+never counts, and a republished correction replaces the previous
+contribution exactly once. Within a season, standings sum total strokes
+across the season's eligible events — lowest total leads — for teams
+(entry-keyed) and athletes; entries are season-scoped, so totals never cross
+season or organization boundaries. Season-less events would stand alone, but
+cannot currently produce results (the 1F hook requires season-linked events
+for group team assignments). A team or athlete is RANKED only when it has a
+result in every event counted in that standings view — counted events follow
+the view's existing eligibility rules (public page: publicly published
+events with a current published official result; members: every event with
+a current published official result). Rows with incomplete participation
+appear Unranked, with their summed strokes and an event count such as
+"1 of 2 events"; missing results never add strokes (approved by Dustin,
+2026-11-07). Equal published stroke totals among ranked rows share a rank
+(competition ranking: 1, 1, 3, …). When a
+competition format needs a single winner, the tie is resolved after the
+round in which it occurs — Round 1, Round 2, or later — using the
+closest-to-the-basket shootout recorded in Milestones.md §4.8; that
+shootout is recorded future work (measurement precision and equal-total
+rules are still open) and no playoff is implemented in Phase 1I — standings
+keep showing the shared rank until a playoff result exists. Color-coding
+against par is a display preference only — under par red, exactly par blue,
+over par default text — and never affects ranking. Par comes from the
+current course configuration (display-only; totals stay snapshots).
+
+**Decision 2 — shared publication-rule layer.** Everything a visitor can
+read flows through one module, `pocketbase/pb_hooks/public_rules.js`,
+consumed by the trusted routes in `flihub_public.pb.js`. No collection list
+or view rule is opened to unauthenticated callers — the record API stays
+members-only and the public endpoint returns only whitelisted fields of
+explicitly published records. Publication is per-record (`publicPublished`
+on events, teams, athletes; default false) and the page itself requires an
+explicit publish with a reserved slug. Published results and standings
+expose the snapshot content (names/totals) of publicly published events;
+the athlete-profiles section lists only individually published athletes and
+exposes exactly the D11 display fields. Phase 2E embeds and the Phase 2F
+public API must reuse this module verbatim.
+
+**Decision 3 — slug and page lifecycle.** Slugs: 3–50 chars, lowercase
+`a–z0–9` with single interior hyphens, globally unique (partial unique
+index), reserved-word list (app routes + `flihub`), normalized to lowercase,
+changeable only by Owners/Admins through the trusted endpoint (the
+organizations update rule stays locked; changes are audited in
+`membership_events` as `public_page_changed`). Only the organization name is
+required to publish; tagline, logo URL, and theme colors are optional. An
+unpublished or never-published page is hidden — `/o/<slug>` returns a 404
+indistinguishable from an unknown slug (no coming-soon placeholder), and
+unpublishing deletes nothing. Preview is members-only and renders exactly
+the visitor payload.
+
+**Decision 4 — correction visibility.** Publicly, a result republished at
+version > 1 carries a "Corrected" badge with the republication date;
+correction reasons and version history stay members-only.
+
+**Open (recorded, not implemented).** Athlete self-service opt-out from
+public profiles (publication is org-controlled per record for now); logo
+upload (URL only in 1I); per-organization restrictions on published fields
+beyond the fixed whitelist; the closest-to-the-basket tie shootout
+(resolved after the round where the tie occurs — implementation stays
+outside Phase 1I); a public score ticker for the bottom of an
+organization's own website (a Phase 2E embed widget) and any live score
+feed — both outside Phase 1I.
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a

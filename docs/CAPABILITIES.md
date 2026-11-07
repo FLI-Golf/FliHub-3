@@ -24,7 +24,7 @@ same file — there is no forked list:
 | `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F        |
 | `events`          | Events                     | available    | —               | Phases 1D–1F        |
 | `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H        |
-| `standings`       | Competition standings      | planned      | scoring-results | Phase 1I            |
+| `standings`       | Competition standings      | available    | scoring-results | Phase 1I            |
 | `fantasy`         | Fantasy leagues            | planned      | standings       | Phases 2A–2C        |
 | `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred) |
 | `reimbursements`  | Reimbursements & expenses  | upcoming     | —               | Phase 3+ (deferred) |
@@ -106,8 +106,10 @@ and are readable by every organization member. Contact/eligibility fields
 (email, phone, eligibilityNotes) live in a companion `athlete_private`
 collection whose API rules restrict them to Owners and Admins — enforced on
 list, detail, relation expansion, and app page data alike. Public display vs
-private separation is documented for the future public-pages phase (1I) — no
-public surface exists yet, so nothing leaks today. CSV import creates one
+private separation is enforced by the Phase 1I publication-rule layer: the
+public athlete-profiles section exposes exactly the display fields, only for
+athletes an Owner/Admin has individually published, and `athlete_private` is
+never read by any public surface. CSV import creates one
 record per row; duplicate identity matching is a documented open product
 decision.
 
@@ -187,8 +189,8 @@ partial unique indexes.
 
 Phase 1G (decisions recorded as D15) turned the scoring half of
 **Scoring & official results** into a working workflow; Phase 1H (D16) added
-official approval, publication, and corrections. Competition standings and
-fantasy consumption remain planned for later phases.
+official approval, publication, and corrections; Phase 1I (D17) added
+competition standings and public pages. Fantasy consumption remains planned.
 
 - **Permission matrix** — ordinary score entry requires BOTH the Scorekeeper
   role AND an active assignment as a group's scorekeeper in at least one
@@ -223,8 +225,8 @@ submission completeness, and the change log.
 ## Available capability behavior: official results and corrections (Phase 1H)
 
 Phase 1H (decisions recorded as D16) added the official-results half of
-**Scoring & official results**; standings and fantasy consumption remain
-planned.
+**Scoring & official results**; standings became a working capability in
+Phase 1I, while fantasy consumption remains planned.
 
 - **Event-level results** — one official result per event, approvable by an
   Owner/Admin only when every active round references a course and every
@@ -247,9 +249,42 @@ planned.
   be forged.
 - **Visibility** — organization members read results, versions, and the
   audit history; published results are read-only for ordinary users. Public
-  pages arrive with Phase 1I.
+  exposure is handled by the Phase 1I publication-rule layer below.
 
 The `flihub_results.pb.js` hook enforces the capability gate, the
 completeness check, the totals snapshots, the transition rules, and the
 locked audit log; the review UI lives at
 `/organizations/[id]/events/[event]/results`.
+
+## Available capability behavior: standings and public pages (Phase 1I)
+
+Phase 1I (decisions recorded as D17) made **Competition standings** a
+working capability and added the organization public page.
+
+- **Standings** — computed exclusively from the currently PUBLISHED official
+  result version of each event (D16 pointer): seasons sum total strokes
+  across their events with a published result — lowest total leads. A team
+  or athlete is ranked only with a result in every event counted in that
+  view; incomplete participation shows Unranked with its strokes and an
+  event count ("1 of 2 events" — missing results never add strokes). Equal
+  totals among ranked rows share a position (no invented tie-break), and
+  scores render relative to par (under red, even blue, over black — a
+  display preference that never affects ranking). Members see standings over
+  all such events at `/organizations/[id]/cap/standings`; the public page
+  counts only events that are additionally published per-record.
+- **Shared publication-rule layer** — `pocketbase/pb_hooks/public_rules.js`
+  is the single source of truth for everything a visitor can read; the
+  trusted routes in `flihub_public.pb.js` serve the public payload
+  (`/api/flihub/public/{slug}`), the members-only preview, the members-only
+  standings, and the Owner/Admin-only audited slug/branding/publish
+  management. No collection list/view rule is open to anonymous callers.
+  Embeds (Phase 2E) and the public API (Phase 2F) must reuse this module
+  verbatim.
+- **Explicit, per-record publication** — nothing is public by default. The
+  page requires a reserved slug (3–50 lowercase chars, single hyphens,
+  unique, reserved-word-checked) and an explicit publish; events, teams, and
+  athlete profiles each carry their own `publicPublished` flag. Unpublished
+  pages are hidden 404s; unpublishing deletes nothing. Corrected results
+  carry a public "Corrected" badge with the republication date — reasons and
+  version history stay members-only. The hosted page lives at `/o/<slug>`;
+  management and preview at `/organizations/[id]/public`.

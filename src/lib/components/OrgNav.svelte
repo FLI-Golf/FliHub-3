@@ -41,6 +41,13 @@
 	{/each}
 	{#if canManage}
 		<Button
+			variant={current === 'public' ? 'secondary' : 'ghost'}
+			size="sm"
+			href={resolve('/(app)/organizations/[id]/public', { id: orgId })}
+		>
+			Public page
+		</Button>
+		<Button
 			variant={current === 'settings' ? 'secondary' : 'ghost'}
 			size="sm"
 			href={resolve('/(app)/organizations/[id]/settings', { id: orgId })}
