@@ -115,10 +115,10 @@ export const capabilities: Capability[] = [
 		description:
 			'A two-round event on a nine-hole course with red/blue basket positions, six groups, and assigned scorekeepers.',
 		milestone: 'Phase 1F',
-		status: 'in-progress',
+		status: 'complete',
 		progress:
-			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G added the phone scoring view that identifies the round, group, teams, and athletes (merged in PR #17), and Phase 1H added official approval, publication, and corrections (merged in PR #20) — verified on a reduced two-group FLI fixture, not yet on this full six-group event.',
-		next: 'Scoring the full six-group demonstration event and taking it through official approval and publication completes the demonstration.',
+			'Verified end to end (2026-11-07, tests/e2e/demo-sixgroup.spec.mjs on a disposable stack): the exact Phase 1F demo fixture — one course with nine par-3 hole records (red/blue positions within 220–425 ft, hole 8 keeping its placeholder demo name), a Red round, an intermission, and a Blue round replaying the same nine holes, 12 teams of one male and one female rostered athlete, separate reserve pools, and six groups of two teams with an assigned scorekeeper — scored by the scorekeeper and taken through submission, official approval, and publication. All 12 scorecards (6 groups × 2 rounds) submitted; all 24 athletes have exactly 9 scores in each nine-hole round (432 scores); every published per-athlete, per-round, and per-team total matches the submitted strokes; and a signed-out browser sees the published result and season standings reflecting the event exactly once with matching totals and shared ranks on equal totals.',
+		next: 'The fantasy portions of the demonstration (membership, draft, scoring, corrections) arrive with Phases 2A–2C.',
 		// Reuses the approved Phase 1F recording — it covers the event SETUP
 		// (course, rounds, groups), not scoring; the label says so.
 		walkthroughHref: '/walkthroughs/phase1f',
@@ -156,7 +156,7 @@ export const capabilities: Capability[] = [
 		status: 'complete',
 		progress:
 			'Merged in PR #22 (D17): seasons sum total strokes across events with a currently published official result — lowest total leads; a team or athlete is ranked only with a result in every counted event (incomplete participation shows Unranked with its strokes and an event count such as 1 of 2 — missing results never add strokes); equal totals among ranked rows share a position, and scores display relative to par. Pending corrected versions never count; a republished correction replaces the previous contribution exactly once. Members see standings on the Standings capability page; the public page shows them for per-record published events only. Verified by 6 integration tests (78/78 full suite) plus a signed-out browser flow. Narrated walkthrough video available.',
-		next: 'Fantasy consumes published results only (Phase 2); the full six-group disc golf demonstration is tracked separately.',
+		next: 'Fantasy consumes published results only (Phase 2); the full six-group disc golf demonstration is verified (see the Disc golf demonstration event card).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1i',
 		narration: 'recorded'

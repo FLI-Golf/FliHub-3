@@ -418,9 +418,9 @@ Verified on this branch (2026-11-07), locally (CI runs on the PR):
 Remaining Phase 1I limitations: the organization logo is a URL field
 (upload deferred); athlete self-service opt-out from public profiles is a
 recorded open decision; embeds (2E) and the public API (2F) must reuse
-`public_rules.js` verbatim when they arrive; the full six-group disc golf
-demo has not been taken through public standings (tracked separately —
-Milestones.md does not make it a Phase 1I acceptance criterion).
+`public_rules.js` verbatim when they arrive. The full six-group disc golf
+demo, tracked separately, has since been verified end to end (see the
+demonstration verification record below).
 
 Phase 1I closeout (2026-11-07): merged as PR #22 (`d9faa3a`); the D17
 completeness ranking (ranked only with a result in every counted event;
@@ -429,6 +429,37 @@ and verified on the merged main (78/78 integration, full 1A–1I e2e). The
 narrated walkthrough was recorded on a disposable stack with fictional data,
 approved, and published byte-identically at `/walkthroughs/phase1i` with
 captions (see docs/phase1i-standings-public-pages-walkthrough/README.md).
+
+### Six-group demonstration verification record
+
+Verified on 2026-11-07 (baseline `4ce55d5`, PR #23), locally on a disposable
+stack via `tests/e2e/demo-sixgroup.spec.mjs` (27 assertions; runs with the
+e2e suite):
+
+- The EXACT Phase 1F demo fixture (tests/e2e/phase1f-formats.spec.mjs
+  Part B): one course with nine par-3 hole records (red + blue positions in
+  the 220–425 ft range, hole 8 keeping its placeholder demo name), a Red
+  round, an intermission, and a Blue round replaying the same nine holes,
+  12 teams of one male and one female rostered athlete (24 athletes),
+  separate reserve pools, and six groups of two teams with an assigned
+  scorekeeper.
+- Scorekeeping through the scorekeeper's own credentials: all 12 scorecards
+  (6 groups × 2 rounds) created, filled with deterministic varied strokes,
+  and SUBMITTED by the assigned scorekeeper (submission stamps verified).
+- Completeness: 432 scores exist and every one of the 24 athletes has
+  exactly 9 scores in each of the two nine-hole rounds.
+- Official approval and publication (D16): one result, published as v1;
+  every published per-athlete total, per-athlete per-round total, and
+  per-team total matches the independently recomputed submitted strokes
+  (24 + 12 rows checked exhaustively).
+- Signed-out browser: the hosted public page shows the published result
+  exactly once and one season standings table counting the event exactly
+  once; all 12 teams ranked at "1 of 1" with totals matching the submitted
+  scores (equal totals share ranks per D17); all 24 athletes listed; the
+  rendered leader row matches the payload and the recomputed totals.
+
+The fantasy portions of the demonstration (membership, draft, scoring,
+corrections) remain with Phases 2A–2C.
 
 ## Unresolved questions (recorded, not answered)
 
