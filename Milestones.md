@@ -1346,8 +1346,12 @@ management, per-record publication flags, the shared publication-rule layer
 published official results with the D17 completeness ranking, and the D16
 correction lifecycle on the public surface. Decisions recorded as D17. Logo
 is a URL (upload deferred); athlete self-service opt-out remains open. The
-full six-group disc golf demonstration event is tracked separately and has
-not yet been taken through public standings.
+full six-group disc golf demonstration event was verified end to end on
+2026-11-07 (`tests/e2e/demo-sixgroup.spec.mjs`): all 12 scorecards
+submitted, 432 scores across 24 athletes and two nine-hole rounds, official
+approval and publication with totals matching the submitted strokes, and the
+published result and standings visible exactly once to a signed-out
+browser.
 
 ### Goal and user-visible outcome
 
