@@ -31,26 +31,26 @@ The first end-to-end demonstration covers:
 
 ## Phases
 
-| Phase | Name                                                          | Status                                                       |
-| ----- | ------------------------------------------------------------- | ------------------------------------------------------------ |
-| 0     | Runnable foundation                                           | Done                                                         |
-| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                                            |
-| 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below)                   |
-| 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below)                   |
-| 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below)                   |
-| 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below)                   |
-| 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below)                   |
-| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)                                |
-| 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)                                |
-| 1H    | Official approval, publication, playoff, and corrections      | Implemented — verified locally (see below; playoff excluded) |
-| 1I    | Organization publishing and public competition standings      | Not started                                                  |
-| 2A    | Fantasy membership and event draft preparation                | Not started                                                  |
-| 2B    | Owner-controlled live snake draft                             | Not started                                                  |
-| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                                  |
-| 2D    | End-to-end demo and System Map                                | Not started                                                  |
-| 2E    | Website embeds                                                | Not started                                                  |
-| 2F    | Read-only public API                                          | Not started                                                  |
-| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred                                                     |
+| Phase | Name                                                          | Status                                          |
+| ----- | ------------------------------------------------------------- | ----------------------------------------------- |
+| 0     | Runnable foundation                                           | Done                                            |
+| 0A–0C | Current-state audit, recording foundation, narration/assembly | See Milestones.md                               |
+| 1A    | Organization memberships, roles, and data isolation           | Implemented — verified locally (see below)      |
+| 1B    | Configurable onboarding and capability-aware navigation       | Implemented — verified locally (see below)      |
+| 1C    | Athlete identity (sport-neutral records)                      | Implemented — verified locally (see below)      |
+| 1D    | League, season, division, and event relationships             | Implemented — verified locally (see below)      |
+| 1E    | Season rosters, reserve pools, and substitutions              | Implemented — verified locally (see below)      |
+| 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)                   |
+| 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)                   |
+| 1H    | Official approval, publication, playoff, and corrections      | Complete — merged (see below; playoff excluded) |
+| 1I    | Organization publishing and public competition standings      | Not started                                     |
+| 2A    | Fantasy membership and event draft preparation                | Not started                                     |
+| 2B    | Owner-controlled live snake draft                             | Not started                                     |
+| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                     |
+| 2D    | End-to-end demo and System Map                                | Not started                                     |
+| 2E    | Website embeds                                                | Not started                                     |
+| 2F    | Read-only public API                                          | Not started                                     |
+| 3+    | Sponsorships, expenses, payments, other sports, and expansion | Deferred                                        |
 
 ## Organization and permission rules (Phase 1A — implemented)
 

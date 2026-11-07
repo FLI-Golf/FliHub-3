@@ -117,8 +117,8 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1F',
 		status: 'in-progress',
 		progress:
-			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G added the phone scoring view that identifies the round, group, teams, and athletes (merged in PR #17). Official results remain Phase 1H.',
-		next: 'Official approval and published results complete the demonstration (Phase 1H).',
+			'Phase 1F demo setup is verified end to end and merged (PR #14): one course with nine physical hole records (par 3, red/blue positions within 220–425 ft, hole 8 named with demo placeholder content until final content is decided), a Red round, an intermission, and a Blue round replaying the same nine holes — 18 holes of play — plus six groups of two teams and four athletes with a scorekeeper assigned to each. Phase 1G added the phone scoring view that identifies the round, group, teams, and athletes (merged in PR #17), and Phase 1H added official approval, publication, and corrections (merged in PR #20) — verified on a reduced two-group FLI fixture, not yet on this full six-group event.',
+		next: 'Scoring the full six-group demonstration event and taking it through official approval and publication completes the demonstration.',
 		// Reuses the approved Phase 1F recording — it covers the event SETUP
 		// (course, rounds, groups), not scoring; the label says so.
 		walkthroughHref: '/walkthroughs/phase1f',
@@ -132,7 +132,6 @@ export const capabilities: Capability[] = [
 		status: 'complete',
 		progress:
 			'Phone-first scorecard resolved from the Phase 1F setup: event, rounds with hole counts derived from their course (the FLI demo shows Round 1 · 9 holes · Red, an intermission, Round 2 · 9 holes · Blue — the second pass displays 10–18 while scores stay keyed by round and physical hole), groups, teams, and athletes. Per-athlete integer strokes with draft save/resume; missing scores are visible, block submission, and are never stored as zero; every change is logged with its author; Submitted locks against silent overwrites with Owner/Admin-only reopen requiring a recorded reason; once scoring starts, a group\u2019s athlete lineup is fixed. Entry requires the Scorekeeper role plus a group assignment in the event (event-wide, per the agreed cross-group rule) — Viewers stay read-only even when listed as a group\u2019s scorekeeper. Merged in PR #17 and verified by 5 integration tests and a 21-assertion phone browser flow. Narrated walkthrough video available.',
-		next: 'Official approval, publication, and corrections (Phase 1H).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1g',
 		narration: 'recorded'
@@ -142,11 +141,13 @@ export const capabilities: Capability[] = [
 		description:
 			'Approval and publication with versioned corrections that preserve author, time, reason, and previous values.',
 		milestone: 'Phase 1H',
-		status: 'in-progress',
+		status: 'complete',
 		progress:
-			'Event-level official results reviewed and approved by Owners/Admins only when every (round × group) scorecard is Submitted — missing scores block approval and never count as zero. Approval snapshots per-athlete and per-team totals into an append-only version; publication stamps it; while approved or published, the event\u2019s scorecards are locked. There is no unpublish: reopening requires a recorded reason, visibly marks the result under correction (the last published version stays on record), and corrections flow through the scorecard reopen, reapproval (exactly one new version carrying the reason), and republication. Version and audit collections reject all client writes, so approval, publication, author, and correction metadata cannot be forged. Implemented and verified on this branch by 5 integration tests and a browser flow; not yet merged. Standings and fantasy consumption remain planned; the playoff shootout stays documentation-only.',
+			'Event-level official results reviewed and approved by Owners/Admins only when every (round × group) scorecard is Submitted — missing scores block approval and never count as zero. Approval snapshots per-athlete and per-team totals into an append-only version; publication stamps it; while approved or published, the event\u2019s scorecards are locked. There is no unpublish: reopening requires a recorded reason, visibly marks the result under correction (the last published version stays on record), and corrections flow through the scorecard reopen, reapproval (exactly one new version carrying the reason), and republication. Version and audit collections reject all client writes, so approval, publication, author, and correction metadata cannot be forged. Merged in PR #20 and verified by 5 integration tests (72/72 full suite) plus a browser flow with viewer-continuity assertions at every stage. Standings and fantasy consumption remain planned; the playoff shootout stays documentation-only. Narrated walkthrough video available.',
 		next: 'Competition standings and public pages (Phase 1I); fantasy consumes published results only (Phase 2).',
-		featureHref: '/organizations'
+		featureHref: '/organizations',
+		walkthroughHref: '/walkthroughs/phase1h',
+		narration: 'recorded'
 	},
 	{
 		title: 'Competition standings',

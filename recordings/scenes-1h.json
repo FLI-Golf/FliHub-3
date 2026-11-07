@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1h",
+	"title": "FliHub Phase 1H walkthrough — official results and corrections",
+	"note": "Review preview — narration scripted (recordings/narration-phase1h.md). Record with `npm run record:walkthrough-1h`. The demo starts after the scorecards are submitted so the video focuses on official results, Viewer labels, and the correction lifecycle.",
+	"scenes": [
+		{
+			"id": "s1-approve-publish",
+			"title": "Owner approves and publishes the first official result",
+			"persona": "owner",
+			"approxSeconds": 22.0
+		},
+		{
+			"id": "s2-reopen-correct",
+			"title": "Result reopened with a reason; one score corrected and v2 approved",
+			"persona": "owner",
+			"approxSeconds": 26.0
+		},
+		{
+			"id": "s3-viewer-mid-correction",
+			"title": "Viewer still sees official v1 while v2 waits to publish",
+			"persona": "viewer",
+			"approxSeconds": 18.0
+		},
+		{
+			"id": "s4-publish-v2",
+			"title": "Owner republishes, then Viewer sees v2 official while v1 stays in history",
+			"persona": "viewer",
+			"approxSeconds": 20.0
+		}
+	]
+}

@@ -107,6 +107,17 @@ const WALKTHROUGHS = {
 		mp4Name: 'phase1g-walkthrough-narrated-preview.mp4',
 		vttName: 'phase1g-walkthrough-preview.vtt',
 		timelineName: 'narrated-timeline-1g.json'
+	},
+	// Phase 1H also remains a preview-only review asset until approved.
+	'1h': {
+		silent: 'phase1h-walkthrough.webm',
+		manifest: 'run-manifest-1h.json',
+		narration: 'narration-1h.json',
+		cacheDir: 'narration-1h',
+		publishDir: path.join(root, 'static', 'review'),
+		mp4Name: 'phase1h-walkthrough-narrated-preview.mp4',
+		vttName: 'phase1h-walkthrough-preview.vtt',
+		timelineName: 'narrated-timeline-1h.json'
 	}
 };
 const W = WALKTHROUGHS[process.argv[2] ?? '1a'];

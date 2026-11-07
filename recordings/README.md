@@ -16,6 +16,7 @@ npm run record:walkthrough-1d          # Phase 1D
 npm run record:walkthrough-1e          # Phase 1E
 npm run record:walkthrough-1f          # Phase 1F
 npm run record:walkthrough-1g          # Phase 1G (phone viewport)
+npm run record:walkthrough-1h          # Phase 1H (official results and corrections)
 ```
 
 The runner (`run-walkthrough.mjs [1a|1b]`):
