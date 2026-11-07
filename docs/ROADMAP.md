@@ -43,7 +43,7 @@ The first end-to-end demonstration covers:
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)                   |
 | 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)                   |
 | 1H    | Official approval, publication, playoff, and corrections      | Complete — merged (see below; playoff excluded) |
-| 1I    | Organization publishing and public competition standings      | Implemented — verified locally (see below)      |
+| 1I    | Organization publishing and public competition standings      | Complete — merged (see below)                   |
 | 2A    | Fantasy membership and event draft preparation                | Not started                                     |
 | 2B    | Owner-controlled live snake draft                             | Not started                                     |
 | 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                     |
@@ -421,6 +421,14 @@ recorded open decision; embeds (2E) and the public API (2F) must reuse
 `public_rules.js` verbatim when they arrive; the full six-group disc golf
 demo has not been taken through public standings (tracked separately —
 Milestones.md does not make it a Phase 1I acceptance criterion).
+
+Phase 1I closeout (2026-11-07): merged as PR #22 (`d9faa3a`); the D17
+completeness ranking (ranked only with a result in every counted event;
+Unranked rows show their strokes and "1 of 2 events"-style counts) was added
+and verified on the merged main (78/78 integration, full 1A–1I e2e). The
+narrated walkthrough was recorded on a disposable stack with fictional data,
+approved, and published byte-identically at `/walkthroughs/phase1i` with
+captions (see docs/phase1i-standings-public-pages-walkthrough/README.md).
 
 ## Unresolved questions (recorded, not answered)
 
