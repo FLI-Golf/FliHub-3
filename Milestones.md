@@ -312,7 +312,7 @@ documentation only.
 | 1E       | Season rosters, reserve pools, and substitutions         | Complete    | Historical roster assignments and disc golf reserve handling                                                                   |
 | 1F       | Course layouts, rounds, groups, and assignments          | Complete    | Two-round, red/blue basket event setup with six groups and scorekeepers                                                        |
 | 1G       | Mobile scorekeeping and submission                       | Complete    | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
-| 1H       | Official approval, publication, playoff, and corrections | Not started | Approved and published results with versioned corrections                                                                      |
+| 1H       | Official approval, publication, playoff, and corrections | Complete    | Approved and published results with versioned corrections                                                                      |
 | 1I       | Organization publishing and public competition standings | Not started | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
 | 2A       | Fantasy membership and event draft preparation           | Not started | Six-person fantasy membership and per-event draft preparation                                                                  |
 | 2B       | Owner-controlled live snake draft                        | Not started | Four-round, eligibility-aware, manually started draft                                                                          |
@@ -1245,7 +1245,8 @@ The cross-group scorekeeper access rule is already agreed in Section 4.3: author
 
 ## Phase 1H — Official approval, publication, playoff, and corrections
 
-**Status:** Implemented and verified locally (2026-11-06) — official results
+**Status:** Complete — implemented, verified, and merged (feature PR #20;
+narrated walkthrough published with this closeout) — official results
 and corrections only; playoff implementation remains outside this phase (the
 §4.8 shootout stays documentation-only). Evidence: docs/ROADMAP.md "Phase 1H
 verification record". Lifecycle and authority decisions approved by Dustin

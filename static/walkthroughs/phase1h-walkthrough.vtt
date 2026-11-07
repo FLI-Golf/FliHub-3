@@ -1,0 +1,17 @@
+WEBVTT
+
+s1-approve-publish
+00:00:01.200 --> 00:00:10.470
+The Owner approves the event result and publishes it. The Viewer sees the official published result — v1 at 108 strokes.
+
+s2-reopen-correct
+00:00:12.870 --> 00:00:27.920
+The Owner reopens the result with a recorded reason, corrects one stroke from 3 to 5, and approves v2 at 110 without replaying all 18 holes. The correction reason stays visible in history.
+
+s3-viewer-mid-correction
+00:00:30.320 --> 00:00:42.440
+Before v2 is published, the Viewer still sees v1 at 108 as the official result while v2 sits in review, labeled as awaiting publication.
+
+s4-publish-v2
+00:00:44.840 --> 00:00:56.440
+The Owner publishes v2, and the Viewer now sees the corrected official result — v2 at 110 — while v1 remains preserved in version history.

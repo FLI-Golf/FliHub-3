@@ -82,7 +82,7 @@
 		{
 			"id": "scoring-results",
 			"label": "Scoring & official results",
-			"description": "Mobile score entry and submission; approval and official results arrive with Phase 1H.",
+			"description": "Mobile score entry and submission with Owner/Admin official-result approval, publication, and versioned corrections.",
 			"availability": "available",
 			"milestone": "Phases 1G–1H",
 			"dependsOn": ["events"]

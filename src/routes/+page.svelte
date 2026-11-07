@@ -22,7 +22,7 @@
 <!-- Hero -->
 <section class="flex flex-col items-start gap-4 py-6 sm:py-10">
 	<div class="flex flex-wrap items-center gap-2">
-		<Badge>Through Phase 1G — mobile scorekeeping</Badge>
+		<Badge>Through Phase 1H — official results</Badge>
 		<Badge variant="outline">SvelteKit</Badge>
 		<Badge variant="outline">Tailwind CSS</Badge>
 		<Badge variant="outline">shadcn-svelte</Badge>
@@ -35,8 +35,8 @@
 		A configurable platform for sports organizations with connected fantasy competitions. Verified
 		today: accounts, organizations, invitations and roles, configurable onboarding, athlete records,
 		competition structure, season rosters with reserve pools, event operations (courses, rounds,
-		groups), and phone-first scorekeeping. Official results, standings, and fantasy features below
-		are planned, not yet available.
+		groups), phone-first scorekeeping, and official results with versioned corrections. Standings
+		and fantasy features below are planned, not yet available.
 	</p>
 	<div class="flex flex-wrap gap-2">
 		{#if data.user}
@@ -208,7 +208,7 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">What works today</Card.Title>
-				<Card.Description>Delivered and verified across Phases 1A–1G.</Card.Description>
+				<Card.Description>Delivered and verified across Phases 1A–1H.</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -239,6 +239,11 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 					<li>
 						Phone-first score entry with Draft → Submitted scorecards, missing-never-zero
 						submission, and locked submissions with reasoned, audited reopen (1G).
+					</li>
+					<li>
+						Owner/Admin-only official-result approval and publication with snapshotted totals,
+						reasoned reopening with no unpublish, and versioned, forgery-proof correction history
+						(1H).
 					</li>
 				</ul>
 			</Card.Content>

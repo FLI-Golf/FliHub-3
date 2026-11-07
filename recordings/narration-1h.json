@@ -1,0 +1,25 @@
+{
+	"comment": "Machine-readable twin of narration-phase1h.md. `tts` is the ElevenLabs synthesis input (FliHub spelled 'Fly Hub', 1H spoken 'one-H'); `caption` keeps the correct spelling. This preview is intentionally short and focused on the Viewer-facing result changes.",
+	"scenes": [
+		{
+			"id": "s1-approve-publish",
+			"caption": "The Owner approves the event result and publishes it. The Viewer sees the official published result — v1 at 108 strokes.",
+			"tts": "The Owner approves the event result and publishes it. The Viewer sees the official published result — version one, at one hundred eight strokes."
+		},
+		{
+			"id": "s2-reopen-correct",
+			"caption": "The Owner reopens the result with a recorded reason, corrects one stroke from 3 to 5, and approves v2 at 110 without replaying all 18 holes. The correction reason stays visible in history.",
+			"tts": "The Owner reopens the result with a recorded reason, corrects one stroke from three to five, and approves version two at one hundred ten without replaying all eighteen holes. The correction reason stays visible in history."
+		},
+		{
+			"id": "s3-viewer-mid-correction",
+			"caption": "Before v2 is published, the Viewer still sees v1 at 108 as the official result while v2 sits in review, labeled as awaiting publication.",
+			"tts": "Before version two is published, the Viewer still sees version one at one hundred eight as the official result while version two sits in review, labeled as awaiting publication."
+		},
+		{
+			"id": "s4-publish-v2",
+			"caption": "The Owner publishes v2, and the Viewer now sees the corrected official result — v2 at 110 — while v1 remains preserved in version history.",
+			"tts": "The Owner publishes version two, and the Viewer now sees the corrected official result — version two at one hundred ten — while version one remains preserved in version history."
+		}
+	]
+}

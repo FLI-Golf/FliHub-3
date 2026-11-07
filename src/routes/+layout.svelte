@@ -33,7 +33,7 @@
 				<img src={logoIcon} alt="" class="size-9 shrink-0 object-contain" />
 				FliHub
 			</a>
-			<Badge variant="secondary">Phase 1G</Badge>
+			<Badge variant="secondary">Phase 1H</Badge>
 			<nav class="ml-auto hidden items-center gap-1 sm:flex">
 				{#if data.user}
 					<Button variant="ghost" href={resolve('/(app)/organizations')}>Organizations</Button>
@@ -83,9 +83,9 @@
 			class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
 		>
 			<p>
-				FliHub Phase 1G build. Organizations, onboarding, athletes, competition structure, rosters,
-				event operations, and mobile scorekeeping are implemented and verified; official results,
-				standings, and fantasy remain planned.
+				FliHub Phase 1H build. Organizations, onboarding, athletes, competition structure, rosters,
+				event operations, mobile scorekeeping, and official results with versioned corrections are
+				implemented and verified; standings and fantasy remain planned.
 			</p>
 			<p>
 				PocketBase: {data.pocketbase.configured ? 'configured' : 'not configured'}
