@@ -14,6 +14,7 @@
 	import EventOpsManager from '$lib/components/EventOpsManager.svelte';
 	import CoursesManager from '$lib/components/CoursesManager.svelte';
 	import ScoringManager from '$lib/components/ScoringManager.svelte';
+	import StandingsTables from '$lib/components/StandingsTables.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
@@ -129,6 +130,17 @@
 			canScore={data.scoringData.canScore}
 			myRole={data.myRole}
 		/>
+	{:else if data.capability.id === 'standings' && data.capability.availability === 'available' && data.standingsData}
+		<div class="flex flex-col gap-4" data-testid="member-standings">
+			<p class="text-sm text-muted-foreground">
+				Standings use only published official results (D16): seasons sum total strokes across their
+				events with a published result — lowest total leads, teams and athletes are ranked only
+				after a result in every counted event (others show Unranked with their strokes), and equal
+				totals among ranked rows share a position. Pending corrections never count until
+				republished.
+			</p>
+			<StandingsTables standings={data.standingsData.standings} testid="member-standings" />
+		</div>
 	{:else}
 		<Card.Root class="max-w-2xl">
 			<Card.Header>

@@ -22,7 +22,7 @@
 <!-- Hero -->
 <section class="flex flex-col items-start gap-4 py-6 sm:py-10">
 	<div class="flex flex-wrap items-center gap-2">
-		<Badge>Through Phase 1H — official results</Badge>
+		<Badge>Through Phase 1I — public pages & standings</Badge>
 		<Badge variant="outline">SvelteKit</Badge>
 		<Badge variant="outline">Tailwind CSS</Badge>
 		<Badge variant="outline">shadcn-svelte</Badge>
@@ -35,8 +35,9 @@
 		A configurable platform for sports organizations with connected fantasy competitions. Verified
 		today: accounts, organizations, invitations and roles, configurable onboarding, athlete records,
 		competition structure, season rosters with reserve pools, event operations (courses, rounds,
-		groups), phone-first scorekeeping, and official results with versioned corrections. Standings
-		and fantasy features below are planned, not yet available.
+		groups), phone-first scorekeeping, official results with versioned corrections, competition
+		standings from published results, and published organization pages. Fantasy features below are
+		planned, not yet available.
 	</p>
 	<div class="flex flex-wrap gap-2">
 		{#if data.user}

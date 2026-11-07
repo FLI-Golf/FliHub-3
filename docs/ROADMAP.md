@@ -43,7 +43,7 @@ The first end-to-end demonstration covers:
 | 1F    | Course layouts, rounds, groups, and scorekeeper assignments   | Complete — merged (see below)                   |
 | 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)                   |
 | 1H    | Official approval, publication, playoff, and corrections      | Complete — merged (see below; playoff excluded) |
-| 1I    | Organization publishing and public competition standings      | Not started                                     |
+| 1I    | Organization publishing and public competition standings      | Implemented — verified locally (see below)      |
 | 2A    | Fantasy membership and event draft preparation                | Not started                                     |
 | 2B    | Owner-controlled live snake draft                             | Not started                                     |
 | 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                     |
@@ -364,6 +364,64 @@ Verified on this branch (2026-11-06), locally (CI runs on the PR):
   version history. Full suite (1A–1H specs): exit 0.
 - `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
 
+### Phase 1I verification record
+
+Verified on this branch (2026-11-07), locally (CI runs on the PR):
+
+- Decisions: approved by Dustin and recorded as D17 — standings sum total
+  strokes per season over the currently PUBLISHED official result version of
+  each eligible event (lowest leads; rows are ranked only with a result in
+  every event counted in that view — incomplete participation shows
+  Unranked with its strokes and "played of counted", and missing results
+  never add strokes; equal totals among ranked rows share a rank, with a
+  needed-winner tie resolved after the round where it occurs via the
+  recorded future-work shootout — no playoff in 1I; par-relative coloring —
+  under par red, par blue, over par default — is a display preference only); one shared publication-rule layer
+  (`pocketbase/pb_hooks/public_rules.js`) is the only public read path — no
+  collection rule was opened to anonymous callers; publication is explicit
+  and per-record; slugs are 3–50 lowercase chars with single hyphens, unique,
+  reserved-word-checked, Owner/Admin-managed through a trusted audited
+  endpoint; unpublished pages are hidden 404s; corrected results carry a
+  "Corrected" badge with the republication date and reasons stay private.
+- `npm run test:integration` — 77/77 passing (72 Phase 1A–1H regression + 5
+  Phase 1I): Owner/Admin-only public-page management with slug
+  validation/normalization/reservation/uniqueness and locked direct
+  organization writes, audited changes; hidden-until-published pages with
+  exact top-level/organization/athlete field whitelists, per-record
+  publication, no private contact data, no internal configuration, members-
+  only anonymous collection reads, unpublish-then-republish preserving data;
+  the D16 standings acceptance (published v1 counts once; a pending
+  approved-but-unpublished v2 changes nothing and leaks no reason;
+  republication replaces the contribution exactly once with a correction
+  indicator); aggregation (season sums across two events with per-event and
+  summed par, rank order, shared season boundaries — a second season and a
+  members-only event never leak into the public tables, while member
+  standings include every officially published event); preview and member
+  standings restricted to members with anonymous callers rejected and
+  viewer toggles denied.
+- Browser acceptance (`tests/e2e/phase1i.spec.mjs`): owner reserves the slug
+  and branding, publishes the event/team/one athlete per-record, sees a 404
+  before the explicit page publish, publishes; a SIGNED-OUT context then
+  reads `/o/<slug>` — branding, schedule, standings (v1 total, E at par),
+  result, published team and athlete only — with the private athlete email/
+  phone/notes absent from the rendered HTML and the raw payload, the D11
+  field whitelist asserted on the payload, and unknown slugs 404; the D16
+  correction lifecycle on the public surface (pending v2 invisible,
+  republished v2 shown once with a Corrected badge and no reason);
+  unpublish hides the page (404) while the members-only preview keeps the
+  data; a Viewer gets the preview with no management controls; the member
+  standings capability page shows the corrected totals. Full suite (1A–1I
+  specs): exit 0 (1B now uses Fantasy as the honest planned-panel example
+  since Standings became a working page).
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
+
+Remaining Phase 1I limitations: the organization logo is a URL field
+(upload deferred); athlete self-service opt-out from public profiles is a
+recorded open decision; embeds (2E) and the public API (2F) must reuse
+`public_rules.js` verbatim when they arrive; the full six-group disc golf
+demo has not been taken through public standings (tracked separately —
+Milestones.md does not make it a Phase 1I acceptance criterion).
+
 ## Unresolved questions (recorded, not answered)
 
 These remain open from Milestones.md and must not be guessed in code:
@@ -377,7 +435,10 @@ These remain open from Milestones.md and must not be guessed in code:
 - Incomplete-draft handling and the final draft preparation/completion window.
 - Exact invitation/acceptance experience and ownership-transfer UX details.
 - Which published fields are public by default and per-organization
-  restrictions.
+  restrictions — largely resolved by D17 (nothing public by default,
+  per-record publication, fixed field whitelists in the shared
+  publication-rule layer); per-organization restrictions beyond the fixed
+  whitelist and athlete self-service opt-out remain open.
 
 ## Deferred work
 

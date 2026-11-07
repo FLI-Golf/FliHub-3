@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
 import { pbErrorMessage, pbErrorStatus, toOrganizationDTO } from '$lib/server/auth';
 import { capabilityDefinitions, getCapability } from '$lib/capabilities/catalog';
+import type { StandingsTable } from '$lib/public-page';
 
 const ID_PATTERN = /^[a-z0-9]{15}$/;
 
@@ -522,6 +523,22 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		};
 	}
 
+	// Phase 1I: competition standings from published official results, computed
+	// by the shared publication-rule layer. Members see standings over ALL
+	// events with a currently published official result; the per-record public
+	// flag gates only the public surfaces.
+	let standingsData = null;
+	if (capability.id === 'standings' && enabled) {
+		try {
+			const response = (await pb.send(`/api/flihub/organizations/${params.id}/standings`, {
+				method: 'GET'
+			})) as { standings: StandingsTable[] };
+			standingsData = { standings: response.standings };
+		} catch {
+			standingsData = { standings: [] };
+		}
+	}
+
 	return {
 		organization: dto,
 		myRole,
@@ -535,7 +552,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		competition,
 		eventsData,
 		coursesData,
-		scoringData
+		scoringData,
+		standingsData
 	};
 };
 

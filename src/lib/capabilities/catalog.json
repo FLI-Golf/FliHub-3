@@ -91,7 +91,7 @@
 			"id": "standings",
 			"label": "Competition standings",
 			"description": "Standings computed from approved, published results.",
-			"availability": "planned",
+			"availability": "available",
 			"milestone": "Phase 1I",
 			"dependsOn": ["scoring-results"]
 		},
