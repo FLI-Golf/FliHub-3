@@ -15,6 +15,7 @@
 	import CoursesManager from '$lib/components/CoursesManager.svelte';
 	import ScoringManager from '$lib/components/ScoringManager.svelte';
 	import StandingsTables from '$lib/components/StandingsTables.svelte';
+	import FantasyManager from '$lib/components/FantasyManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
@@ -141,6 +142,12 @@
 			</p>
 			<StandingsTables standings={data.standingsData.standings} testid="member-standings" />
 		</div>
+	{:else if data.capability.id === 'fantasy' && data.capability.availability === 'available' && data.fantasyData}
+		<FantasyManager
+			organizationId={data.organization.id}
+			leagues={data.fantasyData.leagues}
+			{form}
+		/>
 	{:else}
 		<Card.Root class="max-w-2xl">
 			<Card.Header>

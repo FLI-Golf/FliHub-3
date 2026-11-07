@@ -1472,7 +1472,13 @@ The same publication rules that gate the hosted public page also gate the later 
 
 ## Phase 2A — Fantasy membership and event draft preparation
 
-**Status:** Not started
+**Status:** In progress — implemented and verified locally on the feature
+branch (2026-11-07, decisions recorded as D18): league creation with a
+configurable participant limit, in-app invite → accept → approve lifecycle,
+fantasy/staff role independence, and per-event draft preparation with an
+independently randomized, persisted first-round order. Invitation email
+delivery is not implemented (in-app seats only, matching the 1A copy-link
+precedent).
 
 ### Goal and user-visible outcome
 
@@ -1541,14 +1547,28 @@ The fantasy draft occurs before the event starts and before scoring. It depends 
 
 ### Open decisions blocking this phase
 
-- Final fantasy league naming.
-- Participant visibility and privacy.
-- Handling of rejected, withdrawn, or inactive participants.
-- Exact draft preparation window.
+- ~~Final fantasy league naming.~~
+  **Resolved (D18, approved):** free-form league names (2–80 characters);
+  the demo league name is fixture data.
+- Participant visibility and privacy — lobby and board data are visible to
+  league members only (any seat for the lobby, approved seats for boards);
+  finer-grained visibility remains open.
+- Handling of rejected, withdrawn, or inactive participants — decline and
+  owner-remove exist; replacement/rejoin policy beyond re-inviting remains
+  open.
+- Exact draft preparation window — drafts are creatable once seats fill and
+  start manually; a formal window remains open.
 
 ## Phase 2B — Owner-controlled live snake draft
 
-**Status:** Not started
+**Status:** In progress — implemented and verified locally on the feature
+branch (2026-11-07, decisions recorded as D18): owner-started four-round
+snake drafts with persisted order, server-owned turns and deadlines, 7/15/30
+second clocks (2 seconds on disposable demo stacks only), slot-aware timeout
+auto-picks, transactional race safety, reconnectable board state, and
+designated-substitute application with ambiguous cases rejected. Scheduled
+gathering countdowns and rescheduling notifications remain open (manual
+start only, per the demo scope).
 
 ### Goal and user-visible outcome
 
@@ -1620,10 +1640,18 @@ The fantasy owner can schedule or manually start a four-round snake draft with a
 
 ### Open decisions blocking this phase
 
-- Final timeout fallback policy.
+- ~~Final timeout fallback policy.~~
+  **Resolved (D18, approved):** on expiry the server auto-picks the
+  highest-ranked available athlete who fits the manager's remaining roster
+  slots, labeled Auto; the PRODUCTION ranking source and equal-rank ordering
+  stay open (deterministic fixture rankings and a labeled placeholder
+  default are used until decided).
 - Incomplete-draft policy at roster lock.
 - Participant pick visibility during and after the draft.
-- Replacement athlete ownership after official substitutions.
+- Replacement athlete ownership after official substitutions — the
+  designated same-division, unowned substitute takes the slot with the
+  original pick preserved (D18); duplicate-ownership, cross-division, and
+  chained cases are rejected pending a product ruling.
 
 ## Phase 2C — Fantasy scoring, explanations, and correction processing
 

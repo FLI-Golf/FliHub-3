@@ -77,7 +77,11 @@ try {
 	spawnSync(pbBin, [...pbArgs, 'superuser', 'upsert', SUPERUSER_EMAIL, SUPERUSER_PASSWORD], {
 		stdio: 'inherit'
 	});
-	start('pocketbase', pbBin, [...pbArgs, 'serve', '--http', `127.0.0.1:${PB_PORT}`]);
+	// Disposable test stack: the 2-second demo pick clock (D18) is allowed
+	// here so draft timeout behavior is testable without minute-long waits.
+	start('pocketbase', pbBin, [...pbArgs, 'serve', '--http', `127.0.0.1:${PB_PORT}`], {
+		FLIHUB_FANTASY_DEMO_CLOCK: '1'
+	});
 	await waitFor(`http://127.0.0.1:${PB_PORT}/api/health`);
 
 	// 3. Point the test instance's SMTP at the test mailpit.

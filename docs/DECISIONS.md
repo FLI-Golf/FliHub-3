@@ -536,6 +536,71 @@ outside Phase 1I); a public score ticker for the bottom of an
 organization's own website (a Phase 2E embed widget) and any live score
 feed — both outside Phase 1I.
 
+## D18 — Phases 2A–2B fantasy leagues and snake drafts (2026-11-07; approved by Dustin)
+
+**Decision 1 — membership model.** Private fantasy leagues are scoped to
+one organization but fantasy roles are fully independent of organization
+staff roles: all fantasy writes go through trusted hook endpoints
+(`pb_hooks/flihub_fantasy.pb.js`), reads require a fantasy seat, and
+organization staff see no fantasy data without one (nor do fantasy managers
+gain any organization access — the draft board endpoint supplies athlete and
+team names so managers need no collection reads). Lifecycle: the owner
+invites an existing account (in-app, no email delivery) → the invitee
+accepts or declines → the owner approves; only approved seats count toward
+the configurable participant limit (default 6, range 2–12). The owner seat
+cannot be removed.
+
+**Decision 2 — per-event snake drafts.** One draft per (league, event),
+creatable only when every seat is approved and the event's eligible pool
+covers 2 MPO + 2 FPO per manager. The eligible pool is the event's ACTIVE
+group athletes (real event lineups), displayed with their real event teams
+("Athlete" in the UI; the reference demo's "pros" are FliHub Athlete
+records). The first-round manager order is drawn randomly once at creation
+and persisted; direction reverses each round; six managers × four rounds =
+24 picks. The owner starts the draft manually. Completed rosters hold
+exactly 2 MPO and 2 FPO athletes — the server rejects any pick (and skips
+any auto-pick) that would exceed two of a division, which guarantees rounds
+3–4 can always complete validly. One selection per athlete per draft and
+one pick per turn are transactional with unique-index backstops, so a
+manual pick racing the timeout produces exactly one pick and advances the
+turn exactly once.
+
+**Decision 3 — clocks and timeouts.** Pick clocks are 7, 15, or 30 seconds
+(replacing the earlier 60-second default idea). A 2-second clock exists
+ONLY for disposable demo/walkthrough/test stacks via
+FLIHUB_FANTASY_DEMO_CLOCK=1 — normal instances reject it. Deadlines are
+persisted server-side; expiry is processed lazily by a trusted `tick`
+endpoint called from connected managers' polling (no PocketBase realtime —
+polling was chosen for 2B; revisit for later phases). On expiry the server
+auto-picks the highest-ranked AVAILABLE athlete who fits the manager's
+remaining roster slots, labeled Auto. If every manager disconnects, the
+draft pauses at the expired deadline — nothing drafts invisibly — and the
+first reconnect triggers the single overdue auto-pick with a fresh clock.
+Rankings are per-draft: callers may supply deterministic rankings
+(tests/fixtures); the default is the deterministic pool order (lastName,
+firstName, id) as a clearly-labeled placeholder.
+
+**Decision 4 — withdrawals and designated substitutes.** When a drafted
+athlete has a designated event substitute (a Phase 1E `substitutions` row
+for that event and athlete), the league owner applies it to the completed
+roster slot: the substitute takes over, the ORIGINAL pick is preserved
+unchanged, and the substitution is recorded separately on the pick
+(substituteAthlete + the 1E substitution reference + timestamp). Ambiguous
+cases are REJECTED with `substitution_unresolved`, never guessed: a
+substitute whose gender/division differs from the slot, a substitute
+already on any fantasy roster in the draft (duplicate ownership), and
+chained substitutions all need a product ruling.
+
+**Open (recorded, not implemented).** The production source of real-event
+rankings for timeout auto-picks and the ordering of equal-ranked athletes
+(the deterministic placeholder is not a product rule); scheduled gathering
+countdowns, rescheduling notifications, and the exact draft
+preparation/completion window; incomplete-draft policy at roster lock;
+participant pick visibility during/after drafts beyond league members;
+handling of rejected/withdrawn/inactive participants beyond
+decline/remove; duplicate-ownership, cross-division, and chained
+substitution policies (rejected for now); fantasy scoring (Phase 2C).
+
 ## Open decisions
 
 - Hosting adapter (currently `adapter-auto`; choose a concrete adapter when a

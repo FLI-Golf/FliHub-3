@@ -173,7 +173,10 @@ try {
 		stdio: 'inherit'
 	});
 	start('pocketbase', pbBin, [...pbArgs, 'serve', '--http', `127.0.0.1:${PB_PORT}`], {
-		FLIHUB_APP_URL: `http://127.0.0.1:${APP_PORT}`
+		FLIHUB_APP_URL: `http://127.0.0.1:${APP_PORT}`,
+		// Disposable recording stack: the 2-second demo pick clock (D18) keeps
+		// walkthrough drafts watchable; normal instances only allow 7/15/30s.
+		FLIHUB_FANTASY_DEMO_CLOCK: '1'
 	});
 	await waitFor(`http://127.0.0.1:${PB_PORT}/api/health`);
 

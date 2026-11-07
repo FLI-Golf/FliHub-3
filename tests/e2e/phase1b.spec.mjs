@@ -94,10 +94,10 @@ try {
 		'league template leaves fantasy unchecked'
 	);
 	// Defaults are editable: drop Venues & courses (nothing depends on it) and
-	// add Fantasy (its standings dependency is a league default) as the
-	// honestly-Planned capability — Standings became a working page in 1I.
+	// add Sponsorships (no dependencies) as the honestly-Upcoming capability —
+	// Standings (1I) and Fantasy (2A–2B) became working pages.
 	await p.uncheck('input[name="capability"][value="venues-courses"]');
-	await p.check('input[name="capability"][value="fantasy"]');
+	await p.check('input[name="capability"][value="sponsorships"]');
 	await p.click('button:has-text("Create organization")');
 	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
 	await p.waitForSelector('text=Your role: Owner');
@@ -106,21 +106,25 @@ try {
 
 	// Settings link visible to owner; capability nav present with honest labels.
 	await p.waitForSelector('nav >> text=Settings');
-	expect((await p.$$('nav >> text=Planned')).length > 0, 'subnav shows Planned capability labels');
+	expect(
+		(await p.$$('nav >> text=Upcoming')).length > 0,
+		'subnav shows Upcoming capability labels'
+	);
 	await p.screenshot({ path: path.join(OUT, '1b-02-league-org.png') });
 
 	// ---- Capability destination pages ----------------------------------------
 	// Athletes (1C), Teams/Leagues & seasons/Events (1D), Venues & courses
-	// (1F), Scoring (1G), and Standings (1I) became working workflows; Fantasy
-	// stays planned and must keep its honest planned panel with no fake CRUD.
+	// (1F), Scoring (1G), Standings (1I), and Fantasy (2A–2B) became working
+	// workflows; Sponsorships stays deferred and must keep its honest panel
+	// with no fake CRUD.
 	console.log('Step 3: capability pages are honest, not fake CRUD');
-	await p.click('nav >> text=Fantasy');
-	await p.waitForSelector('text=Planned');
+	await p.click('nav >> text=Sponsorships');
+	await p.waitForSelector('text=Upcoming');
 	const capText = await p.locator('main').innerText();
-	expect(capText.includes('Fantasy'), 'fantasy capability page reachable from nav');
+	expect(capText.includes('Sponsorships'), 'sponsorships capability page reachable from nav');
 	expect(
-		!capText.includes('Create league') && !capText.includes('Start draft'),
-		'no fake CRUD controls on planned page'
+		!capText.includes('Add sponsor') && !capText.includes('Create sponsorship'),
+		'no fake CRUD controls on deferred page'
 	);
 	// A capability that is NOT enabled rejects direct-URL access with an explanation.
 	await p.goto(`${leagueUrl}/cap/venues-courses`);

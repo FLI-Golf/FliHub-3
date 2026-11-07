@@ -16,18 +16,18 @@ same file — there is no forked list:
 
 ## Catalog
 
-| Capability        | Label                      | Availability | Depends on      | Milestone           |
-| ----------------- | -------------------------- | ------------ | --------------- | ------------------- |
-| `athletes`        | Athletes                   | available    | —               | Phase 1C            |
-| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E        |
-| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D            |
-| `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F        |
-| `events`          | Events                     | available    | —               | Phases 1D–1F        |
-| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H        |
-| `standings`       | Competition standings      | available    | scoring-results | Phase 1I            |
-| `fantasy`         | Fantasy leagues            | planned      | standings       | Phases 2A–2C        |
-| `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred) |
-| `reimbursements`  | Reimbursements & expenses  | upcoming     | —               | Phase 3+ (deferred) |
+| Capability        | Label                      | Availability | Depends on      | Milestone                 |
+| ----------------- | -------------------------- | ------------ | --------------- | ------------------------- |
+| `athletes`        | Athletes                   | available    | —               | Phase 1C                  |
+| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E              |
+| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D                  |
+| `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F              |
+| `events`          | Events                     | available    | —               | Phases 1D–1F              |
+| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H              |
+| `standings`       | Competition standings      | available    | scoring-results | Phase 1I                  |
+| `fantasy`         | Fantasy leagues            | available    | standings       | Phases 2A–2B (2C planned) |
+| `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred)       |
+| `reimbursements`  | Reimbursements & expenses  | upcoming     | —               | Phase 3+ (deferred)       |
 
 Three layers are kept separate:
 
@@ -288,3 +288,40 @@ working capability and added the organization public page.
   carry a public "Corrected" badge with the republication date — reasons and
   version history stay members-only. The hosted page lives at `/o/<slug>`;
   management and preview at `/organizations/[id]/public`.
+
+## Available capability behavior: fantasy leagues and drafts (Phases 2A–2B)
+
+Phases 2A–2B (decisions recorded as D18) made **Fantasy leagues** a working
+capability for league setup and live per-event snake drafts; fantasy scoring
+remains planned for Phase 2C.
+
+- **Independent membership** — fantasy seats are personal and separate from
+  organization staff roles in both directions: every fantasy write (and the
+  draft board read) goes through the trusted `flihub_fantasy.pb.js`
+  endpoints, so organization staff see no fantasy data without a seat and
+  fantasy managers gain no organization access. The lifecycle is owner
+  invite (in-app, existing accounts) → invitee accept/decline → owner
+  approve; only approved seats count toward the configurable limit.
+- **Per-event snake drafts** — one draft per (league, event), creatable only
+  when every seat is approved and the event pool covers 2 MPO + 2 FPO per
+  manager. The eligible pool is the event's active group athletes shown with
+  their real event teams. The first-round order is drawn randomly once,
+  persisted, and reversed each round (24 picks for six managers); the owner
+  starts the draft manually.
+- **Server-owned boards** — turn, deadline, picks, and rosters live on the
+  server, so every manager polls the same state and reconnecting is just
+  reloading. Pick clocks are 7/15/30 seconds (2 seconds only on disposable
+  demo stacks); expired deadlines auto-pick the highest-ranked available
+  athlete who fits the manager's remaining slots (per-draft rankings; the
+  production ranking source is a recorded open decision). Turn order,
+  eligibility, one-selection-per-athlete, and the 2 MPO + 2 FPO caps are
+  transactional with unique-index backstops — a manual pick racing the
+  timeout produces exactly one pick.
+- **Designated substitutes** — after a withdrawal, the league owner applies
+  the event's designated substitute (Phase 1E) to the completed roster slot:
+  the original pick is preserved and the substitution recorded separately;
+  cross-division, duplicate-ownership, and chained cases are rejected
+  pending a product ruling.
+
+The league lobby lives at `/organizations/[id]/fantasy/[league]`; draft
+rooms at `/organizations/[id]/fantasy/[league]/draft/[draft]`.

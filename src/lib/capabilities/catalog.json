@@ -98,9 +98,9 @@
 		{
 			"id": "fantasy",
 			"label": "Fantasy leagues",
-			"description": "Fantasy leagues, drafts, and scoring from published results.",
-			"availability": "planned",
-			"milestone": "Phases 2A–2C",
+			"description": "Private fantasy leagues with per-event snake drafts; scoring from published results arrives in Phase 2C.",
+			"availability": "available",
+			"milestone": "Phases 2A–2B (scoring 2C planned)",
 			"dependsOn": ["standings"]
 		},
 		{
