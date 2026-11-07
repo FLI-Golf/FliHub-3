@@ -1,0 +1,31 @@
+{
+	"walkthrough": "phase1i",
+	"title": "FliHub Phase 1I walkthrough — public pages and competition standings",
+	"note": "Review preview — narration scripted (recordings/narration-phase1i.md). Record with `npm run record:walkthrough-1i`. The entire take is the SIGNED-OUT visitor's view of the hosted public page; owner-side corrections happen off-camera so the video shows exactly what the public sees.",
+	"scenes": [
+		{
+			"id": "s1-public-page",
+			"title": "A signed-out visitor opens the hosted public page",
+			"persona": "visitor (signed out)",
+			"approxSeconds": 22.0
+		},
+		{
+			"id": "s2-unranked",
+			"title": "Solo A is Unranked at 1 of 2 events; Solo B leads with complete participation",
+			"persona": "visitor (signed out)",
+			"approxSeconds": 24.0
+		},
+		{
+			"id": "s3-pending-correction",
+			"title": "Standings hold steady while the corrected second result awaits publication",
+			"persona": "visitor (signed out)",
+			"approxSeconds": 18.0
+		},
+		{
+			"id": "s4-shared-first",
+			"title": "The corrected result publishes — both teams share first place at 24",
+			"persona": "visitor (signed out)",
+			"approxSeconds": 22.0
+		}
+	]
+}

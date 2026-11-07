@@ -1,0 +1,25 @@
+{
+	"comment": "Machine-readable twin of narration-phase1i.md. `tts` is the ElevenLabs synthesis input (FliHub spelled 'Fly Hub', numerals spelled out); `caption` keeps the correct spelling. The whole take is the signed-out visitor's view of the public page.",
+	"scenes": [
+		{
+			"id": "s1-public-page",
+			"caption": "Signed out, a visitor opens the organization's hosted public page. Branding, the published schedule, official results, and competition standings all come from explicitly published data — private fields and pending work are never exposed.",
+			"tts": "Signed out, a visitor opens the organization's hosted public page on Fly Hub. Branding, the published schedule, official results, and competition standings all come from explicitly published data. Private fields and pending work are never exposed."
+		},
+		{
+			"id": "s2-unranked",
+			"caption": "Standings rank a team only when it has a result in every counted event. Solo B played 2 of 2 events and leads at 24 strokes. Solo A has 12 strokes from 1 of 2 events, so it shows Unranked — missing results never add strokes.",
+			"tts": "Standings rank a team only when it has a result in every counted event. Solo B played two of two events and leads at twenty four strokes. Solo A has twelve strokes from one of two events, so it is shown Unranked. Missing results never add strokes."
+		},
+		{
+			"id": "s3-pending-correction",
+			"caption": "Solo A's missing second result is corrected and reapproved behind the scenes — but until it is republished, the public standings hold steady. Pending versions are invisible to visitors.",
+			"tts": "Solo A's missing second result is corrected and reapproved behind the scenes. But until it is republished, the public standings hold steady. Pending versions are invisible to visitors."
+		},
+		{
+			"id": "s4-shared-first",
+			"caption": "The moment the corrected result is published, Solo A's second event counts: both teams now stand at 24 strokes across 2 of 2 events and share first place — and the result carries a dated Corrected badge.",
+			"tts": "The moment the corrected result is published, Solo A's second event counts. Both teams now stand at twenty four strokes across two of two events and share first place, and the result carries a dated Corrected badge."
+		}
+	]
+}

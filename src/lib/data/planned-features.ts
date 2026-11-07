@@ -143,8 +143,8 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1H',
 		status: 'complete',
 		progress:
-			'Event-level official results reviewed and approved by Owners/Admins only when every (round × group) scorecard is Submitted — missing scores block approval and never count as zero. Approval snapshots per-athlete and per-team totals into an append-only version; publication stamps it; while approved or published, the event\u2019s scorecards are locked. There is no unpublish: reopening requires a recorded reason, visibly marks the result under correction (the last published version stays on record), and corrections flow through the scorecard reopen, reapproval (exactly one new version carrying the reason), and republication. Version and audit collections reject all client writes, so approval, publication, author, and correction metadata cannot be forged. Merged in PR #20 and verified by 5 integration tests (72/72 full suite) plus a browser flow with viewer-continuity assertions at every stage. Standings and fantasy consumption remain planned; the playoff shootout stays documentation-only. Narrated walkthrough video available.',
-		next: 'Competition standings and public pages (Phase 1I); fantasy consumes published results only (Phase 2).',
+			'Event-level official results reviewed and approved by Owners/Admins only when every (round × group) scorecard is Submitted — missing scores block approval and never count as zero. Approval snapshots per-athlete and per-team totals into an append-only version; publication stamps it; while approved or published, the event\u2019s scorecards are locked. There is no unpublish: reopening requires a recorded reason, visibly marks the result under correction (the last published version stays on record), and corrections flow through the scorecard reopen, reapproval (exactly one new version carrying the reason), and republication. Version and audit collections reject all client writes, so approval, publication, author, and correction metadata cannot be forged. Merged in PR #20 and verified by 5 integration tests (72/72 full suite) plus a browser flow with viewer-continuity assertions at every stage. Competition standings and public pages consume the published versions (Phase 1I); fantasy consumption remains planned; the playoff shootout stays documentation-only. Narrated walkthrough video available.',
+		next: 'Fantasy consumes published results only (Phase 2).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1h',
 		narration: 'recorded'
@@ -153,11 +153,13 @@ export const capabilities: Capability[] = [
 		title: 'Competition standings',
 		description: 'Standings produced only from approved and published official results.',
 		milestone: 'Phase 1I',
-		status: 'in-progress',
+		status: 'complete',
 		progress:
-			'Implemented and verified locally on the Phase 1I branch (D17): seasons sum total strokes across events with a currently published official result — lowest total leads, ties share a position (no invented tie-break), and scores display relative to par. Pending corrected versions never count; a republished correction replaces the previous contribution exactly once. Members see standings on the Standings capability page; the public page shows them for per-record published events only.',
-		next: 'Merge and CI; fantasy consumes published results only (Phase 2).',
-		featureHref: '/organizations'
+			'Merged in PR #22 (D17): seasons sum total strokes across events with a currently published official result — lowest total leads; a team or athlete is ranked only with a result in every counted event (incomplete participation shows Unranked with its strokes and an event count such as 1 of 2 — missing results never add strokes); equal totals among ranked rows share a position, and scores display relative to par. Pending corrected versions never count; a republished correction replaces the previous contribution exactly once. Members see standings on the Standings capability page; the public page shows them for per-record published events only. Verified by 6 integration tests (78/78 full suite) plus a signed-out browser flow. Narrated walkthrough video available.',
+		next: 'Fantasy consumes published results only (Phase 2); the full six-group disc golf demonstration is tracked separately.',
+		featureHref: '/organizations',
+		walkthroughHref: '/walkthroughs/phase1i',
+		narration: 'recorded'
 	},
 	{
 		title: 'Fantasy league & snake draft',
@@ -180,10 +182,13 @@ export const capabilities: Capability[] = [
 		description:
 			'Hosted public organization pages, followed later by website embeds and a read-only public API.',
 		milestone: 'Phases 1I, 2E–2F',
-		status: 'in-progress',
+		status: 'complete',
 		progress:
-			'The hosted page is implemented and verified locally on the Phase 1I branch: a unique reserved slug at /o/<slug>, organization branding (name, tagline, logo URL, theme colors), capability-gated sections, and explicit per-record publication enforced by a single shared publication-rule layer — unpublished pages are hidden 404s, private athlete contact data is never readable publicly, and corrected results carry a dated Corrected badge. Website embeds (2E) and the read-only public API (2F) will reuse the same rules verbatim and remain planned.',
-		next: 'Merge and CI; embeds and the public API reuse the Phase 1I publication rules (Phases 2E–2F).'
+			'The hosted page is merged (PR #22): a unique reserved slug at /o/<slug>, organization branding (name, tagline, logo URL, theme colors), capability-gated sections, and explicit per-record publication enforced by a single shared publication-rule layer — unpublished pages are hidden 404s, private athlete contact data is never readable publicly, and corrected results carry a dated Corrected badge. Website embeds (2E) and the read-only public API (2F) will reuse the same rules verbatim and remain planned. Narrated walkthrough video available.',
+		next: 'Embeds and the public API reuse the Phase 1I publication rules (Phases 2E–2F).',
+		walkthroughHref: '/walkthroughs/phase1i',
+		walkthroughLabel: 'Watch walkthrough (shared with Competition standings)',
+		narration: 'recorded'
 	}
 ];
 

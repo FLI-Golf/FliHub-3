@@ -313,7 +313,7 @@ documentation only.
 | 1F       | Course layouts, rounds, groups, and assignments          | Complete    | Two-round, red/blue basket event setup with six groups and scorekeepers                                                        |
 | 1G       | Mobile scorekeeping and submission                       | Complete    | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
 | 1H       | Official approval, publication, playoff, and corrections | Complete    | Approved and published results with versioned corrections                                                                      |
-| 1I       | Organization publishing and public competition standings | In progress | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
+| 1I       | Organization publishing and public competition standings | Complete    | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
 | 2A       | Fantasy membership and event draft preparation           | Not started | Six-person fantasy membership and per-event draft preparation                                                                  |
 | 2B       | Owner-controlled live snake draft                        | Not started | Four-round, eligibility-aware, manually started draft                                                                          |
 | 2C       | Fantasy scoring, explanations, and correction processing | Not started | Versioned fantasy points from approved results with safe reprocessing                                                          |
@@ -1338,13 +1338,16 @@ Owners and administrators can review submitted scores, approve and publish offic
 
 ## Phase 1I — Organization publishing and public competition standings
 
-**Status:** In progress — implemented and verified locally on the feature
-branch (2026-11-07): branded public page at `/o/<slug>`, trusted slug/
-branding/publish management, per-record publication flags, the shared
-publication-rule layer (`pocketbase/pb_hooks/public_rules.js`), public and
-member standings from published official results, and the D16 correction
-lifecycle on the public surface. Decisions recorded as D17. Logo is a URL
-(upload deferred); athlete self-service opt-out remains open.
+**Status:** Complete — implemented, verified, and merged (feature PR #22;
+walkthrough recorded, approved, and published at `/walkthroughs/phase1i`):
+branded public page at `/o/<slug>`, trusted slug/branding/publish
+management, per-record publication flags, the shared publication-rule layer
+(`pocketbase/pb_hooks/public_rules.js`), public and member standings from
+published official results with the D17 completeness ranking, and the D16
+correction lifecycle on the public surface. Decisions recorded as D17. Logo
+is a URL (upload deferred); athlete self-service opt-out remains open. The
+full six-group disc golf demonstration event is tracked separately and has
+not yet been taken through public standings.
 
 ### Goal and user-visible outcome
 
