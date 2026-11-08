@@ -22,7 +22,7 @@
 <!-- Hero -->
 <section class="flex flex-col items-start gap-4 py-6 sm:py-10">
 	<div class="flex flex-wrap items-center gap-2">
-		<Badge>Through Phase 1I — public pages & standings</Badge>
+		<Badge>Through Phases 2A–2B — fantasy drafts</Badge>
 		<Badge variant="outline">SvelteKit</Badge>
 		<Badge variant="outline">Tailwind CSS</Badge>
 		<Badge variant="outline">shadcn-svelte</Badge>
@@ -36,8 +36,8 @@
 		today: accounts, organizations, invitations and roles, configurable onboarding, athlete records,
 		competition structure, season rosters with reserve pools, event operations (courses, rounds,
 		groups), phone-first scorekeeping, official results with versioned corrections, competition
-		standings from published results, and published organization pages. Fantasy features below are
-		planned, not yet available.
+		standings from published results, published organization pages, and fantasy leagues with live
+		per-event snake drafts. Fantasy scoring below is planned, not yet available.
 	</p>
 	<div class="flex flex-wrap gap-2">
 		{#if data.user}
@@ -182,6 +182,15 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 								Open feature
 							</Button>
 						{/if}
+						{#each capability.walkthroughs ?? [] as walkthrough (walkthrough.href)}
+							{#if data.walkthroughAvailable?.[walkthrough.href]}
+								<Button size="sm" variant="outline" href={walkthrough.href}>
+									{walkthrough.label}
+								</Button>
+							{:else}
+								<span class="text-xs text-muted-foreground">Walkthrough coming soon</span>
+							{/if}
+						{/each}
 						{#if capability.walkthroughHref && data.walkthroughAvailable?.[capability.walkthroughHref]}
 							<Button size="sm" variant="outline" href={capability.walkthroughHref}>
 								{capability.walkthroughLabel ?? 'Watch walkthrough'}

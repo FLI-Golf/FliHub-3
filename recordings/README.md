@@ -18,9 +18,10 @@ npm run record:walkthrough-1f          # Phase 1F
 npm run record:walkthrough-1g          # Phase 1G (phone viewport)
 npm run record:walkthrough-1h          # Phase 1H (official results and corrections)
 npm run record:walkthrough-1i          # Phase 1I (public pages and standings; signed-out take)
+npm run record:walkthrough-2ab         # Two fantasy draft walkthroughs (setup + live roster rules)
 ```
 
-The runner (`run-walkthrough.mjs [1a|1b]`):
+The runner (`run-walkthrough.mjs [1a|…|1i|2ab]`):
 
 1. Boots a **disposable** PocketBase (temp dir, committed migrations + hooks),
    a disposable mailpit, and a production preview of the app on dedicated
@@ -115,3 +116,59 @@ writes:
 
 The silent original stays at `static/walkthroughs/phase1a-walkthrough.webm`
 (5.8 MB) as a downloadable alternative.
+
+## Phase 2A–2B fantasy draft videos
+
+`npm run record:walkthrough-2ab` records two silent videos with readable
+scene labels using the verified six-person, 12-team/24-athlete event fixture
+from the Phase 2A–2B browser acceptance flow. No production accounts or data
+are used. The normal 30-second pick clock gives each scene time to read.
+The demo users separately hold organization Viewer seats so the existing
+capability page exposes the fantasy invitation Accept controls; those roles
+are seeded off-camera and do not grant fantasy approval.
+
+- **League Setup & Draft Prep:** owner creates the league, invites five
+  users, each user accepts in the UI, owner approves all five, prepares the
+  event draft, and starts it with six approved fantasy participants.
+- **Live Draft & Roster Rules:** all 24 picks are made through the actual
+  browser UI while switching between the approved on-clock participants.
+  Round 3 shows both full-division cases; round 4 shows both missing
+  divisions; the final roster has exactly 2 MPO and 2 FPO.
+
+This run uses its own `recordings/output/phase2ab/` directory, preserving
+other raw recordings. Review both manifests and frame directories there,
+then copy the two `phase2ab-*-walkthrough.webm` files to
+`static/walkthroughs/`. The served destinations are
+`/walkthroughs/phase2ab-setup` and `/walkthroughs/phase2ab-live`. Both use the
+existing asset-existence gate on the overview card. The Watch buttons play
+narrated H.264/AAC MP4s with the original on-screen labels and optional
+English WebVTT captions. Silent WebM originals remain unchanged.
+
+The approved fixed-window scripts are `narration-2ab-setup.json` and
+`narration-2ab-live.json`. They distinguish fantasy participants making picks
+from athletes being drafted, and spell division names letter by letter for
+speech. Regenerate with:
+
+```sh
+node recordings/narrate-2ab.mjs setup
+node recordings/narrate-2ab.mjs live
+```
+
+This uses the existing git-ignored `.env` / `ELEVENLABS_API_KEY` configuration,
+the established Rachel voice, and `eleven_multilingual_v2`. The secret stays
+in memory and request errors suppress response bodies. Content-addressed
+clips and measured timelines remain under ignored `recordings/output/phase2ab/`.
+Each line must fit its original window; assembly fails on overruns rather
+than stretching speech or changing footage timing. Shorten an overlong line
+and rerun; unchanged clips are reused.
+
+Playback is checked by `node tests/e2e/run-e2e.mjs walkthrough2ab` after a
+fresh build, or against an existing Codespace dev server:
+
+```sh
+FLIHUB_E2E_APP_URL=http://localhost:5173 node tests/e2e/walkthrough2ab.spec.mjs
+```
+
+The browser check follows both Watch links, verifies decoded audible audio
+at the beginning and after seeks, loads English captions, seeks forward and
+backward, and checks HTTP range responses. No external hosting upload is required.

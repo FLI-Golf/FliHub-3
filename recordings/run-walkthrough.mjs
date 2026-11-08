@@ -6,7 +6,7 @@
  * the app — then records a walkthrough script (a single continuous take)
  * and extracts inspection frames with the Playwright-bundled ffmpeg.
  *
- * Usage: `node recordings/run-walkthrough.mjs [1a|1b]` (default 1a), or
+ * Usage: `node recordings/run-walkthrough.mjs [1a|…|1i|2ab]` (default 1a), or
  * `npm run record:walkthrough` / `npm run record:walkthrough-1b`.
  *
  * Never touches the development services (5173/8090/8025) or pb_data.
@@ -30,6 +30,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WALKTHROUGHS = {
+	'2ab': {
+		script: 'walkthrough-2ab.mjs',
+		directory: 'phase2ab',
+		assets: ['setup', 'live'].map((kind) => ({
+			output: `phase2ab-${kind}-walkthrough.webm`,
+			frames: `frames-${kind}`,
+			manifest: `run-manifest-2ab-${kind}.json`
+		}))
+	},
 	'1a': {
 		script: 'walkthrough.mjs',
 		output: 'phase1a-walkthrough.webm',
@@ -95,7 +104,7 @@ if (!walkthrough) {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pbBin = path.join(root, 'pocketbase', 'pocketbase');
 const mailpitBin = path.join(root, 'pocketbase', 'mailpit');
-const outDir = path.join(root, 'recordings', 'output');
+const outDir = path.join(root, 'recordings', 'output', walkthrough.directory ?? '');
 
 // Dedicated recording ports — deliberately distinct from dev (5173/8090/8025)
 // and from the test suites (5174/8098/8099/1125/1126/8125/8126).
@@ -173,7 +182,10 @@ try {
 		stdio: 'inherit'
 	});
 	start('pocketbase', pbBin, [...pbArgs, 'serve', '--http', `127.0.0.1:${PB_PORT}`], {
-		FLIHUB_APP_URL: `http://127.0.0.1:${APP_PORT}`
+		FLIHUB_APP_URL: `http://127.0.0.1:${APP_PORT}`,
+		// Disposable recording stack: the 2-second demo pick clock (D18) keeps
+		// walkthrough drafts watchable; normal instances only allow 7/15/30s.
+		FLIHUB_FANTASY_DEMO_CLOCK: '1'
 	});
 	await waitFor(`http://127.0.0.1:${PB_PORT}/api/health`);
 
@@ -222,59 +234,62 @@ try {
 			...process.env,
 			FLIHUB_RECORD_APP_URL: `http://127.0.0.1:${APP_PORT}`,
 			FLIHUB_RECORD_MAILPIT_URL: `http://127.0.0.1:${MAILPIT_API_PORT}`,
-			FLIHUB_RECORD_PB_URL: `http://127.0.0.1:${PB_PORT}`
+			FLIHUB_RECORD_PB_URL: `http://127.0.0.1:${PB_PORT}`,
+			FLIHUB_RECORD_OUTPUT_DIR: outDir
 		}
 	});
 	if (record.status !== 0) throw new Error('recording script failed');
 
-	// The recording is a single continuous take — no concatenation needed.
-	const finalVideo = path.join(outDir, walkthrough.output);
-	if (!existsSync(finalVideo)) throw new Error(`recording did not produce ${walkthrough.output}`);
+	for (const asset of walkthrough.assets ?? [walkthrough]) {
+		// The recording is a single continuous take — no concatenation needed.
+		const finalVideo = path.join(outDir, asset.output);
+		if (!existsSync(finalVideo)) throw new Error(`recording did not produce ${asset.output}`);
 
-	const ffmpeg = findFfmpeg();
-	const sizeMb = (statSync(finalVideo).size / (1024 * 1024)).toFixed(1);
-	const probe = spawnSync(ffmpeg, ['-i', finalVideo], { encoding: 'utf8' });
-	const duration = /Duration: ([0-9:.]+)/.exec(probe.stderr ?? '')?.[1] ?? 'unknown';
-	console.log(`Recorded: ${finalVideo} (${sizeMb} MB, duration ${duration})`);
+		const ffmpeg = findFfmpeg();
+		const sizeMb = (statSync(finalVideo).size / (1024 * 1024)).toFixed(1);
+		const probe = spawnSync(ffmpeg, ['-i', finalVideo], { encoding: 'utf8' });
+		const duration = /Duration: ([0-9:.]+)/.exec(probe.stderr ?? '')?.[1] ?? 'unknown';
+		console.log(`Recorded: ${finalVideo} (${sizeMb} MB, duration ${duration})`);
 
-	// Merge the probed duration into the run manifest so scene tables align.
-	const manifestPath = path.join(outDir, walkthrough.manifest);
-	if (existsSync(manifestPath) && duration !== 'unknown') {
-		const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-		manifest.durationSeconds = parseDuration(duration);
-		writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+		// Merge the probed duration into the run manifest so scene tables align.
+		const manifestPath = path.join(outDir, asset.manifest);
+		if (existsSync(manifestPath) && duration !== 'unknown') {
+			const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+			manifest.durationSeconds = parseDuration(duration);
+			writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+		}
+
+		// Inspection frames at evenly spaced timestamps for review.
+		const frameDir = path.join(outDir, asset.frames);
+		mkdirSync(frameDir, { recursive: true });
+		const totalSec = parseDuration(duration);
+		for (const t of [
+			2,
+			Math.round(totalSec * 0.2),
+			Math.round(totalSec * 0.4),
+			Math.round(totalSec * 0.6),
+			Math.round(totalSec * 0.8),
+			Math.max(3, totalSec - 3)
+		]) {
+			spawnSync(
+				ffmpeg,
+				[
+					'-y',
+					'-ss',
+					String(t),
+					'-i',
+					finalVideo,
+					'-frames:v',
+					'1',
+					path.join(frameDir, `frame-${String(t).padStart(4, '0')}s.png`)
+				],
+				{
+					stdio: 'inherit'
+				}
+			);
+		}
+		console.log(`Inspection frames: ${frameDir}`);
 	}
-
-	// Inspection frames at evenly spaced timestamps for review.
-	const frameDir = path.join(outDir, walkthrough.frames);
-	mkdirSync(frameDir, { recursive: true });
-	const totalSec = parseDuration(duration);
-	for (const t of [
-		2,
-		Math.round(totalSec * 0.2),
-		Math.round(totalSec * 0.4),
-		Math.round(totalSec * 0.6),
-		Math.round(totalSec * 0.8),
-		Math.max(3, totalSec - 3)
-	]) {
-		spawnSync(
-			ffmpeg,
-			[
-				'-y',
-				'-ss',
-				String(t),
-				'-i',
-				finalVideo,
-				'-frames:v',
-				'1',
-				path.join(frameDir, `frame-${String(t).padStart(4, '0')}s.png`)
-			],
-			{
-				stdio: 'inherit'
-			}
-		);
-	}
-	console.log(`Inspection frames: ${frameDir}`);
 
 	teardown();
 	console.log('RECORDING RUN OK');

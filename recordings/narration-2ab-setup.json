@@ -1,0 +1,103 @@
+{
+	"voiceId": "21m00Tcm4TlvDq8ikWAM",
+	"voiceName": "Rachel",
+	"modelId": "eleven_multilingual_v2",
+	"scenes": [
+		{
+			"id": "setup-01",
+			"start": 1.4,
+			"end": 6.3,
+			"action": "Maya names the league and sets six seats.",
+			"caption": "Maya creates Riverbend Fantasy Six, with six participant seats.",
+			"tts": "Maya creates Riverbend Fantasy Six, with six participant seats."
+		},
+		{
+			"id": "setup-02",
+			"start": 6.5,
+			"end": 15.0,
+			"action": "League lobby; five invitations are sent.",
+			"caption": "Maya invites five fantasy participants. Participants make the picks; athletes are drafted onto their rosters.",
+			"tts": "Maya invites five fantasy participants. Participants make the picks; athletes are drafted onto their rosters."
+		},
+		{
+			"id": "setup-03",
+			"start": 15.2,
+			"end": 18.2,
+			"action": "Five invited seats await acceptance.",
+			"caption": "An invitation alone does not grant approval.",
+			"tts": "An invitation alone does not grant approval."
+		},
+		{
+			"id": "setup-04-jordan",
+			"start": 18.4,
+			"end": 21,
+			"action": "Jordan accepts a personal fantasy seat.",
+			"caption": "Jordan accepts.",
+			"tts": "Jordan accepts."
+		},
+		{
+			"id": "setup-04-casey",
+			"start": 21,
+			"end": 23.6,
+			"action": "Casey accepts a personal fantasy seat.",
+			"caption": "Casey accepts.",
+			"tts": "Casey accepts."
+		},
+		{
+			"id": "setup-04-sam",
+			"start": 23.6,
+			"end": 25.9,
+			"action": "Sam accepts a personal fantasy seat.",
+			"caption": "Sam accepts.",
+			"tts": "Sam accepts."
+		},
+		{
+			"id": "setup-04-taylor",
+			"start": 25.9,
+			"end": 28.3,
+			"action": "Taylor accepts a personal fantasy seat.",
+			"caption": "Taylor accepts.",
+			"tts": "Taylor accepts."
+		},
+		{
+			"id": "setup-04-alex",
+			"start": 28.3,
+			"end": 30.2,
+			"action": "Alex accepts a personal fantasy seat.",
+			"caption": "Alex accepts.",
+			"tts": "Alex accepts."
+		},
+		{
+			"id": "setup-05",
+			"start": 30.6,
+			"end": 37.5,
+			"action": "Maya approves each accepted participant.",
+			"caption": "Maya approves each accepted participant. All six fantasy seats are now approved.",
+			"tts": "Maya approves each accepted participant. All six fantasy seats are now approved."
+		},
+		{
+			"id": "setup-06",
+			"start": 37.8,
+			"end": 43.0,
+			"action": "Event and 30-second clock selected; draft prepared.",
+			"caption": "She selects Riverbend Open, sets a thirty-second pick clock, and prepares the draft.",
+			"tts": "She selects Riverbend Open, sets a thirty-second pick clock, and prepares the draft."
+		},
+		{
+			"id": "setup-07",
+			"start": 43.2,
+			"end": 46.6,
+			"action": "Prepared draft; owner clicks Start draft.",
+			"caption": "The opening order is saved. Maya starts.",
+			"tts": "The opening order is saved. Maya starts."
+		},
+		{
+			"id": "setup-08",
+			"start": 46.8,
+			"end": 50.8,
+			"action": "Round one opens with the first participant on the clock.",
+			"caption": "Six participants draft athletes across four snake rounds.",
+			"tts": "Six participants draft athletes across four snake rounds."
+		}
+	]
+}

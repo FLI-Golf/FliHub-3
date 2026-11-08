@@ -44,8 +44,8 @@ The first end-to-end demonstration covers:
 | 1G    | Mobile scorekeeping and submission                            | Complete — merged (see below)                   |
 | 1H    | Official approval, publication, playoff, and corrections      | Complete — merged (see below; playoff excluded) |
 | 1I    | Organization publishing and public competition standings      | Complete — merged (see below)                   |
-| 2A    | Fantasy membership and event draft preparation                | Not started                                     |
-| 2B    | Owner-controlled live snake draft                             | Not started                                     |
+| 2A    | Fantasy membership and event draft preparation                | Implemented — verified locally (see below)      |
+| 2B    | Owner-controlled live snake draft                             | Implemented — verified locally (see below)      |
 | 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                     |
 | 2D    | End-to-end demo and System Map                                | Not started                                     |
 | 2E    | Website embeds                                                | Not started                                     |
@@ -460,6 +460,60 @@ e2e suite):
 
 The fantasy portions of the demonstration (membership, draft, scoring,
 corrections) remain with Phases 2A–2C.
+
+### Phases 2A–2B verification record
+
+Verified on this branch (2026-11-07), locally (CI runs on the PR):
+
+- Decisions: approved by Dustin and recorded as D18 — fantasy membership
+  fully independent of organization staff roles (trusted hook endpoints own
+  every fantasy write and the draft board read); invite → accept → approve
+  with only approved seats counting toward the configurable limit; one
+  fresh four-round snake draft per (league, event) with a randomly drawn,
+  PERSISTED first-round order reversing each round (24 picks); rosters of
+  exactly 2 MPO + 2 FPO enforced server-side along with event eligibility,
+  turn order, and one selection per athlete; 7/15/30-second pick clocks
+  (2 seconds on disposable demo stacks only via FLIHUB_FANTASY_DEMO_CLOCK);
+  server-persisted turns and deadlines with lazy timeout processing and
+  slot-aware auto-picks from per-draft rankings (production ranking source
+  recorded open); designated event substitutes take completed roster slots
+  with the original pick preserved and ambiguous cases rejected.
+- `npm run test:integration` — 84/84 passing (78 Phase 1A–1I regression + 6
+  Phases 2A–2B): the membership lifecycle with owner-only controls and the
+  participant limit; fantasy/staff independence in both directions
+  (organization admins see no fantasy data; fantasy managers read no
+  organization records and cannot write); draft preparation gates (seats,
+  pool size, clock and rankings validation), persisted independent orders
+  per event, and one-draft-per-event; a scripted 24-pick snake draft
+  asserting every pick's seat, both reversals, turn/eligibility/duplicate/
+  division-cap rejections, and six 2+2 rosters; timeout behavior on the
+  2-second demo clock — the draft PAUSES at the expired deadline while all
+  six managers are disconnected, the first reconnect triggers exactly one
+  overdue auto-pick, a fresh client resumes from identical persisted state,
+  a manual pick racing the timeout produces exactly one pick and advances
+  the turn once (and two racing ticks act once), and a full
+  timeout-completed draft lands 24 picks with every roster at 2 MPO + 2 FPO
+  despite male-first rankings; designated substitutions preserving the
+  original pick, surfacing pending designations, and rejecting chained,
+  cross-division, and duplicate-ownership cases.
+- Browser acceptance (`tests/e2e/phase2ab.spec.mjs`): the lobby shows 6 of 6
+  approved seats; the owner starts the draft from the room; the saved order
+  renders; the on-the-clock manager picks from the live board; a timeout
+  auto-pick lands on camera (labeled Auto); a reconnecting manager sees the
+  shared board; the completed draft renders six final rosters at exactly
+  2 MPO / 2 FPO with real event teams on every athlete and the snake
+  reversal visible in the log; a designated substitution is applied from
+  the room with the original pick still displayed. Full suite (1A–2B specs
+  plus the six-group demo): exit 0 (1B now uses Sponsorships as the honest
+  deferred-panel example since Fantasy became a working page).
+- `npm run check`, `npm run build`, Prettier, ESLint — exit 0.
+
+Remaining Phases 2A–2B limitations: invitation email delivery is not
+implemented (in-app seats only); scheduled gathering countdowns and
+rescheduling notifications are open (manual start only); the production
+auto-pick ranking source and equal-rank ordering are open (deterministic
+placeholder); live updates poll the server-owned board (no PocketBase
+realtime yet); fantasy scoring is Phase 2C and is not on this branch.
 
 ## Unresolved questions (recorded, not answered)
 

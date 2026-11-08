@@ -32,6 +32,8 @@ export interface Capability {
 	/** Optional link text override — e.g. when a card reuses another phase's
 	 * video and viewers should know what it covers. */
 	walkthroughLabel?: string;
+	/** Multiple reviewed walkthroughs on one milestone card; each is asset-gated. */
+	walkthroughs?: { href: string; label: string }[];
 	narration?: NarrationStatus;
 }
 
@@ -166,8 +168,15 @@ export const capabilities: Capability[] = [
 		description:
 			'A six-person fantasy league with per-event, eligibility-aware four-round snake drafts and a configurable pick timer.',
 		milestone: 'Phases 2A–2B',
-		status: 'planned',
-		progress: 'Not started.'
+		status: 'complete',
+		progress:
+			'Implemented and verified locally on the Phases 2A–2B branch (D18): private leagues with an invite → accept → approve seat lifecycle fully independent of organization staff roles; one fresh four-round snake draft per event with a randomly drawn, persisted first-round order that reverses each round (24 picks); real Athlete records shown with their real event teams; server-enforced turn order, event eligibility, one selection per athlete, and rosters of exactly 2 MPO + 2 FPO; 7/15/30-second pick clocks with slot-aware timeout auto-picks from per-draft rankings; server-owned turns and deadlines so managers reconnect to the same board, and a manual pick racing the timeout produces exactly one pick; designated event substitutes take completed roster slots with the original pick preserved. Event activation durably blocks manual and timeout picks and flags unfinished drafts without changing their selections. Rounds 3–4 filter the on-clock participant’s pool to selectable athletes. Fresh closeout verification: 11 focused integration tests and draft/playback browser checks passed. Two narrated walkthroughs are available.',
+		next: 'Fantasy scoring, explanations, correction processing, and completed-roster scoring-lock verification (Phase 2C).',
+		featureHref: '/organizations',
+		walkthroughs: [
+			{ href: '/walkthroughs/phase2ab-setup', label: 'Watch League Setup & Draft Prep' },
+			{ href: '/walkthroughs/phase2ab-live', label: 'Watch Live Draft & Roster Rules' }
+		]
 	},
 	{
 		title: 'Fantasy scoring & explanations',

@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
 import { pbErrorMessage, pbErrorStatus, toOrganizationDTO } from '$lib/server/auth';
@@ -523,6 +523,36 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		};
 	}
 
+	// Phases 2A–2B: fantasy leagues. The caller's own fantasy memberships are
+	// readable by collection rule; league visibility comes from membership,
+	// never from organization staff roles.
+	let fantasyData = null;
+	if (capability.id === 'fantasy' && enabled) {
+		const memberships = await pb.collection('fantasy_members').getFullList({
+			filter: `user = "${user.id}"`,
+			expand: 'league',
+			sort: 'created'
+		});
+		const rows = memberships
+			.map((m) => ({
+				membership: m,
+				league: (m.expand as { league?: Record<string, unknown> } | undefined)?.league
+			}))
+			.filter((x) => x.league && String(x.league.organization) === params.id);
+		fantasyData = {
+			leagues: rows
+				.filter((x) => !['declined', 'removed'].includes(String(x.membership.status)))
+				.map((x) => ({
+					id: String(x.league!.id),
+					name: String(x.league!.name ?? ''),
+					participantLimit: Number(x.league!.participantLimit ?? 0),
+					role: String(x.membership.role),
+					status: String(x.membership.status),
+					membershipId: String(x.membership.id)
+				}))
+		};
+	}
+
 	// Phase 1I: competition standings from published official results, computed
 	// by the shared publication-rule layer. Members see standings over ALL
 	// events with a currently published official result; the per-record public
@@ -553,7 +583,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		eventsData,
 		coursesData,
 		scoringData,
-		standingsData
+		standingsData,
+		fantasyData
 	};
 };
 
@@ -592,6 +623,41 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+	/** Phases 2A–2B: fantasy league creation through the trusted hook. */
+	createFantasyLeague: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		const name = String(form.get('name') ?? '').trim();
+		const participantLimit = Number(form.get('participantLimit') ?? 6);
+		try {
+			const created = (await locals.pb.send('/api/flihub/fantasy/leagues', {
+				method: 'POST',
+				body: { organization: params.id, name, participantLimit }
+			})) as { id: string };
+			redirect(303, `/organizations/${params.id}/fantasy/${created.id}`);
+		} catch (err) {
+			if (isRedirect(err)) throw err;
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+	},
+
+	/** Responding to a fantasy invitation (accept/decline) via the hook. */
+	respondInvite: async ({ locals, request }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		const membershipId = String(form.get('membership') ?? '');
+		const accept = String(form.get('accept') ?? '') === 'true';
+		try {
+			await locals.pb.send(`/api/flihub/fantasy/members/${membershipId}/respond`, {
+				method: 'POST',
+				body: { accept }
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { responded: true };
+	},
+
 	createAthlete: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
