@@ -220,12 +220,11 @@ The following decisions are treated as the working direction for milestone plann
 - Rounds one and two allow any available athlete.
 - From round three, displayed, saved, and automatic choices must preserve the ability to finish with two males and two females.
 - Round four offers only the gender needed to complete the roster.
-- Owners can schedule, reschedule, and manually start drafts within an allowed window.
-- Scheduled time coordinates attendance and notifications; it does not automatically start the draft.
-- Pick timer defaults to 60 seconds and is configurable.
-- Timeout selections use saved participant preferences or an explicitly labeled demo ranking while respecting eligibility.
+- Owners manually start prepared drafts (D18). Scheduling, rescheduling, gathering countdowns, notifications, and the formal preparation/completion window remain deferred.
+- Pick clocks are 7, 15, or 30 seconds (D18). A 2-second clock is allowed only on disposable demo/walkthrough/test stacks with `FLIHUB_FANTASY_DEMO_CLOCK=1`; normal instances reject it.
+- Timeout selections use per-draft rankings and respect remaining roster slots (D18); deterministic fixture rankings or a labeled placeholder are used until the production ranking source and equal-rank ordering are decided.
 - Completed draft results are displayed.
-- Completed fantasy rosters lock when the event starts.
+- Completed fantasy rosters are intended to lock when the event starts; server enforcement remains open for targeted verification in Phase 2B.
 - Trades and waivers are deferred.
 - Fantasy points per athlete equal par minus strokes across both regulation nine-hole rounds of the event.
 - A fantasy roster total is the sum of its four athletes' points; higher totals win.
@@ -314,8 +313,8 @@ documentation only.
 | 1G       | Mobile scorekeeping and submission                       | Complete    | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
 | 1H       | Official approval, publication, playoff, and corrections | Complete    | Approved and published results with versioned corrections                                                                      |
 | 1I       | Organization publishing and public competition standings | Complete    | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
-| 2A       | Fantasy membership and event draft preparation           | Not started | Six-person fantasy membership and per-event draft preparation                                                                  |
-| 2B       | Owner-controlled live snake draft                        | Not started | Four-round, eligibility-aware, manually started draft                                                                          |
+| 2A       | Fantasy membership and event draft preparation           | In progress | Six-person fantasy membership and per-event draft preparation                                                                  |
+| 2B       | Owner-controlled live snake draft                        | In progress | Four-round, eligibility-aware, manually started draft                                                                          |
 | 2C       | Fantasy scoring, explanations, and correction processing | Not started | Versioned fantasy points from approved results with safe reprocessing                                                          |
 | 2D       | End-to-end demo and System Map                           | Not started | Authorized demonstration of the full FliHub-to-fantasy path                                                                    |
 | 2E       | Website embeds                                           | Not started | Embeddable public widgets reusing the Phase 1I publication rules                                                               |
@@ -1472,13 +1471,30 @@ The same publication rules that gate the hosted public page also gate the later 
 
 ## Phase 2A — Fantasy membership and event draft preparation
 
-**Status:** In progress — implemented and verified locally on the feature
-branch (2026-11-07, decisions recorded as D18): league creation with a
+**Status:** In progress — implemented on the feature branch under D18;
+local verification results were recorded on 2026-11-07 in
+[docs/ROADMAP.md](docs/ROADMAP.md#phases-2a2b-verification-record): league creation with a
 configurable participant limit, in-app invite → accept → approve lifecycle,
 fantasy/staff role independence, and per-event draft preparation with an
 independently randomized, persisted first-round order. Invitation email
 delivery is not implemented (in-app seats only, matching the 1A copy-link
 precedent).
+
+### Previously recorded test results (2026-11-07; not rerun for this docs update)
+
+The [ROADMAP verification record](docs/ROADMAP.md#phases-2a2b-verification-record)
+reports `npm run test:integration` at 84/84 passing (78 Phase 1A–1I
+regressions plus six Phase 2A–2B tests), the full browser suite at exit 0,
+and passing `npm run check`, `npm run build`, Prettier, and ESLint.
+Integration coverage includes membership lifecycle, permissions, preparation
+gates, persisted orders, 24-pick completion, timeout/reconnect behavior,
+manual-pick/timeout races, and substitutions. Browser coverage includes the
+six-seat lobby, owner start, manual and Auto picks, reconnect, completed
+2 MPO + 2 FPO rosters with event teams, and substitution display.
+
+Checked items in the Phase 2A–2B lists below refer to that recorded evidence,
+not a fresh test run or full milestone closeout. Event-start locking and
+membership changes after preparation are not established by that record.
 
 ### Goal and user-visible outcome
 
@@ -1519,22 +1535,30 @@ The fantasy draft occurs before the event starts and before scoring. It depends 
 - Draft preparation and order display.
 - Participant status view.
 
-### Acceptance checklist
+### Acceptance checklist — previously recorded verification
 
-- [ ] Fantasy owner can invite participants.
-- [ ] Only approved participants count toward the limit.
-- [ ] Six approved participants unlock demo draft preparation.
-- [ ] Fantasy permissions are independent from organization staff roles.
-- [ ] Each selected event has a separate draft order.
-- [ ] Draft orders are saved and do not change unexpectedly.
-- [ ] Athlete pool contains only eligible active competing athletes.
+- [x] Fantasy owner can invite participants.
+- [x] Only approved participants count toward the limit.
+- [x] Six approved participants unlock demo draft preparation.
+- [x] Fantasy permissions are independent from organization staff roles.
+- [x] Each selected event has a separate draft order.
+- [x] Draft orders are saved and do not change unexpectedly.
+- [x] Athlete pool contains only eligible active competing athletes.
 
-### Access-control and data-integrity checks
+### Access-control and data-integrity checks — previously recorded verification
 
-- [ ] Fantasy members cannot gain organization staff permissions through fantasy membership.
-- [ ] Organization staff cannot see private fantasy data unless explicitly granted fantasy access.
-- [ ] Invitations are scoped to the intended fantasy league and participant.
-- [ ] Duplicate membership and duplicate athlete picks are prevented.
+- [x] Fantasy members cannot gain organization staff permissions through fantasy membership.
+- [x] Organization staff cannot see private fantasy data unless explicitly granted fantasy access.
+- [x] Invitations are scoped to the intended fantasy league and participant.
+- [x] Duplicate membership and duplicate athlete picks are prevented.
+
+### Still needs targeted verification
+
+- [ ] Change membership after draft preparation (owner removing a non-owner seat, re-invitation,
+  acceptance, and approval as applicable), then attempt start and picks.
+  Verify the saved order and participant authorization remain consistent;
+  document any behavior requiring a product decision rather than assuming a
+  replacement/rejoin policy.
 
 ### Demo steps
 
@@ -1545,7 +1569,7 @@ The fantasy draft occurs before the event starts and before scoring. It depends 
 5. Prepare and save the event draft.
 6. Show the participant room and saved draft order.
 
-### Open decisions blocking this phase
+### Deferred work and open decisions
 
 - ~~Final fantasy league naming.~~
   **Resolved (D18, approved):** free-form league names (2–80 characters);
@@ -1561,8 +1585,9 @@ The fantasy draft occurs before the event starts and before scoring. It depends 
 
 ## Phase 2B — Owner-controlled live snake draft
 
-**Status:** In progress — implemented and verified locally on the feature
-branch (2026-11-07, decisions recorded as D18): owner-started four-round
+**Status:** In progress — implemented on the feature branch under D18;
+local verification results were recorded on 2026-11-07 in
+[docs/ROADMAP.md](docs/ROADMAP.md#phases-2a2b-verification-record): owner-started four-round
 snake drafts with persisted order, server-owned turns and deadlines, 7/15/30
 second clocks (2 seconds on disposable demo stacks only), slot-aware timeout
 auto-picks, transactional race safety, reconnectable board state, and
@@ -1572,7 +1597,7 @@ start only, per the demo scope).
 
 ### Goal and user-visible outcome
 
-The fantasy owner can schedule or manually start a four-round snake draft with a configurable pick timer and eligibility-aware choices.
+The fantasy owner manually starts a four-round snake draft with a configurable pick timer and eligibility-aware choices. Scheduling and rescheduling remain deferred under D18.
 
 ### Dependencies
 
@@ -1584,18 +1609,19 @@ The fantasy owner can schedule or manually start a four-round snake draft with a
 
 - Four-round snake order.
 - Two male and two female roster outcome.
-- Rounds one and two open to available athletes.
-- Rounds three and four filtered to preserve valid completion.
+- Every round enforces the two-per-division cap; rounds three and four filter choices to preserve valid completion (D18).
 - Displayed, saved, and automatic eligibility checks.
-- Scheduled, rescheduled, and manually started states.
-- Separate gathering countdown and active pick timer.
-- 60-second configurable default.
-- Timeout preferences or explicitly labeled demo ranking.
+- Owner-controlled manual start and server-persisted active pick deadlines.
+- Pick clocks of 7, 15, or 30 seconds; 2 seconds only on disposable demo/walkthrough/test stacks with `FLIHUB_FANTASY_DEMO_CLOCK=1` (normal instances reject it).
+- Slot-aware timeout auto-picks from per-draft rankings, with deterministic fixture rankings or an explicitly labeled placeholder default.
+- Polling processes one overdue auto-pick on reconnect if all managers disconnected; the draft pauses at the expired deadline while disconnected.
+- Designated same-division, unowned event substitutes applied to completed roster slots, preserving the original pick and recording the substitution separately.
 - Completed draft results.
 
 ### Explicit exclusions
 
-- Trades, waivers, and substitutions after draft lock.
+- Trades and waivers.
+- Final policies for ambiguous substitutions (duplicate ownership, cross-division, and chained cases are rejected).
 - Paid leagues, prizes, or refunds.
 - Automatic draft start.
 
@@ -1604,42 +1630,53 @@ The fantasy owner can schedule or manually start a four-round snake draft with a
 - Draft room.
 - Owner controls.
 - Participant pick controls.
-- Timer and notification states.
+- Active pick timer and Auto labels (gathering countdowns and rescheduling notifications deferred).
 - Eligibility filter and validation.
 - Completed roster view.
 
-### Acceptance checklist
+### Acceptance checklist — previously recorded verification
 
-- [ ] Draft order follows saved snake order.
-- [ ] Each athlete can be selected only once in the event fantasy league.
-- [ ] Rounds one and two show all available eligible athletes.
-- [ ] Round three filters choices that would make a valid final roster impossible.
-- [ ] Round four offers only the needed gender.
-- [ ] Invalid picks are blocked even if a stale client attempts them.
-- [ ] Rescheduling notifies participants.
-- [ ] Manual start is distinct from scheduled gathering time.
-- [ ] Timeout selection respects roster eligibility.
-- [ ] Completed rosters are displayed.
+- [x] Draft order follows saved snake order.
+- [x] Each athlete can be selected only once in the event fantasy league.
+- [x] Rounds one and two allow available event athletes within the two-per-division cap (D18).
+- [x] Round three filters choices that would make a valid final roster impossible.
+- [x] Round four offers only the needed gender.
+- [x] Invalid picks are blocked even if a stale client attempts them.
+- [x] Only the owner manually starts a prepared draft; scheduling is not implemented.
+- [x] Timeout selection respects roster eligibility.
+- [x] Completed rosters are displayed.
 
-### Access-control and data-integrity checks
+### Access-control and data-integrity checks — previously recorded verification
 
-- [ ] Server-side validation repeats all client-side eligibility rules.
-- [ ] Pick timer expiry cannot create duplicate or out-of-order picks.
-- [ ] Owner controls cannot change completed picks without an audit record.
-- [ ] Draft order and picks are protected from unauthorized alteration.
+- [x] Server-side validation repeats all client-side eligibility rules.
+- [x] Pick timer expiry cannot create duplicate or out-of-order picks.
+- [x] Designated substitutions preserve the original completed pick and record the replacement separately; ambiguous substitutions are rejected.
+- [x] Draft order and picks are protected from unauthorized alteration.
+
+### Still needs targeted verification
+
+- [ ] Verify event-start roster locking at the server boundary. The recorded
+  draft tests do not establish that changing an event to active prevents
+  draft creation/start or further roster-changing picks. Check rejected
+  writes leave draft and roster state unchanged; confirm the intended
+  boundary for designated substitutions separately.
+- [ ] Verify membership changes after draft preparation as listed in Phase
+  2A, including start authorization and the saved on-the-clock manager.
 
 ### Demo steps
 
-1. Schedule a draft and show the gathering countdown.
+1. Open a prepared draft and show the persisted order and configured pick clock.
 2. Manually start the draft.
 3. Complete four rounds with six participants.
-4. Demonstrate gender filtering beginning in round three.
+4. Demonstrate the two-per-division cap and filtering that preserves valid completion in rounds three and four.
 5. Allow one pick to time out and show the labeled fallback selection.
 6. Show each participant's completed two-male, two-female roster.
-7. Start the event and confirm roster lock.
+7. Event-start roster locking remains a separate targeted verification item above; it is not established by the recorded draft demo.
 
-### Open decisions blocking this phase
+### Deferred work and open decisions
 
+- Scheduled gathering countdowns and rescheduling notifications (manual start only).
+- PocketBase realtime subscriptions (current live updates use polling).
 - ~~Final timeout fallback policy.~~
   **Resolved (D18, approved):** on expiry the server auto-picks the
   highest-ranked available athlete who fits the manager's remaining roster
