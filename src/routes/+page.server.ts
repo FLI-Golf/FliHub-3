@@ -8,6 +8,8 @@ import type { PageServerLoad } from './$types';
  * broken link.
  */
 const WALKTHROUGH_ASSETS: Record<string, string[]> = {
+	'/walkthroughs/phase2ab-setup': ['static/walkthroughs/phase2ab-setup-walkthrough-narrated.mp4'],
+	'/walkthroughs/phase2ab-live': ['static/walkthroughs/phase2ab-live-walkthrough-narrated.mp4'],
 	'/walkthroughs/phase1a': [
 		'static/walkthroughs/phase1a-walkthrough-narrated.mp4',
 		'static/walkthroughs/phase1a-walkthrough.webm'

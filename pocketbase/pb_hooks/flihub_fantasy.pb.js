@@ -132,6 +132,7 @@ routerAdd(
 					event: d.getString('event'),
 					eventName,
 					status: d.getString('status'),
+					resolutionRequired: d.getBool('resolutionRequired'),
 					pickSeconds: Number(d.get('pickSeconds')),
 					currentPick: Number(d.get('currentPick'))
 				};
@@ -490,6 +491,15 @@ routerAdd(
 			} catch (_) {
 				// No existing draft — proceed.
 			}
+			const targetEvent = txApp.findRecordById('events', eventId);
+			if (
+				targetEvent.getString('fantasyCutoffAt') ||
+				targetEvent.getString('status') === 'active'
+			) {
+				throw new BadRequestError(
+					'activation_cutoff: Event activation has closed draft preparation.'
+				);
+			}
 			const drafts = txApp.findCollectionByNameOrId('fantasy_drafts');
 			const draft = new Record(drafts);
 			draft.set('league', leagueId);
@@ -546,6 +556,8 @@ routerAdd(
 				return;
 			}
 			const now = new Date();
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			require(`${__hooks}/fantasy_rules.js`).assertBeforeCutoff(txApp, draft);
 			draft.set('status', 'active');
 			draft.set('currentPick', 1);
 			draft.set('startedAt', now.toISOString());
@@ -651,6 +663,7 @@ routerAdd(
 		let autoAthlete = null;
 		e.app.runInTransaction((txApp) => {
 			const fresh = txApp.findRecordById('fantasy_drafts', draftId);
+			rules.assertBeforeCutoff(txApp, fresh);
 			if (fresh.getString('status') !== 'active') return;
 			const deadline = Date.parse(String(fresh.get('deadline') ?? ''));
 			const now = new Date();

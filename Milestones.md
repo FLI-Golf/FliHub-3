@@ -224,7 +224,7 @@ The following decisions are treated as the working direction for milestone plann
 - Pick clocks are 7, 15, or 30 seconds (D18). A 2-second clock is allowed only on disposable demo/walkthrough/test stacks with `FLIHUB_FANTASY_DEMO_CLOCK=1`; normal instances reject it.
 - Timeout selections use per-draft rankings and respect remaining roster slots (D18); deterministic fixture rankings or a labeled placeholder are used until the production ranking source and equal-rank ordering are decided.
 - Completed draft results are displayed.
-- Completed fantasy rosters are intended to lock when the event starts; server enforcement remains open for targeted verification in Phase 2B.
+- Event activation is the draft cutoff (D18 Decision 5): the server must reject further manual picks and timeout auto-picks. Completed rosters lock for scoring. Preserve existing picks, turn, and rosters in unfinished drafts and flag them for resolution; do not auto-complete them or choose their ultimate resolution. Implemented and verified on 2026-11-08 for both pick paths; see Phase 2B.
 - Trades and waivers are deferred.
 - Fantasy points per athlete equal par minus strokes across both regulation nine-hole rounds of the event.
 - A fantasy roster total is the sum of its four athletes' points; higher totals win.
@@ -238,8 +238,7 @@ The following decisions are treated as the working direction for milestone plann
 These items are useful for planning but must remain visibly labeled as proposed:
 
 - Draft preparation opens when all six participants are approved.
-- Drafting must finish before event roster lock.
-- An incomplete draft at roster lock is flagged for resolution rather than silently completed.
+- D18 Decision 5 supersedes the proposed draft-cutoff defaults: activation blocks manual and timeout picks and preserves unfinished drafts for resolution. The ultimate resolution policy remains open.
 - The exact preparation and completion window is not final.
 - Timeout ranking behavior is only a demo default until product rules are approved.
 - The event's team score formula is a demonstration rule, not a universal sports rule.
@@ -263,7 +262,7 @@ These items are useful for planning but must remain visibly labeled as proposed:
 - How are standings recalculated after a correction?
 - Who can see draft picks while a draft is active?
 - What happens if a participant leaves a fantasy league mid-draft?
-- What happens to an incomplete fantasy draft at roster lock?
+- How will an incomplete fantasy draft flagged at the activation cutoff ultimately be resolved? (D18 Decision 5 decides preservation and flagging, not ultimate resolution.)
 - What are the exact playoff measurement precision and equal-distance rules? (The shootout format itself is now recorded in Section 4.8: one throw per teammate, measured distance to the basket with an explicit unit, converted to a common unit and summed, lowest team total wins. Equal-total tiebreaking and measurement precision remain open before playoff implementation.)
 - Does the playoff affect competition standings only, fantasy standings, or neither?
 - What is the final name and relationship between FLI Golf Fantasy and FLI Fantasy Gaming?
@@ -313,8 +312,8 @@ documentation only.
 | 1G       | Mobile scorekeeping and submission                       | Complete    | Phone-friendly group scoring and Draft-to-Submitted workflow                                                                   |
 | 1H       | Official approval, publication, playoff, and corrections | Complete    | Approved and published results with versioned corrections                                                                      |
 | 1I       | Organization publishing and public competition standings | Complete    | Branded hosted public page with unique slug, preview/publish controls, capability-based sections, and shared publication rules |
-| 2A       | Fantasy membership and event draft preparation           | In progress | Six-person fantasy membership and per-event draft preparation                                                                  |
-| 2B       | Owner-controlled live snake draft                        | In progress | Four-round, eligibility-aware, manually started draft                                                                          |
+| 2A       | Fantasy membership and event draft preparation           | Complete    | Six-person fantasy membership and per-event draft preparation                                                                  |
+| 2B       | Owner-controlled live snake draft                        | Complete    | Four-round, eligibility-aware, manually started draft                                                                          |
 | 2C       | Fantasy scoring, explanations, and correction processing | Not started | Versioned fantasy points from approved results with safe reprocessing                                                          |
 | 2D       | End-to-end demo and System Map                           | Not started | Authorized demonstration of the full FliHub-to-fantasy path                                                                    |
 | 2E       | Website embeds                                           | Not started | Embeddable public widgets reusing the Phase 1I publication rules                                                               |
@@ -1471,7 +1470,8 @@ The same publication rules that gate the hosted public page also gate the later 
 
 ## Phase 2A — Fantasy membership and event draft preparation
 
-**Status:** In progress — implemented on the feature branch under D18;
+**Status:** Complete for the Phase 2A–2B implementation scope under D18;
+closeout verification passed on 2026-11-08 (merge tracked in the closeout PR);
 local verification results were recorded on 2026-11-07 in
 [docs/ROADMAP.md](docs/ROADMAP.md#phases-2a2b-verification-record): league creation with a
 configurable participant limit, in-app invite → accept → approve lifecycle,
@@ -1492,9 +1492,11 @@ manual-pick/timeout races, and substitutions. Browser coverage includes the
 six-seat lobby, owner start, manual and Auto picks, reconnect, completed
 2 MPO + 2 FPO rosters with event teams, and substitution display.
 
-Checked items in the Phase 2A–2B lists below refer to that recorded evidence,
-not a fresh test run or full milestone closeout. Event-start locking and
-membership changes after preparation are not established by that record.
+The fresh closeout run below rechecks all eleven Phase 2A–2B integration
+cases, the focused draft browser flow, and both narrated walkthroughs. It
+does not rerun the historical full regression suite. Membership changes
+after preparation and completed-roster scoring locks remain deferred as
+listed below.
 
 ### Goal and user-visible outcome
 
@@ -1555,10 +1557,10 @@ The fantasy draft occurs before the event starts and before scoring. It depends 
 ### Still needs targeted verification
 
 - [ ] Change membership after draft preparation (owner removing a non-owner seat, re-invitation,
-  acceptance, and approval as applicable), then attempt start and picks.
-  Verify the saved order and participant authorization remain consistent;
-  document any behavior requiring a product decision rather than assuming a
-  replacement/rejoin policy.
+      acceptance, and approval as applicable), then attempt start and picks.
+      Verify the saved order and participant authorization remain consistent;
+      document any behavior requiring a product decision rather than assuming a
+      replacement/rejoin policy.
 
 ### Demo steps
 
@@ -1585,7 +1587,8 @@ The fantasy draft occurs before the event starts and before scoring. It depends 
 
 ## Phase 2B — Owner-controlled live snake draft
 
-**Status:** In progress — implemented on the feature branch under D18;
+**Status:** Complete for the Phase 2A–2B implementation scope under D18;
+closeout verification passed on 2026-11-08 (merge tracked in the closeout PR);
 local verification results were recorded on 2026-11-07 in
 [docs/ROADMAP.md](docs/ROADMAP.md#phases-2a2b-verification-record): owner-started four-round
 snake drafts with persisted order, server-owned turns and deadlines, 7/15/30
@@ -1617,6 +1620,7 @@ The fantasy owner manually starts a four-round snake draft with a configurable p
 - Polling processes one overdue auto-pick on reconnect if all managers disconnected; the draft pauses at the expired deadline while disconnected.
 - Designated same-division, unowned event substitutes applied to completed roster slots, preserving the original pick and recording the substitution separately.
 - Completed draft results.
+- Event activation blocks manual and timeout picks; completed rosters lock for scoring, while unfinished drafts preserve picks, turn, and rosters and are flagged for resolution (D18 Decision 5; implemented and focused verification passed for both pick paths on 2026-11-08).
 
 ### Explicit exclusions
 
@@ -1653,15 +1657,136 @@ The fantasy owner manually starts a four-round snake draft with a configurable p
 - [x] Designated substitutions preserve the original completed pick and record the replacement separately; ambiguous substitutions are rejected.
 - [x] Draft order and picks are protected from unauthorized alteration.
 
-### Still needs targeted verification
+### Targeted verification
 
-- [ ] Verify event-start roster locking at the server boundary. The recorded
-  draft tests do not establish that changing an event to active prevents
-  draft creation/start or further roster-changing picks. Check rejected
-  writes leave draft and roster state unchanged; confirm the intended
-  boundary for designated substitutions separately.
+- [x] Verify D18 Decision 5 at the server boundary: after changing a planned
+      event to active mid-draft, both an otherwise-valid manual pick and an
+      overdue timeout auto-pick must be rejected without changing existing
+      picks, draft turn, or rosters. The historical ROADMAP results do not cover
+      this rule; record the focused test results separately.
+- [x] Verify unfinished drafts are durably flagged for resolution without
+      automatic completion, including after a later event-status change.
+- [ ] Separately verify completed rosters lock for scoring. The cutoff
+      integration tests below do not exercise scoring or establish this lock.
+      The ultimate resolution policy remains open.
+- [ ] Confirm the intended boundary for draft creation/start and designated
+      substitutions separately; the cutoff decision explicitly covers manual
+      picks and timeout auto-picks.
 - [ ] Verify membership changes after draft preparation as listed in Phase
-  2A, including start authorization and the saved on-the-clock manager.
+      2A, including start authorization and the saved on-the-clock manager.
+
+### Focused activation-cutoff results (2026-11-08)
+
+Two new integration cases in `tests/integration/phase2ab.test.mjs` used
+separate existing fantasy fixtures and a disposable PocketBase database.
+Each started a draft on a planned event, accepted one valid pick, activated
+the event, then attempted the next selection. Both cases failed: the manual
+request succeeded, and the overdue timeout returned `acted: true`. In each
+case picks increased from 1 to 2, the turn advanced from 2 to 3, and rosters
+changed. Both assertions that the draft did not auto-complete passed.
+The focused run finished with 0/2 tests passing (exit 1); the historical
+ROADMAP results above remain separate. Application code was not changed.
+Resolution flagging and completed-roster scoring locks remain gaps requiring
+implementation/verification; these two cases do not establish either.
+
+### Activation-cutoff follow-up results (2026-11-08)
+
+The two existing cutoff cases were rerun unchanged against a fresh isolated
+PocketBase stack: 0 passed, 2 failed (exit 1). Both manual and overdue
+timeout selections were accepted after activation, increasing picks from
+1 to 2 and advancing the turn from 2 to 3 while changing rosters.
+
+Three additional cases cover persistent flagging and later status changes.
+The flag case reads the draft directly and through a newly authenticated
+client after activation, before any selection request. Its test contract
+uses the persisted draft status `resolution_required` to represent the
+required flag; this is a representation choice, not an ultimate resolution
+policy. Activation preserved selections at that point, but the stored status
+remained `active`, failing the flag assertion. Subsequent assertions for the
+fresh-client flag and board flag were not reached, so flag persistence is
+not proven. The other two cases activate the event, return it to `planned`,
+and attempt an otherwise-valid manual selection or an overdue timeout.
+Both requests succeeded, changed rosters, increased picks from 1 to 2, and
+advanced the turn from 2 to 3. The stored draft status remained `active`.
+Neither path preserves a cutoff after the later status change.
+
+The full Phase 2A–2B file (`tests/integration/phase2ab.test.mjs`) then ran
+against a separate disposable database: **11 tests, 6 passed, 5 failed,
+exit 1**. All six original cases passed (membership lifecycle, role
+independence, preparation, snake draft, timeout/race/reconnect, and
+substitutions). All five activation-cutoff cases failed. These are the pre-implementation baseline
+results, separate from the historical full-suite ROADMAP record. Test-file
+syntax, Prettier, and `git diff --check` passed. No application code changed.
+
+These tests demonstrate the missing activation guard, missing persisted
+resolution flag, and selections remaining possible after a return to
+planned. The two original cutoff cases also confirm no automatic completion
+in their one-pick scenarios. They do **not** verify completed-roster scoring
+locks, server-restart durability, concurrent activation versus selection,
+or other event-status transitions. Completed-roster scoring lock verification
+remains a separate unchecked item above; no Phase 2C scoring was exercised.
+
+### Activation-cutoff implementation results (2026-11-08)
+
+The working-tree application now persists an immutable event
+`fantasyCutoffAt` on first activation. SQLite triggers record the cutoff and
+set `fantasy_drafts.resolutionRequired` on every unfinished draft in the
+same activation transaction. Transactional manual picks and timeout picks
+check that durable cutoff through the shared pick path; timeout ticks also
+check before selecting an automatic candidate. A later return to `planned`
+does not reopen selections. Creation and start check the cutoff inside their
+transactions to avoid introducing an unflagged draft after activation.
+SQLite serializes these writes; concurrent requests cannot commit a pick
+from a stale pre-activation snapshot after activation has committed.
+
+A dedicated persisted boolean fits the existing `ready → active → complete`
+lifecycle better than adding `resolution_required` as a status: it preserves
+the draft's lifecycle state without selecting an ultimate resolution policy.
+The flag is returned by the board and lobby and is visible through normal
+authorized collection reads. The updated test verifies the stored flag,
+a fresh authenticated client's read, the fresh client's board, and preserved
+picks, turn, and rosters before any rejected selection request.
+
+The full `tests/integration/phase2ab.test.mjs` file passed against a fresh,
+isolated PocketBase database and Mailpit stack loading the working-tree
+hooks and migrations, including `1794301000_d18_activation_cutoff.js`:
+**11 tests, 11 passed, 0 failed, 0 skipped, exit 0**. This includes all six
+original membership, independence, preparation, snake-draft,
+timeout/race/reconnect, and substitution cases, plus all five cutoff cases.
+Both pick paths reject after activation and after a return to planned,
+preserving the existing one pick, turn 2, and rosters without completion.
+The existing manual/timeout and concurrent-tick races also pass. ESLint,
+Prettier, and `git diff --check` pass for the changed implementation/tests.
+This is a focused Phase 2A–2B run, not a rerun of the historical 84-test suite.
+
+Completed-roster scoring verification, ultimate incomplete-draft resolution,
+membership changes after preparation, and Phase 2C remain outside this pass.
+The migration conservatively cuts off already active/completed/archived
+events at migration time; their exact historical activation times (and past
+activations of events already returned to planned) cannot be reconstructed
+from the existing schema. No dedicated activation-versus-pick concurrency
+stress test or server-restart test was run; atomicity and cutoff durability
+are enforced in persisted database state and transactional writes.
+
+### Phase 2A–2B closeout verification (2026-11-08)
+
+- Fresh focused integration run: **11 passed, 0 failed, 0 skipped**, using
+  disposable PocketBase/Mailpit and the current hooks/migrations.
+- Focused browser flow: draft lifecycle, manual/Auto picks, reconnect,
+  substitutions, and both division-filter cases in rounds 3 and 4 passed;
+  eligible UI selections persist and all six final rosters have 2 MPO + 2 FPO.
+- Both existing Watch buttons play narrated H.264/AAC videos with the original
+  footage/on-screen captions and optional English captions: setup **51.44s**,
+  live **77.68s**. Decoded audio, caption loading, playback progression,
+  forward/backward seeking, and HTTP 206 range responses passed.
+- Production build, `npm run check` (0 errors/warnings), `npm run lint`, and
+  `git diff --check` passed. The initial browser attempt crashed in Chromium
+  after draft completion; the clean retry reused the successful production
+  build and passed both focused specs. These are focused results, not a
+  fresh full-suite regression claim.
+- The polish backlog and generated recording intermediates are excluded from
+  the closeout commit. Deferred product choices and verification gaps remain
+  listed above/below; Phase 2C scoring is not implemented by this closeout.
 
 ### Demo steps
 
@@ -1683,7 +1808,7 @@ The fantasy owner manually starts a four-round snake draft with a configurable p
   slots, labeled Auto; the PRODUCTION ranking source and equal-rank ordering
   stay open (deterministic fixture rankings and a labeled placeholder
   default are used until decided).
-- Incomplete-draft policy at roster lock.
+- Ultimate resolution of unfinished drafts flagged at activation (cutoff, preservation, and flagging decided by D18 Decision 5; no auto-completion).
 - Participant pick visibility during and after the draft.
 - Replacement athlete ownership after official substitutions — the
   designated same-division, unowned substitute takes the slot with the

@@ -151,6 +151,18 @@ function picksOf(app, draftId) {
 	});
 }
 
+/** Must run inside the same transaction as any draft write. */
+function assertBeforeCutoff(txApp, draft) {
+	const event = txApp.findRecordById('events', draft.getString('event'));
+	if (
+		event.getString('fantasyCutoffAt') ||
+		event.getString('status') === 'active' ||
+		draft.getBool('resolutionRequired')
+	) {
+		throw new BadRequestError('activation_cutoff: Event activation has closed draft selections.');
+	}
+}
+
 /**
  * Creates one pick inside the caller's transaction, enforcing turn order,
  * eligibility, the per-gender roster cap, and one-selection-per-athlete.
@@ -159,6 +171,7 @@ function picksOf(app, draftId) {
  */
 function performPick(txApp, draftId, managerId, athleteId, auto, now) {
 	const draft = txApp.findRecordById('fantasy_drafts', draftId);
+	assertBeforeCutoff(txApp, draft);
 	if (draft.getString('status') !== 'active') {
 		throw new BadRequestError('draft_not_active: The draft is not running.');
 	}
@@ -325,6 +338,7 @@ function buildBoard(app, draft, callerId) {
 		draft: {
 			id: draft.id,
 			status,
+			resolutionRequired: draft.getBool('resolutionRequired'),
 			pickSeconds: Number(draft.get('pickSeconds')),
 			currentPick,
 			totalPicks: order.length * 4,
@@ -385,6 +399,7 @@ module.exports = {
 	eligiblePool,
 	snakeSeat,
 	picksOf,
+	assertBeforeCutoff,
 	performPick,
 	autoPickAthlete,
 	buildBoard,

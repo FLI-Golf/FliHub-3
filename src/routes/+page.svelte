@@ -182,6 +182,15 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 								Open feature
 							</Button>
 						{/if}
+						{#each capability.walkthroughs ?? [] as walkthrough (walkthrough.href)}
+							{#if data.walkthroughAvailable?.[walkthrough.href]}
+								<Button size="sm" variant="outline" href={walkthrough.href}>
+									{walkthrough.label}
+								</Button>
+							{:else}
+								<span class="text-xs text-muted-foreground">Walkthrough coming soon</span>
+							{/if}
+						{/each}
 						{#if capability.walkthroughHref && data.walkthroughAvailable?.[capability.walkthroughHref]}
 							<Button size="sm" variant="outline" href={capability.walkthroughHref}>
 								{capability.walkthroughLabel ?? 'Watch walkthrough'}

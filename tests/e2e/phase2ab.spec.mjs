@@ -9,10 +9,13 @@
  * state, the completed draft shows six final rosters at exactly 2 MPO + 2
  * FPO with the snake reversal visible in the log, and a designated event
  * substitution is applied from the room while preserving the original pick.
+ * A second draft checks both full-division cases in round 3 and both missing
+ * divisions in round 4: ineligible rows are absent, eligible rows are
+ * selectable, and browser picks persist without hiding history or rosters.
  *
  * Run via `npm run test:e2e` (the orchestrator runs every *.spec.mjs; the
  * stack sets FLIHUB_FANTASY_DEMO_CLOCK=1, though this spec uses the normal
- * 7-second clock).
+ * 7-second clock for the original flow and 30 seconds for eligibility checkpoints).
  */
 import { chromium } from 'playwright';
 
@@ -355,6 +358,136 @@ try {
 	expect(
 		substitutedSlot.includes('Substitute for'),
 		'the original pick stays visible alongside the substitute'
+	);
+
+	console.log('Step 8: rounds 3–4 show only selectable athletes for the on-clock manager');
+	const filteredEvent = await record('events', {
+		season: season.id,
+		name: 'Eligibility Open',
+		status: 'planned'
+	});
+	for (let g = 0; g < 6; g++) {
+		const group = await record('event_groups', {
+			event: filteredEvent.id,
+			name: `Eligibility G${g + 1}`,
+			status: 'active'
+		});
+		for (const slot of [entries[g * 2], entries[g * 2 + 1]]) {
+			await record('group_teams', { group: group.id, entry: slot.entry.id, status: 'active' });
+			for (const athlete of [slot.male, slot.female]) {
+				await record('group_athletes', {
+					group: group.id,
+					entry: slot.entry.id,
+					athlete: athlete.id,
+					status: 'active'
+				});
+			}
+		}
+	}
+	const filteredDraft = await api(`/api/flihub/fantasy/leagues/${league.id}/drafts`, {
+		token: owner.token,
+		body: { event: filteredEvent.id, pickSeconds: 30 }
+	});
+	const filteredRoom = `${APP}/organizations/${org.id}/fantasy/${league.id}/draft/${filteredDraft.id}`;
+	await api(`/api/flihub/fantasy/drafts/${filteredDraft.id}/start`, {
+		token: owner.token,
+		body: {}
+	});
+	const checkpoints = new Map([
+		[13, { round: 3, male: 0, female: 2, needed: 'male' }],
+		[14, { round: 3, male: 2, female: 0, needed: 'female' }],
+		[19, { round: 4, male: 2, female: 1, needed: 'female' }],
+		[20, { round: 4, male: 1, female: 2, needed: 'male' }]
+	]);
+	for (let n = 1; n <= 24; n++) {
+		const state = await api(`/api/flihub/fantasy/drafts/${filteredDraft.id}/board`, {
+			method: 'GET',
+			token: owner.token
+		});
+		const user = state.draft.onTheClock.user;
+		// Alternating managers take two FPO or two MPO in rounds 1–2,
+		// then fill the opposite division in rounds 3–4.
+		const firstGender = filteredDraft.draftOrder.indexOf(user) % 2 === 0 ? 'female' : 'male';
+		const desired = n <= 12 ? firstGender : firstGender === 'female' ? 'male' : 'female';
+		const choice = state.pool.find((p) => !p.pickedBy && p.gender === desired);
+		const checkpoint = checkpoints.get(n);
+		if (checkpoint) {
+			const roster = state.rosters.find((r) => r.user === user);
+			expect(
+				state.draft.round === checkpoint.round &&
+					roster.maleCount === checkpoint.male &&
+					roster.femaleCount === checkpoint.female,
+				`pick ${n}: checkpoint has the intended round and roster`
+			);
+			const { ctx, page } = await signIn(browser, personByUser.get(user));
+			try {
+				await page.goto(filteredRoom);
+				await page.waitForSelector('[data-testid="your-turn"]');
+				const expected = state.pool.filter((p) => !p.pickedBy && p.gender === checkpoint.needed);
+				const excluded = state.pool.filter((p) => p.pickedBy || p.gender !== checkpoint.needed);
+				const rows = page.locator('[data-testid="pool-athlete"]');
+				expect(
+					(await rows.count()) === expected.length && expected.length > 0,
+					`pick ${n}: only available ${checkpoint.needed} candidates are listed`
+				);
+				for (const athlete of excluded) {
+					expect(
+						(await page
+							.locator(`[data-testid="pool-athlete"][data-athlete="${athlete.athlete}"]`)
+							.count()) === 0,
+						`pick ${n}: ineligible athlete ${athlete.name} row is absent`
+					);
+				}
+				for (const athlete of expected) {
+					const row = page.locator(
+						`[data-testid="pool-athlete"][data-athlete="${athlete.athlete}"]`
+					);
+					const button = row.locator('[data-testid="pick-button"]');
+					expect(
+						(await row.isVisible()) && (await button.isVisible()) && (await button.isEnabled()),
+						`pick ${n}: eligible athlete ${athlete.name} is visible and selectable`
+					);
+				}
+				expect(
+					(await page.locator('[data-testid="pick-log-row"]').count()) === n - 1 &&
+						(await page.locator('[data-testid="roster-tile"]').count()) === 6,
+					`pick ${n}: pick history and all rosters remain visible`
+				);
+				await page
+					.locator(
+						`[data-testid="pool-athlete"][data-athlete="${choice.athlete}"] [data-testid="pick-button"]`
+					)
+					.click();
+				await page.waitForFunction(
+					(count) => document.querySelectorAll('[data-testid="pick-log-row"]').length === count,
+					n
+				);
+				const after = await api(`/api/flihub/fantasy/drafts/${filteredDraft.id}/board`, {
+					method: 'GET',
+					token: owner.token
+				});
+				expect(
+					after.picks[n - 1]?.athlete === choice.athlete && after.draft.currentPick === n + 1,
+					`pick ${n}: eligible browser selection persists and advances once`
+				);
+			} finally {
+				await ctx.close();
+			}
+		} else {
+			await api(`/api/flihub/fantasy/drafts/${filteredDraft.id}/pick`, {
+				token: authByUser.get(user).token,
+				body: { athlete: choice.athlete }
+			});
+		}
+	}
+	const filteredDone = await api(`/api/flihub/fantasy/drafts/${filteredDraft.id}/board`, {
+		method: 'GET',
+		token: owner.token
+	});
+	expect(
+		filteredDone.draft.status === 'complete' &&
+			filteredDone.rosters.every((r) => r.maleCount === 2 && r.femaleCount === 2),
+		'filtered draft completes with six 2 MPO + 2 FPO rosters'
 	);
 
 	console.log('Phases 2A–2B browser acceptance: all steps passed');

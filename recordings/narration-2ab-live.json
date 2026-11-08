@@ -1,0 +1,119 @@
+{
+	"voiceId": "21m00Tcm4TlvDq8ikWAM",
+	"voiceName": "Rachel",
+	"modelId": "eleven_multilingual_v2",
+	"scenes": [
+		{
+			"id": "live-01",
+			"start": 0.8,
+			"end": 3.8,
+			"action": "First participant's draft view.",
+			"caption": "Participants take turns drafting athletes.",
+			"tts": "Participants take turns drafting athletes."
+		},
+		{
+			"id": "live-02",
+			"start": 3.9,
+			"end": 7.1,
+			"action": "Taylor makes pick one.",
+			"caption": "Taylor selects the first athlete.",
+			"tts": "Taylor selects the first athlete."
+		},
+		{
+			"id": "live-03",
+			"start": 7.3,
+			"end": 10.5,
+			"action": "Jordan makes pick two.",
+			"caption": "Jordan selects the next athlete.",
+			"tts": "Jordan selects the next athlete."
+		},
+		{
+			"id": "live-04",
+			"start": 10.7,
+			"end": 18.5,
+			"action": "Casey makes pick three; round one continues.",
+			"caption": "Casey follows. Each pick updates the log and roster. Drafted athletes cannot be picked again.",
+			"tts": "Casey follows. Each pick updates the log and roster. Drafted athletes cannot be picked again."
+		},
+		{
+			"id": "live-05",
+			"start": 18.8,
+			"end": 28.8,
+			"action": "Sam opens round two; participants continue selecting.",
+			"caption": "Round two reverses the order for the snake draft. Sam picks first this round, and the other approved participants take their turns.",
+			"tts": "Round two reverses the order for the snake draft. Sam picks first this round, and the other approved participants take their turns."
+		},
+		{
+			"id": "live-06",
+			"start": 29.3,
+			"end": 32.1,
+			"action": "Taylor makes pick twelve.",
+			"caption": "Taylor closes round two with pick twelve.",
+			"tts": "Taylor closes round two with pick twelve."
+		},
+		{
+			"id": "live-07",
+			"start": 32.3,
+			"end": 38.5,
+			"action": "Taylor's full FPO allocation restricts the pool to MPO.",
+			"caption": "Taylor has two FPO athletes. Only MPO is offered.",
+			"tts": "Taylor has two eff pee oh athletes. Only em pee oh is offered."
+		},
+		{
+			"id": "live-08",
+			"start": 38.9,
+			"end": 45.5,
+			"action": "Jordan's full MPO allocation restricts the pool to FPO.",
+			"caption": "Jordan already has two MPO athletes, so only FPO athletes are offered.",
+			"tts": "Jordan already has two M, P, O athletes, so only F, P, O athletes are offered."
+		},
+		{
+			"id": "live-09",
+			"start": 45.5,
+			"end": 50.4,
+			"action": "Remaining round-three selections.",
+			"caption": "The remaining participants continue building their four-athlete rosters.",
+			"tts": "The remaining participants continue building their four-athlete rosters."
+		},
+		{
+			"id": "live-10",
+			"start": 50.8,
+			"end": 56.7,
+			"action": "Round four: roster has two MPO and one FPO.",
+			"caption": "Two MPO, one FPO. Only FPO can complete this roster.",
+			"tts": "Two em pee oh, one eff pee oh. Only eff pee oh can complete this roster."
+		},
+		{
+			"id": "live-11",
+			"start": 57.0,
+			"end": 63.1,
+			"action": "Next roster has one MPO and two FPO.",
+			"caption": "One MPO, two FPO. Only MPO can complete this roster.",
+			"tts": "One em pee oh, two eff pee oh. Only em pee oh can complete this roster."
+		},
+		{
+			"id": "live-12",
+			"start": 63.4,
+			"end": 68.3,
+			"action": "Remaining round-four selections.",
+			"caption": "Only athletes from the needed division remain selectable.",
+			"tts": "Only athletes from the needed division remain selectable."
+		},
+		{
+			"id": "live-13",
+			"start": 68.6,
+			"end": 71.2,
+			"action": "Taylor makes pick twenty-four.",
+			"caption": "Taylor makes the final pick.",
+			"tts": "Taylor makes the final pick."
+		},
+		{
+			"id": "live-14",
+			"start": 71.4,
+			"end": 77.5,
+			"action": "Completed draft; final rosters displayed.",
+			"caption": "Final rosters: two MPO and two FPO athletes.",
+			"tts": "Final rosters: two em pee oh and two eff pee oh athletes."
+		}
+	]
+}

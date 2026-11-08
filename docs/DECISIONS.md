@@ -591,11 +591,27 @@ substitute whose gender/division differs from the slot, a substitute
 already on any fantasy roster in the draft (duplicate ownership), and
 chained substitutions all need a product ruling.
 
+**Decision 5 — event activation cutoff (2026-11-08; approved by Dustin).**
+Event activation is the draft cutoff. Once the event becomes active, the
+server must reject further manual picks and timeout auto-picks. Completed
+rosters lock for scoring. For an unfinished draft, preserve existing picks,
+the draft turn, and rosters, and flag the draft for resolution. Do not
+auto-complete it or choose how it will ultimately be resolved. Locking a
+completed roster for scoring and blocking further draft selections are
+separate requirements; both apply at activation. Focused integration tests
+on 2026-11-08 failed for both selection paths: each accepted a second pick
+and advanced the turn after activation. The initial implementation did not enforce this cutoff. The Phase 2B
+follow-up now persists an immutable activation cutoff, rejects both pick
+paths even after a return to planned, and durably flags unfinished drafts
+without changing their selections or lifecycle state. Completed-roster
+scoring locks remain to be verified in Phase 2C; see Milestones.md.
+
 **Open (recorded, not implemented).** The production source of real-event
 rankings for timeout auto-picks and the ordering of equal-ranked athletes
 (the deterministic placeholder is not a product rule); scheduled gathering
 countdowns, rescheduling notifications, and the exact draft
-preparation/completion window; incomplete-draft policy at roster lock;
+preparation window; ultimate resolution of incomplete drafts flagged at the
+activation cutoff (the cutoff and preservation rule are decided above);
 participant pick visibility during/after drafts beyond league members;
 handling of rejected/withdrawn/inactive participants beyond
 decline/remove; duplicate-ownership, cross-division, and chained

@@ -911,3 +911,179 @@ test('2B substitutions: the designated substitute takes the slot; ambiguity is r
 		'duplicate roster ownership is flagged, not guessed'
 	);
 });
+
+// D18 Decision 5: activation cuts off selections, independently of scoring.
+// Separate fixtures ensure a failed manual path cannot contaminate the timeout path.
+for (const mode of ['manual', 'timeout']) {
+	test(`2B activation cutoff: ${mode} picks preserve unfinished draft state`, async () => {
+		const { owner, org } = await orgWithCaps(`cutoff-${mode}`, `Cutoff ${mode}`);
+		const comp = await competitionFixture(owner, org.id, `Cutoff ${mode}`);
+		const event = await draftEvent(owner, org.id, comp, `Cutoff ${mode} Open`);
+		assert.equal(event.status, 'planned');
+		const { league, byUser } = await leagueWithManagers(owner, org.id, `Cutoff ${mode} League`);
+		const created = await owner.send(`/api/flihub/fantasy/leagues/${league.id}/drafts`, {
+			method: 'POST',
+			body: { event: event.id, pickSeconds: mode === 'timeout' ? 2 : 30 }
+		});
+		await owner.send(`/api/flihub/fantasy/drafts/${created.id}/start`, {
+			method: 'POST',
+			body: {}
+		});
+		const initial = await board(owner, created.id);
+		await pick(byUser.get(created.draftOrder[0]), created.id, initial.pool[0].athlete);
+		const before = await board(owner, created.id);
+		assert.equal(before.picks.length, 1, 'planned event accepts the first pick');
+		assert.equal(before.draft.currentPick, 2);
+		const next = byUser.get(created.draftOrder[1]);
+		const candidate = before.pool.find((p) => !p.pickedBy);
+		assert.ok(candidate, 'unused event athlete is otherwise valid for the empty next roster');
+		assert.equal(before.rosters.find((r) => r.user === created.draftOrder[1]).athletes.length, 0);
+		const activated = await owner.collection('events').update(event.id, { status: 'active' });
+		assert.equal(activated.status, 'active');
+		if (mode === 'timeout') {
+			await sleep(Math.max(0, Date.parse(before.draft.deadline) - Date.now()) + 150);
+			assert.ok(Date.now() > Date.parse(before.draft.deadline), 'timeout is actually overdue');
+		}
+		let rejection = null;
+		let response = null;
+		try {
+			response =
+				mode === 'manual'
+					? await pick(next, created.id, candidate.athlete)
+					: await tick(next, created.id);
+		} catch (err) {
+			rejection = err;
+		}
+		const after = await board(owner, created.id);
+		// Collect all outcomes even if the request unexpectedly succeeds.
+		const failures = [];
+		for (const [label, check] of [
+			['server rejects selection', () => assert.ok(rejection && isDenied(rejection))],
+			['picks unchanged', () => assert.deepEqual(after.picks, before.picks)],
+			['turn unchanged', () => assert.equal(after.draft.currentPick, before.draft.currentPick)],
+			['rosters unchanged', () => assert.deepEqual(after.rosters, before.rosters)],
+			['no automatic completion', () => assert.notEqual(after.draft.status, 'complete')]
+		]) {
+			try {
+				check();
+				console.log(`cutoff ${mode}: PASS ${label}`);
+			} catch {
+				failures.push(label);
+				console.log(`cutoff ${mode}: FAIL ${label}`);
+			}
+		}
+		console.log(
+			`cutoff ${mode}: response=${JSON.stringify(response)} rejection=${rejection?.status ?? 'none'} picks=${before.picks.length}->${after.picks.length} turn=${before.draft.currentPick}->${after.draft.currentPick}`
+		);
+		assert.deepEqual(failures, [], `activation cutoff failures: ${failures.join(', ')}`);
+	});
+}
+
+async function activationCutoffFixture(label) {
+	const { owner, org } = await orgWithCaps(`cutoff-${label}`, `Cutoff ${label}`);
+	const comp = await competitionFixture(owner, org.id, `Cutoff ${label}`);
+	const event = await draftEvent(owner, org.id, comp, `Cutoff ${label} Open`);
+	const { league, byUser } = await leagueWithManagers(owner, org.id, `Cutoff ${label} League`);
+	const draft = await owner.send(`/api/flihub/fantasy/leagues/${league.id}/drafts`, {
+		method: 'POST',
+		body: { event: event.id, pickSeconds: 2 }
+	});
+	await owner.send(`/api/flihub/fantasy/drafts/${draft.id}/start`, { method: 'POST', body: {} });
+	const initial = await board(owner, draft.id);
+	await pick(byUser.get(draft.draftOrder[0]), draft.id, initial.pool[0].athlete);
+	const before = await board(owner, draft.id);
+	assert.equal(before.picks.length, 1);
+	assert.equal(before.draft.currentPick, 2);
+	await owner.collection('events').update(event.id, { status: 'active' });
+	return { owner, event, draft, byUser, before };
+}
+
+function draftSelections(state) {
+	return { picks: state.picks, currentPick: state.draft.currentPick, rosters: state.rosters };
+}
+
+test('2B activation cutoff: resolution flag persists independently of rejected requests', async () => {
+	const { owner, event, draft, before } = await activationCutoffFixture('persist');
+	// A dedicated persisted flag preserves the existing draft lifecycle;
+	// it does not specify how the draft will ultimately be resolved.
+	const activated = await owner.collection('events').getOne(event.id);
+	assert.ok(Number.isFinite(Date.parse(activated.fantasyCutoffAt)), 'activation persists a cutoff');
+	const stored = await owner.collection('fantasy_drafts').getOne(draft.id);
+	assert.equal(stored.status, before.draft.status, 'resolution flag preserves the lifecycle state');
+	const fresh = newClient();
+	await fresh
+		.collection('users')
+		.authWithPassword(owner.authStore.record.email, 'test-password-1234');
+	const reloaded = await fresh.collection('fantasy_drafts').getOne(draft.id);
+	const state = await board(fresh, draft.id);
+	assert.deepEqual(
+		draftSelections(state),
+		draftSelections(before),
+		'activation preserves selections'
+	);
+	assert.equal(
+		stored.resolutionRequired,
+		true,
+		'activation durably flags the unfinished draft before any rejected pick'
+	);
+	assert.equal(
+		reloaded.resolutionRequired,
+		true,
+		'a fresh authenticated client reads the persisted flag'
+	);
+	assert.equal(
+		state.draft.resolutionRequired,
+		true,
+		'the board exposes the persisted resolution flag'
+	);
+});
+
+for (const mode of ['manual', 'timeout']) {
+	test(`2B activation cutoff: ${mode} remains blocked after event returns to planned`, async () => {
+		const { owner, event, draft, byUser, before } = await activationCutoffFixture(
+			`replanned-${mode}`
+		);
+		const activated = await owner.collection('events').getOne(event.id);
+		const replanned = await owner.collection('events').update(event.id, { status: 'planned' });
+		assert.equal(
+			replanned.fantasyCutoffAt,
+			activated.fantasyCutoffAt,
+			'returning to planned preserves cutoff'
+		);
+		assert.equal(replanned.status, 'planned');
+		const next = byUser.get(draft.draftOrder[1]);
+		const candidate = before.pool.find((p) => !p.pickedBy);
+		if (mode === 'timeout')
+			await sleep(Math.max(0, Date.parse(before.draft.deadline) - Date.now()) + 150);
+		let rejection = null;
+		try {
+			if (mode === 'manual') await pick(next, draft.id, candidate.athlete);
+			else await tick(next, draft.id);
+		} catch (err) {
+			rejection = err;
+		}
+		const after = await board(owner, draft.id);
+		const stored = await owner.collection('fantasy_drafts').getOne(draft.id);
+		const failures = [];
+		for (const [label, check] of [
+			['selection rejected', () => assert.ok(rejection && isDenied(rejection))],
+			[
+				'selections preserved',
+				() => assert.deepEqual(draftSelections(after), draftSelections(before))
+			],
+			['resolution flag persists', () => assert.equal(stored.resolutionRequired, true)]
+		]) {
+			try {
+				check();
+				console.log(`replanned ${mode}: PASS ${label}`);
+			} catch {
+				failures.push(label);
+				console.log(`replanned ${mode}: FAIL ${label}`);
+			}
+		}
+		console.log(
+			`replanned ${mode}: status=${stored.status} picks=${before.picks.length}->${after.picks.length} turn=${before.draft.currentPick}->${after.draft.currentPick}`
+		);
+		assert.deepEqual(failures, [], `durable cutoff failures: ${failures.join(', ')}`);
+	});
+}

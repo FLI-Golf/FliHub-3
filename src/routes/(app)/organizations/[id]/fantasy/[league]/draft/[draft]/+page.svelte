@@ -48,12 +48,24 @@
 		return () => clearInterval(interval);
 	});
 
-	const myRoster = $derived(board.rosters.find((r) => r.user === board.me) ?? null);
+	const onClockRoster = $derived(
+		board.rosters.find((r) => r.user === board.draft.onTheClock?.user) ?? null
+	);
 	function genderFull(gender: string): boolean {
-		if (!myRoster) return false;
-		const count = gender === 'male' ? myRoster.maleCount : myRoster.femaleCount;
+		if (!onClockRoster) return false;
+		const count = gender === 'male' ? onClockRoster.maleCount : onClockRoster.femaleCount;
 		return count >= 2;
 	}
+
+	const candidates = $derived(
+		board.draft.status === 'active' &&
+			board.myTurn &&
+			board.draft.round !== null &&
+			board.draft.round >= 3 &&
+			board.draft.round <= 4
+			? board.pool.filter((athlete) => !athlete.pickedBy && !genderFull(athlete.gender))
+			: board.pool
+	);
 </script>
 
 <svelte:head>
@@ -144,12 +156,13 @@
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-1.5">
-				{#each board.pool as athlete (athlete.athlete)}
+				{#each candidates as athlete (athlete.athlete)}
 					<div
 						class="flex flex-wrap items-center gap-2 rounded-md border px-2 py-1.5 text-sm {athlete.pickedBy
 							? 'opacity-50'
 							: ''}"
 						data-testid="pool-athlete"
+						data-athlete={athlete.athlete}
 					>
 						<span class="font-medium">{athlete.name}</span>
 						<Badge variant="outline" class="text-[10px]">{athlete.division}</Badge>

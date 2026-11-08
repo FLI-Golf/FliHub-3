@@ -389,6 +389,9 @@ onRecordUpdateRequest((e) => {
 
 // --- events (capability: events) — optional season must be same-org (D12) ---
 onRecordCreateRequest((e) => {
+	if (e.record.getString('fantasyCutoffAt') !== e.record.original().getString('fantasyCutoffAt')) {
+		throw new BadRequestError('immutable_field: The activation cutoff is server-owned.');
+	}
 	const org = e.app.findRecordById('organizations', e.record.getString('organization'));
 	let caps = [];
 	try {
@@ -420,6 +423,9 @@ onRecordCreateRequest((e) => {
 }, 'events');
 
 onRecordUpdateRequest((e) => {
+	if (e.record.getString('fantasyCutoffAt') !== e.record.original().getString('fantasyCutoffAt')) {
+		throw new BadRequestError('immutable_field: The activation cutoff is server-owned.');
+	}
 	const org = e.app.findRecordById('organizations', e.record.getString('organization'));
 	let caps = [];
 	try {
