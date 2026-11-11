@@ -32,6 +32,33 @@
 	const message = $derived(
 		formRecord && 'message' in formRecord ? String(formRecord.message) : null
 	);
+
+	const teamCsvPrompt = [
+		'Convert my team list into one-column CSV for the FliHub team importer.',
+		'Return one team name per line, with no header, commas, or Markdown fences.',
+		'Use only the teams in my list. Keep names unique and at most 120 characters.',
+		'These three fictional rows show the format:',
+		'San Diego Breakers',
+		'Pacific Aces',
+		'Coastal Flyers',
+		'',
+		'My team list:',
+		'[Paste your list here]'
+	].join('\n');
+
+	let teamPromptField = $state<HTMLTextAreaElement>();
+	let teamCopyStatus = $state('');
+
+	async function copyTeamCsvPrompt() {
+		try {
+			await navigator.clipboard.writeText(teamCsvPrompt);
+			teamCopyStatus = 'Copied. Paste it into chat and add your team list.';
+		} catch {
+			teamPromptField?.focus();
+			teamPromptField?.select();
+			teamCopyStatus = 'Press Ctrl+C or Command+C to copy the selected prompt.';
+		}
+	}
 </script>
 
 <div class="flex flex-col gap-6">
@@ -114,6 +141,44 @@
 						<Plus class="mr-1 size-4" /> Add team
 					</Button>
 				</form>
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Bulk add teams</Card.Title>
+				<Card.Description>
+					Copy the example into chat, add your team list, then paste the reply below.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="space-y-3">
+				<textarea
+					bind:this={teamPromptField}
+					aria-label="Team CSV chat prompt with three example teams"
+					readonly
+					rows="10"
+					value={teamCsvPrompt}
+					class="w-full rounded-md border bg-background p-2 font-mono text-sm"
+				></textarea>
+				<Button type="button" onclick={copyTeamCsvPrompt}>Copy example for chat</Button>
+				<p role="status" class="text-sm">{teamCopyStatus}</p>
+					<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
+						<Label for="team-csv">Team names, one per line</Label>
+						<p id="team-csv-help" class="text-sm text-muted-foreground">
+							Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets,
+							and the “Team Name” heading.
+						</p>
+						<textarea
+							id="team-csv"
+							name="csv"
+							aria-describedby="team-csv-help"
+							placeholder={'San Diego Breakers\nPacific Aces\nCoastal Flyers'}
+							required
+							rows="5"
+							class="w-full rounded-md border bg-background p-2 font-mono text-sm"
+						></textarea>
+						<Button type="submit">Import teams</Button>
+					</form>
 			</Card.Content>
 		</Card.Root>
 	{:else}

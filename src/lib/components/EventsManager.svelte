@@ -14,11 +14,14 @@
 		seasonName: string | null;
 		name: string;
 		startsAt: string | null;
+		endsAt: string | null;
 		status: 'planned' | 'active' | 'completed' | 'archived';
 	}
 	interface SeasonOption {
 		id: string;
 		name: string;
+		startsOn?: string | null;
+		endsOn?: string | null;
 	}
 
 	interface Props {
@@ -33,6 +36,22 @@
 	let { events, seasons, canManage, myRole, form }: Props = $props();
 
 	let editing = $state<FliEvent | null>(null);
+	let newSeasonId = $state('');
+	let newMultiDay = $state(false);
+	let editMultiDay = $state(false);
+	const newSeason = $derived(seasons.find((s) => s.id === newSeasonId));
+	const editSeason = $derived(seasons.find((s) => s.id === editing?.season));
+
+	function seasonMinimum(option: SeasonOption | undefined) {
+		return option?.startsOn ? option.startsOn.slice(0, 10) + 'T00:00' : undefined;
+	}
+	function seasonMaximum(option: SeasonOption | undefined) {
+		return option?.endsOn ? option.endsOn.slice(0, 10) + 'T23:59' : undefined;
+	}
+	function seasonDateHelp(option: SeasonOption | undefined) {
+		if (!option) return 'Choose a date and time for this independent event.';
+		return `Allowed dates: ${option.startsOn?.slice(0, 10) || 'no start limit'} to ${option.endsOn?.slice(0, 10) || 'no end limit'}.`;
+	}
 
 	const formRecord = $derived(
 		form && typeof form === 'object' ? (form as Record<string, unknown>) : null
@@ -91,11 +110,23 @@
 						<Badge variant={event.status === 'archived' ? 'secondary' : 'default'}>
 							{event.status}
 						</Badge>
-						<span class="text-sm text-muted-foreground">{display(event.startsAt)}</span>
+<div class="w-full text-sm text-muted-foreground">
+	{#if event.startsAt}
+		<span>Starts {display(event.startsAt)}</span>
+		{#if event.endsAt}
+			<span> · Ends {display(event.endsAt)}</span>
+		{/if}
+	{:else}
+		<span>Start date needed — use Edit to schedule this event.</span>
+	{/if}
+</div>
 					</div>
 					{#if canManage}
 						<div class="flex items-center gap-2">
-							<Button variant="outline" size="sm" onclick={() => (editing = event)}>
+							<Button variant="outline" size="sm" onclick={() => {
+		editing = { ...event };
+		editMultiDay = Boolean(event.endsAt);
+	}}>
 								<Pencil class="mr-1 size-3.5" /> Edit
 							</Button>
 							{#if event.status === 'archived'}
@@ -139,10 +170,11 @@
 						<Label for="event-season">Season</Label>
 						<select
 							id="event-season"
+							bind:value={newSeasonId}
 							name="season"
 							class="h-9 rounded-md border bg-background px-2 text-sm"
 						>
-							<option value="" selected>Independent (no season)</option>
+							<option value="">Independent (no season)</option>
 							{#each seasons as season (season.id)}
 								<option value={season.id}>{season.name}</option>
 							{/each}
@@ -150,9 +182,53 @@
 					</div>
 					<div class="flex flex-col gap-1.5">
 						<Label for="event-starts">Starts at (optional)</Label>
-						<Input id="event-starts" name="startsAt" type="datetime-local" />
+						<Input
+		id="event-starts"
+		name="startsAt"
+		type="datetime-local"
+		min={seasonMinimum(newSeason)}
+		max={seasonMaximum(newSeason)}
+		aria-describedby="event-date-help"
+	required={newMultiDay}
+/>
+	<p id="event-date-help" class="text-sm text-muted-foreground">
+		{seasonDateHelp(newSeason)}
+	</p>
 					</div>
-					<div class="flex items-end">
+
+	<div class="flex flex-col gap-2">
+		<label class="flex items-center gap-2 text-sm">
+			<input
+				type="checkbox"
+				name="multiDay"
+				value="yes"
+				bind:checked={newMultiDay}
+				aria-controls="event-end-fields"
+				aria-expanded={newMultiDay}
+			/>
+			Multi-day event
+		</label>
+		{#if newMultiDay}
+			<div id="event-end-fields" class="flex flex-col gap-1.5">
+				<Label for="event-ends">Ends at</Label>
+				<Input
+					id="event-ends"
+					name="endsAt"
+					type="datetime-local"
+					required
+					min={seasonMinimum(newSeason)}
+					max={seasonMaximum(newSeason)}
+
+					aria-describedby="event-end-help"
+				/>
+				<p id="event-end-help" class="text-sm text-muted-foreground">
+					Choose an end after the start. {seasonDateHelp(newSeason)}
+				</p>
+			</div>
+		{/if}
+	</div>
+
+<div class="flex items-end">
 						<Button type="submit">
 							<Plus class="mr-1 size-4" /> Add event
 						</Button>
@@ -186,12 +262,13 @@
 					<Label for="edit-event-season">Season</Label>
 					<select
 						id="edit-event-season"
+						bind:value={editing.season}
 						name="season"
 						class="h-9 rounded-md border bg-background px-2 text-sm"
 					>
-						<option value="" selected={!editing.season}>Independent (no season)</option>
+						<option value="">Independent (no season)</option>
 						{#each seasons as season (season.id)}
-							<option value={season.id} selected={editing.season === season.id}>
+							<option value={season.id}>
 								{season.name}
 							</option>
 						{/each}
@@ -205,7 +282,14 @@
 							name="startsAt"
 							type="datetime-local"
 							value={toInput(editing.startsAt)}
-						/>
+		min={seasonMinimum(editSeason)}
+		max={seasonMaximum(editSeason)}
+		aria-describedby="edit-event-date-help"
+						required={editMultiDay}
+/>
+	<p id="edit-event-date-help" class="text-sm text-muted-foreground">
+		{seasonDateHelp(editSeason)}
+	</p>
 					</div>
 					<div class="flex flex-col gap-1.5">
 						<Label for="edit-event-status">Status</Label>
@@ -220,7 +304,40 @@
 						</select>
 					</div>
 				</div>
-				<Dialog.Footer>
+
+	<div class="flex flex-col gap-2">
+		<label class="flex items-center gap-2 text-sm">
+			<input
+				type="checkbox"
+				name="multiDay"
+				value="yes"
+				bind:checked={editMultiDay}
+				aria-controls="edit-event-end-fields"
+				aria-expanded={editMultiDay}
+			/>
+			Multi-day event
+		</label>
+		{#if editMultiDay}
+			<div id="edit-event-end-fields" class="flex flex-col gap-1.5">
+				<Label for="edit-event-ends">Ends at</Label>
+				<Input
+					id="edit-event-ends"
+					name="endsAt"
+					type="datetime-local"
+					required
+					min={seasonMinimum(editSeason)}
+					max={seasonMaximum(editSeason)}
+					value={toInput(editing.endsAt)}
+					aria-describedby="edit-event-end-help"
+				/>
+				<p id="edit-event-end-help" class="text-sm text-muted-foreground">
+					Choose an end after the start. {seasonDateHelp(editSeason)}
+				</p>
+			</div>
+		{/if}
+	</div>
+
+<Dialog.Footer>
 					<Button type="submit">Save changes</Button>
 				</Dialog.Footer>
 			</form>

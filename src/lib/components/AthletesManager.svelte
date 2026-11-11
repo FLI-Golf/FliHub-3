@@ -37,6 +37,35 @@
 
 	let editing = $state<Athlete | null>(null);
 	let showImport = $state(false);
+	const athleteCsvExample = [
+	'Riley,Chen,female,USA,',
+	'Jordan,Patel,male,Canada,',
+	'Morgan,Reed,female,USA,'
+].join('\n');
+
+const athleteCsvPrompt = [
+	'Convert my athlete list below into CSV for the FliHub athlete importer.',
+	'Use this column order: firstName,lastName,gender,nationality,email.',
+	'Return only the CSV rows, with one athlete per line and no header or Markdown.',
+	'First and last name are required. Leave missing optional fields blank and keep their commas.',
+	'Use only the athletes in my list. The three rows below are examples.',
+	'',
+	athleteCsvExample,
+	'',
+	'My athlete list:',
+	'[Paste your list here]'
+].join('\n');
+
+let athleteCsvCopyStatus = $state('');
+
+async function copyAthleteCsvPrompt() {
+	try {
+		await navigator.clipboard.writeText(athleteCsvPrompt);
+		athleteCsvCopyStatus = 'Copied. Paste the prompt into chat and add your athlete list.';
+	} catch {
+		athleteCsvCopyStatus = 'Select and copy the prompt from the box below.';
+	}
+}
 
 	const formRecord = $derived(
 		form && typeof form === 'object' ? (form as Record<string, unknown>) : null
@@ -50,6 +79,39 @@
 
 	function nameOf(a: Athlete): string {
 		return a.displayName?.trim() || `${a.firstName} ${a.lastName}`;
+	}
+
+
+	const athleteImportCsvRows = [
+		'Riley,Chen,female,USA,',
+		'Jordan,Patel,male,Canada,',
+		'Morgan,Reed,female,USA,'
+	].join('\n');
+
+	const athleteImportChatPrompt = [
+		'Convert my athlete list into CSV for the FliHub athlete importer.',
+		'Use this column order: firstName,lastName,gender,nationality,email.',
+		'Return one athlete per line, with no header and no Markdown fences.',
+		'First and last name are required. Leave missing optional fields blank and keep their commas.',
+		'Use only the athletes in my list. These three fictional rows show the format:',
+		athleteImportCsvRows,
+		'',
+		'My athlete list:',
+		'[Paste your list here]'
+	].join('\n');
+
+	let athleteImportCopyStatus = $state('');
+	let athleteImportPromptField = $state<HTMLTextAreaElement>();
+
+	async function copyAthleteImportExample() {
+		try {
+			await navigator.clipboard.writeText(athleteImportChatPrompt);
+			athleteImportCopyStatus = 'Copied. Paste it into chat and add your athlete list.';
+		} catch {
+			athleteImportPromptField?.focus();
+			athleteImportPromptField?.select();
+			athleteImportCopyStatus = 'Prompt selected. Press Ctrl+C or Command+C to copy it.';
+		}
 	}
 </script>
 
@@ -238,6 +300,23 @@
 		<Dialog.Header>
 			<Dialog.Title>Edit athlete</Dialog.Title>
 			<Dialog.Description>Changes are saved to this organization's record.</Dialog.Description>
+			<details class="rounded-md border p-3 text-sm">
+	<summary class="cursor-pointer font-medium">See a three-athlete example</summary>
+	<div class="mt-3 flex flex-col gap-2">
+		<p>Copy this prompt into chat, add your athlete list, then paste the CSV reply below.</p>
+		<textarea
+			aria-label="Athlete CSV chat prompt"
+			readonly
+			rows="6"
+			value={athleteCsvPrompt}
+			class="w-full rounded-md border bg-background p-2 font-mono text-xs"
+		></textarea>
+		<div>
+			<Button type="button" onclick={copyAthleteCsvPrompt}>Copy example for chat</Button>
+		</div>
+		<p role="status">{athleteCsvCopyStatus}</p>
+	</div>
+</details>
 		</Dialog.Header>
 		{#if editing}
 			<form method="POST" action="?/updateAthlete" class="flex flex-col gap-3">
@@ -312,6 +391,26 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+{#if canManage}
+	<section class="mt-4 space-y-3 rounded-md border p-4" aria-label="Athlete CSV example">
+		<h3 class="font-semibold">Bulk add athletes</h3>
+		<p class="text-sm text-muted-foreground">
+			Copy the prompt into chat, replace the placeholder with your athlete list, then paste
+			the CSV reply into Import CSV.
+		</p>
+		<textarea
+			bind:this={athleteImportPromptField}
+			aria-label="Athlete CSV chat prompt with three example rows"
+			readonly
+			rows="8"
+			value={athleteImportChatPrompt}
+			class="w-full rounded-md border bg-background p-2 font-mono text-xs"
+		></textarea>
+		<Button type="button" onclick={copyAthleteImportExample}>Copy example for chat</Button>
+		<p role="status" class="text-sm">{athleteImportCopyStatus}</p>
+	</section>
+{/if}
 
 <!-- Import dialog -->
 <Dialog.Root open={showImport} onOpenChange={(open) => !open && (showImport = false)}>
