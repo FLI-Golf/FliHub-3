@@ -10,10 +10,13 @@ import {
 } from '$lib/server/auth';
 import { capabilityDefinitions, templates } from '$lib/capabilities/catalog';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const memberships = locals.pb && locals.user
 		? await listMyMemberships(locals.pb, locals.user.id)
 		: [];
+	if (memberships.length === 0 && url.searchParams.get('create') !== '1') {
+		redirect(303, '/account');
+	}
 	const scorekeeperView = memberships.length > 0 &&
 		memberships.every((membership) => membership.role === 'scorekeeper');
 

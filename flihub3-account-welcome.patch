@@ -1,0 +1,239 @@
+diff --git a/docs/README-ACCOUNT-ONBOARDING.md b/docs/README-ACCOUNT-ONBOARDING.md
+index 952c624..f9e01d6 100644
+--- a/docs/README-ACCOUNT-ONBOARDING.md
++++ b/docs/README-ACCOUNT-ONBOARDING.md
+@@ -114,3 +114,11 @@ Fantasy scoring, draft behavior, and standings continue under their existing roa
+ Implement and review one phase at a time on stage-1-testing. Use separate commits for reviewable milestones and document schema migrations alongside the changes that require them. Do not treat this plan as evidence that a feature already exists.
+ 
+ Next action: begin Phase O1 with the current authentication, published-page, and fantasy permission code.
++
++## Phase O2 implementation checkpoint
++
++The first increment adds /account with activity selection and an Activities navigation link. New accounts land here by default. Existing organization members continue to /organizations, retaining the scorekeeper dashboard when applicable. Explicit login destinations remain honored.
++
++Organization creation remains available through the management choice. Fantasy participants can open their existing leagues and invitations. Published organization and season discovery, new fan league creation, durable activity preferences, and invitation links for unregistered fantasy recipients remain pending. This increment does not change PocketBase rules or require a migration.
++
++Validation: node --test tests/account-welcome.test.mjs, npm run check, and npm run build. In the running application, verify Jim's welcome flow, Bob's organization controls, Morgan's assignments, mobile Activities navigation, and a signed-out invitation link through login.
+diff --git a/src/lib/server/auth.ts b/src/lib/server/auth.ts
+index 4910368..dff9ec3 100644
+--- a/src/lib/server/auth.ts
++++ b/src/lib/server/auth.ts
+@@ -134,7 +134,7 @@ export function setActiveOrgCookie(cookies: Cookies, organizationId: string): vo
+  * Validates a post-login redirect target: only same-site absolute paths
+  * are allowed, so crafted `?next=` values cannot send users off-site.
+  */
+-export function safeNextPath(value: string | null, fallback = '/organizations'): string {
++export function safeNextPath(value: string | null, fallback = '/account'): string {
+ 	if (value && value.startsWith('/') && !value.startsWith('//')) {
+ 		return value;
+ 	}
+diff --git a/src/routes/(app)/account/+page.server.ts b/src/routes/(app)/account/+page.server.ts
+new file mode 100644
+index 0000000..a6a23cd
+--- /dev/null
++++ b/src/routes/(app)/account/+page.server.ts
+@@ -0,0 +1,27 @@
++import { error, redirect } from '@sveltejs/kit';
++import type { PageServerLoad } from './$types';
++import { listMyMemberships } from '$lib/server/auth';
++
++export const load: PageServerLoad = async ({ locals, url }) => {
++	if (!locals.pb || !locals.user) error(503, 'PocketBase is not configured.');
++	const memberships = await listMyMemberships(locals.pb, locals.user.id);
++	const activity = url.searchParams.get('activity');
++	if (activity && !['fantasy', 'organization', 'invitation'].includes(activity)) {
++		error(400, 'Choose one of the available activities.');
++	}
++	// Existing staff and scorekeepers retain their current landing experience.
++	if (!activity && url.searchParams.get('choose') !== '1' && memberships.length > 0) {
++		redirect(303, '/organizations');
++	}
++	const seats = activity === 'fantasy' ? await locals.pb.collection('fantasy_members').getFullList({
++		filter: locals.pb.filter('user = {:user}', { user: locals.user.id }),
++		expand: 'league',
++		sort: '-created'
++	}) : [];
++	const leagues = seats.flatMap((seat) => {
++		const league = seat.expand?.league;
++		if (!league || ['declined', 'removed'].includes(String(seat.status))) return [];
++		return [{ id: league.id, organization: String(league.organization), name: String(league.name), status: String(seat.status) }];
++	});
++	return { activity, leagues };
++};
+diff --git a/src/routes/(app)/account/+page.svelte b/src/routes/(app)/account/+page.svelte
+new file mode 100644
+index 0000000..f189d2f
+--- /dev/null
++++ b/src/routes/(app)/account/+page.svelte
+@@ -0,0 +1,64 @@
++<script lang="ts">
++	import { resolve } from '$app/paths';
++	import { Button } from '$lib/components/ui/button/index.js';
++	import type { PageProps } from './$types';
++	let { data }: PageProps = $props();
++</script>
++
++<svelte:head><title>Your activities — FliHub</title></svelte:head>
++
++<section class="mx-auto flex max-w-2xl flex-col gap-6 py-4">
++	{#if !data.activity}
++		<div class="flex flex-col gap-2">
++			<p class="text-sm text-muted-foreground">Step 1 · Choose an activity</p>
++			<h1 class="text-2xl font-semibold">Welcome to FliHub{data.user?.name ? `, ${data.user.name}` : ''}</h1>
++			<p>What would you like to do? You can add other activities later.</p>
++		</div>
++		<form method="GET" action={resolve('/(app)/account')} class="flex flex-col gap-4">
++			<fieldset class="flex flex-col gap-3">
++				<legend class="mb-3 font-medium">Choose how you want to get started</legend>
++				<label class="flex cursor-pointer items-start gap-3 rounded-lg border p-4">
++					<input type="radio" name="activity" value="fantasy" required class="mt-1" />
++					<span><strong class="block">Play fantasy</strong><span class="text-sm text-muted-foreground">Create or join a fantasy league and follow the competition.</span></span>
++				</label>
++				<label class="flex cursor-pointer items-start gap-3 rounded-lg border p-4">
++					<input type="radio" name="activity" value="organization" required class="mt-1" />
++					<span><strong class="block">Start or manage a sports organization</strong><span class="text-sm text-muted-foreground">Manage seasons, teams, events, and scoring.</span></span>
++				</label>
++				<label class="flex cursor-pointer items-start gap-3 rounded-lg border p-4">
++					<input type="radio" name="activity" value="invitation" required class="mt-1" />
++					<span><strong class="block">Join through an invitation</strong><span class="text-sm text-muted-foreground">Find your next step for an organization or fantasy invitation.</span></span>
++				</label>
++			</fieldset>
++			<Button type="submit" class="self-start">Continue</Button>
++		</form>
++	{:else}
++		<Button variant="outline" href={`${resolve('/(app)/account')}?choose=1`} class="self-start">Back to activities</Button>
++		{#if data.activity === 'organization'}
++			<h1 class="text-2xl font-semibold">Your sports organization</h1>
++			<p>Open your organizations or create one. Creating an organization makes you its Owner.</p>
++			<Button href={`${resolve('/(app)/organizations')}?create=1`} class="self-start">Continue to organizations</Button>
++		{:else if data.activity === 'invitation'}
++			<h1 class="text-2xl font-semibold">Join an invitation</h1>
++			<p>For an organization invitation, open the invitation link shared with you. Use the invited email address and complete email verification before accepting.</p>
++			<p>Fantasy invitations currently appear in your account after the commissioner invites your registered email address.</p>
++			<Button href={`${resolve('/(app)/account')}?activity=fantasy`} class="self-start">View fantasy leagues and invitations</Button>
++		{:else}
++			<h1 class="text-2xl font-semibold">My fantasy leagues</h1>
++			<p>Fantasy participation is separate from managing a sports organization.</p>
++			{#each data.leagues as league (league.id)}
++				<div class="flex flex-col gap-2 rounded-lg border p-4">
++					<h2 class="font-semibold">{league.name}</h2>
++					<p class="text-sm text-muted-foreground">Membership: {league.status}</p>
++					<Button variant="outline" class="self-start" href={resolve('/(app)/organizations/[id]/fantasy/[league]', { id: league.organization, league: league.id })}>Open league</Button>
++				</div>
++			{:else}
++				<p class="rounded-lg border p-4">You do not have any fantasy leagues or invitations yet.</p>
++			{/each}
++			<div class="rounded-lg border bg-muted p-4">
++				<h2 class="font-semibold">Organization and season selection is coming next</h2>
++				<p class="mt-2 text-sm">Creating a league from a published organization's eligible season is not available here yet. You do not need to create an organization to play fantasy.</p>
++			</div>
++		{/if}
++	{/if}
++</section>
+diff --git a/src/routes/(app)/organizations/+page.server.ts b/src/routes/(app)/organizations/+page.server.ts
+index 6ba0aca..c9c1316 100644
+--- a/src/routes/(app)/organizations/+page.server.ts
++++ b/src/routes/(app)/organizations/+page.server.ts
+@@ -10,10 +10,13 @@ import {
+ } from '$lib/server/auth';
+ import { capabilityDefinitions, templates } from '$lib/capabilities/catalog';
+ 
+-export const load: PageServerLoad = async ({ locals }) => {
++export const load: PageServerLoad = async ({ locals, url }) => {
+ 	const memberships = locals.pb && locals.user
+ 		? await listMyMemberships(locals.pb, locals.user.id)
+ 		: [];
++	if (memberships.length === 0 && url.searchParams.get('create') !== '1') {
++		redirect(303, '/account');
++	}
+ 	const scorekeeperView = memberships.length > 0 &&
+ 		memberships.every((membership) => membership.role === 'scorekeeper');
+ 
+diff --git a/src/routes/(auth)/register/+page.svelte b/src/routes/(auth)/register/+page.svelte
+index 15df949..a2f4e0a 100644
+--- a/src/routes/(auth)/register/+page.svelte
++++ b/src/routes/(auth)/register/+page.svelte
+@@ -25,8 +25,9 @@
+ 	<div class="flex flex-col gap-2 text-center">
+ 		<h1 class="text-2xl font-semibold tracking-tight">Create your FliHub account</h1>
+ 		<p class="text-sm text-muted-foreground">
+-			Creating an account grants no organization access — you join organizations by invitation or by
+-			creating your own.
++			Create one account to play fantasy, keep scores, or manage a sports organization. After signing
++			in, choose what you would like to do. Organization access still requires an invitation or
++			creating your own organization.
+ 		</p>
+ 	</div>
+ 
+diff --git a/src/routes/+layout.svelte b/src/routes/+layout.svelte
+index 37f8828..7106d64 100644
+--- a/src/routes/+layout.svelte
++++ b/src/routes/+layout.svelte
+@@ -36,6 +36,7 @@
+ 			<Badge variant="secondary">Phases 2A–2B</Badge>
+ 			<nav class="ml-auto hidden items-center gap-1 sm:flex">
+ 				{#if data.user}
++					<Button variant="ghost" href={`${resolve('/(app)/account')}?choose=1`}>Activities</Button>
+ 					<Button variant="ghost" href={resolve('/(app)/organizations')}>Organizations</Button>
+ 					{#if activeMembership}
+ 						<Badge variant="outline" class="gap-1">
+@@ -55,6 +56,7 @@
+ 		</div>
+ 		<nav class="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 sm:hidden">
+ 			{#if data.user}
++				<Button variant="ghost" size="sm" href={`${resolve('/(app)/account')}?choose=1`}>Activities</Button>
+ 				<Button variant="ghost" size="sm" href={resolve('/(app)/organizations')}
+ 					>Organizations</Button
+ 				>
+diff --git a/tests/account-welcome.test.mjs b/tests/account-welcome.test.mjs
+new file mode 100644
+index 0000000..d1168c8
+--- /dev/null
++++ b/tests/account-welcome.test.mjs
+@@ -0,0 +1,46 @@
++import { readFileSync } from 'node:fs';
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import ts from 'typescript';
++
++const source = readFileSync(new URL('../src/routes/(app)/account/+page.server.ts', import.meta.url), 'utf8');
++const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
++const exports = {};
++const signal = (status, value) => { throw Object.assign(new Error(value), { status, value }); };
++new Function('require', 'exports', code)((name) => {
++    if (name === '@sveltejs/kit') return { error: signal, redirect: signal };
++    if (name === '$lib/server/auth') return { listMyMemberships: async (pb) => pb.memberships };
++    throw new Error(`Unexpected import ${name}`);
++}, exports);
++
++function context(query = '', memberships = [], seats = []) {
++    const pb = {
++        memberships,
++        filter: (expression, values) => { assert.equal(values.user, 'jim'); return expression; },
++        collection: (name) => {
++            assert.equal(name, 'fantasy_members');
++            return { getFullList: async (options) => { assert.equal(options.expand, 'league'); return seats; } };
++        }
++    };
++    return { locals: { user: { id: 'jim' }, pb }, url: new URL(`https://example.test/account${query}`) };
++}
++
++test('new account gets activity selection without database writes', async () => {
++    assert.equal((await exports.load(context())).activity, null);
++});
++for (const role of ['owner', 'admin', 'scorekeeper']) {
++    test(`${role} retains existing dashboard`, async () => {
++        await assert.rejects(exports.load(context('', [{ role }])), { status: 303, value: '/organizations' });
++    });
++}
++test('existing members can explicitly open activities', async () => {
++    assert.equal((await exports.load(context('?choose=1', [{ role: 'owner' }]))).activity, null);
++});
++test('invalid activity is rejected', async () => {
++    await assert.rejects(exports.load(context('?activity=unexpected')), { status: 400 });
++});
++test('fantasy lists own actionable seats and excludes removed seats', async () => {
++    const seat = (id, status) => ({ status, expand: { league: { id, name: id, organization: 'org' } } });
++    const result = await exports.load(context('?activity=fantasy', [], [seat('one', 'approved'), seat('two', 'invited'), seat('three', 'removed'), seat('four', 'declined')]));
++    assert.deepEqual(result.leagues.map((league) => league.id), ['one', 'two']);
++});

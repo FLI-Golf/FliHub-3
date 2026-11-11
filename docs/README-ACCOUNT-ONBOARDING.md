@@ -114,3 +114,11 @@ Fantasy scoring, draft behavior, and standings continue under their existing roa
 Implement and review one phase at a time on stage-1-testing. Use separate commits for reviewable milestones and document schema migrations alongside the changes that require them. Do not treat this plan as evidence that a feature already exists.
 
 Next action: begin Phase O1 with the current authentication, published-page, and fantasy permission code.
+
+## Phase O2 implementation checkpoint
+
+The first increment adds /account with activity selection and an Activities navigation link. New accounts land here by default. Existing organization members continue to /organizations, retaining the scorekeeper dashboard when applicable. Explicit login destinations remain honored.
+
+Organization creation remains available through the management choice. Fantasy participants can open their existing leagues and invitations. Published organization and season discovery, new fan league creation, durable activity preferences, and invitation links for unregistered fantasy recipients remain pending. This increment does not change PocketBase rules or require a migration.
+
+Validation: node --test tests/account-welcome.test.mjs, npm run check, and npm run build. In the running application, verify Jim's welcome flow, Bob's organization controls, Morgan's assignments, mobile Activities navigation, and a signed-out invitation link through login.

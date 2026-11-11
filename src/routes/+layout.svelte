@@ -36,6 +36,7 @@
 			<Badge variant="secondary">Phases 2A–2B</Badge>
 			<nav class="ml-auto hidden items-center gap-1 sm:flex">
 				{#if data.user}
+					<Button variant="ghost" href={`${resolve('/(app)/account')}?choose=1`}>Activities</Button>
 					<Button variant="ghost" href={resolve('/(app)/organizations')}>Organizations</Button>
 					{#if activeMembership}
 						<Badge variant="outline" class="gap-1">
@@ -55,6 +56,7 @@
 		</div>
 		<nav class="flex items-center gap-1 overflow-x-auto border-t px-4 py-2 sm:hidden">
 			{#if data.user}
+				<Button variant="ghost" size="sm" href={`${resolve('/(app)/account')}?choose=1`}>Activities</Button>
 				<Button variant="ghost" size="sm" href={resolve('/(app)/organizations')}
 					>Organizations</Button
 				>

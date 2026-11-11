@@ -1,0 +1,685 @@
+diff --git a/pocketbase/pb_hooks/flihub_tee_schedule.pb.js b/pocketbase/pb_hooks/flihub_tee_schedule.pb.js
+new file mode 100644
+index 0000000..d80d8ab
+--- /dev/null
++++ b/pocketbase/pb_hooks/flihub_tee_schedule.pb.js
+@@ -0,0 +1,89 @@
++/// <reference path="../pb_data/types.d.ts" />
++// Existing rounds collection rules enforce Owner/Admin access and organization scope.
++onRecordUpdateRequest((e) => {
++  const original = e.record.original();
++  const schedule = e.record.get("teeSchedule");
++  if (JSON.stringify(schedule) === JSON.stringify(original.get("teeSchedule")))
++    return e.next();
++  const org = e.app.findRecordById(
++    "organizations",
++    e.record.getString("organization"),
++  );
++  const caps = JSON.parse(String(org.get("capabilities") || "[]"));
++  if (!Array.isArray(caps) || !caps.includes("events"))
++    throw new BadRequestError("Events capability is disabled.");
++  const eventId = e.record.getString("event");
++  const event = e.app.findRecordById("events", eventId);
++  if (
++    e.record.getString("status") !== "active" ||
++    event.getString("status") === "archived"
++  )
++    throw new BadRequestError(
++      "Scheduling requires an active round and current event.",
++    );
++  const cards = e.app.findRecordsByFilter(
++    "scorecards",
++    "round = {:round}",
++    "",
++    1,
++    0,
++    { round: e.record.id },
++  );
++  if (cards.length)
++    throw new BadRequestError(
++      "Scoring has started for this round. Its tee schedule is locked.",
++    );
++  if (
++    !schedule ||
++    !Array.isArray(schedule.slots) ||
++    typeof schedule.timeZone !== "string" ||
++    !schedule.timeZone ||
++    !Number.isInteger(schedule.intervalMinutes) ||
++    schedule.intervalMinutes < 1 ||
++    schedule.intervalMinutes > 240
++  )
++    throw new BadRequestError("Invalid tee schedule.");
++  const groups = e.app.findRecordsByFilter(
++    "event_groups",
++    "event = {:event} && status = 'active'",
++    "",
++    0,
++    0,
++    { event: eventId },
++  );
++  if (!groups.length || schedule.slots.length !== groups.length)
++    throw new BadRequestError(
++      "Schedule every active group exactly once. Refresh after changing groups.",
++    );
++  const seen = new Set();
++  let previous = -Infinity;
++  for (const slot of schedule.slots) {
++    if (
++      !slot ||
++      typeof slot.group !== "string" ||
++      seen.has(slot.group) ||
++      !groups.some((group) => group.id === slot.group)
++    )
++      throw new BadRequestError("Invalid or repeated group in the schedule.");
++    const instant = new Date(slot.startsAt).getTime();
++    if (
++      !isFinite(instant) ||
++      new Date(instant).toISOString() !== slot.startsAt ||
++      instant <= previous
++    )
++      throw new BadRequestError(
++        "Tee times must be valid and strictly increasing in group order.",
++      );
++    seen.add(slot.group);
++    previous = instant;
++  }
++  e.next();
++}, "rounds");
++
++onRecordCreateRequest((e) => {
++  if (e.record.get("teeSchedule"))
++    throw new BadRequestError(
++      "Create the round first, then save its tee schedule.",
++    );
++  e.next();
++}, "rounds");
+diff --git a/pocketbase/pb_migrations/1794420777_round_tee_schedule.js b/pocketbase/pb_migrations/1794420777_round_tee_schedule.js
+new file mode 100644
+index 0000000..0bd9d38
+--- /dev/null
++++ b/pocketbase/pb_migrations/1794420777_round_tee_schedule.js
+@@ -0,0 +1,9 @@
++migrate((app) => {
++ const collection = app.findCollectionByNameOrId('rounds');
++ collection.fields.add(new JSONField({name:'teeSchedule', required:false, maxSize:200000}));
++ app.save(collection);
++}, (app) => {
++ const collection = app.findCollectionByNameOrId('rounds');
++ collection.fields.removeByName('teeSchedule');
++ app.save(collection);
++});
+diff --git a/src/lib/components/EventOpsManager.svelte b/src/lib/components/EventOpsManager.svelte
+index 07588a6..a520df3 100644
+--- a/src/lib/components/EventOpsManager.svelte
++++ b/src/lib/components/EventOpsManager.svelte
+@@ -1,4 +1,6 @@
+ <script lang="ts">
++ import TeeTimeScheduler from '$lib/components/TeeTimeScheduler.svelte';
++ import type { TeeSchedule } from '$lib/tee-times';
+ 	import { CircleAlert, ClipboardCheck, Layers, Plus, UserMinus, Users } from 'lucide-svelte';
+ 	import * as Alert from '$lib/components/ui/alert/index.js';
+ 	import { Badge } from '$lib/components/ui/badge/index.js';
+@@ -8,6 +10,7 @@
+ 	import { Label } from '$lib/components/ui/label/index.js';
+ 
+ 	interface EventRow {
++ startsAt?: string | null;
+ 		id: string;
+ 		season: string | null;
+ 		seasonName: string | null;
+@@ -15,6 +18,7 @@
+ 		status: 'planned' | 'active' | 'completed' | 'archived';
+ 	}
+ 	interface Round {
++ teeSchedule: TeeSchedule | null;
+ 		id: string;
+ 		event: string;
+ 		number: number;
+@@ -118,7 +122,7 @@
+ 
+ 	const visibleEvents = $derived(events.filter((ev) => ev.status !== 'archived'));
+ 	const event = $derived(
+-		visibleEvents.find((ev) => ev.id === selectedEvent) ?? visibleEvents[0] ?? null
++		visibleEvents.find((ev) => ev.id === (selectedEvent || String(formRecord?.teeScheduleEvent ?? ''))) ?? visibleEvents[0] ?? null
+ 	);
+ 
+ 	const eventRounds = $derived(
+@@ -195,6 +199,7 @@
+ </script>
+ 
+ <div class="flex flex-col gap-6">
++ {#if formRecord?.teeScheduleSaved}<p role="status" class="text-sm">Round tee times saved.</p>{/if}
+ 	{#if message}
+ 		<Alert.Root variant="destructive">
+ 			<CircleAlert class="size-4" />
+@@ -229,6 +234,11 @@
+ 		</div>
+ 
+ 		<!-- Rounds -->
++ {#each eventRounds as scheduledRound (scheduledRound.id)}
++  {#key JSON.stringify([scheduledRound.teeSchedule, eventGroups.map((group) => [group.id, group.status])])}
++   <TeeTimeScheduler round={scheduledRound} groups={eventGroups} {canManage} eventDate={event.startsAt?.slice(0,10) ?? ''} />
++  {/key}
++ {/each}
+ 		<Card.Root>
+ 			<Card.Header>
+ 				<Card.Title class="flex items-center gap-2">
+diff --git a/src/lib/components/TeeTimeScheduler.svelte b/src/lib/components/TeeTimeScheduler.svelte
+new file mode 100644
+index 0000000..a26287f
+--- /dev/null
++++ b/src/lib/components/TeeTimeScheduler.svelte
+@@ -0,0 +1,201 @@
++<script lang="ts">
++  import { untrack } from "svelte";
++  import { Button } from "$lib/components/ui/button/index.js";
++  import {
++    generateTeeTimes,
++    teeDisplay,
++    teeLocal,
++    toTeeInstant,
++    type TeeSchedule,
++  } from "$lib/tee-times";
++  let {
++    round,
++    groups,
++    canManage,
++    eventDate,
++  }: {
++    round: { id: string; number: number; teeSchedule: TeeSchedule | null };
++    groups: { id: string; name: string; status: string }[];
++    canManage: boolean;
++    eventDate: string;
++  } = $props();
++  let timeZone = $state(
++    untrack(() => round.teeSchedule?.timeZone ?? "America/Phoenix"),
++  );
++  let interval = $state(
++    untrack(() => round.teeSchedule?.intervalMinutes ?? 10),
++  );
++  let first = $state(
++    untrack(() =>
++      round.teeSchedule?.slots[0]
++        ? teeLocal(round.teeSchedule.slots[0].startsAt, timeZone)
++        : eventDate
++          ? `${eventDate}T09:00`
++          : "",
++    ),
++  );
++  let draft = $state(
++    untrack(() => {
++      const active = groups.filter((group) => group.status === "active");
++      const slots = round.teeSchedule?.slots ?? [];
++      const ordered = [
++        ...slots
++          .map((slot) => active.find((group) => group.id === slot.group))
++          .filter((group) => group !== undefined),
++        ...active.filter(
++          (group) => !slots.some((slot) => slot.group === group.id),
++        ),
++      ];
++      return ordered.map((group) => {
++        const saved = slots.find((slot) => slot.group === group.id);
++        return {
++          group: group.id,
++          name: group.name,
++          local: saved ? teeLocal(saved.startsAt, timeZone) : "",
++        };
++      });
++    }),
++  );
++  let problem = $state("");
++  function generate() {
++    try {
++      const times = generateTeeTimes(first, interval, draft.length, timeZone);
++      draft = draft.map((slot, index) => ({
++        ...slot,
++        local: teeLocal(times[index], timeZone),
++      }));
++      problem = "";
++    } catch (err) {
++      problem = err instanceof Error ? err.message : "Check schedule settings.";
++    }
++  }
++  function move(index: number, direction: number) {
++    const next = [...draft];
++    [next[index], next[index + direction]] = [
++      next[index + direction],
++      next[index],
++    ];
++    draft = next;
++  }
++  function validate(event: SubmitEvent) {
++    try {
++      for (const slot of draft) toTeeInstant(slot.local, timeZone);
++      problem = "";
++    } catch (err) {
++      event.preventDefault();
++      problem = err instanceof Error ? err.message : "Check tee times.";
++    }
++  }
++</script>
++
++<section
++  class="space-y-3 rounded-md border p-4"
++  aria-label="Round {round.number} tee times"
++>
++  <h3 class="font-semibold">Round {round.number} tee times</h3>
++  {#if canManage}
++    <form
++      method="POST"
++      action="?/saveTeeSchedule"
++      onsubmit={validate}
++      class="space-y-3"
++    >
++      <input type="hidden" name="round" value={round.id} />
++      <div class="flex flex-wrap gap-3">
++        <label class="flex flex-col gap-1 text-sm"
++          >Timezone<input
++            name="timeZone"
++            bind:value={timeZone}
++            required
++            class="rounded-md border bg-background p-2"
++          /></label
++        >
++        <label class="flex flex-col gap-1 text-sm"
++          >First tee time<input
++            type="datetime-local"
++            bind:value={first}
++            class="rounded-md border bg-background p-2"
++          /></label
++        >
++        <label class="flex flex-col gap-1 text-sm"
++          >Interval in minutes<input
++            name="interval"
++            type="number"
++            min="1"
++            max="240"
++            step="1"
++            bind:value={interval}
++            required
++            class="w-24 rounded-md border bg-background p-2"
++          /></label
++        >
++      </div>
++      <p class="text-sm text-muted-foreground">
++        Use a timezone such as America/Phoenix or America/Los_Angeles. Set the
++        order, then generate times. Generating replaces the draft times below.
++        Changing timezone reinterprets the clock times. Save to apply the full
++        schedule.
++      </p>
++      <Button
++        type="button"
++        variant="outline"
++        onclick={generate}
++        disabled={draft.length === 0}>Generate tee times</Button
++      >
++      {#each draft as slot, index (slot.group)}
++        <div class="flex flex-wrap items-center gap-2 rounded-md border p-2">
++          <input type="hidden" name="group" value={slot.group} />
++          <span class="text-sm">{index + 1}. {slot.name}</span>
++          <Button
++            type="button"
++            size="sm"
++            variant="outline"
++            disabled={index === 0}
++            onclick={() => move(index, -1)}
++            aria-label="Move {slot.name} earlier">Up</Button
++          >
++          <Button
++            type="button"
++            size="sm"
++            variant="outline"
++            disabled={index === draft.length - 1}
++            onclick={() => move(index, 1)}
++            aria-label="Move {slot.name} later">Down</Button
++          >
++          <input
++            type="datetime-local"
++            name="teeTime"
++            bind:value={slot.local}
++            required
++            aria-label="Tee time for {slot.name}"
++            class="rounded-md border bg-background p-2 text-sm"
++          />
++        </div>
++      {/each}
++      {#if problem}<p role="alert" class="text-sm text-destructive">
++          {problem}
++        </p>{/if}
++      <Button type="submit" disabled={draft.length === 0}
++        >Save round {round.number} tee times</Button
++      >
++    </form>
++  {/if}
++  {#if !round.teeSchedule}<p class="text-sm text-muted-foreground">
++      No tee times saved for this round.
++    </p>
++  {:else}
++    <h4 class="text-sm font-medium">
++      Saved schedule · {round.teeSchedule.timeZone}
++    </h4>
++    {#each round.teeSchedule.slots as slot (slot.group)}
++      {#if groups.some((group) => group.id === slot.group && group.status === "active")}
++        <p class="text-sm">
++          {groups.find((group) => group.id === slot.group)?.name} · {teeDisplay(
++            slot.startsAt,
++            round.teeSchedule.timeZone,
++          )}
++        </p>
++      {/if}
++    {/each}
++  {/if}
++</section>
+diff --git a/src/lib/tee-times.ts b/src/lib/tee-times.ts
+new file mode 100644
+index 0000000..e252455
+--- /dev/null
++++ b/src/lib/tee-times.ts
+@@ -0,0 +1,57 @@
++import { parseZonedDateTime } from "@internationalized/date";
++export interface TeeSchedule {
++  timeZone: string;
++  intervalMinutes: number;
++  slots: { group: string; startsAt: string }[];
++}
++export function toTeeInstant(local: string, timeZone: string): string {
++  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local))
++    throw new Error("Enter a date and time for every group.");
++  try {
++    return parseZonedDateTime(`${local}[${timeZone}]`, "reject")
++      .toDate()
++      .toISOString();
++  } catch {
++    throw new Error(
++      "Check the timezone and tee time. Ambiguous or skipped daylight-saving times must be changed.",
++    );
++  }
++}
++export function teeLocal(startsAt: string, timeZone: string): string {
++  const parts = new Intl.DateTimeFormat("en-CA", {
++    timeZone,
++    year: "numeric",
++    month: "2-digit",
++    day: "2-digit",
++    hour: "2-digit",
++    minute: "2-digit",
++    hourCycle: "h23",
++  }).formatToParts(new Date(startsAt));
++  const part = (type: string) =>
++    parts.find((item) => item.type === type)?.value;
++  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
++}
++export function teeDisplay(startsAt: string, timeZone: string): string {
++  return new Intl.DateTimeFormat("en-US", {
++    timeZone,
++    month: "short",
++    day: "numeric",
++    year: "numeric",
++    hour: "numeric",
++    minute: "2-digit",
++    timeZoneName: "short",
++  }).format(new Date(startsAt));
++}
++export function generateTeeTimes(
++  first: string,
++  interval: number,
++  count: number,
++  timeZone: string,
++): string[] {
++  if (!Number.isInteger(interval) || interval < 1 || interval > 240)
++    throw new Error("Use an interval from 1 to 240 whole minutes.");
++  const start = Date.parse(toTeeInstant(first, timeZone));
++  return Array.from({ length: count }, (_, index) =>
++    new Date(start + index * interval * 60000).toISOString(),
++  );
++}
+diff --git a/src/routes/(app)/organizations/+page.server.ts b/src/routes/(app)/organizations/+page.server.ts
+index 4b0d4c0..6ba0aca 100644
+--- a/src/routes/(app)/organizations/+page.server.ts
++++ b/src/routes/(app)/organizations/+page.server.ts
+@@ -1,3 +1,4 @@
++import { teeDisplay, type TeeSchedule } from '$lib/tee-times';
+ import { fail, redirect } from '@sveltejs/kit';
+ import type { Actions, PageServerLoad } from './$types';
+ import {
+@@ -23,7 +24,7 @@ export const load: PageServerLoad = async ({ locals }) => {
+ 		eventId: string;
+ 		eventName: string;
+ 		groupName: string;
+-		rounds: { id: string; number: number; name: string; course: string; position: string }[];
++		rounds: { id: string; number: number; name: string; course: string; position: string; teeTime: string }[];
+ 	}[] = [];
+ 
+ 	if (scorekeeperView && locals.pb && locals.user) {
+@@ -68,7 +69,12 @@ export const load: PageServerLoad = async ({ locals }) => {
+ 							number: Number(round.number),
+ 							name: String(round.name ?? ''),
+ 							course: String(courses.find((course) => course.id === round.course)?.name ?? ''),
+-							position: String(round.positionLabel ?? '')
++							position: String(round.positionLabel ?? ''),
++       teeTime: (() => {
++        const schedule = round.teeSchedule as TeeSchedule | null;
++        const slot = schedule?.slots.find((slot) => slot.group === group.id);
++        return slot && schedule ? teeDisplay(slot.startsAt, schedule.timeZone) : 'Tee time awaiting setup';
++       })()
+ 						}))
+ 				}];
+ 			});
+diff --git a/src/routes/(app)/organizations/+page.svelte b/src/routes/(app)/organizations/+page.svelte
+index f6b2bda..45794b7 100644
+--- a/src/routes/(app)/organizations/+page.svelte
++++ b/src/routes/(app)/organizations/+page.svelte
+@@ -142,6 +142,7 @@
+ 							<p class="text-muted-foreground">
+ 								{round.course || 'Course awaiting setup'}
+ 								{round.position ? ` · ${round.position}` : ''}
++ <span class="block font-medium">{round.teeTime}</span>
+ 							</p>
+ 						</div>
+ 					{/each}
+diff --git a/src/routes/(app)/organizations/[id]/cap/[capability]/+page.server.ts b/src/routes/(app)/organizations/[id]/cap/[capability]/+page.server.ts
+index 1e02f88..c450204 100644
+--- a/src/routes/(app)/organizations/[id]/cap/[capability]/+page.server.ts
++++ b/src/routes/(app)/organizations/[id]/cap/[capability]/+page.server.ts
+@@ -1,3 +1,4 @@
++import { toTeeInstant, type TeeSchedule } from '$lib/tee-times';
+ import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
+ import type { Actions, PageServerLoad } from './$types';
+ import type { OrgRole } from '$lib/server/auth';
+@@ -376,6 +377,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
+ 			})),
+ 			// Phase 1F event operations (D14).
+ 			rounds: roundRows.map((r) => ({
++ teeSchedule: (r.teeSchedule || null) as TeeSchedule | null,
+ 				id: r.id,
+ 				event: String(r.event ?? ''),
+ 				number: Number(r.number ?? 0),
+@@ -710,6 +712,32 @@ function parseCsvLine(line: string): string[] {
+  */
+ export const actions: Actions = {
+ 
++ saveTeeSchedule: async ({ locals, request, params }) => {
++  const pb = locals.pb;
++  if (!pb || !locals.user) return fail(503, {message:'PocketBase is not configured.'});
++  const form = await request.formData();
++  try {
++   const round = await pb.collection('rounds').getOne(String(form.get('round') ?? ''));
++   if (round.organization !== params.id || round.status !== 'active') return fail(400,{message:'Choose an active round in this organization.'});
++   const timeZone = String(form.get('timeZone') ?? '');
++   const intervalMinutes = Number(form.get('interval'));
++   if (!Number.isInteger(intervalMinutes) || intervalMinutes < 1 || intervalMinutes > 240) return fail(400,{message:'Use an interval from 1 to 240 whole minutes.'});
++   const ids = form.getAll('group').map(String);
++   const times = form.getAll('teeTime').map(String);
++   if (!ids.length || ids.length !== times.length) return fail(400,{message:'Provide a tee time for each group.'});
++   const schedule: TeeSchedule = {timeZone, intervalMinutes, slots:ids.map((group,index)=>({group,startsAt:toTeeInstant(times[index],timeZone)}))};
++   const event = await pb.collection('events').getOne(String(round.event));
++   const firstDay = String(event.startsAt ?? '').slice(0,10);
++   const lastDay = String(event.endsAt || event.startsAt || '').slice(0,10);
++   if (times.some(time => (firstDay && time.slice(0,10)<firstDay) || (lastDay && time.slice(0,10)>lastDay))) return fail(400,{message:'Tee times must fall on the event dates. Update the event dates first if needed.'});
++   await pb.collection('rounds').update(round.id,{teeSchedule:schedule});
++   return {teeScheduleSaved:true, teeScheduleEvent:String(round.event)};
++  } catch(err) {
++   return fail(pbErrorStatus(err), {message: err instanceof Error ? err.message : pbErrorMessage(err)});
++  }
++ },
++
++
+ 	activateDemoScorekeeper: async ({ locals, request, params }) => {
+ 		if (!locals.pb || !locals.user) {
+ 			return fail(503, { scorekeeperInviteError: 'PocketBase is not configured.' });
+diff --git a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts
+index cc079ef..88b0c2c 100644
+--- a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts
++++ b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts
+@@ -1,3 +1,4 @@
++import type { TeeSchedule } from '$lib/tee-times';
+ import { error, fail } from '@sveltejs/kit';
+ import type { Actions, PageServerLoad } from './$types';
+ import type { OrgRole } from '$lib/server/auth';
+@@ -113,6 +114,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
+ 					)
+ 			}));
+ 		const round = {
++ teeSchedule: (r.teeSchedule || null) as TeeSchedule | null,
+ 			id: r.id,
+ 			number: Number(r.number ?? 0),
+ 			name: String(r.name ?? '') || null,
+diff --git a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte
+index 8edd5f2..a01b08e 100644
+--- a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte
++++ b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte
+@@ -1,4 +1,5 @@
+ <script lang="ts">
++ import { teeDisplay } from '$lib/tee-times';
+ 	import { resolve } from '$app/paths';
+ 	import { ArrowLeft, CircleAlert, ClipboardCheck, History, Lock, Send } from 'lucide-svelte';
+ 	import * as Alert from '$lib/components/ui/alert/index.js';
+@@ -22,7 +23,8 @@
+ 			? (data.scorecards.find((c) => c.round === round.id && c.group === group.id) ?? null)
+ 			: null
+ 	);
+-	const isDraft = $derived(!scorecard || scorecard.status === 'draft');
++	const teeSlot = $derived(round?.teeSchedule?.slots.find((slot) => slot.group === group?.id));
++ const isDraft = $derived(!scorecard || scorecard.status === 'draft');
+ 	const editable = $derived(data.canScore && isDraft);
+ 
+ 	const strokesFor = (athleteId: string, holeId: string) =>
+@@ -130,6 +132,10 @@
+ 			</Card.Content>
+ 		</Card.Root>
+ 	{:else if round && group}
++  <p class="text-sm font-medium">
++   {#if teeSlot && round.teeSchedule}Tee time · {teeDisplay(teeSlot.startsAt, round.teeSchedule.timeZone)}
++   {:else}Tee time awaiting setup{/if}
++  </p>
+ 		<!-- Round selector: the hole count comes from the round's course. -->
+ 		<div class="flex flex-col gap-1" data-testid="round-picker">
+ 			{#each data.rounds as r, index (r.id)}
+diff --git a/tests/tee-times.test.mjs b/tests/tee-times.test.mjs
+new file mode 100644
+index 0000000..c5c8e69
+--- /dev/null
++++ b/tests/tee-times.test.mjs
+@@ -0,0 +1,101 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { readFileSync } from "node:fs";
++import vm from "node:vm";
++import {
++  generateTeeTimes,
++  teeLocal,
++  toTeeInstant,
++} from "../src/lib/tee-times.ts";
++
++test("six Arizona groups at ten-minute intervals", () => {
++  const times = generateTeeTimes("2027-06-05T09:00", 10, 6, "America/Phoenix");
++  assert.equal(times[0], "2027-06-05T16:00:00.000Z");
++  assert.equal(teeLocal(times[5], "America/Phoenix"), "2027-06-05T09:50");
++});
++test("custom interval crosses midnight correctly", () => {
++  const times = generateTeeTimes("2027-06-05T23:55", 15, 2, "America/Phoenix");
++  assert.equal(teeLocal(times[1], "America/Phoenix"), "2027-06-06T00:10");
++});
++test("rejects bad intervals, dates, zones and DST ambiguities", () => {
++  for (const interval of [0, -1, 1.5, 241])
++    assert.throws(() =>
++      generateTeeTimes("2027-06-05T09:00", interval, 2, "UTC"),
++    );
++  for (const [local, zone] of [
++    ["2027-02-30T09:00", "UTC"],
++    ["2027-03-14T02:30", "America/Los_Angeles"],
++    ["2027-11-07T01:30", "America/Los_Angeles"],
++    ["2027-06-05T09:00", "invalid"],
++  ])
++    assert.throws(() => toTeeInstant(local, zone));
++});
++
++function validate(schedule, { locked = false, groups = ["a", "b"] } = {}) {
++  let handler;
++  vm.runInNewContext(
++    readFileSync(
++      new URL(
++        "../pocketbase/pb_hooks/flihub_tee_schedule.pb.js",
++        import.meta.url,
++      ),
++      "utf8",
++    ),
++    {
++      onRecordUpdateRequest: (callback) => (handler = callback),
++      onRecordCreateRequest: () => {},
++      BadRequestError: Error,
++    },
++  );
++  const record = {
++    id: "round1",
++    get: (key) => (key === "teeSchedule" ? schedule : null),
++    getString: (key) =>
++      ({ organization: "org", event: "event", status: "active" })[key] || "",
++    original: () => ({ get: () => null }),
++  };
++  let called = false;
++  handler({
++    record,
++    next: () => (called = true),
++    app: {
++      findRecordById: (collection) =>
++        collection === "organizations"
++          ? { get: () => '["events"]' }
++          : { getString: () => "planned" },
++      findRecordsByFilter: (collection) =>
++        collection === "scorecards"
++          ? locked
++            ? [{}]
++            : []
++          : groups.map((id) => ({ id })),
++    },
++  });
++  return called;
++}
++const schedule = () => ({
++  timeZone: "America/Phoenix",
++  intervalMinutes: 10,
++  slots: [
++    { group: "a", startsAt: "2027-06-05T16:00:00.000Z" },
++    { group: "b", startsAt: "2027-06-05T16:10:00.000Z" },
++  ],
++});
++test("hook accepts complete schedule and rejects locked rounds", () => {
++  assert.equal(validate(schedule()), true);
++  assert.throws(() => validate(schedule(), { locked: true }), /locked/);
++});
++test("hook rejects missing, foreign or duplicate groups and nonincreasing times", () => {
++  const missing = schedule();
++  missing.slots.pop();
++  assert.throws(() => validate(missing), /every active group/);
++  const foreign = schedule();
++  foreign.slots[1].group = "outside";
++  assert.throws(() => validate(foreign), /Invalid or repeated/);
++  const duplicate = schedule();
++  duplicate.slots[1].group = "a";
++  assert.throws(() => validate(duplicate), /Invalid or repeated/);
++  const equal = schedule();
++  equal.slots[1].startsAt = equal.slots[0].startsAt;
++  assert.throws(() => validate(equal), /strictly increasing/);
++});
