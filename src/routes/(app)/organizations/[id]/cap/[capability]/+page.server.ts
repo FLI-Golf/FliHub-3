@@ -7,6 +7,32 @@ import type { StandingsTable } from '$lib/public-page';
 
 const ID_PATTERN = /^[a-z0-9]{15}$/;
 
+function eventDateMessage(
+	startsAt: string,
+	season: { startsOn?: unknown; endsOn?: unknown } | null
+): string | null {
+	if (!startsAt) return null;
+	const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?$/.exec(startsAt);
+	if (!match) return 'Enter a valid event date and time.';
+	const day = match[1];
+	const parsed = new Date(day + 'T00:00:00Z');
+	if (
+		!Number.isFinite(parsed.getTime()) ||
+		parsed.toISOString().slice(0, 10) !== day ||
+		Number(match[2]) > 23 || Number(match[3]) > 59 || Number(match[4] ?? 0) > 59
+	) {
+		return 'Enter a valid event date and time.';
+	}
+	const first = String(season?.startsOn ?? '').slice(0, 10);
+	const last = String(season?.endsOn ?? '').slice(0, 10);
+	if ((first && day < first) || (last && day > last)) {
+		return `Choose a start date within the season: ${first || 'no start limit'} to ${last || 'no end limit'}.`;
+	}
+	return null;
+}
+
+
+
 /**
  * Capability destination pages. Access rules, enforced server-side here and
  * by collection rules on the data itself:
@@ -113,8 +139,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				.catch(() => []),
 			pb
 				.collection('season_entries')
-				.getFullList({ filter, sort: 'id' })
-				.catch(() => []),
+				.getFullList({ filter, sort: 'id' }).catch((err) => {
+					console.error('Unable to load season entries', err);
+					error(502, 'Unable to load season entries. Check the dev-server terminal for details.');
+				}),
 			pb
 				.collection('athletes')
 				.getFullList({ filter, sort: 'lastName,firstName' })
@@ -337,9 +365,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
 				name: String(ev.name ?? ''),
 				startsAt: String(ev.startsAt ?? '') || null,
+				endsAt: String(ev.endsAt ?? '') || null,
 				status: (String(ev.status) || 'planned') as 'planned' | 'active' | 'completed' | 'archived'
 			})),
-			seasons: seasonRows.map((s) => ({ id: s.id, name: String(s.name ?? '') })),
+			seasons: seasonRows.map((s) => ({
+				id: s.id,
+				name: String(s.name ?? ''),
+				startsOn: String(s.startsOn ?? '') || null,
+				endsOn: String(s.endsOn ?? '') || null
+			})),
 			// Phase 1F event operations (D14).
 			rounds: roundRows.map((r) => ({
 				id: r.id,
@@ -823,6 +857,42 @@ export const actions: Actions = {
 		return { created: true };
 	},
 
+	importTeams: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+
+		const csv = String((await request.formData()).get('csv') ?? '');
+		const names = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+		if (!names.length || names.length > 100) {
+			return fail(400, { message: 'Enter between 1 and 100 team names.' });
+		}
+		if (names.some((name) => name.length > 120 || /[",]/.test(name))) {
+			return fail(400, {
+				message: 'Enter one team name per line, up to 120 characters, without commas or quotes.'
+			});
+		}
+		if (new Set(names.map((name) => name.toLowerCase())).size !== names.length) {
+			return fail(400, { message: 'Remove duplicate team names from the import and try again.' });
+		}
+
+		let imported = 0;
+		for (const name of names) {
+			try {
+				await locals.pb.collection('teams').create({
+					organization: params.id,
+					name,
+					status: 'active'
+				});
+				imported += 1;
+			} catch (err) {
+				return fail(pbErrorStatus(err), {
+					message: `${imported} of ${names.length} teams added. Import stopped at "${name}". ${pbErrorMessage(err)}`
+				});
+			}
+		}
+		return { created: true };
+	},
+
 	renameTeam: async ({ locals, request }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
@@ -1070,12 +1140,43 @@ export const actions: Actions = {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
 		try {
+			const seasonId = String(form.get('season') ?? '');
+			const startsAt = String(form.get('startsAt') ?? '');
+			const selectedSeason = seasonId
+				? await locals.pb.collection('seasons').getOne(seasonId)
+				: null;
+			if (selectedSeason && selectedSeason.organization !== params.id) {
+				return fail(400, { message: 'Choose a season in this organization.' });
+			}
+			const dateMessage = eventDateMessage(startsAt, selectedSeason ? {
+				startsOn: selectedSeason.startsOn,
+				endsOn: selectedSeason.endsOn
+			} : null);
+			if (dateMessage) return fail(400, { message: dateMessage });
+
+			const multiDay = form.get('multiDay') === 'yes';
+			const endsAt = multiDay ? String(form.get('endsAt') ?? '') : '';
+			if (multiDay) {
+				if (!startsAt || !endsAt) {
+					return fail(400, { message: 'Multi-day events require a start and end.' });
+				}
+				const endMessage = eventDateMessage(endsAt, selectedSeason ? {
+					startsOn: selectedSeason.startsOn,
+					endsOn: selectedSeason.endsOn
+				} : null);
+				if (endMessage) return fail(400, { message: endMessage });
+				if (new Date(endsAt + 'Z').getTime() <= new Date(startsAt + 'Z').getTime()) {
+					return fail(400, { message: 'The event end must be after its start.' });
+				}
+			}
+
 			await locals.pb.collection('events').create({
 				organization: params.id,
 				season: String(form.get('season') ?? '') || null,
 				name: String(form.get('name') ?? '').trim(),
 				status: 'planned',
-				startsAt: String(form.get('startsAt') ?? '') || null
+				startsAt: startsAt ? new Date(startsAt + 'Z').toISOString() : null,
+				endsAt: endsAt ? new Date(endsAt + 'Z').toISOString() : null
 			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
@@ -1083,21 +1184,68 @@ export const actions: Actions = {
 		return { created: true };
 	},
 
-	updateEvent: async ({ locals, request }) => {
+	updateEvent: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
+		console.log('[event-date-debug] submitted', {
+			event: form.get('event'),
+			season: form.get('season'),
+			startsAt: form.get('startsAt'),
+			endsAt: form.get('endsAt'),
+			multiDay: form.get('multiDay')
+		});
 		const status = String(form.get('status') ?? 'planned');
 		if (!['planned', 'active', 'completed'].includes(status)) {
 			return fail(400, { message: 'Event status must be planned, active, or completed.' });
 		}
 		try {
-			await locals.pb.collection('events').update(String(form.get('event') ?? ''), {
+			const seasonId = String(form.get('season') ?? '');
+			const startsAt = String(form.get('startsAt') ?? '');
+			const selectedSeason = seasonId
+				? await locals.pb.collection('seasons').getOne(seasonId)
+				: null;
+			if (selectedSeason && selectedSeason.organization !== params.id) {
+				return fail(400, { message: 'Choose a season in this organization.' });
+			}
+			const dateMessage = eventDateMessage(startsAt, selectedSeason ? {
+				startsOn: selectedSeason.startsOn,
+				endsOn: selectedSeason.endsOn
+			} : null);
+			if (dateMessage) return fail(400, { message: dateMessage });
+
+			const multiDay = form.get('multiDay') === 'yes';
+			const endsAt = multiDay ? String(form.get('endsAt') ?? '') : '';
+			if (multiDay) {
+				if (!startsAt || !endsAt) {
+					return fail(400, { message: 'Multi-day events require a start and end.' });
+				}
+				const endMessage = eventDateMessage(endsAt, selectedSeason ? {
+					startsOn: selectedSeason.startsOn,
+					endsOn: selectedSeason.endsOn
+				} : null);
+				if (endMessage) return fail(400, { message: endMessage });
+				if (new Date(endsAt + 'Z').getTime() <= new Date(startsAt + 'Z').getTime()) {
+					return fail(400, { message: 'The event end must be after its start.' });
+				}
+			}
+
+			const savedEvent = await locals.pb.collection('events').update(String(form.get('event') ?? ''), {
 				name: String(form.get('name') ?? '').trim(),
 				season: String(form.get('season') ?? '') || null,
-				startsAt: String(form.get('startsAt') ?? '') || null,
+				startsAt: startsAt ? new Date(startsAt + 'Z').toISOString() : null,
+				endsAt: endsAt ? new Date(endsAt + 'Z').toISOString() : null,
 				status
 			});
+			console.log('[event-date-debug] saved', {
+				id: savedEvent.id,
+				startsAt: savedEvent.startsAt,
+				endsAt: savedEvent.endsAt
+			});
 		} catch (err) {
+			console.error('[event-date-debug] update failed', {
+				status: pbErrorStatus(err),
+				message: pbErrorMessage(err)
+			});
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
 		return { updated: true };
@@ -1127,6 +1275,119 @@ export const actions: Actions = {
 
 	// --- Phase 1E: season rosters (D13: roster rows belong to the entry; ------
 	// the flihub_rosters hook derives season and enforces exclusivity) --------
+	importRosters: async ({ locals, request, params }) => {
+		const pb = locals.pb;
+		if (!pb || !locals.user) {
+			return fail(503, { message: 'PocketBase is not configured.' });
+		}
+		const form = await request.formData();
+		const seasonId = String(form.get('season') ?? '');
+		const rows = String(form.get('csv') ?? '')
+			.split(/\r?\n/)
+			.filter((line) => line.trim())
+			.map((line) => line.split(',').map((field) => field.trim()));
+
+		if (!rows.length || rows.length > 500) {
+			return fail(400, { message: 'Enter between 1 and 500 roster rows.' });
+		}
+		if (rows.some((row) =>
+			row.length !== 3 || row.some((field) => !field || /["]/.test(field))
+		)) {
+			return fail(400, {
+				message: 'Use team,firstName,lastName on every line, without a header or quotes.'
+			});
+		}
+
+		const normalize = (value: unknown) =>
+			String(value ?? '').normalize('NFC').trim().toLowerCase();
+
+		let imported = 0;
+		let skipped = 0;
+		try {
+			const season = await pb.collection('seasons').getOne(seasonId);
+			if (season.organization !== params.id || season.status === 'archived') {
+				return fail(400, { message: 'Select a current season in this organization.' });
+			}
+
+			const orgFilter = pb.filter('organization = {:org}', { org: params.id });
+			const seasonFilter = pb.filter(
+				'organization = {:org} && season = {:season} && status = "active"',
+				{ org: params.id, season: seasonId }
+			);
+			const [teams, entries, athletes, memberships, reserves] = await Promise.all([
+				pb.collection('teams').getFullList({ filter: orgFilter }),
+				pb.collection('season_entries').getFullList({ filter: seasonFilter }),
+				pb.collection('athletes').getFullList({ filter: orgFilter }),
+				pb.collection('roster_memberships').getFullList({ filter: seasonFilter }),
+				pb.collection('reserve_members').getFullList({ filter: seasonFilter })
+			]);
+
+			const planned: { entry: string; athlete: string }[] = [];
+			const requested = new Map<string, string>();
+			const issues: string[] = [];
+
+			for (const [index, [teamName, firstName, lastName]] of rows.entries()) {
+				const matchingTeams = teams.filter((team) =>
+					team.status === 'active' && normalize(team.name) === normalize(teamName)
+				);
+				const matchingAthletes = athletes.filter((athlete) =>
+					athlete.status === 'active' &&
+					normalize(athlete.firstName) === normalize(firstName) &&
+					normalize(athlete.lastName) === normalize(lastName)
+				);
+				if (matchingTeams.length !== 1 || matchingAthletes.length !== 1) {
+					issues.push(`Row ${index + 1}: "${teamName}" and "${firstName} ${lastName}" must each match exactly one active record.`);
+					continue;
+				}
+
+				const athlete = matchingAthletes[0];
+				const matchingEntries = entries.filter((entry) => entry.team === matchingTeams[0].id);
+				if (matchingEntries.length !== 1) {
+					issues.push(`Row ${index + 1}: enter "${teamName}" into the selected season first.`);
+					continue;
+				}
+				const entry = matchingEntries[0];
+				const previous = requested.get(athlete.id);
+				const existing = memberships.filter((member) => member.athlete === athlete.id);
+
+				if (
+					(previous && previous !== entry.id) ||
+					existing.some((member) => member.entry !== entry.id) ||
+					reserves.some((reserve) => reserve.athlete === athlete.id)
+				) {
+					issues.push(`Row ${index + 1}: "${firstName} ${lastName}" has another team or reserve assignment in this season.`);
+					continue;
+				}
+
+				requested.set(athlete.id, entry.id);
+				if (previous || existing.length) {
+					skipped += 1;
+					continue;
+				}
+				planned.push({ entry: entry.id, athlete: athlete.id });
+			}
+
+			if (issues.length) {
+				return fail(400, { message: issues.join(' ') });
+			}
+
+			for (const assignment of planned) {
+				await pb.collection('roster_memberships').create({
+					organization: params.id,
+					entry: assignment.entry,
+					athlete: assignment.athlete,
+					status: 'active'
+				});
+				imported += 1;
+			}
+		} catch (err) {
+			return fail(pbErrorStatus(err), {
+				message: `${imported} assignments added before the import stopped. Retry the same CSV to skip saved assignments. ${pbErrorMessage(err)}`
+			});
+		}
+		return { rostersImported: imported, rostersSkipped: skipped };
+	},
+
 	addRosterMember: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
@@ -1290,6 +1551,134 @@ export const actions: Actions = {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
 		return { restored: true };
+	},
+
+	importHoles: async ({ locals, request, params }) => {
+		const pb = locals.pb;
+		if (!pb || !locals.user) {
+			return fail(503, { message: 'PocketBase is not configured.' });
+		}
+
+		const form = await request.formData();
+		const courseId = String(form.get('course') ?? '');
+		const rows = String(form.get('csv') ?? '')
+			.split(/\r?\n/)
+			.filter((line) => line.trim())
+			.map((line) => line.split(',').map((field) => field.trim()));
+
+		if (!rows.length || rows.length > 500) {
+			return fail(400, { message: 'Enter between 1 and 500 rows.' });
+		}
+
+		const playingNumbers = new Set<number>();
+		const positionKeys = new Set<string>();
+		const details = new Map<number, string>();
+		const positiveInteger = (value: string) =>
+			Number.isSafeInteger(Number(value)) && Number(value) > 0;
+
+		for (const [index, row] of rows.entries()) {
+			const [playing, physical, name, par, label, distance, unit] = row;
+			if (
+				row.length !== 7 ||
+				row.some((field) => field.includes('"')) ||
+				!positiveInteger(playing) || !positiveInteger(physical) ||
+				!name || name.length > 120 || !positiveInteger(par) ||
+				!label || label.length > 40 ||
+				!Number.isFinite(Number(distance)) || Number(distance) <= 0 ||
+				!['feet', 'meters', 'yards'].includes(unit)
+			) {
+				return fail(400, {
+					message: `Check row ${index + 1}. Use playingHole,courseHole,name,par,position,distance,unit. Do not include a header, quotes, or commas inside fields.`
+				});
+			}
+
+			const number = Number(physical);
+			const key = `${number}:${label.toLowerCase()}`;
+			const description = JSON.stringify([name, Number(par)]);
+			if (
+				playingNumbers.has(Number(playing)) ||
+				positionKeys.has(key) ||
+				(details.has(number) && details.get(number) !== description)
+			) {
+				return fail(400, {
+					message: `Check row ${index + 1}. Playing numbers and hole/position pairs must be unique. Names and pars must match for repeated physical holes.`
+				});
+			}
+			playingNumbers.add(Number(playing));
+			positionKeys.add(key);
+			details.set(number, description);
+		}
+
+		let completed = 0;
+		try {
+			const course = await pb.collection('courses').getOne(courseId);
+			if (course.organization !== params.id || course.status !== 'active') {
+				return fail(400, { message: 'Select an active course in this organization.' });
+			}
+
+			const holes = await pb.collection('course_holes').getFullList({
+				filter: pb.filter('course = {:course} && status = "active"', { course: courseId })
+			});
+			const positions = await pb.collection('hole_positions').getFullList({
+				filter: pb.filter('hole.course = {:course} && status = "active"', { course: courseId })
+			});
+
+			for (const [, physical, name, par, label, distance, unit] of rows) {
+				const hole = holes.find((item) => item.number === Number(physical));
+				if (hole && (hole.name !== name || hole.par !== Number(par))) {
+					return fail(400, {
+						message: `Physical hole ${physical} already has a different name or par.`
+					});
+				}
+				const position = positions.find((item) =>
+					item.hole === hole?.id &&
+					String(item.label).toLowerCase() === label.toLowerCase()
+				);
+				if (position && (
+					position.label !== label ||
+					position.distance !== Number(distance) || position.unit !== unit
+				)) {
+					return fail(400, {
+						message: `Physical hole ${physical} already has different details for position "${label}".`
+					});
+				}
+			}
+
+			for (const [, physical, name, par, label, distance, unit] of rows) {
+				const existingHole = holes.find((item) => item.number === Number(physical));
+				const hole = existingHole ?? await pb.collection('course_holes').create({
+					organization: params.id,
+					course: courseId,
+					number: Number(physical),
+					name,
+					par: Number(par),
+					status: 'active'
+				});
+				if (!hole) {
+					throw new Error('PocketBase did not return the saved hole.');
+				}
+				if (!existingHole) {
+					holes.push(hole);
+				}
+				if (!positions.some((item) => item.hole === hole.id && item.label === label)) {
+					const position = await pb.collection('hole_positions').create({
+						organization: params.id,
+						hole: hole.id,
+						label,
+						distance: Number(distance),
+						unit,
+						status: 'active'
+					});
+					positions.push(position);
+				}
+				completed += 1;
+			}
+		} catch (err) {
+			return fail(pbErrorStatus(err), {
+				message: `${completed} rows completed. Earlier records remain saved. Retry the same CSV to complete matching rows. ${pbErrorMessage(err)}`
+			});
+		}
+		return { holesImported: completed };
 	},
 
 	addHole: async ({ locals, request, params }) => {

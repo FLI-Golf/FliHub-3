@@ -52,6 +52,44 @@
 	const message = $derived(
 		formRecord && 'message' in formRecord ? String(formRecord.message) : null
 	);
+
+	const holeImportPrompt = [
+		'Convert my golf or disc golf course layout into CSV for FliHub.',
+		'Column order: playingHole,courseHole,name,par,position,distance,unit.',
+		'Return only CSV rows, with no header or Markdown fences.',
+		'Preserve the supplied course layout and playing order.',
+		'Playing hole is the sequential number shown to players.',
+		'Course hole identifies the physical hole being played.',
+		'For an 18-hole course, both numbers run from 1 through 18.',
+		'For nine holes played twice, playing holes run from 1 through 18 while course holes repeat 1 through 9.',
+		'Use the supplied basket position or tee set label.',
+		'Keep the name and par consistent for each physical course hole.',
+		'Use positive whole numbers for playing hole, course hole, and par.',
+		'Use positive distances. Units must be feet, meters, or yards.',
+		'Do not put commas or quotes inside fields.',
+		'Ask about missing information or unclear layouts, positions, or playing order.',
+		'These fictional rows illustrate the format:',
+		'1,1,Opening Drive,4,White,385,yards',
+		'2,2,Creek Crossing,3,White,165,yards',
+		'3,3,Clubhouse Approach,5,White,510,yards',
+		'',
+		'My course layout:',
+		'[Paste your holes, positions or tee sets, and playing order here]'
+	].join('\n');
+
+	let holePromptField = $state<HTMLTextAreaElement>();
+	let holeCopyStatus = $state('');
+
+	async function copyHoleImportPrompt() {
+		try {
+			await navigator.clipboard.writeText(holeImportPrompt);
+			holeCopyStatus = 'Copied. Paste into chat and add your course holes.';
+		} catch {
+			holePromptField?.focus();
+			holePromptField?.select();
+			holeCopyStatus = 'Press Ctrl+C or Command+C to copy the selected prompt.';
+		}
+	}
 </script>
 
 <div class="flex flex-col gap-6">
@@ -283,4 +321,69 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
+
+	{#if canManage && courses.some((course) => course.status === 'active')}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Bulk add course holes</Card.Title>
+				<Card.Description>
+					Copy the example into chat and add your hole list. Select the course below,
+					then paste the CSV reply as-is.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="space-y-3">
+				<textarea
+					bind:this={holePromptField}
+					aria-label="Course hole CSV chat prompt"
+					readonly
+					rows="10"
+					value={holeImportPrompt}
+					class="w-full rounded-md border bg-background p-2 font-mono text-xs"
+				></textarea>
+				<Button type="button" onclick={copyHoleImportPrompt}>Copy example for chat</Button>
+				<p role="status" class="text-sm">{holeCopyStatus}</p>
+
+				<form method="POST" action="?/importHoles" class="flex flex-col items-start gap-2">
+					<Label for="import-hole-course">Course</Label>
+					<select
+						id="import-hole-course"
+						name="course"
+						required
+						class="w-full rounded-md border bg-background p-2 text-sm"
+					>
+						<option value="">Select a course</option>
+						{#each courses.filter((course) => course.status === 'active') as course}
+							<option value={course.id}>{course.name}</option>
+						{/each}
+					</select>
+
+					<Label for="hole-csv">Paste hole CSV</Label>
+					<p id="hole-csv-help" class="text-sm text-muted-foreground">
+One playing hole per line. Column order is playing hole, physical course hole,
+						name, par, basket position or tee set, distance, unit.
+						For an 18-hole course, both hole numbers run from 1–18.
+						For nine holes played twice, playing numbers run from 1–18 and physical
+						hole numbers repeat 1–9. Use feet, meters, or yards.
+						Skip the header and paste the chat reply directly.
+</p>
+					<textarea
+						id="hole-csv"
+						name="csv"
+						aria-describedby="hole-csv-help"
+						required
+						rows="10"
+						placeholder={'1,1,Opening Drive,4,White,385,yards\n2,2,Creek Crossing,3,White,165,yards\n3,3,Clubhouse Approach,5,White,510,yards'}
+						class="w-full rounded-md border bg-background p-2 font-mono text-sm"
+					></textarea>
+					<Button type="submit">Import holes</Button>
+				</form>
+
+				{#if formRecord && typeof formRecord.holesImported === 'number'}
+					<p role="status" class="text-sm">
+						Import complete. {formRecord.holesImported} hole rows processed.
+					</p>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	{/if}
 </div>

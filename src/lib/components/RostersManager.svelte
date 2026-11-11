@@ -150,6 +150,37 @@
 	const message = $derived(
 		formRecord && 'message' in formRecord ? String(formRecord.message) : null
 	);
+
+	const rosterImportPrompt = [
+		'Convert my team rosters into CSV for FliHub.',
+		'Column order: team,firstName,lastName.',
+		'Return one athlete assignment per line, without a header or Markdown fences.',
+		'Repeat the team name for each athlete on that team.',
+		'Use existing team and athlete names exactly. Do not invent athletes.',
+		'Remove repeated copies of the same assignment.',
+		'Do not put commas or quotes inside fields.',
+		'These three rows show the format:',
+		'Ace Makers,Simon,Lizotte',
+		'Ace Makers,Kat,Mertsch',
+		'Birdie Storm,Isaac,Robinson',
+		'',
+		'My team rosters:',
+		'[Paste your teams and athletes here]'
+	].join('\n');
+
+	let rosterPromptField = $state<HTMLTextAreaElement>();
+	let rosterCopyStatus = $state('');
+
+	async function copyRosterImportPrompt() {
+		try {
+			await navigator.clipboard.writeText(rosterImportPrompt);
+			rosterCopyStatus = 'Copied. Paste into chat and add your team rosters.';
+		} catch {
+			rosterPromptField?.focus();
+			rosterPromptField?.select();
+			rosterCopyStatus = 'Press Ctrl+C or Command+C to copy the selected prompt.';
+		}
+	}
 </script>
 
 <div class="flex flex-col gap-6">
@@ -187,7 +218,60 @@
 			</div>
 		</div>
 
-		<!-- Season roster: one card section per team entry -->
+
+		{#if canManage}
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Import season rosters — {season.name}</Card.Title>
+					<Card.Description>
+						Enter teams into this season and add athletes before importing.
+						Copy the prompt into chat, add your roster list, then paste the reply below.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content class="space-y-3">
+					<textarea
+						bind:this={rosterPromptField}
+						aria-label="Roster import chat prompt"
+						readonly
+						rows="9"
+						value={rosterImportPrompt}
+						class="w-full rounded-md border bg-background p-2 font-mono text-xs"
+					></textarea>
+					<Button type="button" onclick={copyRosterImportPrompt}>Copy example for chat</Button>
+					<p role="status" class="text-sm">{rosterCopyStatus}</p>
+					<form method="POST" action="?/importRosters" class="flex flex-col items-start gap-2">
+						<input type="hidden" name="season" value={season.id} />
+						<Label for="roster-csv">Paste roster CSV</Label>
+						<p id="roster-csv-help" class="text-sm text-muted-foreground">
+							One athlete per line. Use team, first name, last name separated by commas.
+							Repeat the team name for every athlete. Skip the header and paste the reply as-is.
+							Existing matching assignments are skipped.
+						</p>
+						<textarea
+							id="roster-csv"
+							name="csv"
+							required
+							rows="10"
+							aria-describedby="roster-csv-help"
+							placeholder={'Ace Makers,Simon,Lizotte\nAce Makers,Kat,Mertsch\nBirdie Storm,Isaac,Robinson'}
+							class="w-full rounded-md border bg-background p-2 font-mono text-sm"
+						></textarea>
+						<Button
+							type="submit"
+							disabled={!seasonEntries.some((entry) => entry.status === 'active')}
+						>Import rosters</Button>
+					</form>
+					{#if formRecord && typeof formRecord.rostersImported === 'number'}
+						<p role="status" class="text-sm">
+							{formRecord.rostersImported} assignments added.
+							{String(formRecord.rostersSkipped ?? 0)} existing assignments skipped.
+						</p>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+		{/if}
+
+<!-- Season roster: one card section per team entry -->
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="flex items-center gap-2">
