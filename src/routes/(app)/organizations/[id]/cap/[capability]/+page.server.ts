@@ -523,7 +523,59 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			]);
 		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
 		const resultByEvent = new Map(resultRows.map((r) => [String(r.event), r]));
+
+		const scorekeeperDirectory: {
+			id: string;
+			name: string;
+			email: string | null;
+		}[] = [];
+		const scorekeeperInvitations: {
+			id: string;
+			email: string;
+			status: string;
+		}[] = [];
+
+		if (myRole === 'owner' || myRole === 'admin') {
+			const [memberRows, invitationRows] = await Promise.all([
+				pb.collection('memberships').getFullList({
+					filter: pb.filter('organization = {:org} && role = "scorekeeper"', {
+						org: params.id
+					}),
+					expand: 'user',
+					sort: 'created'
+				}),
+				pb.collection('invitations').getFullList({
+					filter: pb.filter(
+						'organization = {:org} && role = "scorekeeper" && status = "pending"',
+						{ org: params.id }
+					),
+					sort: '-created'
+				})
+			]);
+
+			for (const member of memberRows) {
+				const person = member.expand?.user;
+				scorekeeperDirectory.push({
+					id: member.id,
+					name: String(person?.name ?? '') || 'Unnamed scorekeeper',
+					email: String(person?.email ?? '') || null
+				});
+			}
+			for (const invitation of invitationRows) {
+				const expiry = Date.parse(String(invitation.expires_at ?? '').replace(' ', 'T'));
+				scorekeeperInvitations.push({
+					id: invitation.id,
+					email: String(invitation.email ?? ''),
+					status: Number.isFinite(expiry) && expiry > Date.now()
+						? 'Pending invitation'
+						: 'Expired invitation'
+				});
+			}
+		}
+
 		scoringData = {
+			scorekeeperDirectory,
+			scorekeeperInvitations,
 			events: eventRows
 				.filter((ev) => String(ev.status) !== 'archived')
 				.map((ev) => {
@@ -657,6 +709,100 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+
+	activateDemoScorekeeper: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) {
+			return fail(503, { scorekeeperInviteError: 'PocketBase is not configured.' });
+		}
+		if (params.id !== '4ksk16f64guhf21') {
+			return fail(403, { scorekeeperInviteError: 'Demo activation is limited to Bobs Org.' });
+		}
+		const form = await request.formData();
+		const invitationId = String(form.get('invitation') ?? '');
+		if (!ID_PATTERN.test(invitationId)) {
+			return fail(400, { scorekeeperInviteError: 'Invalid invitation.' });
+		}
+		try {
+			await locals.pb.send(`/api/flihub/demo/scorekeepers/${invitationId}/activate`, {
+				method: 'POST'
+			});
+			return { scorekeeperActivationMessage: 'Demo scorekeeper activated.' };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { scorekeeperInviteError: pbErrorMessage(err) });
+		}
+	},
+
+
+
+	bulkInviteScorekeepers: async ({ locals, request, params, url }) => {
+		const pb = locals.pb;
+		if (!pb || !locals.user) {
+			return fail(503, { scorekeeperInviteError: 'PocketBase is not configured.' });
+		}
+		const form = await request.formData();
+		const lines = String(form.get('csv') ?? '')
+			.split(/\r?\n/)
+			.map((line) => line.trim().toLowerCase())
+			.filter(Boolean);
+
+		if (!lines.length || lines.length > 50) {
+			return fail(400, { scorekeeperInviteError: 'Enter between 1 and 50 email rows.' });
+		}
+		const invalid = lines.findIndex((email) =>
+			email.length > 254 || !/^[^\s@,;"<>]+@[^\s@,;"<>]+\.[^\s@,;"<>]+$/.test(email)
+		);
+		if (invalid !== -1) {
+			return fail(400, {
+				scorekeeperInviteError: `Check row ${invalid + 1}. Enter one valid email per line without a header.`
+			});
+		}
+
+		try {
+			const memberships = await pb.collection('memberships').getFullList({
+				filter: pb.filter('organization = {:org} && user = {:user}', {
+					org: params.id,
+					user: locals.user.id
+				})
+			});
+			if (!memberships.some((membership) =>
+				membership.role === 'owner' || membership.role === 'admin'
+			)) {
+				return fail(403, {
+					scorekeeperInviteError: 'Only Owners and Admins can invite scorekeepers.'
+				});
+			}
+		} catch (err) {
+			return fail(pbErrorStatus(err), { scorekeeperInviteError: pbErrorMessage(err) });
+		}
+
+		const results: { email: string; link: string | null; message: string }[] = [];
+		for (const email of new Set(lines)) {
+			try {
+				const invitation = await pb.send<{
+					token: string;
+					email: string;
+					expiresAt: string;
+				}>('/api/flihub/invitations', {
+					method: 'POST',
+					body: { organization: params.id, email, role: 'scorekeeper' }
+				});
+				results.push({
+					email,
+					link: `${url.origin}/invitations/accept?token=${encodeURIComponent(invitation.token)}`,
+					message: `Invitation created. Expires ${invitation.expiresAt}.`
+				});
+			} catch (err) {
+				results.push({
+					email,
+					link: null,
+					message: pbErrorMessage(err)
+				});
+			}
+		}
+		return { scorekeeperInvitations: results };
+	},
+
+
 	/** Phases 2A–2B: fantasy league creation through the trusted hook. */
 	createFantasyLeague: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });

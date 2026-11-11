@@ -128,9 +128,13 @@
 		<ScoringManager
 			organizationId={data.organization.id}
 			events={data.scoringData.events}
+			scorekeepers={data.scoringData.scorekeeperDirectory}
+			pendingInvitations={data.scoringData.scorekeeperInvitations}
 			canScore={data.scoringData.canScore}
 			myRole={data.myRole}
-		/>
+
+			{form}
+/>
 	{:else if data.capability.id === 'standings' && data.capability.availability === 'available' && data.standingsData}
 		<div class="flex flex-col gap-4" data-testid="member-standings">
 			<p class="text-sm text-muted-foreground">
