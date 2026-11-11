@@ -1,3 +1,5 @@
+import { parseSeasonPurse } from '$lib/season-purse';
+import { toTeeInstant, type TeeSchedule } from '$lib/tee-times';
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
@@ -257,7 +259,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				name: String(s.name ?? ''),
 				status: (String(s.status) || 'planned') as 'planned' | 'active' | 'completed' | 'archived',
 				startsOn: String(s.startsOn ?? '') || null,
-				endsOn: String(s.endsOn ?? '') || null
+				endsOn: String(s.endsOn ?? '') || null,
+ purseAmountCents: String(s.purseCurrency ?? '') ? Number(s.purseAmountCents ?? 0) : null,
+ purseCurrency: String(s.purseCurrency ?? '')
 			})),
 			divisions: divisionRows.map((d) => ({
 				id: d.id,
@@ -376,6 +380,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			})),
 			// Phase 1F event operations (D14).
 			rounds: roundRows.map((r) => ({
+ teeSchedule: (r.teeSchedule || null) as TeeSchedule | null,
 				id: r.id,
 				event: String(r.event ?? ''),
 				number: Number(r.number ?? 0),
@@ -709,6 +714,32 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+
+ saveTeeSchedule: async ({ locals, request, params }) => {
+  const pb = locals.pb;
+  if (!pb || !locals.user) return fail(503, {message:'PocketBase is not configured.'});
+  const form = await request.formData();
+  try {
+   const round = await pb.collection('rounds').getOne(String(form.get('round') ?? ''));
+   if (round.organization !== params.id || round.status !== 'active') return fail(400,{message:'Choose an active round in this organization.'});
+   const timeZone = String(form.get('timeZone') ?? '');
+   const intervalMinutes = Number(form.get('interval'));
+   if (!Number.isInteger(intervalMinutes) || intervalMinutes < 1 || intervalMinutes > 240) return fail(400,{message:'Use an interval from 1 to 240 whole minutes.'});
+   const ids = form.getAll('group').map(String);
+   const times = form.getAll('teeTime').map(String);
+   if (!ids.length || ids.length !== times.length) return fail(400,{message:'Provide a tee time for each group.'});
+   const schedule: TeeSchedule = {timeZone, intervalMinutes, slots:ids.map((group,index)=>({group,startsAt:toTeeInstant(times[index],timeZone)}))};
+   const event = await pb.collection('events').getOne(String(round.event));
+   const firstDay = String(event.startsAt ?? '').slice(0,10);
+   const lastDay = String(event.endsAt || event.startsAt || '').slice(0,10);
+   if (times.some(time => (firstDay && time.slice(0,10)<firstDay) || (lastDay && time.slice(0,10)>lastDay))) return fail(400,{message:'Tee times must fall on the event dates. Update the event dates first if needed.'});
+   await pb.collection('rounds').update(round.id,{teeSchedule:schedule});
+   return {teeScheduleSaved:true, teeScheduleEvent:String(round.event)};
+  } catch(err) {
+   return fail(pbErrorStatus(err), {message: err instanceof Error ? err.message : pbErrorMessage(err)});
+  }
+ },
+
 
 	activateDemoScorekeeper: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) {
@@ -1090,6 +1121,26 @@ export const actions: Actions = {
 		return { created: true };
 	},
 
+
+ deleteLeague: async ({ locals, request, params }) => {
+  if (!locals.pb || !locals.user) {
+   return fail(503, { message: 'PocketBase is not configured.' });
+  }
+  const form = await request.formData();
+  const leagueId = String(form.get('league') ?? '');
+  if (!ID_PATTERN.test(leagueId)) return fail(400, { message: 'Invalid league.' });
+  try {
+   const league = await locals.pb.collection('leagues').getOne(leagueId);
+   if (league.organization !== params.id) {
+    return fail(403, { message: 'Choose a league in this organization.' });
+   }
+   await locals.pb.send(`/api/flihub/leagues/${leagueId}/delete-empty`, { method: 'POST' });
+  } catch (err) {
+   return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+  }
+  return { deleted: true };
+ },
+
 	renameLeague: async ({ locals, request }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
@@ -1129,6 +1180,8 @@ export const actions: Actions = {
 	createSeason: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
+  const purse = parseSeasonPurse(String(form.get('purseAmount') ?? ''));
+  if (!purse.ok) return fail(400, { message: purse.message });
 		try {
 			await locals.pb.collection('seasons').create({
 				organization: params.id,
@@ -1136,7 +1189,8 @@ export const actions: Actions = {
 				name: String(form.get('name') ?? '').trim(),
 				status: 'planned',
 				startsOn: String(form.get('startsOn') ?? '') || null,
-				endsOn: String(form.get('endsOn') ?? '') || null
+				endsOn: String(form.get('endsOn') ?? '') || null,
+ ...(form.has('purseAmount') ? purse.value : {})
 			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
@@ -1147,6 +1201,8 @@ export const actions: Actions = {
 	updateSeason: async ({ locals, request }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const form = await request.formData();
+  const purse = parseSeasonPurse(String(form.get('purseAmount') ?? ''));
+  if (!purse.ok) return fail(400, { message: purse.message });
 		const status = String(form.get('status') ?? 'planned');
 		if (!['planned', 'active', 'completed'].includes(status)) {
 			return fail(400, { message: 'Season status must be planned, active, or completed.' });
@@ -1156,7 +1212,8 @@ export const actions: Actions = {
 				name: String(form.get('name') ?? '').trim(),
 				status,
 				startsOn: String(form.get('startsOn') ?? '') || null,
-				endsOn: String(form.get('endsOn') ?? '') || null
+				endsOn: String(form.get('endsOn') ?? '') || null,
+ ...(form.has('purseAmount') ? purse.value : {})
 			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
@@ -1973,14 +2030,23 @@ export const actions: Actions = {
 	},
 
 	addGroupTeam: async ({ locals, request, params }) => {
-		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (!locals.pb || !locals.user) {
+			return fail(503, { message: 'PocketBase is not configured.' });
+		}
 		const form = await request.formData();
+		const groupId = String(form.get('group') ?? '');
+		const entryId = String(form.get('entry') ?? '');
+		if (!ID_PATTERN.test(groupId) || !ID_PATTERN.test(entryId)) {
+			return fail(400, { message: 'Choose a group and season team.' });
+		}
 		try {
-			await locals.pb.collection('group_teams').create({
-				organization: params.id,
-				group: String(form.get('group') ?? ''),
-				entry: String(form.get('entry') ?? ''),
-				status: 'active'
+			const group = await locals.pb.collection('event_groups').getOne(groupId);
+			if (group.organization !== params.id) {
+				return fail(400, { message: 'Choose a group in this organization.' });
+			}
+			await locals.pb.send(`/api/flihub/groups/${groupId}/add-team-roster`, {
+				method: 'POST',
+				body: { entry: entryId }
 			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });

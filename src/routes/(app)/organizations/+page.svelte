@@ -142,6 +142,7 @@
 							<p class="text-muted-foreground">
 								{round.course || 'Course awaiting setup'}
 								{round.position ? ` · ${round.position}` : ''}
+ <span class="block font-medium">{round.teeTime}</span>
 							</p>
 						</div>
 					{/each}

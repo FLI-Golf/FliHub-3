@@ -261,7 +261,7 @@
 							size="sm"
 							variant="outline"
 							href={`/organizations/${organizationId}/events/${event.id}/results`}
-						>
+						 style="background-color: #16a34a; color: white;">
 							<BadgeCheck class="mr-1 size-4" />
 							Official results
 						</Button>

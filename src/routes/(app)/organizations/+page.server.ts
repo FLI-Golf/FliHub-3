@@ -1,3 +1,4 @@
+import { teeDisplay, type TeeSchedule } from '$lib/tee-times';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import {
@@ -23,7 +24,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		eventId: string;
 		eventName: string;
 		groupName: string;
-		rounds: { id: string; number: number; name: string; course: string; position: string }[];
+		rounds: { id: string; number: number; name: string; course: string; position: string; teeTime: string }[];
 	}[] = [];
 
 	if (scorekeeperView && locals.pb && locals.user) {
@@ -68,7 +69,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 							number: Number(round.number),
 							name: String(round.name ?? ''),
 							course: String(courses.find((course) => course.id === round.course)?.name ?? ''),
-							position: String(round.positionLabel ?? '')
+							position: String(round.positionLabel ?? ''),
+       teeTime: (() => {
+        const schedule = round.teeSchedule as TeeSchedule | null;
+        const slot = schedule?.slots.find((slot) => slot.group === group.id);
+        return slot && schedule ? teeDisplay(slot.startsAt, schedule.timeZone) : 'Tee time awaiting setup';
+       })()
 						}))
 				}];
 			});
