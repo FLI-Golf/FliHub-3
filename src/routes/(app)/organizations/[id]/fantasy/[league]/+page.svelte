@@ -41,12 +41,61 @@
 		</Alert.Root>
 	{/if}
 
+	{#if import.meta.env.DEV && lobby.isOwner && !lobby.seatsFilled && lobby.drafts.length === 0}
+		<section
+			class="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950"
+			data-testid="demo-fantasy-setup"
+		>
+			<h2 class="font-semibold">Demo testing · Add fantasy participants</h2>
+			<p class="text-sm">
+				Fill the remaining places with clearly named demo accounts, already verified and approved.
+				Existing participants stay unchanged. No invitation emails are sent.
+			</p>
+			<form
+				method="POST"
+				action="?/seedDemoParticipants"
+				use:enhance
+				class="flex flex-col items-start gap-3"
+			>
+				<label for="demo-password" class="text-sm font-medium"
+					>Password for the new demo accounts</label
+				>
+				<Input
+					id="demo-password"
+					name="demoPassword"
+					type="password"
+					autocomplete="new-password"
+					required
+					minlength={12}
+					maxlength={72}
+					class="max-w-sm bg-white text-black"
+				/>
+				<p class="text-sm">
+					Use 12–72 characters. Keep this password if you want to sign in as a demo participant.
+				</p>
+				<Button type="submit" style="background-color: #166534; color: white;"
+					>Fill remaining places with demo participants</Button
+				>
+			</form>
+		</section>
+	{/if}
+	{#if form && 'demoParticipantsAdded' in form}
+		<div role="status" class="rounded-lg border p-4">
+			<p>{form.demoParticipantsAdded} demo fantasy participants added.</p>
+			{#each form.demoAccounts ?? [] as account (account.email)}
+				<p class="mt-2 text-sm">{account.name} · {account.email}</p>
+			{/each}
+		</div>
+	{/if}
+
 	<Card.Root data-testid="lobby-members">
 		<Card.Header>
-			<Card.Title class="flex items-center gap-2"><Users class="size-4" /> Managers</Card.Title>
+			<Card.Title class="flex items-center gap-2"
+				><Users class="size-4" /> Fantasy participants</Card.Title
+			>
 			<Card.Description>
-				Invited managers accept their seat, then the owner approves it. Only approved seats count
-				toward the limit.
+				Invited fantasy participants accept their seat, then the commissioner approves it. Only
+				approved seats count toward the limit.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">
@@ -80,15 +129,16 @@
 	{#if lobby.isOwner}
 		<Card.Root data-testid="lobby-invite">
 			<Card.Header>
-				<Card.Title>Invite a manager</Card.Title>
+				<Card.Title>Invite a fantasy participant</Card.Title>
 				<Card.Description>
-					Invitations are in-app and scoped to this league — the manager needs a FliHub account.
+					Invitations are in-app and scoped to this league — the fantasy participant needs a FliHub
+					account.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<form method="POST" action="?/invite" use:enhance class="flex flex-wrap items-end gap-3">
 					<div class="flex flex-col gap-1.5">
-						<Label for="inv-email">Manager email</Label>
+						<Label for="inv-email">Fantasy participant email</Label>
 						<Input id="inv-email" name="email" type="email" required class="w-72" />
 					</div>
 					<Button type="submit" data-testid="invite-manager">Invite</Button>
@@ -166,7 +216,7 @@
 					</Button>
 					{#if !lobby.seatsFilled}
 						<p class="text-xs text-muted-foreground">
-							Drafts open once every manager seat is approved.
+							Drafts open once every fantasy participant place is approved.
 						</p>
 					{/if}
 				</form>

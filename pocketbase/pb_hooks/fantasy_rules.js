@@ -180,7 +180,7 @@ function performPick(txApp, draftId, managerId, athleteId, auto, now) {
 	const totalPicks = order.length * 4;
 	const seat = snakeSeat(order, currentPick);
 	if (seat.manager !== managerId) {
-		throw new BadRequestError('not_your_turn: Another manager is on the clock.');
+		throw new BadRequestError('not_your_turn: Another fantasy participant is on the clock.');
 	}
 	const pool = eligiblePool(txApp, draft.getString('event'));
 	const poolEntry = pool.find((p) => p.athlete === athleteId);
@@ -274,7 +274,7 @@ function buildBoard(app, draft, callerId) {
 	const pickedBy = new Map(picks.map((p) => [p.getString('athlete'), p.getString('manager')]));
 	const status = draft.getString('status');
 	const currentPick = Number(draft.get('currentPick'));
-	const seat = status === 'active' ? snakeSeat(order, currentPick) : null;
+	const seat = ['active', 'paused'].includes(status) ? snakeSeat(order, currentPick) : null;
 
 	const rosters = order.map((userId) => {
 		const minePicks = picks.filter((p) => p.getString('manager') === userId);
@@ -345,9 +345,12 @@ function buildBoard(app, draft, callerId) {
 			round: seat?.round ?? null,
 			onTheClock: seat ? { user: seat.manager, name: userName(app, seat.manager, names) } : null,
 			deadline: String(draft.get('deadline') ?? ''),
+			pausedRemainingMs: Number(draft.get('pausedRemainingMs') ?? 0),
 			startedAt: String(draft.get('startedAt') ?? ''),
 			completedAt: String(draft.get('completedAt') ?? '')
 		},
+		recommendedAthlete:
+			status === 'active' && seat ? autoPickAthlete(app, draft, seat.manager) : null,
 		order: order.map((userId) => ({ user: userId, name: userName(app, userId, names) })),
 		pool: pool.map((p) => ({
 			athlete: p.athlete,
@@ -370,7 +373,7 @@ function buildBoard(app, draft, callerId) {
 		})),
 		rosters,
 		pendingSubstitutions,
-		myTurn: seat ? seat.manager === callerId : false,
+		myTurn: status === 'active' && seat ? seat.manager === callerId : false,
 		me: callerId,
 		serverNow: new Date().toISOString()
 	};

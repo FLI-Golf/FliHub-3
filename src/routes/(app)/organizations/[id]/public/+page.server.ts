@@ -116,6 +116,15 @@ export const actions: Actions = {
 				body
 			});
 		} catch (err) {
+			const detail = err as {
+				status?: number;
+				response?: { message?: string; data?: unknown };
+			};
+			console.error('[public-page-save]', {
+				status: detail.status,
+				message: detail.response?.message,
+				validation: detail.response?.data
+			});
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
 		return { saved: true };

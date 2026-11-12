@@ -1,5 +1,5 @@
 <script lang="ts">
- import { formatSeasonPurse, seasonPurseInput } from '$lib/season-purse';
+	import { formatSeasonPurse, seasonPurseInput } from '$lib/season-purse';
 	import {
 		CircleAlert,
 		Pencil,
@@ -31,8 +31,9 @@
 		status: 'planned' | 'active' | 'completed' | 'archived';
 		startsOn: string | null;
 		endsOn: string | null;
- purseAmountCents: number | null;
- purseCurrency: string;
+		purseAmountCents: number | null;
+		purseCurrency: string;
+		fantasyEnabled: boolean;
 	}
 	interface Division {
 		id: string;
@@ -140,21 +141,29 @@
 							<Button variant="outline" size="sm" onclick={() => (renamingLeague = league)}>
 								<Pencil class="mr-1 size-3.5" /> Rename
 							</Button>
- <form method="POST" action="?/deleteLeague"
-  onsubmit={(event) => {
-   if (!confirm(`Permanently delete the empty league "${league.name}"?`)) {
-    event.preventDefault();
-   }
-  }}>
-  <input type="hidden" name="league" value={league.id} />
-  <Button type="submit" size="sm" variant="outline"
-   disabled={seasons.some((season) => season.league === league.id)}
-   title={seasons.some((season) => season.league === league.id)
-    ? 'This league contains seasons and cannot be deleted.' : 'Permanently delete this empty league'}
-   style="color: #dc2626; border-color: #dc2626;">
-   Delete
-  </Button>
- </form>
+							<form
+								method="POST"
+								action="?/deleteLeague"
+								onsubmit={(event) => {
+									if (!confirm(`Permanently delete the empty league "${league.name}"?`)) {
+										event.preventDefault();
+									}
+								}}
+							>
+								<input type="hidden" name="league" value={league.id} />
+								<Button
+									type="submit"
+									size="sm"
+									variant="outline"
+									disabled={seasons.some((season) => season.league === league.id)}
+									title={seasons.some((season) => season.league === league.id)
+										? 'This league contains seasons and cannot be deleted.'
+										: 'Permanently delete this empty league'}
+									style="color: #dc2626; border-color: #dc2626;"
+								>
+									Delete
+								</Button>
+							</form>
 
 							{#if league.status === 'active'}
 								<form method="POST" action="?/archiveLeague">
@@ -217,12 +226,13 @@
 					<div class="flex flex-wrap items-center justify-between gap-2">
 						<div class="flex flex-wrap items-center gap-2">
 							<span class="font-medium">{season.name}</span>
+							<Badge variant="outline">Fantasy {season.fantasyEnabled ? 'open' : 'closed'}</Badge>
 							<Badge variant="outline">{season.leagueName}</Badge>
 							<Badge variant={season.status === 'archived' ? 'secondary' : 'default'}>
 								{season.status}
 							</Badge>
 							<span class="text-sm text-muted-foreground">{scheduleOf(season)}</span>
- <span class="text-sm font-medium">{formatSeasonPurse(season)}</span>
+							<span class="text-sm font-medium">{formatSeasonPurse(season)}</span>
 						</div>
 						{#if canManage}
 							<div class="flex items-center gap-2">
@@ -429,16 +439,23 @@
 						<Input id="season-ends" name="endsOn" type="date" />
 					</div>
 
- <div class="flex flex-col gap-1.5">
-  <Label for="season-purse">Season purse (USD, optional)</Label>
-  <Input id="season-purse" name="purseAmount" type="text" inputmode="decimal"
-   pattern={'[0-9]+([.][0-9]{1,2})?'} placeholder="6000000.00"
-   aria-describedby="season-purse-help" />
-  <p id="season-purse-help" class="text-xs text-muted-foreground">
-   Enter dollars with up to two decimal places, without commas. Leave blank for no purse set.
-  </p>
- </div>
-<div>
+					<div class="flex flex-col gap-1.5">
+						<Label for="season-purse">Season purse (USD, optional)</Label>
+						<Input
+							id="season-purse"
+							name="purseAmount"
+							type="text"
+							inputmode="decimal"
+							pattern={'[0-9]+([.][0-9]{1,2})?'}
+							placeholder="6000000.00"
+							aria-describedby="season-purse-help"
+						/>
+						<p id="season-purse-help" class="text-xs text-muted-foreground">
+							Enter dollars with up to two decimal places, without commas. Leave blank for no purse
+							set.
+						</p>
+					</div>
+					<div>
 						<Button type="submit">
 							<Plus class="mr-1 size-4" /> Add season
 						</Button>
@@ -510,17 +527,37 @@
 					</div>
 				</div>
 
- <div class="flex flex-col gap-1.5">
-  <Label for="edit-season-purse">Season purse (USD, optional)</Label>
-  <Input id="edit-season-purse" name="purseAmount" type="text" inputmode="decimal"
-   pattern={'[0-9]+([.][0-9]{1,2})?'} placeholder="6000000.00" value={seasonPurseInput(editingSeason)}
-   aria-describedby="edit-season-purse-help" />
-  <p id="edit-season-purse-help" class="text-xs text-muted-foreground">
-   Enter dollars with up to two decimal places, without commas. Leave blank for no purse set.
-  </p>
- </div>
+				<div class="flex flex-col gap-1.5">
+					<label class="flex items-center gap-2"
+						><input
+							type="checkbox"
+							name="fantasyEnabled"
+							value="yes"
+							checked={editingSeason.fantasyEnabled}
+						/> Allow new fantasy leagues for this season</label
+					>
+					<p class="text-xs text-muted-foreground">
+						The organization must also publish its page and enable Fantasy. Closing prevents new
+						leagues; existing leagues remain accessible.
+					</p>
+					<Label for="edit-season-purse">Season purse (USD, optional)</Label>
+					<Input
+						id="edit-season-purse"
+						name="purseAmount"
+						type="text"
+						inputmode="decimal"
+						pattern={'[0-9]+([.][0-9]{1,2})?'}
+						placeholder="6000000.00"
+						value={seasonPurseInput(editingSeason)}
+						aria-describedby="edit-season-purse-help"
+					/>
+					<p id="edit-season-purse-help" class="text-xs text-muted-foreground">
+						Enter dollars with up to two decimal places, without commas. Leave blank for no purse
+						set.
+					</p>
+				</div>
 
-<Dialog.Footer>
+				<Dialog.Footer>
 					<Button type="submit">Save changes</Button>
 				</Dialog.Footer>
 			</form>

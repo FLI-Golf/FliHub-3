@@ -134,7 +134,7 @@ export function setActiveOrgCookie(cookies: Cookies, organizationId: string): vo
  * Validates a post-login redirect target: only same-site absolute paths
  * are allowed, so crafted `?next=` values cannot send users off-site.
  */
-export function safeNextPath(value: string | null, fallback = '/organizations'): string {
+export function safeNextPath(value: string | null, fallback = '/account'): string {
 	if (value && value.startsWith('/') && !value.startsWith('//')) {
 		return value;
 	}

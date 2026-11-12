@@ -1,0 +1,441 @@
+diff --git a/src/lib/components/ScoreStepper.svelte b/src/lib/components/ScoreStepper.svelte
+new file mode 100644
+index 0000000..6bc1161
+--- /dev/null
++++ b/src/lib/components/ScoreStepper.svelte
+@@ -0,0 +1,90 @@
++<script lang="ts">
++  import { enhance } from "$app/forms";
++  let {
++    roundId,
++    groupId,
++    athleteId,
++    holeId,
++    athleteName,
++    holeNumber,
++    par,
++    strokes,
++    onPending,
++  }: {
++    roundId: string;
++    groupId: string;
++    athleteId: string;
++    holeId: string;
++    athleteName: string;
++    holeNumber: number;
++    par: number;
++    strokes: number | null;
++    onPending: (change: number) => void;
++  } = $props();
++  let pending = $state(false);
++  const shown = $derived(strokes ?? par);
++  const relative = $derived(shown - par);
++</script>
++
++<form
++  method="POST"
++  action="?/enterScore"
++  class="inline-flex flex-col items-center gap-1"
++  use:enhance={() => {
++    pending = true;
++    onPending(1);
++    return async ({ update }) => {
++      try {
++        await update({ reset: false });
++      } finally {
++        pending = false;
++        onPending(-1);
++      }
++    };
++  }}
++>
++  <input type="hidden" name="round" value={roundId} />
++  <input type="hidden" name="group" value={groupId} />
++  <input type="hidden" name="athlete" value={athleteId} />
++  <input type="hidden" name="hole" value={holeId} />
++  <div class="flex items-center gap-1">
++    <button
++      type="submit"
++      name="strokes"
++      value={shown - 1}
++      disabled={pending || shown <= 1}
++      aria-label="One fewer stroke for {athleteName} on hole {holeNumber}"
++      class="size-11 rounded-md border bg-background text-xl disabled:opacity-40"
++      >−</button
++    >
++    <span class="min-w-7 text-center font-semibold" aria-label="{shown} strokes"
++      >{shown}</span
++    >
++    <button
++      type="submit"
++      name="strokes"
++      value={shown + 1}
++      disabled={pending}
++      aria-label="One more stroke for {athleteName} on hole {holeNumber}"
++      class="size-11 rounded-md border bg-background text-xl disabled:opacity-40"
++      >+</button
++    >
++  </div>
++  <span class="text-xs text-muted-foreground"
++    >{relative === 0 ? "Even" : relative > 0 ? `+${relative}` : relative}</span
++  >
++  {#if strokes === null}
++    <button
++      type="submit"
++      name="strokes"
++      value={par}
++      disabled={pending}
++      aria-label="Confirm par for {athleteName} on hole {holeNumber}"
++      class="rounded-md border px-2 py-1 text-xs disabled:opacity-40"
++      >Confirm par</button
++    >
++  {/if}
++  <span class="text-xs text-muted-foreground" role="status">
++    {pending ? "Saving…" : strokes === null ? "Not recorded" : "Saved"}
++  </span>
++</form>
+diff --git a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts
+index 620f1f4..bf08111 100644
+--- a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts
++++ b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.server.ts
+@@ -101,6 +101,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
+                         .map((h) => ({
+                                 id: h.id,
+                                 number: Number(h.number ?? 0),
++ par: Number(h.par ?? 3),
+                                 name: String(h.name ?? ''),
+                                 // D15: scoring-time display falls back non-blocking when the
+                                 // round's named position is missing on a hole.
+@@ -150,6 +151,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
+ 
+         return {
+                 organizationId: params.id,
++ currentUserId: user.id,
+                 myRole,
+                 canManage,
+                 canScore,
+@@ -217,11 +219,18 @@ async function ensureScorecard(
+                 .getFirstListItem(`round = "${roundId}" && group = "${groupId}"`)
+                 .catch(() => null);
+         if (existing) return existing;
+-        return pb.collection('scorecards').create({
+-                organization: orgId,
+-                round: roundId,
+-                group: groupId
+-        });
++        try {
++  return await pb.collection('scorecards').create({
++   organization: orgId,
++   round: roundId,
++   group: groupId
++  });
++ } catch (err) {
++  const concurrent = await pb.collection('scorecards')
++   .getFirstListItem(`round = "${roundId}" && group = "${groupId}"`).catch(() => null);
++  if (concurrent) return concurrent;
++  throw err;
++ }
+ }
+ 
+ export const actions: Actions = {
+@@ -243,6 +252,12 @@ export const actions: Actions = {
+                         });
+                 }
+                 const strokes = Number(strokesRaw);
++  if (!Number.isSafeInteger(strokes) || strokes < 1) {
++   return fail(400, { message: 'Scores must be positive whole numbers.' });
++  }
++  if (![roundId, groupId, athleteId, holeId].every((id) => ID_PATTERN.test(id))) {
++   return fail(400, { message: 'Invalid score assignment.' });
++  }
+                 try {
+                         const scorecard = await ensureScorecard(locals.pb, params.id, roundId, groupId);
+                         const existing = await locals.pb
+@@ -280,7 +295,7 @@ export const actions: Actions = {
+                 } catch (err) {
+                         return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+                 }
+-                return { submitted: true };
++                return { submitted: true, activeRound: String(form.get('round') ?? ''), activeGroup: String(form.get('group') ?? '') };
+         },
+ 
+         reopenScorecard: async ({ locals, request }) => {
+diff --git a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte
+index 71c70eb..ed6e9b0 100644
+--- a/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte
++++ b/src/routes/(app)/organizations/[id]/events/[event]/score/+page.svelte
+@@ -1,4 +1,9 @@
+ <script lang="ts">
++ import ScoreStepper from '$lib/components/ScoreStepper.svelte';
++ let pendingSaves = $state(0);
++ function trackSave(change: number) {
++  pendingSaves = Math.max(0, pendingSaves + change);
++ }
+  import { teeDisplay } from '$lib/tee-times';
+         import { resolve } from '$app/paths';
+         import { ArrowLeft, CircleAlert, ClipboardCheck, History, Lock, Send } from 'lucide-svelte';
+@@ -13,8 +18,8 @@
+         let selectedRound = $state('');
+         let selectedGroup = $state('');
+ 
+-        const round = $derived(data.rounds.find((r) => r.id === selectedRound) ?? data.rounds[0] ?? null);
+-        const group = $derived(data.groups.find((g) => g.id === selectedGroup) ?? data.groups[0] ?? null);
++        const round = $derived(data.rounds.find((r) => r.id === (selectedRound || String(formRecord?.activeRound ?? ''))) ?? data.rounds[0] ?? null);
++        const group = $derived(data.groups.find((g) => g.id === (selectedGroup || String(formRecord?.activeGroup ?? ''))) ?? data.groups.find((g) => g.scorekeeper === data.currentUserId) ?? data.groups[0] ?? null);
+         const groupAthletes = $derived(
+                 group ? data.groupAthletes.filter((ga) => ga.group === group.id) : []
+         );
+@@ -25,7 +30,7 @@
+         );
+         const teeSlot = $derived(round?.teeSchedule?.slots.find((slot) => slot.group === group?.id));
+  const isDraft = $derived(!scorecard || scorecard.status === 'draft');
+-        const editable = $derived(data.canScore && isDraft);
++        const editable = $derived(isDraft && (data.canManage || (data.myRole === 'scorekeeper' && group?.scorekeeper === data.currentUserId)));
+ 
+         const strokesFor = (athleteId: string, holeId: string) =>
+                 round
+@@ -34,23 +39,56 @@
+                                 )?.strokes ?? null)
+                         : null;
+ 
+-        const athleteTotal = (athleteId: string) =>
+-                round
+-                        ? data.scores
+-                                        .filter((s) => s.round === round.id && s.athlete === athleteId)
+-                                        .reduce((sum, s) => sum + s.strokes, 0)
+-                        : 0;
++
++ const selectedHoles = $state<Record<string, string>>({});
++ const reviewing = $state<Record<string, boolean>>({});
++ const cardKey = $derived(`${round?.id ?? ''}:${group?.id ?? ''}`);
++ const currentHole = $derived(
++  round?.holes.find((hole) => hole.id === selectedHoles[cardKey]) ??
++  round?.holes.find((hole) => groupAthletes.some((athlete) => strokesFor(athlete.athlete, hole.id) === null)) ??
++  round?.holes[0] ?? null
++ );
++ const currentIndex = $derived(round && currentHole ? round.holes.findIndex((hole) => hole.id === currentHole.id) : 0);
++ const holeMissing = $derived(currentHole ? groupAthletes.filter((athlete) => strokesFor(athlete.athlete, currentHole.id) === null).length : 0);
++ const showReview = $derived(!editable || Boolean(reviewing[cardKey]));
++ $effect(() => {
++  if (currentHole && !selectedHoles[cardKey]) selectedHoles[cardKey] = currentHole.id;
++ });
++ function openHole(holeId: string) {
++  selectedHoles[cardKey] = holeId;
++  reviewing[cardKey] = false;
++ }
++ function nextHole() {
++  if (!round || holeMissing || pendingSaves) return;
++  const next = round.holes[currentIndex + 1];
++  if (next) openHole(next.id);
++  else reviewing[cardKey] = true;
++ }
++
++        const athleteTotal = (athleteId: string) => {
++  if (!round) return { total: 0, recorded: 0, missing: 0 };
++  const values = round.holes.map((hole) => strokesFor(athleteId, hole.id));
++  const recorded = values.filter((value): value is number => value !== null);
++  return {
++   total: recorded.reduce((sum, value) => sum + value, 0),
++   recorded: recorded.length,
++   missing: values.length - recorded.length
++  };
++ };
+ 
+         /** Demo team score: both athletes' strokes added together; lower wins. */
+         const teamTotals = $derived.by(() => {
+                 if (!round || !group) return [];
+-                const byEntry: Record<string, { teamName: string; total: number; missing: number }> = {};
++                const byEntry: Record<string, { teamName: string; total: number; missing: number; recorded: number }> = {};
+                 for (const ga of groupAthletes) {
+-                        const bucket = byEntry[ga.entry] ?? { teamName: ga.teamName, total: 0, missing: 0 };
++                        const bucket = byEntry[ga.entry] ?? { teamName: ga.teamName, total: 0, missing: 0, recorded: 0 };
+                         for (const hole of round.holes) {
+                                 const strokes = strokesFor(ga.athlete, hole.id);
+                                 if (strokes === null) bucket.missing += 1;
+-                                else bucket.total += strokes;
++                                else {
++    bucket.total += strokes;
++    bucket.recorded += 1;
++   }
+                         }
+                         byEntry[ga.entry] = bucket;
+                 }
+@@ -58,13 +96,8 @@
+         });
+ 
+         const missingCount = $derived(
+-                round && group
+-                        ? groupAthletes.length * round.holes.length -
+-                                        data.scores.filter(
+-                                                (s) => s.round === round.id && groupAthletes.some((ga) => ga.athlete === s.athlete)
+-                                        ).length
+-                        : 0
+-        );
++  groupAthletes.reduce((count, athlete) => count + athleteTotal(athlete.athlete).missing, 0)
++ );
+ 
+         const cardChanges = $derived(
+                 scorecard ? data.changes.filter((ch) => ch.scorecard === scorecard.id) : []
+@@ -77,9 +110,6 @@
+                 formRecord && 'message' in formRecord ? String(formRecord.message) : null
+         );
+ 
+-        function submitOnChange(event: Event) {
+-                (event.currentTarget as HTMLInputElement).form?.requestSubmit();
+-        }
+ </script>
+ 
+ <svelte:head>
+@@ -146,7 +176,8 @@
+                                         variant={round.id === r.id ? 'default' : 'outline'}
+                                         size="sm"
+                                         class="justify-start"
+-                                        onclick={() => (selectedRound = r.id)}
++                                        disabled={pendingSaves > 0}
++ onclick={() => (selectedRound = r.id)}
+                                 >
+                                         Round {r.number} · {r.holeCount} holes{r.positionLabel ? ` · ${r.positionLabel}` : ''}
+                                 </Button>
+@@ -158,7 +189,8 @@
+                                 <Button
+                                         variant={group.id === g.id ? 'default' : 'outline'}
+                                         size="sm"
+-                                        onclick={() => (selectedGroup = g.id)}
++                                        disabled={pendingSaves > 0}
++ onclick={() => (selectedGroup = g.id)}
+                                 >
+                                         {g.name}
+                                 </Button>
+@@ -194,7 +226,47 @@
+                                 {#if groupAthletes.length === 0}
+                                         <p class="text-sm text-muted-foreground">No athletes assigned to this group.</p>
+                                 {:else}
+-                                        <div class="overflow-x-auto">
++
++ {#if editable && !showReview && currentHole}
++  <section class="space-y-4" aria-label="Current hole">
++   <div>
++    <p class="text-sm text-muted-foreground">Hole {currentIndex + 1} of {round.holes.length}</p>
++    <h2 class="text-lg font-semibold">Hole {currentHole.number + round.displayOffset} — {currentHole.name}</h2>
++    <p class="text-sm">Par {currentHole.par}{round.positionLabel ? ` · ${round.positionLabel} positions` : ''}</p>
++   </div>
++   <p class="text-sm text-muted-foreground">Use − or + to record a score, or Confirm par. Each score saves immediately. Complete all players before continuing.</p>
++   {#each groupAthletes as athlete (athlete.athlete)}
++    <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
++     <div><p class="font-medium">{athlete.athleteName}</p><p class="text-sm text-muted-foreground">{athlete.teamName}</p></div>
++     {#key `${round.id}:${group.id}:${currentHole.id}:${athlete.athlete}`}
++      <ScoreStepper roundId={round.id} groupId={group.id} athleteId={athlete.athlete}
++       holeId={currentHole.id} athleteName={athlete.athleteName}
++       holeNumber={currentHole.number + round.displayOffset} par={currentHole.par}
++       strokes={strokesFor(athlete.athlete, currentHole.id)} onPending={trackSave} />
++     {/key}
++    </div>
++   {/each}
++   <p role="status" class="text-sm">{pendingSaves ? 'Saving scores…' : holeMissing ? `${holeMissing} players still need a confirmed score.` : 'All scores for this hole are saved.'}</p>
++   <div class="flex flex-wrap gap-2">
++    <Button type="button" variant="outline" disabled={currentIndex === 0 || pendingSaves > 0}
++     onclick={() => openHole(round.holes[currentIndex - 1].id)}>Previous hole</Button>
++    <Button type="button" disabled={holeMissing > 0 || pendingSaves > 0} onclick={nextHole}>
++     {currentIndex === round.holes.length - 1 ? 'Review scorecard' : 'Next hole'}
++    </Button>
++    <Button type="button" variant="outline" disabled={pendingSaves > 0}
++     onclick={() => reviewing[cardKey] = true}>View scorecard</Button>
++   </div>
++  </section>
++ {/if}
++ {#if editable && !round.holes.length}
++  <p class="text-sm text-muted-foreground">This round needs course holes before scores can be entered.</p>
++ {/if}
++ {#if showReview}
++  <h2 class="font-semibold">Scorecard review</h2>
++  {#if editable}
++   <Button type="button" variant="outline" onclick={() => reviewing[cardKey] = false}>Back to hole entry</Button>
++  {/if}
++<div class="overflow-x-auto">
+                                                 <table class="w-full text-sm">
+                                                         <thead>
+                                                                 <tr class="border-b text-left">
+@@ -216,31 +288,14 @@
+                                                                                         <!-- Display numbering may continue (10–18 on a second pass);
+                                                                                              scores stay keyed by the physical hole. -->
+                                                                                         <span class="font-medium">{hole.number + round.displayOffset}</span>
++ {#if editable}<button type="button" onclick={() => openHole(hole.id)} class="ml-2 underline text-xs" aria-label="Edit hole {hole.number + round.displayOffset}">Edit</button>{/if}
+                                                                                         <span class="block text-xs text-muted-foreground">
+-                                                                                                {hole.name}{hole.positionMissing ? ' · ⚠ position missing' : ''}
++                                                                                                {hole.name} · Par {hole.par}{hole.positionMissing ? ' · ⚠ position missing' : ''}
+                                                                                         </span>
+                                                                                 </td>
+                                                                                 {#each groupAthletes as ga (ga.athlete)}
+                                                                                         <td class="px-1 py-1 text-center">
+-                                                                                                {#if editable}
+-                                                                                                        <form method="POST" action="?/enterScore" class="inline">
+-                                                                                                                <input type="hidden" name="round" value={round.id} />
+-                                                                                                                <input type="hidden" name="group" value={group.id} />
+-                                                                                                                <input type="hidden" name="athlete" value={ga.athlete} />
+-                                                                                                                <input type="hidden" name="hole" value={hole.id} />
+-                                                                                                                <input
+-                                                                                                                        type="number"
+-                                                                                                                        name="strokes"
+-                                                                                                                        min="1"
+-                                                                                                                        step="1"
+-                                                                                                                        inputmode="numeric"
+-                                                                                                                        value={strokesFor(ga.athlete, hole.id) ?? ''}
+-                                                                                                                        onchange={submitOnChange}
+-                                                                                                                        aria-label={`Strokes for ${ga.athleteName} on hole ${hole.number + round.displayOffset}`}
+-                                                                                                                        class="h-9 w-14 rounded-md border bg-background text-center"
+-                                                                                                                />
+-                                                                                                        </form>
+-                                                                                                {:else}
++
+                                                                                                         <span
+                                                                                                                 class={strokesFor(ga.athlete, hole.id) === null
+                                                                                                                         ? 'text-muted-foreground'
+@@ -248,7 +303,6 @@
+                                                                                                         >
+                                                                                                                 {strokesFor(ga.athlete, hole.id) ?? '—'}
+                                                                                                         </span>
+-                                                                                                {/if}
+                                                                                         </td>
+                                                                                 {/each}
+                                                                         </tr>
+@@ -256,20 +310,23 @@
+                                                                 <tr>
+                                                                         <td class="py-1.5 pr-2 font-medium">Total</td>
+                                                                         {#each groupAthletes as ga (ga.athlete)}
++ {@const total = athleteTotal(ga.athlete)}
+                                                                                 <td class="px-1 py-1.5 text-center font-medium">
+-                                                                                        {athleteTotal(ga.athlete)}
++ {total.recorded ? total.total : '—'}
++ {#if total.missing > 0}<span class="block text-xs font-normal text-muted-foreground">{total.recorded ? 'Partial' : 'Not started'} · {total.missing} missing</span>{/if}
+                                                                                 </td>
+                                                                         {/each}
+                                                                 </tr>
+                                                         </tbody>
+                                                 </table>
+                                         </div>
++ {/if}
+ 
+                                         <div class="flex flex-col gap-1 text-sm">
+                                                 {#each teamTotals as team (team.teamName)}
+                                                         <p>
+                                                                 <span class="font-medium">{team.teamName}</span>
+-                                                                — team total {team.total}{team.missing > 0
++                                                                — {team.missing > 0 ? 'partial total' : 'team total'} {team.recorded ? team.total : '—'}{team.missing > 0
+                                                                         ? ` (${team.missing} score${team.missing === 1 ? '' : 's'} missing)`
+                                                                         : ''}
+                                                         </p>
+@@ -289,12 +346,12 @@
+                                                 </Alert.Root>
+                                         {/if}
+ 
+-                                        {#if editable}
++                                        {#if editable && showReview}
+                                                 <div class="flex flex-wrap items-center gap-2">
+                                                         <form method="POST" action="?/submitScorecard">
+                                                                 <input type="hidden" name="round" value={round.id} />
+                                                                 <input type="hidden" name="group" value={group.id} />
+-                                                                <Button type="submit" disabled={missingCount > 0}>
++                                                                <Button type="submit" disabled={missingCount > 0 || pendingSaves > 0}>
+                                                                         <Send class="mr-1 size-4" /> Submit scorecard
+                                                                 </Button>
+                                                         </form>

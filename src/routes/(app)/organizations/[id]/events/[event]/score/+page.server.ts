@@ -101,7 +101,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			.map((h) => ({
 				id: h.id,
 				number: Number(h.number ?? 0),
- par: Number(h.par ?? 3),
+				par: Number(h.par ?? 3),
 				name: String(h.name ?? ''),
 				// D15: scoring-time display falls back non-blocking when the
 				// round's named position is missing on a hole.
@@ -115,7 +115,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 					)
 			}));
 		const round = {
- teeSchedule: (r.teeSchedule || null) as TeeSchedule | null,
+			teeSchedule: (r.teeSchedule || null) as TeeSchedule | null,
 			id: r.id,
 			number: Number(r.number ?? 0),
 			name: String(r.name ?? '') || null,
@@ -151,7 +151,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 	return {
 		organizationId: params.id,
- currentUserId: user.id,
+		currentUserId: user.id,
 		myRole,
 		canManage,
 		canScore,
@@ -219,18 +219,20 @@ async function ensureScorecard(
 		.getFirstListItem(`round = "${roundId}" && group = "${groupId}"`)
 		.catch(() => null);
 	if (existing) return existing;
-        try {
-  return await pb.collection('scorecards').create({
-   organization: orgId,
-   round: roundId,
-   group: groupId
-  });
- } catch (err) {
-  const concurrent = await pb.collection('scorecards')
-   .getFirstListItem(`round = "${roundId}" && group = "${groupId}"`).catch(() => null);
-  if (concurrent) return concurrent;
-  throw err;
- }
+	try {
+		return await pb.collection('scorecards').create({
+			organization: orgId,
+			round: roundId,
+			group: groupId
+		});
+	} catch (err) {
+		const concurrent = await pb
+			.collection('scorecards')
+			.getFirstListItem(`round = "${roundId}" && group = "${groupId}"`)
+			.catch(() => null);
+		if (concurrent) return concurrent;
+		throw err;
+	}
 }
 
 export const actions: Actions = {
@@ -252,12 +254,12 @@ export const actions: Actions = {
 			});
 		}
 		const strokes = Number(strokesRaw);
-  if (!Number.isSafeInteger(strokes) || strokes < 1) {
-   return fail(400, { message: 'Scores must be positive whole numbers.' });
-  }
-  if (![roundId, groupId, athleteId, holeId].every((id) => ID_PATTERN.test(id))) {
-   return fail(400, { message: 'Invalid score assignment.' });
-  }
+		if (!Number.isSafeInteger(strokes) || strokes < 1) {
+			return fail(400, { message: 'Scores must be positive whole numbers.' });
+		}
+		if (![roundId, groupId, athleteId, holeId].every((id) => ID_PATTERN.test(id))) {
+			return fail(400, { message: 'Invalid score assignment.' });
+		}
 		try {
 			const scorecard = await ensureScorecard(locals.pb, params.id, roundId, groupId);
 			const existing = await locals.pb
@@ -295,7 +297,11 @@ export const actions: Actions = {
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
-                return { submitted: true, activeRound: String(form.get('round') ?? ''), activeGroup: String(form.get('group') ?? '') };
+		return {
+			submitted: true,
+			activeRound: String(form.get('round') ?? ''),
+			activeGroup: String(form.get('group') ?? '')
+		};
 	},
 
 	reopenScorecard: async ({ locals, request }) => {

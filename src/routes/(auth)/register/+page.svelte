@@ -25,8 +25,9 @@
 	<div class="flex flex-col gap-2 text-center">
 		<h1 class="text-2xl font-semibold tracking-tight">Create your FliHub account</h1>
 		<p class="text-sm text-muted-foreground">
-			Creating an account grants no organization access — you join organizations by invitation or by
-			creating your own.
+			Create one account to play fantasy, keep scores, or manage a sports organization. After
+			signing in, choose what you would like to do. Organization access still requires an invitation
+			or creating your own organization.
 		</p>
 	</div>
 

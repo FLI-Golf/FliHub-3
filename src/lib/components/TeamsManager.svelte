@@ -158,27 +158,25 @@
 					readonly
 					rows="10"
 					value={teamCsvPrompt}
-					class="w-full rounded-md border bg-background p-2 font-mono text-sm"
-				></textarea>
+					class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
 				<Button type="button" onclick={copyTeamCsvPrompt}>Copy example for chat</Button>
 				<p role="status" class="text-sm">{teamCopyStatus}</p>
-					<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
-						<Label for="team-csv">Team names, one per line</Label>
-						<p id="team-csv-help" class="text-sm text-muted-foreground">
-							Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets,
-							and the “Team Name” heading.
-						</p>
-						<textarea
-							id="team-csv"
-							name="csv"
-							aria-describedby="team-csv-help"
-							placeholder={'San Diego Breakers\nPacific Aces\nCoastal Flyers'}
-							required
-							rows="5"
-							class="w-full rounded-md border bg-background p-2 font-mono text-sm"
-						></textarea>
-						<Button type="submit">Import teams</Button>
-					</form>
+				<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
+					<Label for="team-csv">Team names, one per line</Label>
+					<p id="team-csv-help" class="text-sm text-muted-foreground">
+						Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets, and
+						the “Team Name” heading.
+					</p>
+					<textarea
+						id="team-csv"
+						name="csv"
+						aria-describedby="team-csv-help"
+						placeholder="San Diego Breakers&#10;Pacific Aces&#10;Coastal Flyers"
+						required
+						rows="5"
+						class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
+					<Button type="submit">Import teams</Button>
+				</form>
 			</Card.Content>
 		</Card.Root>
 	{:else}

@@ -66,7 +66,7 @@
 			<Card.Title class="flex items-center gap-2"><Trophy class="size-4" /> My leagues</Card.Title>
 			<Card.Description>
 				Private leagues in this organization where you hold a seat. Drafts run per event once every
-				manager seat is approved.
+				fantasy participant place is approved.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">
@@ -115,7 +115,7 @@
 					<Input id="fl-name" name="name" required minlength={2} maxlength={80} />
 				</div>
 				<div class="flex flex-col gap-1.5">
-					<Label for="fl-limit">Manager seats</Label>
+					<Label for="fl-limit">Fantasy participant limit</Label>
 					<Input
 						id="fl-limit"
 						name="participantLimit"
