@@ -92,24 +92,38 @@ export const load: PageServerLoad = async ({ locals, params, depends }) => {
 };
 
 export const actions: Actions = {
- draftClock: async ({ locals, request, params }) => {
-  if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-  const operation = String((await request.formData()).get('operation') ?? '');
-  try {
-   await locals.pb.send(`/api/flihub/fantasy/drafts/${params.draft}/clock`, { method: 'POST', body: { operation } });
-  } catch (err) { return fail(pbErrorStatus(err), { message: pbErrorMessage(err) }); }
-  return { clockUpdated: true };
- },
- resetDemoDraft: async ({ locals, request, params }) => {
-  if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-  const form = await request.formData();
-  try {
-   const result = await locals.pb.send<{ cleared: number }>(`/api/flihub/demo/fantasy/drafts/${params.draft}/reset`, {
-    method: 'POST', body: { confirm: String(form.get('confirm') ?? ''), pickSeconds: Number(form.get('pickSeconds') ?? 30) }
-   });
-   return { demoDraftReset: true, clearedPicks: result.cleared };
-  } catch (err) { return fail(pbErrorStatus(err), { message: pbErrorMessage(err) }); }
- },
+	draftClock: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const operation = String((await request.formData()).get('operation') ?? '');
+		try {
+			await locals.pb.send(`/api/flihub/fantasy/drafts/${params.draft}/clock`, {
+				method: 'POST',
+				body: { operation }
+			});
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+		return { clockUpdated: true };
+	},
+	resetDemoDraft: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const form = await request.formData();
+		try {
+			const result = await locals.pb.send<{ cleared: number }>(
+				`/api/flihub/demo/fantasy/drafts/${params.draft}/reset`,
+				{
+					method: 'POST',
+					body: {
+						confirm: String(form.get('confirm') ?? ''),
+						pickSeconds: Number(form.get('pickSeconds') ?? 30)
+					}
+				}
+			);
+			return { demoDraftReset: true, clearedPicks: result.cleared };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+	},
 	start: async ({ locals, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		try {

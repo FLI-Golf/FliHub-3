@@ -327,8 +327,8 @@
 			<Card.Header>
 				<Card.Title>Bulk add course holes</Card.Title>
 				<Card.Description>
-					Copy the example into chat and add your hole list. Select the course below,
-					then paste the CSV reply as-is.
+					Copy the example into chat and add your hole list. Select the course below, then paste the
+					CSV reply as-is.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-3">
@@ -338,8 +338,7 @@
 					readonly
 					rows="10"
 					value={holeImportPrompt}
-					class="w-full rounded-md border bg-background p-2 font-mono text-xs"
-				></textarea>
+					class="w-full rounded-md border bg-background p-2 font-mono text-xs"></textarea>
 				<Button type="button" onclick={copyHoleImportPrompt}>Copy example for chat</Button>
 				<p role="status" class="text-sm">{holeCopyStatus}</p>
 
@@ -352,29 +351,27 @@
 						class="w-full rounded-md border bg-background p-2 text-sm"
 					>
 						<option value="">Select a course</option>
-						{#each courses.filter((course) => course.status === 'active') as course}
+						{#each courses.filter((course) => course.status === 'active') as course (course.id)}
 							<option value={course.id}>{course.name}</option>
 						{/each}
 					</select>
 
 					<Label for="hole-csv">Paste hole CSV</Label>
 					<p id="hole-csv-help" class="text-sm text-muted-foreground">
-One playing hole per line. Column order is playing hole, physical course hole,
-						name, par, basket position or tee set, distance, unit.
-						For an 18-hole course, both hole numbers run from 1–18.
-						For nine holes played twice, playing numbers run from 1–18 and physical
-						hole numbers repeat 1–9. Use feet, meters, or yards.
-						Skip the header and paste the chat reply directly.
-</p>
+						One playing hole per line. Column order is playing hole, physical course hole, name,
+						par, basket position or tee set, distance, unit. For an 18-hole course, both hole
+						numbers run from 1–18. For nine holes played twice, playing numbers run from 1–18 and
+						physical hole numbers repeat 1–9. Use feet, meters, or yards. Skip the header and paste
+						the chat reply directly.
+					</p>
 					<textarea
 						id="hole-csv"
 						name="csv"
 						aria-describedby="hole-csv-help"
 						required
 						rows="10"
-						placeholder={'1,1,Opening Drive,4,White,385,yards\n2,2,Creek Crossing,3,White,165,yards\n3,3,Clubhouse Approach,5,White,510,yards'}
-						class="w-full rounded-md border bg-background p-2 font-mono text-sm"
-					></textarea>
+						placeholder="1,1,Opening Drive,4,White,385,yards&#10;2,2,Creek Crossing,3,White,165,yards&#10;3,3,Clubhouse Approach,5,White,510,yards"
+						class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
 					<Button type="submit">Import holes</Button>
 				</form>
 

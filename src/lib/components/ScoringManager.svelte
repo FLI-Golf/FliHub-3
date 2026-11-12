@@ -27,7 +27,8 @@
 		form?: unknown;
 	}
 
-	let { organizationId, events, canScore, myRole, form, scorekeepers, pendingInvitations }: Props = $props();
+	let { organizationId, events, canScore, myRole, form, scorekeepers, pendingInvitations }: Props =
+		$props();
 
 	interface InvitationResult {
 		email: string;
@@ -37,7 +38,11 @@
 
 	const invitationForm = $derived(
 		form && typeof form === 'object'
-			? form as { scorekeeperInvitations?: InvitationResult[]; scorekeeperInviteError?: string; scorekeeperActivationMessage?: string }
+			? (form as {
+					scorekeeperInvitations?: InvitationResult[];
+					scorekeeperInviteError?: string;
+					scorekeeperActivationMessage?: string;
+				})
 			: null
 	);
 
@@ -69,8 +74,12 @@
 	}
 
 	const demoEmails = [
-		'alex@example.com', 'jordan@example.com', 'sam@example.com',
-		'taylor@example.com', 'casey@example.com', 'morgan@example.com'
+		'alex@example.com',
+		'jordan@example.com',
+		'sam@example.com',
+		'taylor@example.com',
+		'casey@example.com',
+		'morgan@example.com'
 	];
 </script>
 
@@ -84,10 +93,9 @@
 			<Card.Header>
 				<Card.Title>Bulk invite scorekeepers</Card.Title>
 				<Card.Description>
-					Create Scorekeeper invitations for this organization.
-					Copy each generated link and share it with its intended recipient.
-					Each recipient needs a verified account with the invited email address
-					and must accept before receiving access.
+					Create Scorekeeper invitations for this organization. Copy each generated link and share
+					it with its intended recipient. Each recipient needs a verified account with the invited
+					email address and must accept before receiving access.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-3">
@@ -97,16 +105,21 @@
 					readonly
 					rows="9"
 					value={scorekeeperInvitePrompt}
-					class="w-full rounded-md border bg-background p-2 font-mono text-xs"
-				></textarea>
+					class="w-full rounded-md border bg-background p-2 font-mono text-xs"></textarea>
 				<Button type="button" onclick={copyScorekeeperPrompt}>Copy example for chat</Button>
 				<p role="status" class="text-sm">{inviteCopyStatus}</p>
 
-				<form method="POST" action="?/bulkInviteScorekeepers" class="flex flex-col items-start gap-2">
-					<label for="scorekeeper-emails" class="text-sm font-medium">Paste scorekeeper emails</label>
+				<form
+					method="POST"
+					action="?/bulkInviteScorekeepers"
+					class="flex flex-col items-start gap-2"
+				>
+					<label for="scorekeeper-emails" class="text-sm font-medium"
+						>Paste scorekeeper emails</label
+					>
 					<p id="scorekeeper-email-help" class="text-sm text-muted-foreground">
-						One email per line. Skip commas, bullets, and the header.
-						Paste the chat reply as-is. Limit 50 emails per batch.
+						One email per line. Skip commas, bullets, and the header. Paste the chat reply as-is.
+						Limit 50 emails per batch.
 					</p>
 					<textarea
 						id="scorekeeper-emails"
@@ -114,9 +127,8 @@
 						required
 						rows="6"
 						aria-describedby="scorekeeper-email-help"
-						placeholder={'alex@example.com\njordan@example.com\nsam@example.com'}
-						class="w-full rounded-md border bg-background p-2 font-mono text-sm"
-					></textarea>
+						placeholder="alex@example.com&#10;jordan@example.com&#10;sam@example.com"
+						class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
 					<Button type="submit">Create scorekeeper invitations</Button>
 				</form>
 
@@ -127,13 +139,10 @@
 				{/if}
 
 				{#if invitationForm?.scorekeeperInvitations}
-					<p role="status" class="text-sm">
-						Batch complete. Review each result below.
-					</p>
+					<p role="status" class="text-sm">Batch complete. Review each result below.</p>
 					<p class="text-sm text-muted-foreground">
-						Copy the generated links before leaving this page.
-						Invitation emails are not sent automatically.
-						Assign accepted members to event groups on the Events page.
+						Copy the generated links before leaving this page. Invitation emails are not sent
+						automatically. Assign accepted members to event groups on the Events page.
 					</p>
 					{#each invitationForm.scorekeeperInvitations as result (result.email)}
 						<div class="space-y-2 rounded-md border p-3">
@@ -157,14 +166,13 @@
 		</Card.Root>
 	{/if}
 
-
 	{#if myRole === 'owner' || myRole === 'admin'}
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>Scorekeepers ({scorekeepers.length})</Card.Title>
 				<Card.Description>
-					Active members can be assigned to event groups on the Events page.
-					Invited people receive access after accepting their invitation.
+					Active members can be assigned to event groups on the Events page. Invited people receive
+					access after accepting their invitation.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-4">
@@ -191,16 +199,13 @@
 					<div class="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
 						<span class="text-sm">{invitation.email}</span>
 
-	<Badge variant="outline">{invitation.status}</Badge>
-	{#if dev && organizationId === '4ksk16f64guhf21' &&
-		demoEmails.includes(invitation.email) && invitation.status === 'Pending invitation'}
-		<form method="POST" action="?/activateDemoScorekeeper">
-			<input type="hidden" name="invitation" value={invitation.id} />
-			<Button type="submit" size="sm" variant="outline">
-				Activate demo scorekeeper
-			</Button>
-		</form>
-	{/if}
+						<Badge variant="outline">{invitation.status}</Badge>
+						{#if dev && organizationId === '4ksk16f64guhf21' && demoEmails.includes(invitation.email) && invitation.status === 'Pending invitation'}
+							<form method="POST" action="?/activateDemoScorekeeper">
+								<input type="hidden" name="invitation" value={invitation.id} />
+								<Button type="submit" size="sm" variant="outline">Activate demo scorekeeper</Button>
+							</form>
+						{/if}
 					</div>
 				{/each}
 			</Card.Content>
@@ -261,7 +266,8 @@
 							size="sm"
 							variant="outline"
 							href={`/organizations/${organizationId}/events/${event.id}/results`}
-						 style="background-color: #16a34a; color: white;">
+							style="background-color: #16a34a; color: white;"
+						>
 							<BadgeCheck class="mr-1 size-4" />
 							Official results
 						</Button>

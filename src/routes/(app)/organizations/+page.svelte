@@ -96,7 +96,9 @@
 
 <section class="flex flex-col gap-8 py-4">
 	<div class="flex flex-col gap-2">
-		<h1 class="text-2xl font-semibold tracking-tight">{data.scorekeeperView ? 'Your scoring assignments' : 'Your organizations'}</h1>
+		<h1 class="text-2xl font-semibold tracking-tight">
+			{data.scorekeeperView ? 'Your scoring assignments' : 'Your organizations'}
+		</h1>
 		<p class="text-sm text-muted-foreground">
 			Signed in as {data.user?.email}. You belong to {memberships.length}
 			{memberships.length === 1 ? 'organization' : 'organizations'}.
@@ -111,15 +113,14 @@
 		</Alert.Root>
 	{/if}
 
-
 	{#if data.scorekeeperView}
 		{#if data.assignments.length === 0}
 			<Card.Root>
 				<Card.Header>
 					<Card.Title>No scoring assignments yet</Card.Title>
 					<Card.Description>
-						Your organizer will assign you to an event group.
-						Your events and rounds will appear here afterward.
+						Your organizer will assign you to an event group. Your events and rounds will appear
+						here afterward.
 					</Card.Description>
 				</Card.Header>
 			</Card.Root>
@@ -142,7 +143,7 @@
 							<p class="text-muted-foreground">
 								{round.course || 'Course awaiting setup'}
 								{round.position ? ` · ${round.position}` : ''}
- <span class="block font-medium">{round.teeTime}</span>
+								<span class="block font-medium">{round.teeTime}</span>
 							</p>
 						</div>
 					{/each}
@@ -151,10 +152,12 @@
 					{/if}
 				</Card.Content>
 				<Card.Footer>
-					<Button href={resolve('/(app)/organizations/[id]/events/[event]/score', {
-						id: assignment.organizationId,
-						event: assignment.eventId
-					})}>
+					<Button
+						href={resolve('/(app)/organizations/[id]/events/[event]/score', {
+							id: assignment.organizationId,
+							event: assignment.eventId
+						})}
+					>
 						Open scoring
 					</Button>
 				</Card.Footer>
@@ -176,241 +179,240 @@
 		</details>
 	{/if}
 
-
 	{#if !data.scorekeeperView}
-	<div class="grid gap-4 md:grid-cols-2">
-		{#each memberships as membership (membership.id)}
-			{@const isActive = membership.organization.id === data.activeOrgId}
-			{@const canManage = membership.role === 'owner' || membership.role === 'admin'}
-			<Card.Root class={isActive ? 'border-primary' : ''}>
-				<Card.Header>
-					<Card.Title class="flex items-center gap-2">
-						<Building2 class="size-5" />
-						{membership.organization.name}
-					</Card.Title>
-					<Card.Description class="flex flex-wrap items-center gap-2">
-						<Badge variant="secondary">{roleLabel(membership.role)}</Badge>
-						{#if isActive}
-							<Badge>Active</Badge>
-						{/if}
-						{#if !membership.organization.onboarded}
-							<Badge variant="outline">Setup pending</Badge>
-						{/if}
-					</Card.Description>
-				</Card.Header>
-				<Card.Footer class="flex flex-wrap gap-2">
-					<Button href={resolve('/(app)/organizations/[id]', { id: membership.organization.id })}>
-						Open
-					</Button>
-					{#if !membership.organization.onboarded && canManage}
-						<Button
-							variant="outline"
-							href={resolve('/(app)/organizations/[id]/settings', {
-								id: membership.organization.id
-							})}
-						>
-							Complete setup
+		<div class="grid gap-4 md:grid-cols-2">
+			{#each memberships as membership (membership.id)}
+				{@const isActive = membership.organization.id === data.activeOrgId}
+				{@const canManage = membership.role === 'owner' || membership.role === 'admin'}
+				<Card.Root class={isActive ? 'border-primary' : ''}>
+					<Card.Header>
+						<Card.Title class="flex items-center gap-2">
+							<Building2 class="size-5" />
+							{membership.organization.name}
+						</Card.Title>
+						<Card.Description class="flex flex-wrap items-center gap-2">
+							<Badge variant="secondary">{roleLabel(membership.role)}</Badge>
+							{#if isActive}
+								<Badge>Active</Badge>
+							{/if}
+							{#if !membership.organization.onboarded}
+								<Badge variant="outline">Setup pending</Badge>
+							{/if}
+						</Card.Description>
+					</Card.Header>
+					<Card.Footer class="flex flex-wrap gap-2">
+						<Button href={resolve('/(app)/organizations/[id]', { id: membership.organization.id })}>
+							Open
 						</Button>
-					{/if}
-					{#if !isActive}
-						<form method="POST" action="?/switch">
-							<input type="hidden" name="organization" value={membership.organization.id} />
-							<Button type="submit" variant="outline">Set active</Button>
-						</form>
-					{/if}
-				</Card.Footer>
-			</Card.Root>
-		{/each}
-	</div>
-
-	{#if memberships.length === 0}
-		<Alert.Root>
-			<CircleCheck class="size-4" />
-			<Alert.Title>No memberships yet</Alert.Title>
-			<Alert.Description>
-				Create an organization below, or open an invitation link while signed in to join an existing
-				one.
-			</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	<!-- Onboarding: create an organization -->
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<Plus class="size-5" />
-				Create an organization
-			</Card.Title>
-			<Card.Description>
-				You become its Owner. Pick a starter template for suggested capabilities — you can adjust
-				them here and later in organization settings. Capabilities marked Planned or Upcoming are
-				not implemented software yet.
-			</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="?/create" class="flex flex-col gap-6">
-				<div class="flex flex-col gap-2">
-					<Label for="org-name">Organization name</Label>
-					<Input
-						id="org-name"
-						name="name"
-						type="text"
-						minlength={2}
-						maxlength={120}
-						required
-						bind:value={orgName}
-						placeholder="e.g. Riverside Disc Golf Club"
-					/>
-				</div>
-
-				<div class="flex flex-col gap-2">
-					<span class="text-sm font-medium">Starter template</span>
-					<div class="grid gap-2 sm:grid-cols-3">
-						{#each templates as t (t.id)}
-							<label
-								class={`flex cursor-pointer flex-col gap-1 rounded-md border p-3 text-sm ${
-									template === t.id ? 'border-primary bg-accent' : ''
-								}`}
+						{#if !membership.organization.onboarded && canManage}
+							<Button
+								variant="outline"
+								href={resolve('/(app)/organizations/[id]/settings', {
+									id: membership.organization.id
+								})}
 							>
-								<span class="flex items-center gap-2 font-medium">
-									<input
-										type="radio"
-										name="template"
-										value={t.id}
-										checked={template === t.id}
-										onchange={() => chooseTemplate(t.id)}
-									/>
-									{t.label}
-								</span>
-								<span class="text-muted-foreground">{t.description}</span>
-							</label>
-						{/each}
-					</div>
-				</div>
+								Complete setup
+							</Button>
+						{/if}
+						{#if !isActive}
+							<form method="POST" action="?/switch">
+								<input type="hidden" name="organization" value={membership.organization.id} />
+								<Button type="submit" variant="outline">Set active</Button>
+							</form>
+						{/if}
+					</Card.Footer>
+				</Card.Root>
+			{/each}
+		</div>
 
-				{#if activeTemplate}
+		{#if memberships.length === 0}
+			<Alert.Root>
+				<CircleCheck class="size-4" />
+				<Alert.Title>No memberships yet</Alert.Title>
+				<Alert.Description>
+					Create an organization below, or open an invitation link while signed in to join an
+					existing one.
+				</Alert.Description>
+			</Alert.Root>
+		{/if}
+
+		<!-- Onboarding: create an organization -->
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="flex items-center gap-2">
+					<Plus class="size-5" />
+					Create an organization
+				</Card.Title>
+				<Card.Description>
+					You become its Owner. Pick a starter template for suggested capabilities — you can adjust
+					them here and later in organization settings. Capabilities marked Planned or Upcoming are
+					not implemented software yet.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form method="POST" action="?/create" class="flex flex-col gap-6">
 					<div class="flex flex-col gap-2">
-						<span class="text-sm font-medium">
-							Capabilities
-							<span class="font-normal text-muted-foreground">
-								(suggested by the {activeTemplate.label} template; adjust freely)
-							</span>
-						</span>
-						<div class="grid gap-2 sm:grid-cols-2">
-							{#each capabilityDefs as capability (capability.id)}
-								{@const meta = availabilityMeta[capability.availability]}
-								<label class="flex items-start gap-2 rounded-md border p-2.5 text-sm">
-									<input
-										type="checkbox"
-										name="capability"
-										value={capability.id}
-										checked={selectedCaps.includes(capability.id)}
-										onchange={(e) => toggleCapability(capability.id, e.currentTarget.checked)}
-										class="mt-0.5"
-									/>
-									<span class="flex min-w-0 flex-col">
-										<span class="flex flex-wrap items-center gap-2 font-medium">
-											{capability.label}
-											<Badge variant="secondary" class={meta.badgeClass}>{meta.label}</Badge>
-										</span>
-										<span class="text-muted-foreground">{capability.description}</span>
+						<Label for="org-name">Organization name</Label>
+						<Input
+							id="org-name"
+							name="name"
+							type="text"
+							minlength={2}
+							maxlength={120}
+							required
+							bind:value={orgName}
+							placeholder="e.g. Riverside Disc Golf Club"
+						/>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<span class="text-sm font-medium">Starter template</span>
+						<div class="grid gap-2 sm:grid-cols-3">
+							{#each templates as t (t.id)}
+								<label
+									class={`flex cursor-pointer flex-col gap-1 rounded-md border p-3 text-sm ${
+										template === t.id ? 'border-primary bg-accent' : ''
+									}`}
+								>
+									<span class="flex items-center gap-2 font-medium">
+										<input
+											type="radio"
+											name="template"
+											value={t.id}
+											checked={template === t.id}
+											onchange={() => chooseTemplate(t.id)}
+										/>
+										{t.label}
 									</span>
+									<span class="text-muted-foreground">{t.description}</span>
 								</label>
 							{/each}
 						</div>
-						{#if depHints.length > 0}
-							<p class="text-sm text-muted-foreground">
-								Also required by your selection: {depHints.join(', ')} (added automatically).
-							</p>
-						{/if}
 					</div>
 
-					{#if template === 'race-event'}
+					{#if activeTemplate}
 						<div class="flex flex-col gap-2">
-							<span class="text-sm font-medium">Race distances</span>
-							{#each presetList as preset (preset.key)}
-								<label class="flex items-center gap-2 text-sm">
-									<input
-										type="checkbox"
-										checked={presetDistances.includes(preset.key)}
-										onchange={(e) => {
-											presetDistances = e.currentTarget.checked
-												? [...presetDistances, preset.key]
-												: presetDistances.filter((k) => k !== preset.key);
-										}}
-									/>
-									{preset.label} — {preset.distance}
-									{preset.unit}
-								</label>
-							{/each}
-							{#each customDistances as custom, i (i)}
-								<div class="flex flex-wrap items-center gap-2">
-									<Input
-										placeholder="Label (e.g. 10K)"
-										value={custom.label}
-										oninput={(e) => {
-											customDistances[i].label = e.currentTarget.value;
-										}}
-										class="w-40"
-									/>
-									<Input
-										type="number"
-										placeholder="Distance"
-										min="0.01"
-										step="any"
-										value={custom.distance || ''}
-										oninput={(e) => {
-											customDistances[i].distance = Number(e.currentTarget.value);
-										}}
-										class="w-28"
-									/>
-									<select
-										class="rounded-md border bg-background px-2 py-1.5 text-sm"
-										value={custom.unit}
-										onchange={(e) => {
-											customDistances[i].unit = e.currentTarget.value === 'mi' ? 'mi' : 'km';
-										}}
-									>
-										<option value="km">km</option>
-										<option value="mi">mi</option>
-									</select>
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										onclick={() => removeCustomDistance(i)}
-									>
-										Remove
+							<span class="text-sm font-medium">
+								Capabilities
+								<span class="font-normal text-muted-foreground">
+									(suggested by the {activeTemplate.label} template; adjust freely)
+								</span>
+							</span>
+							<div class="grid gap-2 sm:grid-cols-2">
+								{#each capabilityDefs as capability (capability.id)}
+									{@const meta = availabilityMeta[capability.availability]}
+									<label class="flex items-start gap-2 rounded-md border p-2.5 text-sm">
+										<input
+											type="checkbox"
+											name="capability"
+											value={capability.id}
+											checked={selectedCaps.includes(capability.id)}
+											onchange={(e) => toggleCapability(capability.id, e.currentTarget.checked)}
+											class="mt-0.5"
+										/>
+										<span class="flex min-w-0 flex-col">
+											<span class="flex flex-wrap items-center gap-2 font-medium">
+												{capability.label}
+												<Badge variant="secondary" class={meta.badgeClass}>{meta.label}</Badge>
+											</span>
+											<span class="text-muted-foreground">{capability.description}</span>
+										</span>
+									</label>
+								{/each}
+							</div>
+							{#if depHints.length > 0}
+								<p class="text-sm text-muted-foreground">
+									Also required by your selection: {depHints.join(', ')} (added automatically).
+								</p>
+							{/if}
+						</div>
+
+						{#if template === 'race-event'}
+							<div class="flex flex-col gap-2">
+								<span class="text-sm font-medium">Race distances</span>
+								{#each presetList as preset (preset.key)}
+									<label class="flex items-center gap-2 text-sm">
+										<input
+											type="checkbox"
+											checked={presetDistances.includes(preset.key)}
+											onchange={(e) => {
+												presetDistances = e.currentTarget.checked
+													? [...presetDistances, preset.key]
+													: presetDistances.filter((k) => k !== preset.key);
+											}}
+										/>
+										{preset.label} — {preset.distance}
+										{preset.unit}
+									</label>
+								{/each}
+								{#each customDistances as custom, i (i)}
+									<div class="flex flex-wrap items-center gap-2">
+										<Input
+											placeholder="Label (e.g. 10K)"
+											value={custom.label}
+											oninput={(e) => {
+												customDistances[i].label = e.currentTarget.value;
+											}}
+											class="w-40"
+										/>
+										<Input
+											type="number"
+											placeholder="Distance"
+											min="0.01"
+											step="any"
+											value={custom.distance || ''}
+											oninput={(e) => {
+												customDistances[i].distance = Number(e.currentTarget.value);
+											}}
+											class="w-28"
+										/>
+										<select
+											class="rounded-md border bg-background px-2 py-1.5 text-sm"
+											value={custom.unit}
+											onchange={(e) => {
+												customDistances[i].unit = e.currentTarget.value === 'mi' ? 'mi' : 'km';
+											}}
+										>
+											<option value="km">km</option>
+											<option value="mi">mi</option>
+										</select>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onclick={() => removeCustomDistance(i)}
+										>
+											Remove
+										</Button>
+									</div>
+								{/each}
+								<div>
+									<Button type="button" variant="outline" size="sm" onclick={addCustomDistance}>
+										Add custom distance
 									</Button>
 								</div>
-							{/each}
-							<div>
-								<Button type="button" variant="outline" size="sm" onclick={addCustomDistance}>
-									Add custom distance
-								</Button>
 							</div>
+						{/if}
+
+						<!-- Summary before completion -->
+						<div class="rounded-md border bg-muted/40 p-3 text-sm">
+							<span class="font-medium">Summary:</span>
+							{orgName.trim() || 'Unnamed organization'} — {activeTemplate.label} template,
+							{selectedCaps.length}
+							{selectedCaps.length === 1 ? 'capability' : 'capabilities'} selected
+							{#if template === 'race-event'}
+								, {presetDistances.length +
+									customDistances.filter((d) => d.label.trim() && d.distance > 0).length}
+								distance(s) configured
+							{/if}
+							.
 						</div>
+						<input type="hidden" name="raceDistances" value={distancesJson} />
 					{/if}
 
-					<!-- Summary before completion -->
-					<div class="rounded-md border bg-muted/40 p-3 text-sm">
-						<span class="font-medium">Summary:</span>
-						{orgName.trim() || 'Unnamed organization'} — {activeTemplate.label} template,
-						{selectedCaps.length}
-						{selectedCaps.length === 1 ? 'capability' : 'capabilities'} selected
-						{#if template === 'race-event'}
-							, {presetDistances.length +
-								customDistances.filter((d) => d.label.trim() && d.distance > 0).length}
-							distance(s) configured
-						{/if}
-						.
-					</div>
-					<input type="hidden" name="raceDistances" value={distancesJson} />
-				{/if}
-
-				<Button type="submit" class="w-full sm:w-fit">Create organization</Button>
-			</form>
-		</Card.Content>
-	</Card.Root>
+					<Button type="submit" class="w-full sm:w-fit">Create organization</Button>
+				</form>
+			</Card.Content>
+		</Card.Root>
 	{/if}
 </section>

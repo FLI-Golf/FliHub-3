@@ -42,14 +42,40 @@
 	{/if}
 
 	{#if import.meta.env.DEV && lobby.isOwner && !lobby.seatsFilled && lobby.drafts.length === 0}
-		<section class="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950" data-testid="demo-fantasy-setup">
+		<section
+			class="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950"
+			data-testid="demo-fantasy-setup"
+		>
 			<h2 class="font-semibold">Demo testing · Add fantasy participants</h2>
-			<p class="text-sm">Fill the remaining places with clearly named demo accounts, already verified and approved. Existing participants stay unchanged. No invitation emails are sent.</p>
-			<form method="POST" action="?/seedDemoParticipants" use:enhance class="flex flex-col items-start gap-3">
-				<label for="demo-password" class="text-sm font-medium">Password for the new demo accounts</label>
-				<Input id="demo-password" name="demoPassword" type="password" autocomplete="new-password" required minlength={12} maxlength={72} class="max-w-sm bg-white text-black" />
-				<p class="text-sm">Use 12–72 characters. Keep this password if you want to sign in as a demo participant.</p>
-				<Button type="submit" style="background-color: #166534; color: white;">Fill remaining places with demo participants</Button>
+			<p class="text-sm">
+				Fill the remaining places with clearly named demo accounts, already verified and approved.
+				Existing participants stay unchanged. No invitation emails are sent.
+			</p>
+			<form
+				method="POST"
+				action="?/seedDemoParticipants"
+				use:enhance
+				class="flex flex-col items-start gap-3"
+			>
+				<label for="demo-password" class="text-sm font-medium"
+					>Password for the new demo accounts</label
+				>
+				<Input
+					id="demo-password"
+					name="demoPassword"
+					type="password"
+					autocomplete="new-password"
+					required
+					minlength={12}
+					maxlength={72}
+					class="max-w-sm bg-white text-black"
+				/>
+				<p class="text-sm">
+					Use 12–72 characters. Keep this password if you want to sign in as a demo participant.
+				</p>
+				<Button type="submit" style="background-color: #166534; color: white;"
+					>Fill remaining places with demo participants</Button
+				>
 			</form>
 		</section>
 	{/if}
@@ -64,10 +90,12 @@
 
 	<Card.Root data-testid="lobby-members">
 		<Card.Header>
-			<Card.Title class="flex items-center gap-2"><Users class="size-4" /> Fantasy participants</Card.Title>
+			<Card.Title class="flex items-center gap-2"
+				><Users class="size-4" /> Fantasy participants</Card.Title
+			>
 			<Card.Description>
-				Invited fantasy participants accept their seat, then the commissioner approves it. Only approved seats count
-				toward the limit.
+				Invited fantasy participants accept their seat, then the commissioner approves it. Only
+				approved seats count toward the limit.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">
@@ -103,7 +131,8 @@
 			<Card.Header>
 				<Card.Title>Invite a fantasy participant</Card.Title>
 				<Card.Description>
-					Invitations are in-app and scoped to this league — the fantasy participant needs a FliHub account.
+					Invitations are in-app and scoped to this league — the fantasy participant needs a FliHub
+					account.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>

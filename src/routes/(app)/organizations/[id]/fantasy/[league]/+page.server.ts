@@ -47,19 +47,22 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 };
 
 export const actions: Actions = {
- seedDemoParticipants: async ({ locals, request, params }) => {
-  if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-  const password = String((await request.formData()).get('demoPassword') ?? '');
-  try {
-   const result = await locals.pb.send<{ count: number; created: { name: string; email: string }[] }>(
-    `/api/flihub/demo/fantasy/${params.league}/fill-participants`,
-    { method: 'POST', body: { password } }
-   );
-   return { demoParticipantsAdded: result.count, demoAccounts: result.created };
-  } catch (err) {
-   return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
-  }
- },
+	seedDemoParticipants: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const password = String((await request.formData()).get('demoPassword') ?? '');
+		try {
+			const result = await locals.pb.send<{
+				count: number;
+				created: { name: string; email: string }[];
+			}>(`/api/flihub/demo/fantasy/${params.league}/fill-participants`, {
+				method: 'POST',
+				body: { password }
+			});
+			return { demoParticipantsAdded: result.count, demoAccounts: result.created };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+	},
 	invite: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
 		const email = String((await request.formData()).get('email') ?? '').trim();

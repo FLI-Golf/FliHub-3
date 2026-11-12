@@ -349,7 +349,8 @@ function buildBoard(app, draft, callerId) {
 			startedAt: String(draft.get('startedAt') ?? ''),
 			completedAt: String(draft.get('completedAt') ?? '')
 		},
-		recommendedAthlete: status === 'active' && seat ? autoPickAthlete(app, draft, seat.manager) : null,
+		recommendedAthlete:
+			status === 'active' && seat ? autoPickAthlete(app, draft, seat.manager) : null,
 		order: order.map((userId) => ({ user: userId, name: userName(app, userId, names) })),
 		pool: pool.map((p) => ({
 			athlete: p.athlete,

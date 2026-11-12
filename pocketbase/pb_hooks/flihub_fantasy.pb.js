@@ -62,14 +62,26 @@ routerAdd(
 			const seasonId = String(body.season ?? '');
 			if (seasonId) {
 				let selected;
-				try { selected = require(`${__hooks}/fantasy_discovery_rules.js`).eligible(txApp, seasonId); }
-				catch (_) { throw new BadRequestError('This season is not available for new fantasy leagues.'); }
-				if (selected.org.id !== orgId) throw new BadRequestError('The season must belong to this organization.');
+				try {
+					// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+					selected = require(`${__hooks}/fantasy_discovery_rules.js`).eligible(txApp, seasonId);
+				} catch (_) {
+					throw new BadRequestError('This season is not available for new fantasy leagues.');
+				}
+				if (selected.org.id !== orgId)
+					throw new BadRequestError('The season must belong to this organization.');
 			} else {
 				// Preserve the staff setup path for legacy organization-wide leagues.
 				let staff;
-				try { staff = txApp.findFirstRecordByFilter('memberships', "organization = {:org} && user = {:user} && (role = 'owner' || role = 'admin')", { org: orgId, user: auth.id }); }
-				catch (_) { throw new BadRequestError('Choose an available season before creating a fantasy league.'); }
+				try {
+					staff = txApp.findFirstRecordByFilter(
+						'memberships',
+						"organization = {:org} && user = {:user} && (role = 'owner' || role = 'admin')",
+						{ org: orgId, user: auth.id }
+					);
+				} catch (_) {
+					throw new BadRequestError('Choose an available season before creating a fantasy league.');
+				}
 				if (!staff) throw new BadRequestError('Choose an available season.');
 			}
 			const leagues = txApp.findCollectionByNameOrId('fantasy_leagues');
@@ -164,7 +176,10 @@ routerAdd(
 					0,
 					{ org: league.getString('organization') }
 				)
-				.filter((ev) => !league.getString('season') || ev.getString('season') === league.getString('season'))
+				.filter(
+					(ev) =>
+						!league.getString('season') || ev.getString('season') === league.getString('season')
+				)
 				.map((ev) => ({ id: ev.id, name: ev.getString('name') }));
 		}
 		return e.json(200, {

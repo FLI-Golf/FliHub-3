@@ -15,8 +15,11 @@
 </svelte:head>
 
 <div class="mb-6 rounded-lg border bg-blue-50 p-4 text-blue-950">
- <h2 class="font-semibold">Play fantasy with {data.page.organization.name}</h2>
- <p class="my-2 text-sm">Explore seasons open for fantasy and create your own league.</p>
- <Button href={`${resolve('/(app)/account')}?activity=fantasy&organization=${encodeURIComponent(data.page.organization.slug)}`}>Play fantasy</Button>
+	<h2 class="font-semibold">Play fantasy with {data.page.organization.name}</h2>
+	<p class="my-2 text-sm">Explore seasons open for fantasy and create your own league.</p>
+	<Button
+		href={`${resolve('/(app)/account')}?activity=fantasy&organization=${encodeURIComponent(data.page.organization.slug)}`}
+		>Play fantasy</Button
+	>
 </div>
 <PublicOrgPage page={data.page} />

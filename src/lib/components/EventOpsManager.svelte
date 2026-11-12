@@ -6,8 +6,8 @@
 		teeEditorsReady = true;
 	});
 
- import TeeTimeScheduler from '$lib/components/TeeTimeScheduler.svelte';
- import type { TeeSchedule } from '$lib/tee-times';
+	import TeeTimeScheduler from '$lib/components/TeeTimeScheduler.svelte';
+	import type { TeeSchedule } from '$lib/tee-times';
 	import { CircleAlert, ClipboardCheck, Layers, Plus, UserMinus, Users } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -17,7 +17,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 
 	interface EventRow {
- startsAt?: string | null;
+		startsAt?: string | null;
 		id: string;
 		season: string | null;
 		seasonName: string | null;
@@ -25,7 +25,7 @@
 		status: 'planned' | 'active' | 'completed' | 'archived';
 	}
 	interface Round {
- teeSchedule: TeeSchedule | null;
+		teeSchedule: TeeSchedule | null;
 		id: string;
 		event: string;
 		number: number;
@@ -129,7 +129,11 @@
 
 	const visibleEvents = $derived(events.filter((ev) => ev.status !== 'archived'));
 	const event = $derived(
-		visibleEvents.find((ev) => ev.id === (selectedEvent || String(formRecord?.teeScheduleEvent ?? ''))) ?? visibleEvents[0] ?? null
+		visibleEvents.find(
+			(ev) => ev.id === (selectedEvent || String(formRecord?.teeScheduleEvent ?? ''))
+		) ??
+			visibleEvents[0] ??
+			null
 	);
 
 	const eventRounds = $derived(
@@ -206,7 +210,7 @@
 </script>
 
 <div class="flex flex-col gap-6">
- {#if formRecord?.teeScheduleSaved}<p role="status" class="text-sm">Round tee times saved.</p>{/if}
+	{#if formRecord?.teeScheduleSaved}<p role="status" class="text-sm">Round tee times saved.</p>{/if}
 	{#if message}
 		<Alert.Root variant="destructive">
 			<CircleAlert class="size-4" />
@@ -242,24 +246,20 @@
 
 		<!-- Rounds -->
 
-<div class="flex flex-col gap-4" data-testid="tee-time-schedules">
-	{#if teeEditorsReady}
-		{#each eventRounds as scheduledRound (JSON.stringify([
-			scheduledRound.id,
-			scheduledRound.teeSchedule,
-			eventGroups.map((group) => [group.id, group.status])
-		]))}
-			<div data-round-id={scheduledRound.id}>
-				<TeeTimeScheduler
-					round={scheduledRound}
-					groups={eventGroups}
-					{canManage}
-					eventDate={event.startsAt?.slice(0, 10) ?? ''}
-				/>
-			</div>
-		{/each}
-	{/if}
-</div>
+		<div class="flex flex-col gap-4" data-testid="tee-time-schedules">
+			{#if teeEditorsReady}
+				{#each eventRounds as scheduledRound (JSON.stringify( [scheduledRound.id, scheduledRound.teeSchedule, eventGroups.map( (group) => [group.id, group.status] )] ))}
+					<div data-round-id={scheduledRound.id}>
+						<TeeTimeScheduler
+							round={scheduledRound}
+							groups={eventGroups}
+							{canManage}
+							eventDate={event.startsAt?.slice(0, 10) ?? ''}
+						/>
+					</div>
+				{/each}
+			{/if}
+		</div>
 
 		<Card.Root>
 			<Card.Header>

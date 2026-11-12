@@ -79,18 +79,18 @@ Completion criteria: Jim, Morgan, and Bob each reach a useful home, and mixed-ro
 
 Test the following scenarios with separate accounts:
 
-| Scenario | Expected outcome |
-| --- | --- |
-| New fan signs up directly | Welcome flow leads to eligible organization and season selection |
-| Fan starts from a published organization | Organization context survives authentication |
-| Jim creates a fantasy league | Jim becomes commissioner with no organization staff role |
-| Recipient follows an invitation | Authentication returns to the intended invitation |
-| Morgan signs in | Assigned scoring work remains accessible |
-| Bob signs in | Organization management remains accessible |
-| Account has several activities | User can switch without changing permissions |
-| Organization is unpublished or fantasy is disabled | New participation is blocked according to the agreed policy |
-| User refreshes or goes Back | Flow remains usable without duplicate creation |
-| User changes a URL or submits a forged ID | Server rejects unauthorized access |
+| Scenario                                           | Expected outcome                                                 |
+| -------------------------------------------------- | ---------------------------------------------------------------- |
+| New fan signs up directly                          | Welcome flow leads to eligible organization and season selection |
+| Fan starts from a published organization           | Organization context survives authentication                     |
+| Jim creates a fantasy league                       | Jim becomes commissioner with no organization staff role         |
+| Recipient follows an invitation                    | Authentication returns to the intended invitation                |
+| Morgan signs in                                    | Assigned scoring work remains accessible                         |
+| Bob signs in                                       | Organization management remains accessible                       |
+| Account has several activities                     | User can switch without changing permissions                     |
+| Organization is unpublished or fantasy is disabled | New participation is blocked according to the agreed policy      |
+| User refreshes or goes Back                        | Flow remains usable without duplicate creation                   |
+| User changes a URL or submits a forged ID          | Server rejects unauthorized access                               |
 
 Run npm run check, relevant permission and flow tests, and a production build. Complete a browser walkthrough covering registration, league creation, invitation acceptance, and returning login. Review mobile layouts and keyboard navigation.
 
