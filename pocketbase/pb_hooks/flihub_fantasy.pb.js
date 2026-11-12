@@ -544,6 +544,8 @@ routerAdd(
 			draft.set('rankings', JSON.stringify(rankings));
 			draft.set('currentPick', 0);
 			draft.set('createdBy', e.auth.id);
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+			require(`${__hooks}/fantasy_scoring_rules.js`).assertRosterMutable(txApp, draft);
 			txApp.save(draft);
 			created = { id: draft.id, status: 'ready', draftOrder: order };
 		});
@@ -761,6 +763,8 @@ routerAdd(
 				};
 				return;
 			}
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+			require(`${__hooks}/fantasy_scoring_rules.js`).assertRosterMutable(txApp, draft);
 			if (pick.getString('substituteAthlete')) {
 				failure = {
 					status: 400,

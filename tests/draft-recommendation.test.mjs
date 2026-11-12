@@ -3,10 +3,15 @@ import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+const scoringModule = { exports: {} };
+vm.runInNewContext(
+	readFileSync(new URL('../pocketbase/pb_hooks/fantasy_scoring_rules.js', import.meta.url), 'utf8'),
+	{ module: scoringModule, BadRequestError: Error }
+);
 const module = { exports: {} };
 vm.runInNewContext(
 	readFileSync(new URL('../pocketbase/pb_hooks/fantasy_rules.js', import.meta.url), 'utf8'),
-	{ module, BadRequestError: Error }
+	{ module, BadRequestError: Error, __hooks: '.', require: () => scoringModule.exports }
 );
 const rules = module.exports;
 function record(id, data) {
@@ -48,7 +53,7 @@ function fixture(status = 'active', picks = [], currentPick = 1) {
 				return picks.map((data, index) =>
 					record(`pick${index}`, { pickNumber: index + 1, round: 1, ...data })
 				);
-			if (table === 'substitutions') return [];
+			if (table === 'substitutions' || table === 'event_results') return [];
 			throw new Error(`Unexpected table ${table}`);
 		}
 	};

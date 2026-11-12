@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { buildStatus } from '$lib/data/build-status';
 	import { resolve } from '$app/paths';
 	import { AlertCircle, CircleCheck, Construction, Map, Server } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -22,7 +23,7 @@
 <!-- Hero -->
 <section class="flex flex-col items-start gap-4 py-6 sm:py-10">
 	<div class="flex flex-wrap items-center gap-2">
-		<Badge>Through Phases 2A–2B — fantasy drafts</Badge>
+		<Badge>{buildStatus.label} · {buildStatus.scope}</Badge>
 		<Badge variant="outline">SvelteKit</Badge>
 		<Badge variant="outline">Tailwind CSS</Badge>
 		<Badge variant="outline">shadcn-svelte</Badge>
@@ -32,16 +33,14 @@
 		FliHub — sports organization management
 	</h1>
 	<p class="max-w-2xl text-lg text-muted-foreground">
-		A configurable platform for sports organizations with connected fantasy competitions. Verified
-		today: accounts, organizations, invitations and roles, configurable onboarding, athlete records,
-		competition structure, season rosters with reserve pools, event operations (courses, rounds,
-		groups), phone-first scorekeeping, official results with versioned corrections, competition
-		standings from published results, published organization pages, and fantasy leagues with live
-		per-event snake drafts. Fantasy scoring below is planned, not yet available.
+		Manage sports organizations, athletes, seasons, teams, and events. Review and publish official
+		results, then run private fantasy leagues with live drafts and event standings. Golf fantasy
+		follows strokes minus saved par: lowest wins. Season-wide fantasy totals and live provisional
+		fantasy scores remain planned.
 	</p>
 	<div class="flex flex-wrap gap-2">
 		{#if data.user}
-			<Button href={resolve('/(app)/organizations')}>Open your organizations</Button>
+			<Button href={resolve('/(app)/account')}>Choose an activity</Button>
 		{:else}
 			<Button href={resolve('/(auth)/register')}>Create account</Button>
 			<Button variant="outline" href={resolve('/(auth)/login')}>Sign in</Button>
@@ -218,7 +217,10 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">What works today</Card.Title>
-				<Card.Description>Delivered and verified across Phases 1A–1H.</Card.Description>
+				<Card.Description
+					>Implemented through event fantasy scoring; remaining work is listed in the capability
+					cards.</Card.Description
+				>
 			</Card.Header>
 			<Card.Content>
 				<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -255,6 +257,24 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 						reasoned reopening with no unpublish, and versioned, forgery-proof correction history
 						(1H).
 					</li>
+
+					<li>
+						Published organization pages and competition standings from published official results
+						(1I).
+					</li>
+					<li>
+						Account activity selection and fan-created fantasy leagues for eligible seasons, without
+						staff membership (PR #27).
+					</li>
+					<li>
+						Private fantasy participation, completed snake drafts, compact mobile selections,
+						athlete search, and commissioner Pause/Resume (2A–2B).
+					</li>
+					<li>
+						Event fantasy standings from saved strokes and pars, four-athlete explanations, shared
+						ranks, and correction-safe result replacement (2C event scoring; verified locally,
+						awaiting merge).
+					</li>
 				</ul>
 			</Card.Content>
 		</Card.Root>
@@ -262,7 +282,8 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 			<Card.Header>
 				<Card.Title class="text-base">Get started</Card.Title>
 				<Card.Description>
-					Create an account, verify your email, then create an organization or accept an invitation.
+					Create an account, verify your email, then choose Play fantasy, manage an organization, or
+					join through an invitation.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-3">
@@ -270,7 +291,7 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 					<p class="text-sm text-muted-foreground">
 						Signed in as {data.user.email}.
 					</p>
-					<Button href={resolve('/(app)/organizations')}>Open your organizations</Button>
+					<Button href={resolve('/(app)/account')}>Choose an activity</Button>
 				{:else}
 					<Button href={resolve('/(auth)/register')}>Create account</Button>
 					<Button variant="outline" href={resolve('/(auth)/login')}>Sign in</Button>

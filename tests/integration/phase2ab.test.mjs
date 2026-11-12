@@ -1087,3 +1087,173 @@ for (const mode of ['manual', 'timeout']) {
 		assert.deepEqual(failures, [], `durable cutoff failures: ${failures.join(', ')}`);
 	});
 }
+
+test('2C published golf standings: fan access, locked rosters, and replacement corrections', async () => {
+	const { owner, org } = await orgWithCaps('fan2score', 'Fantasy Scoring Org');
+	const comp = await competitionFixture(owner, org.id, 'Score');
+	const event = await draftEvent(owner, org.id, comp, 'Scored event');
+	const { league, managers, byUser } = await leagueWithManagers(owner, org.id, 'Scoring league');
+	const created = await owner.send(`/api/flihub/fantasy/leagues/${league.id}/drafts`, {
+		method: 'POST',
+		body: { event: event.id, pickSeconds: 30 }
+	});
+	await owner.send(`/api/flihub/fantasy/drafts/${created.id}/start`, { method: 'POST', body: {} });
+	for (let i = 0; i < 24; i++) {
+		const state = await board(owner, created.id);
+		assert.ok(state.recommendedAthlete);
+		await pick(byUser.get(state.draft.onTheClock.user), created.id, state.recommendedAthlete);
+	}
+	assert.equal((await board(owner, created.id)).draft.status, 'complete');
+	const path = `/api/flihub/fantasy/organizations/${org.id}/leagues/${league.id}/drafts/${created.id}/standings`;
+	const get = (pb = owner) => pb.send(path, { method: 'GET' });
+	assert.equal((await get(managers[1])).state, 'awaiting_results');
+	const course = await owner
+		.collection('courses')
+		.create({ organization: org.id, name: 'Scoring course', status: 'active' });
+	const hole = await owner.collection('course_holes').create({
+		name: 'Fantasy scoring test hole',
+		organization: org.id,
+		course: course.id,
+		number: 1,
+		par: 3,
+		status: 'active'
+	});
+	await owner.collection('hole_positions').create({
+		organization: org.id,
+		hole: hole.id,
+		label: 'red',
+		distance: 100,
+		unit: 'feet',
+		status: 'active'
+	});
+	const groups = await owner
+		.collection('event_groups')
+		.getFullList({ filter: `event = "${event.id}" && status = "active"` });
+	let firstScore;
+	let firstCard;
+	for (const number of [1, 2]) {
+		const round = await owner.collection('rounds').create({
+			organization: org.id,
+			event: event.id,
+			number,
+			name: `Round ${number}`,
+			course: course.id,
+			positionLabel: 'red',
+			status: 'active'
+		});
+		for (const group of groups) {
+			const card = await owner
+				.collection('scorecards')
+				.create({ organization: org.id, round: round.id, group: group.id });
+			const assignments = await owner
+				.collection('group_athletes')
+				.getFullList({ filter: `group = "${group.id}" && status = "active"` });
+			for (const assignment of assignments) {
+				const cell = await owner.collection('scores').create({
+					organization: org.id,
+					scorecard: card.id,
+					athlete: assignment.athlete,
+					hole: hole.id,
+					strokes: 3
+				});
+				if (!firstScore) {
+					firstScore = cell;
+					firstCard = card;
+				}
+			}
+			await owner.collection('scorecards').update(card.id, { status: 'submitted' });
+		}
+	}
+	const result = await owner
+		.collection('event_results')
+		.create({ organization: org.id, event: event.id });
+	assert.equal((await get()).state, 'awaiting_results', 'approval alone does not score fantasy');
+	await owner.collection('event_results').update(result.id, { status: 'published' });
+	const initial = await get(managers[1]);
+	assert.equal(initial.state, 'published');
+	assert.equal(initial.version, 1);
+	assert.equal(initial.rows.length, 6);
+	assert.ok(initial.rosterLockedAt);
+	assert.ok(
+		initial.rows.every((row) => row.score === 0 && row.rank === 1 && row.athletes.length === 4)
+	);
+	const saved = await owner.collection('fantasy_drafts').getOne(created.id);
+	assert.ok(saved.scoringRosterLockedAt);
+	await assert.rejects(
+		owner.collection('fantasy_drafts').update(created.id, { scoringRosterLockedAt: '' }),
+		isDenied,
+		'clients cannot clear the scoring lock'
+	);
+	const privateVersions = await managers[1]
+		.collection('result_versions')
+		.getFullList({ filter: `event = "${event.id}"` })
+		.catch((err) => {
+			assert.ok(isDenied(err));
+			return [];
+		});
+	assert.equal(privateVersions.length, 0, 'no staff role is granted to fantasy participants');
+	const outsider = await registerVerifiedUser(uniqueEmail('scoreoutsider'), 'Outsider');
+	await assert.rejects(get(outsider), isDenied);
+	const staff = await registerVerifiedUser(uniqueEmail('scorestaff'), 'Organization admin');
+	await acceptInvitation(
+		staff,
+		(await createInvitation(owner, org.id, staff.authStore.record.email, 'admin')).token
+	);
+	await assert.rejects(
+		get(staff),
+		isDenied,
+		'organization admin without a fantasy seat cannot read standings'
+	);
+	await assert.rejects(
+		managers[1].send(path.replace(org.id, 'foreignorg00000'), { method: 'GET' }),
+		isDenied
+	);
+	const completed = await board(owner, created.id);
+	const pickRows = await owner
+		.collection('fantasy_picks')
+		.getFullList({ filter: `draft = "${created.id}"` });
+	await assert.rejects(
+		owner.send(`/api/flihub/fantasy/picks/${pickRows[0].id}/apply-substitution`, {
+			method: 'POST',
+			body: {}
+		}),
+		isCode('roster_locked')
+	);
+	// Published scores never recalculate par from the mutable course.
+	await owner.collection('course_holes').update(hole.id, { par: 4 });
+	assert.deepEqual((await get()).rows, initial.rows);
+	await owner.collection('course_holes').update(hole.id, { par: 3 });
+	await owner
+		.collection('event_results')
+		.update(result.id, { status: 'correcting', reason: 'Correct one athlete stroke total' });
+	await owner
+		.collection('scorecards')
+		.update(firstCard.id, { status: 'draft', reason: 'Correct one hole' });
+	await owner.collection('scores').update(firstScore.id, { strokes: 5 });
+	await owner.collection('scorecards').update(firstCard.id, { status: 'submitted' });
+	await owner.collection('event_results').update(result.id, { status: 'approved' });
+	const pending = await get();
+	assert.equal(pending.version, 1);
+	assert.equal(pending.correctionPending, true);
+	assert.deepEqual(pending.rows, initial.rows);
+	await owner.collection('event_results').update(result.id, { status: 'published' });
+	const corrected = await get();
+	assert.equal(corrected.version, 2);
+	assert.equal(corrected.correctionPending, false);
+	const changedOwner = completed.picks.find((p) => p.athlete === firstScore.athlete).manager;
+	assert.equal(corrected.rows.find((r) => r.user === changedOwner).score, 2);
+	assert.equal(corrected.rows.find((r) => r.user === changedOwner).rank, 6);
+	assert.ok(corrected.rows.filter((r) => r.user !== changedOwner).every((r) => r.rank === 1));
+	assert.deepEqual((await get()).rows, corrected.rows, 'repeated reads do not add points');
+	assert.equal(
+		(await owner.collection('fantasy_drafts').getOne(created.id)).scoringRosterLockedAt,
+		saved.scoringRosterLockedAt
+	);
+	const lobby = await owner.send(`/api/flihub/fantasy/leagues/${league.id}/lobby`, {
+		method: 'GET'
+	});
+	const seat = lobby.members.find((m) => m.user === managers[1].authStore.record.id);
+	await owner.send(`/api/flihub/fantasy/members/${seat.id}/remove`, { method: 'POST', body: {} });
+	await assert.rejects(get(managers[1]), isDenied, 'removed participant loses scoring access');
+	assert.equal((await get()).rows.length, 6, 'historical participant stays in locked standings');
+});

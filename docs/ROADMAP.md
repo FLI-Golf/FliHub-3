@@ -46,7 +46,7 @@ The first end-to-end demonstration covers:
 | 1I    | Organization publishing and public competition standings      | Complete — merged (see below)                   |
 | 2A    | Fantasy membership and event draft preparation                | Implemented — verified locally (see below)      |
 | 2B    | Owner-controlled live snake draft                             | Implemented — verified locally (see below)      |
-| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                     |
+| 2C    | Fantasy scoring, explanations, and correction processing      | Prepared — Codespaces verification pending      |
 | 2D    | End-to-end demo and System Map                                | Not started                                     |
 | 2E    | Website embeds                                                | Not started                                     |
 | 2F    | Read-only public API                                          | Not started                                     |

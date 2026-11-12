@@ -649,3 +649,39 @@ reapproved under the new snapshot logic, reviewed, and then published.
 
 The fantasy read endpoint, stable roster mapping/lock boundary, substitution
 correction policy, and standings UI remain pending. See docs/MASTER_SCORING.md.
+
+### Golf fantasy standings implementation checkpoint
+
+The first scoring view is per-event, from the latest published official result
+version only. It retains golf's strokes-minus-par sign, sums four athletes, ranks
+lowest first, and shares equal ranks. An incomplete roster is unranked; an old
+snapshot without saved par is unavailable rather than inferred from current
+courses. Approved but unpublished corrections do not replace the official score.
+Standings reads recompute from one published version, so repeated reads cannot
+accumulate duplicate points. Refresh is explicit; live provisional scores and
+season-wide fantasy totals remain outside this increment.
+
+Roster changes are blocked after the existing activation cutoff, after first
+publication, or after a persisted scoring lock, whichever applies first. This
+also blocks destructive demo resets and new draft preparation for published
+events. The first authorized scoring read of a valid published result captures
+an immutable effective roster on the draft, including original and designated
+substitute identities, divisions, participant identities, and display names.
+This initialization records when the roster was captured; it does not claim to
+reconstruct a historical activation-time roster for legacy drafts. Subsequent
+result corrections use that same roster. Post-lock roster corrections require a
+separate audited design and are not enabled by this increment.
+
+Fantasy scoring reads require an approved seat in the requested league and
+validate all organization/league/draft/event/season relationships. Organization
+staff have no automatic fantasy access. Private result audit reasons, approver
+identities, and contact details are excluded from the response. Removing a
+participant revokes access but does not erase their historical standings row.
+
+Migration 1794600000_fantasy_scoring_roster.js adds scoringRoster and
+scoringRosterLockedAt to fantasy_drafts without relaxing collection rules. It
+refuses rollback once scoring rosters have been recorded.
+
+Implementation is prepared; real PocketBase and Codespaces walkthrough
+verification remains required. See docs/README-FANTASY-SCORING.md and the
+checklist in docs/MASTER_SCORING.md.
