@@ -423,7 +423,7 @@
                                                                         <span class="text-sm font-semibold">{athlete.name}</span>
                                                                         <span class="text-xs">{athlete.division} · {athlete.teamName}</span>
                                                                         <span class="text-xs font-semibold">
-                                                                                {canPick ? 'Tap to pick' : board.draft.status === 'paused' ? 'Draft paused' : genderFull(athlete.gender) ? 'Roster places full' : 'Waiting for your turn'}
+                                                                                {canPick ? 'Tap to pick' : genderFull(athlete.gender) ? 'Roster places full' : 'Waiting for your turn'}
                                                                         </span>
                                                                 </button>
                                                         </form>
