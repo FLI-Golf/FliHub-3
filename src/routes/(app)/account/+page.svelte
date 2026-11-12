@@ -3,7 +3,7 @@
 	import { Trophy, Building2, Mail } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { PageProps } from './$types';
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 </script>
 
 <svelte:head><title>Your activities — FliHub</title></svelte:head>
@@ -59,10 +59,37 @@
 			{:else}
 				<p class="rounded-lg border p-4">You do not have any fantasy leagues or invitations yet.</p>
 			{/each}
-			<div class="rounded-lg border bg-muted p-4">
-				<h2 class="font-semibold">Organization and season selection is coming next</h2>
-				<p class="mt-2 text-sm">Creating a league from a published organization's eligible season is not available here yet. You do not need to create an organization to play fantasy.</p>
-			</div>
+			<section class="flex flex-col gap-4 rounded-lg border p-4">
+				{#if form?.message}<p role="alert" class="text-red-700">{form.message}</p>{/if}
+				{#if data.selectedSeason}
+					<h2 class="text-xl font-semibold">Create your fantasy league</h2>
+					<p>{data.selectedSeason.sportsLeagueName} · {data.selectedSeason.name}</p>
+					<p class="text-sm text-muted-foreground">You become the commissioner. Invite participants after creating your league.</p>
+					<form method="POST" action={`?activity=fantasy&organization=${encodeURIComponent(data.organizationSlug)}&sportsLeague=${encodeURIComponent(data.sportsLeague)}&season=${encodeURIComponent(data.selectedSeason.id)}&/createFantasy`} class="flex flex-col gap-3">
+						<input type="hidden" name="season" value={data.selectedSeason.id} />
+						<label class="flex flex-col gap-1">Fantasy league name<input name="name" required minlength="2" maxlength="80" value={form?.name ?? ''} class="rounded-md border bg-background p-2" /></label>
+						<label class="flex flex-col gap-1">Participant limit (including you)<input name="participantLimit" type="number" required min="2" max="12" value={form?.participantLimit ?? 6} class="rounded-md border bg-background p-2" /></label>
+						<Button type="submit" class="self-start">Create fantasy league</Button>
+					</form>
+					<a class="underline" href={`?activity=fantasy&organization=${encodeURIComponent(data.organizationSlug)}&sportsLeague=${encodeURIComponent(data.sportsLeague)}`}>Choose another season</a>
+				{:else if data.sportsLeague}
+					<h2 class="text-xl font-semibold">Choose a season</h2>
+					{#each data.availableSeasons as season (season.id)}
+						<a class="rounded-md border p-3 hover:bg-muted" href={`?activity=fantasy&organization=${encodeURIComponent(data.organizationSlug)}&sportsLeague=${encodeURIComponent(data.sportsLeague)}&season=${encodeURIComponent(season.id)}`}>
+							<strong class="block">{season.name}</strong><span class="text-sm">{season.startsOn || 'Start date to be announced'}{season.endsOn ? ` to ${season.endsOn}` : ''}</span>
+						</a>
+					{:else}<p>No seasons are currently open for fantasy in this sports league.</p>{/each}
+					<a class="underline" href={`?activity=fantasy&organization=${encodeURIComponent(data.organizationSlug)}`}>Back to sports leagues</a>
+				{:else}
+					<h2 class="text-xl font-semibold">Choose a sports league</h2>
+					<p>Choose the competition your fantasy league will follow.</p>
+					{#each data.sportsLeagues as league (league.id)}
+						<a class="rounded-md border p-3 hover:bg-muted" href={`?activity=fantasy&organization=${encodeURIComponent(data.organizationSlug)}&sportsLeague=${encodeURIComponent(league.id)}`}>
+							<strong class="block">{league.name}</strong><span class="text-sm text-muted-foreground">{league.organizationName}</span>
+						</a>
+					{:else}<p>No sports leagues are open for fantasy yet. Their organization must publish its page, enable Fantasy, and open at least one season for fantasy.</p>{/each}
+				{/if}
+			</section>
 		{/if}
 	{/if}
 </section>

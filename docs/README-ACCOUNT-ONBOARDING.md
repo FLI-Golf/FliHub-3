@@ -122,3 +122,37 @@ The first increment adds /account with activity selection and an Activities navi
 Organization creation remains available through the management choice. Fantasy participants can open their existing leagues and invitations. Published organization and season discovery, new fan league creation, durable activity preferences, and invitation links for unregistered fantasy recipients remain pending. This increment does not change PocketBase rules or require a migration.
 
 Validation: node --test tests/account-welcome.test.mjs, npm run check, and npm run build. In the running application, verify Jim's welcome flow, Bob's organization controls, Morgan's assignments, mobile Activities navigation, and a signed-out invitation link through login.
+
+## Published organization and sports league picker increment
+
+The fantasy account page now lists sports leagues with at least one eligible season. A published /o/[slug] page links to the account flow with its organization slug preserved through login and registration. Users choose a sports league, choose a season, and create a private fantasy league as commissioner without organization staff access.
+
+Eligibility requires a published organization with a slug and the Fantasy capability enabled, an active sports league in that organization, and a planned or active season explicitly opened for fantasy. The new season setting defaults to closed. Owners/Admins enable it from Edit season on Leagues & seasons. League and season names and season dates become discoverable through this opt-in. Existing publication rules for events, teams, athletes, results, and private contact data remain unchanged.
+
+Migration 1794434400_fantasy_season_entry.js adds seasons.fantasyEnabled and the optional fantasy_leagues.season relation. Existing fantasy leagues remain organization-wide with an empty season. Staff can still create legacy organization-wide leagues; regular accounts must select an eligible season. Season-linked drafts reject events from other seasons.
+
+Closing a season or unpublishing an organization blocks new fan league creation and removes discovery listings. Existing fantasy memberships and leagues remain accessible. Fantasy leagues are invitation-only; this change does not publish their membership lists or enable public joining.
+
+Directory results currently cap at 2,000 eligible season candidates. Pagination is required before supporting directories beyond this size.
+
+Validation commands: node --test tests/account-welcome.test.mjs tests/fantasy-discovery.test.mjs, npm run check, npm run build. Hook tests use a simulated PocketBase app; apply the migration and verify the real database flow in Codespaces before merging.
+
+Manual walkthrough: as Bob, enable Fantasy, publish the organization, and open Stage 1 Test Season for fantasy. As Jim, follow Play fantasy from the public page, sign in if needed, select FLI Golf Test League and Stage 1 Test Season, create a named fantasy league, and verify the commissioner lobby. Confirm Jim has no organization membership. Confirm a different-season draft is rejected, and closing fantasy enrollment prevents a new league while leaving the existing league accessible. Recheck Bob's controls and Morgan's assignments.
+
+## Draft room layout increment
+
+Rosters appear across the top, with the active participant highlighted. The turn panel below them shows the participant on the clock, remaining seconds, and a recommended eligible athlete. Only the participant whose turn it is receives the recommendation Pick button. All athletes remain visible below, including drafted athletes and their participant labels. Picks so far moves to the bottom, after any pending substitutions.
+
+The board adds recommendedAthlete from the existing server timeout-selection function. Recommendations follow the saved draft rankings, skip drafted athletes, and respect roster gender limits. The saved ranking may use the existing placeholder ordering; this feature does not introduce performance-based recommendations. Normal pick validation remains authoritative for stale or racing submissions. Ready and completed drafts show no on-clock recommendation.
+
+Validation: node --test tests/draft-recommendation.test.mjs, npm run check, npm run build. In Codespaces, restart PocketBase, open an active draft, and verify roster highlighting, countdown, recommendations, manual picks, auto-picks, and refresh persistence across participant sessions.
+
+## Commissioner pause and compact pick history
+
+Pick history uses one horizontal column per participant, retaining round, pick number, team, and auto-pick labels. The region scrolls horizontally on smaller screens and is focusable for keyboard scrolling. Available male athlete cards use light blue; female cards use light pink. Gender labels remain visible so color is not the only indication.
+
+Commissioners can pause an active draft and resume a paused draft. Migration 1794520000_fantasy_draft_pause.js adds the paused status and pausedRemainingMs. The transactional clock endpoint verifies commissioner ownership, checks event activation restrictions, and freezes the remaining milliseconds. Resume continues the same pick using the stored remainder rather than granting a new full timer. An already expired deadline cannot be paused. Invalid or repeated transitions are rejected.
+
+Paused boards preserve the current participant and round while disabling manual picks and recommendations. Timeout ticks cannot create picks in paused state. All participant pages continue polling while paused so they detect resume. Event activation restrictions remain in effect, including on resume.
+
+Validation: node --test tests/fantasy-pause.test.mjs tests/draft-recommendation.test.mjs, npm run check, npm run build. Tests use simulated PocketBase records and clocks. In Codespaces, verify pause/resume across two signed-in participant sessions, wait while paused, refresh, and confirm the remaining time and current pick persist. Check the six-column pick history at desktop and mobile widths. Rollback requires resuming any paused drafts first.

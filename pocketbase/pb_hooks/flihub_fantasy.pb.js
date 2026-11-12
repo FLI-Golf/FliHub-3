@@ -35,7 +35,7 @@ routerAdd(
 		if (!Number.isInteger(limit) || limit < 2 || limit > 12) {
 			return e.json(400, {
 				code: 'invalid_limit',
-				message: 'Participant limits are 2–12 managers.'
+				message: 'Participant limits are 2–12 fantasy participants.'
 			});
 		}
 		let org;
@@ -59,9 +59,23 @@ routerAdd(
 		}
 		let created = null;
 		e.app.runInTransaction((txApp) => {
+			const seasonId = String(body.season ?? '');
+			if (seasonId) {
+				let selected;
+				try { selected = require(`${__hooks}/fantasy_discovery_rules.js`).eligible(txApp, seasonId); }
+				catch (_) { throw new BadRequestError('This season is not available for new fantasy leagues.'); }
+				if (selected.org.id !== orgId) throw new BadRequestError('The season must belong to this organization.');
+			} else {
+				// Preserve the staff setup path for legacy organization-wide leagues.
+				let staff;
+				try { staff = txApp.findFirstRecordByFilter('memberships', "organization = {:org} && user = {:user} && (role = 'owner' || role = 'admin')", { org: orgId, user: auth.id }); }
+				catch (_) { throw new BadRequestError('Choose an available season before creating a fantasy league.'); }
+				if (!staff) throw new BadRequestError('Choose an available season.');
+			}
 			const leagues = txApp.findCollectionByNameOrId('fantasy_leagues');
 			const league = new Record(leagues);
 			league.set('organization', orgId);
+			if (seasonId) league.set('season', seasonId);
 			league.set('name', name);
 			league.set('owner', auth.id);
 			league.set('participantLimit', limit);
@@ -150,6 +164,7 @@ routerAdd(
 					0,
 					{ org: league.getString('organization') }
 				)
+				.filter((ev) => !league.getString('season') || ev.getString('season') === league.getString('season'))
 				.map((ev) => ({ id: ev.id, name: ev.getString('name') }));
 		}
 		return e.json(200, {
@@ -192,7 +207,7 @@ routerAdd(
 		if (league.getString('owner') !== e.auth.id) {
 			return e.json(403, {
 				code: 'forbidden_role',
-				message: 'Only the league owner can invite managers.'
+				message: 'Only the commissioner can invite fantasy participants.'
 			});
 		}
 		let invitee;
@@ -305,7 +320,7 @@ routerAdd(
 				failure = {
 					status: 403,
 					code: 'forbidden_role',
-					message: 'Only the league owner approves managers.'
+					message: 'Only the commissioner approves fantasy participants.'
 				};
 				return;
 			}
@@ -329,7 +344,7 @@ routerAdd(
 				failure = {
 					status: 400,
 					code: 'league_full',
-					message: 'Every manager seat is already approved.'
+					message: 'Every fantasy participant place is already approved.'
 				};
 				return;
 			}
@@ -363,7 +378,7 @@ routerAdd(
 				failure = {
 					status: 403,
 					code: 'forbidden_role',
-					message: 'Only the league owner removes managers.'
+					message: 'Only the commissioner removes fantasy participants.'
 				};
 				return;
 			}
@@ -419,7 +434,7 @@ routerAdd(
 		if (league.getString('owner') !== e.auth.id) {
 			return e.json(403, {
 				code: 'forbidden_role',
-				message: 'Only the league owner prepares drafts.'
+				message: 'Only the commissioner prepares drafts.'
 			});
 		}
 		let event;
@@ -434,11 +449,14 @@ routerAdd(
 				message: 'Drafts can only target events of the league\u2019s organization.'
 			});
 		}
+		if (league.getString('season') && event.getString('season') !== league.getString('season')) {
+			return e.json(400, { message: 'Choose an event in the fantasy league season.' });
+		}
 		const approved = rules.approvedMembers(e.app, leagueId);
 		if (approved.length < Number(league.get('participantLimit'))) {
 			return e.json(400, {
 				code: 'seats_unfilled',
-				message: `Drafts open once all ${league.get('participantLimit')} manager seats are approved (${approved.length} so far).`
+				message: `Drafts open once all ${league.get('participantLimit')} fantasy participant places are approved (${approved.length} so far).`
 			});
 		}
 		const pool = rules.eligiblePool(e.app, eventId);
@@ -543,7 +561,7 @@ routerAdd(
 				failure = {
 					status: 403,
 					code: 'forbidden_role',
-					message: 'Only the league owner starts the draft.'
+					message: 'Only the commissioner starts the draft.'
 				};
 				return;
 			}
@@ -716,7 +734,7 @@ routerAdd(
 				failure = {
 					status: 403,
 					code: 'forbidden_role',
-					message: 'Only the league owner applies substitutions.'
+					message: 'Only the commissioner applies substitutions.'
 				};
 				return;
 			}

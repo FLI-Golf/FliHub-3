@@ -16,6 +16,7 @@ new Function('require', 'exports', code)((name) => {
 function context(query = '', memberships = [], seats = []) {
     const pb = {
         memberships,
+        send: async () => ({ seasons: [] }),
         filter: (expression, values) => { assert.equal(values.user, 'jim'); return expression; },
         collection: (name) => {
             assert.equal(name, 'fantasy_members');

@@ -33,6 +33,7 @@
 		endsOn: string | null;
  purseAmountCents: number | null;
  purseCurrency: string;
+ fantasyEnabled: boolean;
 	}
 	interface Division {
 		id: string;
@@ -217,6 +218,7 @@
 					<div class="flex flex-wrap items-center justify-between gap-2">
 						<div class="flex flex-wrap items-center gap-2">
 							<span class="font-medium">{season.name}</span>
+							<Badge variant="outline">Fantasy {season.fantasyEnabled ? 'open' : 'closed'}</Badge>
 							<Badge variant="outline">{season.leagueName}</Badge>
 							<Badge variant={season.status === 'archived' ? 'secondary' : 'default'}>
 								{season.status}
@@ -511,6 +513,8 @@
 				</div>
 
  <div class="flex flex-col gap-1.5">
+  <label class="flex items-center gap-2"><input type="checkbox" name="fantasyEnabled" value="yes" checked={editingSeason.fantasyEnabled} /> Allow new fantasy leagues for this season</label>
+  <p class="text-xs text-muted-foreground">The organization must also publish its page and enable Fantasy. Closing prevents new leagues; existing leagues remain accessible.</p>
   <Label for="edit-season-purse">Season purse (USD, optional)</Label>
   <Input id="edit-season-purse" name="purseAmount" type="text" inputmode="decimal"
    pattern={'[0-9]+([.][0-9]{1,2})?'} placeholder="6000000.00" value={seasonPurseInput(editingSeason)}

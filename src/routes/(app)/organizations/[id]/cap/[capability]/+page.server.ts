@@ -261,7 +261,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				startsOn: String(s.startsOn ?? '') || null,
 				endsOn: String(s.endsOn ?? '') || null,
  purseAmountCents: String(s.purseCurrency ?? '') ? Number(s.purseAmountCents ?? 0) : null,
- purseCurrency: String(s.purseCurrency ?? '')
+ purseCurrency: String(s.purseCurrency ?? ''),
+ fantasyEnabled: Boolean(s.fantasyEnabled)
 			})),
 			divisions: divisionRows.map((d) => ({
 				id: d.id,
@@ -1213,6 +1214,7 @@ export const actions: Actions = {
 				status,
 				startsOn: String(form.get('startsOn') ?? '') || null,
 				endsOn: String(form.get('endsOn') ?? '') || null,
+ fantasyEnabled: form.get('fantasyEnabled') === 'yes',
  ...(form.has('purseAmount') ? purse.value : {})
 			});
 		} catch (err) {
