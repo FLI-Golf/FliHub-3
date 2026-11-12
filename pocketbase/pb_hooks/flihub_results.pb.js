@@ -23,165 +23,16 @@
  *    after e.next(); their client write rules are locked, so approval,
  *    publication, author, and correction metadata cannot be forged.
  *
- * Handlers are self-contained (the JSVM serializes them into isolated
- * contexts), so the completeness/totals and audit-log helpers are inlined.
+ * Handlers load shared approval validation from result_snapshot_rules.js
+ * inside their isolated JSVM context. The correction audit helper stays local.
  */
 
 onRecordCreateRequest((e) => {
 	// D16: every active round must have a course and every (round × group)
 	// scorecard must be Submitted; totals are snapshotted at approval.
-	function computeEventTotals(app, eventId) {
-		const rounds = app.findRecordsByFilter(
-			'rounds',
-			"event = {:event} && status = 'active'",
-			'number',
-			200,
-			0,
-			{ event: eventId }
-		);
-		if (rounds.length === 0) {
-			throw new BadRequestError('approval_blocked: The event has no active rounds to approve.');
-		}
-		const courseless = rounds.filter((r) => !r.getString('course'));
-		if (courseless.length > 0) {
-			throw new BadRequestError(
-				'approval_blocked: Round ' +
-					String(courseless[0].get('number')) +
-					' has no course — every active round must be scorable before approval.'
-			);
-		}
-		const groups = app.findRecordsByFilter(
-			'event_groups',
-			"event = {:event} && status = 'active'",
-			'name',
-			500,
-			0,
-			{ event: eventId }
-		);
-		if (groups.length === 0) {
-			throw new BadRequestError('approval_blocked: The event has no active groups to approve.');
-		}
-		const scorecards = app.findRecordsByFilter('scorecards', 'event = {:event}', '', 2000, 0, {
-			event: eventId
-		});
-		const byKey = new Map(
-			scorecards.map((c) => [c.getString('round') + '|' + c.getString('group'), c])
-		);
-		const missing = [];
-		for (const round of rounds) {
-			for (const group of groups) {
-				const card = byKey.get(round.id + '|' + group.id);
-				if (!card) {
-					missing.push(
-						'Round ' +
-							String(round.get('number')) +
-							' × ' +
-							group.getString('name') +
-							' (no scorecard)'
-					);
-				} else if (card.getString('status') !== 'submitted') {
-					missing.push(
-						'Round ' +
-							String(round.get('number')) +
-							' × ' +
-							group.getString('name') +
-							' (' +
-							card.getString('status') +
-							')'
-					);
-				}
-			}
-		}
-		if (missing.length > 0) {
-			throw new BadRequestError(
-				'approval_blocked: ' +
-					missing.length +
-					' of ' +
-					rounds.length * groups.length +
-					' scorecards are not submitted (first: ' +
-					missing[0] +
-					'). Missing scores never count as zero.'
-			);
-		}
-		const groupAthletes = app.findRecordsByFilter(
-			'group_athletes',
-			"event = {:event} && status = 'active'",
-			'',
-			2000,
-			0,
-			{ event: eventId }
-		);
-		const scores = app.findRecordsByFilter('scores', 'event = {:event}', '', 50000, 0, {
-			event: eventId
-		});
-		const athleteRound = new Map();
-		for (const s of scores) {
-			const key = s.getString('athlete') + '|' + s.getString('round');
-			athleteRound.set(key, (athleteRound.get(key) ?? 0) + Number(s.get('strokes')));
-		}
-		const entryName = new Map();
-		const athleteName = new Map();
-		const athletes = [];
-		const seenAthletes = new Set();
-		for (const ga of groupAthletes) {
-			const athleteId = ga.getString('athlete');
-			if (seenAthletes.has(athleteId)) continue;
-			seenAthletes.add(athleteId);
-			const entryId = ga.getString('entry');
-			if (!entryName.has(entryId)) {
-				const entry = app.findRecordById('season_entries', entryId);
-				const team = app.findRecordById('teams', entry.getString('team'));
-				entryName.set(entryId, team.getString('name'));
-			}
-			if (!athleteName.has(athleteId)) {
-				const athlete = app.findRecordById('athletes', athleteId);
-				athleteName.set(
-					athleteId,
-					(athlete.getString('firstName') + ' ' + athlete.getString('lastName')).trim()
-				);
-			}
-			const roundTotals = {};
-			let total = 0;
-			for (const round of rounds) {
-				const strokes = athleteRound.get(athleteId + '|' + round.id) ?? 0;
-				roundTotals[round.id] = strokes;
-				total += strokes;
-			}
-			athletes.push({
-				athlete: athleteId,
-				athleteName: athleteName.get(athleteId),
-				entry: entryId,
-				teamName: entryName.get(entryId),
-				roundTotals,
-				total
-			});
-		}
-		const teams = [];
-		const byEntry = new Map();
-		for (const a of athletes) {
-			if (!byEntry.has(a.entry)) {
-				byEntry.set(a.entry, { entry: a.entry, teamName: a.teamName, roundTotals: {}, total: 0 });
-				teams.push(byEntry.get(a.entry));
-			}
-			const bucket = byEntry.get(a.entry);
-			for (const round of rounds) {
-				bucket.roundTotals[round.id] =
-					(bucket.roundTotals[round.id] ?? 0) + a.roundTotals[round.id];
-			}
-			bucket.total += a.total;
-		}
-		teams.sort((x, y) => x.total - y.total);
-		athletes.sort((x, y) => x.total - y.total);
-		return {
-			rounds: rounds.map((r) => ({
-				round: r.id,
-				number: Number(r.get('number')),
-				name: r.getString('name'),
-				positionLabel: r.getString('positionLabel')
-			})),
-			teams,
-			athletes
-		};
+	function buildScoringSnapshot(app, eventId) {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+		return require(`${__hooks}/result_snapshot_rules.js`).computeEventTotals(app, eventId);
 	}
 
 	const org = e.app.findRecordById('organizations', e.record.getString('organization'));
@@ -211,7 +62,7 @@ onRecordCreateRequest((e) => {
 	if (!e.auth || !e.auth.id) {
 		throw new BadRequestError('unauthenticated: Approval requires a signed-in caller.');
 	}
-	const totals = computeEventTotals(e.app, e.record.getString('event'));
+	const totals = buildScoringSnapshot(e.app, e.record.getString('event'));
 	e.record.set('status', 'approved');
 	e.record.set('currentVersion', 1);
 	e.record.set('publishedVersion', 0);
@@ -243,158 +94,9 @@ onRecordCreateRequest((e) => {
 onRecordUpdateRequest((e) => {
 	// Same completeness/totals computation as approval (handlers are
 	// self-contained — the JSVM serializes them into isolated contexts).
-	function computeEventTotals(app, eventId) {
-		const rounds = app.findRecordsByFilter(
-			'rounds',
-			"event = {:event} && status = 'active'",
-			'number',
-			200,
-			0,
-			{ event: eventId }
-		);
-		if (rounds.length === 0) {
-			throw new BadRequestError('approval_blocked: The event has no active rounds to approve.');
-		}
-		const courseless = rounds.filter((r) => !r.getString('course'));
-		if (courseless.length > 0) {
-			throw new BadRequestError(
-				'approval_blocked: Round ' +
-					String(courseless[0].get('number')) +
-					' has no course — every active round must be scorable before approval.'
-			);
-		}
-		const groups = app.findRecordsByFilter(
-			'event_groups',
-			"event = {:event} && status = 'active'",
-			'name',
-			500,
-			0,
-			{ event: eventId }
-		);
-		if (groups.length === 0) {
-			throw new BadRequestError('approval_blocked: The event has no active groups to approve.');
-		}
-		const scorecards = app.findRecordsByFilter('scorecards', 'event = {:event}', '', 2000, 0, {
-			event: eventId
-		});
-		const byKey = new Map(
-			scorecards.map((c) => [c.getString('round') + '|' + c.getString('group'), c])
-		);
-		const missing = [];
-		for (const round of rounds) {
-			for (const group of groups) {
-				const card = byKey.get(round.id + '|' + group.id);
-				if (!card) {
-					missing.push(
-						'Round ' +
-							String(round.get('number')) +
-							' × ' +
-							group.getString('name') +
-							' (no scorecard)'
-					);
-				} else if (card.getString('status') !== 'submitted') {
-					missing.push(
-						'Round ' +
-							String(round.get('number')) +
-							' × ' +
-							group.getString('name') +
-							' (' +
-							card.getString('status') +
-							')'
-					);
-				}
-			}
-		}
-		if (missing.length > 0) {
-			throw new BadRequestError(
-				'approval_blocked: ' +
-					missing.length +
-					' of ' +
-					rounds.length * groups.length +
-					' scorecards are not submitted (first: ' +
-					missing[0] +
-					'). Missing scores never count as zero.'
-			);
-		}
-		const groupAthletes = app.findRecordsByFilter(
-			'group_athletes',
-			"event = {:event} && status = 'active'",
-			'',
-			2000,
-			0,
-			{ event: eventId }
-		);
-		const scores = app.findRecordsByFilter('scores', 'event = {:event}', '', 50000, 0, {
-			event: eventId
-		});
-		const athleteRound = new Map();
-		for (const s of scores) {
-			const key = s.getString('athlete') + '|' + s.getString('round');
-			athleteRound.set(key, (athleteRound.get(key) ?? 0) + Number(s.get('strokes')));
-		}
-		const entryName = new Map();
-		const athleteName = new Map();
-		const athletes = [];
-		const seenAthletes = new Set();
-		for (const ga of groupAthletes) {
-			const athleteId = ga.getString('athlete');
-			if (seenAthletes.has(athleteId)) continue;
-			seenAthletes.add(athleteId);
-			const entryId = ga.getString('entry');
-			if (!entryName.has(entryId)) {
-				const entry = app.findRecordById('season_entries', entryId);
-				const team = app.findRecordById('teams', entry.getString('team'));
-				entryName.set(entryId, team.getString('name'));
-			}
-			if (!athleteName.has(athleteId)) {
-				const athlete = app.findRecordById('athletes', athleteId);
-				athleteName.set(
-					athleteId,
-					(athlete.getString('firstName') + ' ' + athlete.getString('lastName')).trim()
-				);
-			}
-			const roundTotals = {};
-			let total = 0;
-			for (const round of rounds) {
-				const strokes = athleteRound.get(athleteId + '|' + round.id) ?? 0;
-				roundTotals[round.id] = strokes;
-				total += strokes;
-			}
-			athletes.push({
-				athlete: athleteId,
-				athleteName: athleteName.get(athleteId),
-				entry: entryId,
-				teamName: entryName.get(entryId),
-				roundTotals,
-				total
-			});
-		}
-		const teams = [];
-		const byEntry = new Map();
-		for (const a of athletes) {
-			if (!byEntry.has(a.entry)) {
-				byEntry.set(a.entry, { entry: a.entry, teamName: a.teamName, roundTotals: {}, total: 0 });
-				teams.push(byEntry.get(a.entry));
-			}
-			const bucket = byEntry.get(a.entry);
-			for (const round of rounds) {
-				bucket.roundTotals[round.id] =
-					(bucket.roundTotals[round.id] ?? 0) + a.roundTotals[round.id];
-			}
-			bucket.total += a.total;
-		}
-		teams.sort((x, y) => x.total - y.total);
-		athletes.sort((x, y) => x.total - y.total);
-		return {
-			rounds: rounds.map((r) => ({
-				round: r.id,
-				number: Number(r.get('number')),
-				name: r.getString('name'),
-				positionLabel: r.getString('positionLabel')
-			})),
-			teams,
-			athletes
-		};
+	function buildScoringSnapshot(app, eventId) {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+		return require(`${__hooks}/result_snapshot_rules.js`).computeEventTotals(app, eventId);
 	}
 	function logResultChange(app, result, action, version, reason, authorId) {
 		const collection = app.findCollectionByNameOrId('result_changes');
@@ -485,7 +187,7 @@ onRecordUpdateRequest((e) => {
 	}
 
 	if (prev === 'correcting' && next === 'approved') {
-		const totals = computeEventTotals(e.app, e.record.getString('event'));
+		const totals = buildScoringSnapshot(e.app, e.record.getString('event'));
 		const newVersion = Number(original.get('currentVersion')) + 1;
 		const reason = original.getString('pendingReason');
 		e.record.set('currentVersion', newVersion);

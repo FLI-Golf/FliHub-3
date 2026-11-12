@@ -177,6 +177,17 @@
 					>
 						Open draft room
 					</Button>
+					{#if draft.status === 'complete'}
+						<Button
+							size="sm"
+							variant="outline"
+							href={resolve('/(app)/organizations/[id]/fantasy/[league]/draft/[draft]/standings', {
+								id: data.organizationId,
+								league: lobby.league.id,
+								draft: draft.id
+							})}>Fantasy standings</Button
+						>
+					{/if}
 				</div>
 			{/each}
 			{#if lobby.isOwner}

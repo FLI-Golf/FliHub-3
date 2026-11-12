@@ -161,6 +161,9 @@ function assertBeforeCutoff(txApp, draft) {
 	) {
 		throw new BadRequestError('activation_cutoff: Event activation has closed draft selections.');
 	}
+
+	// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+	require(`${__hooks}/fantasy_scoring_rules.js`).assertRosterMutable(txApp, draft);
 }
 
 /**

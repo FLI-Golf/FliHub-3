@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { buildStatus } from '$lib/data/build-status';
 	import './layout.css';
 	import logoIcon from '#lib/assets/logos/logo_f.png';
 	import { resolve } from '$app/paths';
@@ -33,7 +34,7 @@
 				<img src={logoIcon} alt="" class="size-9 shrink-0 object-contain" />
 				FliHub
 			</a>
-			<Badge variant="secondary">Phases 2A–2B</Badge>
+			<Badge variant="secondary">{buildStatus.label}</Badge>
 			<nav class="ml-auto hidden items-center gap-1 sm:flex">
 				{#if data.user}
 					<Button variant="ghost" href={`${resolve('/(app)/account')}?choose=1`}>Activities</Button>
@@ -86,12 +87,7 @@
 		<div
 			class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
 		>
-			<p>
-				FliHub Phases 2A–2B build. Organizations, onboarding, athletes, competition structure,
-				rosters, event operations, mobile scorekeeping, official results with versioned corrections,
-				competition standings, published organization pages, and fantasy leagues with live snake
-				drafts are implemented and verified; fantasy scoring remains planned.
-			</p>
+			<p>{buildStatus.summary}</p>
 			<p>
 				PocketBase: {data.pocketbase.configured ? 'configured' : 'not configured'}
 			</p>

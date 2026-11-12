@@ -22,8 +22,8 @@ The first end-to-end demonstration covers:
 7. A six-person fantasy league and an event-specific, eligibility-aware
    four-round snake draft (independently randomized saved order, 60-second
    configurable pick timer, manual start by the owner).
-8. Fantasy scoring from published official results only (points = par −
-   strokes across both regulation rounds; roster totals sum four athletes).
+8. Fantasy scoring from published official results only (score = strokes −
+   snapshotted par across all required event rounds; lowest wins; roster totals sum four athletes).
 9. Corrections updating competition and fantasy standings without duplicating
    points.
 10. Branded public organization pages, followed later by embeds and a
@@ -46,7 +46,7 @@ The first end-to-end demonstration covers:
 | 1I    | Organization publishing and public competition standings      | Complete — merged (see below)                   |
 | 2A    | Fantasy membership and event draft preparation                | Implemented — verified locally (see below)      |
 | 2B    | Owner-controlled live snake draft                             | Implemented — verified locally (see below)      |
-| 2C    | Fantasy scoring, explanations, and correction processing      | Not started                                     |
+| 2C    | Fantasy scoring, explanations, and correction processing      | Prepared — Codespaces verification pending      |
 | 2D    | End-to-end demo and System Map                                | Not started                                     |
 | 2E    | Website embeds                                                | Not started                                     |
 | 2F    | Read-only public API                                          | Not started                                     |

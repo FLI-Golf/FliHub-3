@@ -13,6 +13,14 @@ function record(id, values) {
 	};
 }
 function fixture(options = {}) {
+	const scoringModule = { exports: {} };
+	vm.runInNewContext(
+		readFileSync(
+			new URL('../pocketbase/pb_hooks/fantasy_scoring_rules.js', import.meta.url),
+			'utf8'
+		),
+		{ module: scoringModule, BadRequestError: Error }
+	);
 	let handler;
 	const draft = record('draft', {
 		league: 'league',
@@ -35,11 +43,17 @@ function fixture(options = {}) {
 		findRecordById: (table) => {
 			if (table === 'fantasy_drafts') return draft;
 			if (table === 'fantasy_leagues') return record('league', { owner: 'jim' });
+			if (table === 'events')
+				return record('event', {
+					status: options.eventStatus ?? 'planned',
+					fantasyCutoffAt: options.cutoff ?? ''
+				});
 			if (table === 'users')
 				return record('demo', { email: options.email ?? 'fantasy-demo-league-1@example.com' });
 			throw new Error(`Unexpected table ${table}`);
 		},
 		findRecordsByFilter: (table, filter, _sort, _limit, _offset, params) => {
+			if (table === 'event_results') return options.published ? [{ get: () => 2 }] : [];
 			if (table === 'fantasy_members')
 				return [
 					record('seat1', { user: 'jim', status: 'approved' }),
@@ -79,6 +93,8 @@ function fixture(options = {}) {
 				handler = callback;
 			},
 			$apis: { requireAuth: () => null },
+			__hooks: '.',
+			require: () => scoringModule.exports,
 			ForbiddenError: Error,
 			BadRequestError: Error,
 			$os: {
@@ -163,4 +179,13 @@ for (const status of ['active', 'paused', 'complete']) {
 			assert.equal(f.saved.length, 0);
 		});
 	}
+}
+
+for (const options of [{ published: true }, { eventStatus: 'active' }, { cutoff: '2026-11-12' }]) {
+	test(`reset cannot destroy a scoring roster ${JSON.stringify(options)}`, () => {
+		const f = fixture(options);
+		assert.throws(f.call, /roster_locked/);
+		assert.equal(f.deleted.length, 0);
+		assert.equal(f.saved.length, 0);
+	});
 }

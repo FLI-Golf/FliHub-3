@@ -23,6 +23,8 @@ routerAdd(
 				throw new ForbiddenError('Only this league commissioner can reset a demo draft.');
 			if (!['active', 'paused', 'complete'].includes(draft.getString('status')))
 				throw new BadRequestError('Only an active, paused, or completed demo draft can be reset.');
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+			require(`${__hooks}/fantasy_scoring_rules.js`).assertRosterMutable(app, draft);
 			const members = app
 				.findRecordsByFilter('fantasy_members', 'league = {:league}', '', 100, 0, {
 					league: league.id

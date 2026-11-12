@@ -261,9 +261,7 @@
 						<span class="text-xs font-medium">{athlete.name}</span>
 						<span class="text-[10px] font-medium">{athlete.division}</span>
 
-						{#if canPick}
-
-						{:else if board.draft.status === 'active' && board.myTurn && genderFull(athlete.gender)}
+						{#if !canPick && board.draft.status === 'active' && board.myTurn && genderFull(athlete.gender)}
 							<span class="mt-auto pt-1 text-[10px]">Roster full at {athlete.division}</span>
 						{/if}
 					</button>
