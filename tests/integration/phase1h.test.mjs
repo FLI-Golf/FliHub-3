@@ -37,7 +37,11 @@ async function createOrgFull(pb, body) {
 
 async function orgWithCaps(prefix, name) {
 	const owner = await registerVerifiedUser(uniqueEmail(prefix), 'Owner');
-	const org = await createOrgFull(owner, { name, template: 'custom', capabilities: CAPS });
+	const org = await createOrgFull(owner, {
+		name,
+		template: 'custom',
+		capabilities: CAPS
+	});
 	return { owner, org };
 }
 
@@ -88,9 +92,11 @@ async function resultsFixture(owner, orgId, label, skId) {
 		holes.push(hole);
 	}
 	const mkTeam = async (name, athleteSpecs) => {
-		const team = await pb
-			.collection('teams')
-			.create({ organization: orgId, name: `${label} ${name}`, status: 'active' });
+		const team = await pb.collection('teams').create({
+			organization: orgId,
+			name: `${label} ${name}`,
+			status: 'active'
+		});
 		const entry = await pb.collection('season_entries').create({
 			organization: orgId,
 			season: season.id,
@@ -121,9 +127,12 @@ async function resultsFixture(owner, orgId, label, skId) {
 		['Ben', 'male']
 	]);
 	const teamTwo = await mkTeam('T2', [['Cal', 'male']]);
-	const event = await pb
-		.collection('events')
-		.create({ organization: orgId, season: season.id, name: `${label} E1`, status: 'planned' });
+	const event = await pb.collection('events').create({
+		organization: orgId,
+		season: season.id,
+		name: `${label} E1`,
+		status: 'planned'
+	});
 	const roundOne = await pb.collection('rounds').create({
 		organization: orgId,
 		event: event.id,
@@ -169,7 +178,17 @@ async function resultsFixture(owner, orgId, label, skId) {
 	};
 	const groupOne = await mkGroup('Group 1', [teamOne], skId);
 	const groupTwo = await mkGroup('Group 2', [teamTwo], null);
-	return { course, holes, teamOne, teamTwo, event, roundOne, roundTwo, groupOne, groupTwo };
+	return {
+		course,
+		holes,
+		teamOne,
+		teamTwo,
+		event,
+		roundOne,
+		roundTwo,
+		groupOne,
+		groupTwo
+	};
 }
 
 /** Fills every cell of one (round, group) scorecard and submits it. */
@@ -349,9 +368,12 @@ test('D16 completeness: unsubmitted scorecards and course-less rounds block appr
 		'approval is blocked while any scorecard is unsubmitted'
 	);
 	// A course-less active round blocks approval outright.
-	const bare = await owner
-		.collection('rounds')
-		.create({ organization: org.id, event: fixture.event.id, number: 3, status: 'active' });
+	const bare = await owner.collection('rounds').create({
+		organization: org.id,
+		event: fixture.event.id,
+		number: 3,
+		status: 'active'
+	});
 	await assert.rejects(
 		owner.collection('event_results').create({ organization: org.id, event: fixture.event.id }),
 		(err) =>
@@ -386,6 +408,20 @@ test('D16 lifecycle: approve snapshots totals; publish stamps; correction create
 	assert.equal(teamTwoRow.total, 14, 'team two snapshot total');
 	assert.equal(v1.totals.rounds.length, 2);
 	assert.equal(v1.totals.athletes.length, 3);
+	assert.equal(v1.totals.schemaVersion, 2);
+	assert.equal(v1.totals.scoringConvention, 'strokes-minus-par');
+	for (const round of v1.totals.rounds) {
+		assert.equal(round.par, 6);
+		assert.equal(round.holeCount, 2);
+		assert.equal(round.holes.length, 2);
+	}
+	for (const athlete of v1.totals.athletes) {
+		assert.equal(athlete.par, 12);
+		assert.equal(athlete.scoreToPar, 2);
+		assert.equal(athlete.complete, true);
+		assert.equal(athlete.roundPars[fixture.roundOne.id], 6);
+		assert.equal(athlete.roundScores[fixture.roundOne.id][fixture.holes[0].id], 3);
+	}
 	// Duplicate approval attempts create nothing (unique event + guarded update).
 	await assert.rejects(
 		admin.collection('event_results').create({ organization: org.id, event: fixture.event.id }),
@@ -436,9 +472,10 @@ test('D16 lifecycle: approve snapshots totals; publish stamps; correction create
 		isCode('reason_required'),
 		'result reopen requires a reason'
 	);
-	const correcting = await admin
-		.collection('event_results')
-		.update(result.id, { status: 'correcting', reason: 'Hole 1 recorded for the wrong athlete' });
+	const correcting = await admin.collection('event_results').update(result.id, {
+		status: 'correcting',
+		reason: 'Hole 1 recorded for the wrong athlete'
+	});
 	assert.equal(correcting.status, 'correcting');
 	assert.equal(correcting.pendingReason, 'Hole 1 recorded for the wrong athlete');
 	assert.equal(correcting.publishedVersion, 1, 'v1 stays the official version during correction');
@@ -447,9 +484,10 @@ test('D16 lifecycle: approve snapshots totals; publish stamps; correction create
 	const cardOneRoundOne = cards.find(
 		(c) => c.round === fixture.roundOne.id && c.group === fixture.groupOne.id
 	);
-	await admin
-		.collection('scorecards')
-		.update(cardOneRoundOne.id, { status: 'draft', reason: 'Correcting hole 1' });
+	await admin.collection('scorecards').update(cardOneRoundOne.id, {
+		status: 'draft',
+		reason: 'Correcting hole 1'
+	});
 	const score = await admin
 		.collection('scores')
 		.getFirstListItem(
@@ -479,6 +517,13 @@ test('D16 lifecycle: approve snapshots totals; publish stamps; correction create
 	assert.equal(v2.approvedBy, admin.authStore.record.id);
 	const v2TeamOne = v2.totals.teams.find((t) => t.entry === fixture.teamOne.entry.id);
 	assert.equal(v2TeamOne.total, 30, 'corrected standings input changed exactly once (+2)');
+	const changedAthlete = v2.totals.athletes.find(
+		(a) => a.athlete === fixture.teamOne.athletes[0].id
+	);
+	assert.equal(changedAthlete.total, 16);
+	assert.equal(changedAthlete.par, 12);
+	assert.equal(changedAthlete.scoreToPar, 4);
+	assert.equal(changedAthlete.roundScores[fixture.roundOne.id][fixture.holes[0].id], 5);
 	// The previous version is untouched: original totals and publication stamps.
 	const v1After = versions[0];
 	assert.equal(
@@ -518,9 +563,11 @@ test('D16 lifecycle: approve snapshots totals; publish stamps; correction create
 		status: 'active'
 	});
 	await assert.rejects(
-		admin
-			.collection('scorecards')
-			.create({ organization: org.id, round: fixture.roundOne.id, group: lateGroup.id }),
+		admin.collection('scorecards').create({
+			organization: org.id,
+			round: fixture.roundOne.id,
+			group: lateGroup.id
+		}),
 		isCode('result_locked'),
 		'new scorecards are blocked while the result is published'
 	);

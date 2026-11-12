@@ -22,8 +22,8 @@ The first end-to-end demonstration covers:
 7. A six-person fantasy league and an event-specific, eligibility-aware
    four-round snake draft (independently randomized saved order, 60-second
    configurable pick timer, manual start by the owner).
-8. Fantasy scoring from published official results only (points = par −
-   strokes across both regulation rounds; roster totals sum four athletes).
+8. Fantasy scoring from published official results only (score = strokes −
+   snapshotted par across all required event rounds; lowest wins; roster totals sum four athletes).
 9. Corrections updating competition and fantasy standings without duplicating
    points.
 10. Branded public organization pages, followed later by embeds and a

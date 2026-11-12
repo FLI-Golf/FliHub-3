@@ -630,3 +630,22 @@ substitution policies (rejected for now); fantasy scoring (Phase 2C).
   shadcn-svelte supports `#lib` cleanly.
 - Environment variables use the SvelteKit 3 explicit declaration system
   (`src/env.ts` + `$app/env/private`); older `$env/*` modules are deprecated.
+
+## Golf fantasy scoring — November 12, 2026 (approved by Dustin)
+
+Fantasy scores retain golf's sign: strokes minus the corresponding par.
+An athlete at −3 contributes −3; E contributes 0; +2 contributes +2. Sum the
+four effective roster athletes across all required event rounds. Lower totals
+win. Equal complete totals share competition ranks (1, 1, 3); missing data
+remains Incomplete and unranked. Final fantasy standings use published official
+result versions only. Live provisional scoring is outside the first increment.
+This decision supersedes the former roadmap formula of par minus strokes.
+
+New approval and correction snapshots must revalidate required score cells and
+preserve hole pars and athlete scores together. Later course edits must not
+change historical fantasy totals. Legacy versions without par must not be
+silently backfilled. Existing approved demo v1 should be reopened with a reason,
+reapproved under the new snapshot logic, reviewed, and then published.
+
+The fantasy read endpoint, stable roster mapping/lock boundary, substitution
+correction policy, and standings UI remain pending. See docs/MASTER_SCORING.md.
