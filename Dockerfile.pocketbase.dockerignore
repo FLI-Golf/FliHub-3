@@ -1,0 +1,13 @@
+# Keep credentials, databases, uploads, and development artifacts out of builds.
+**
+!Dockerfile.pocketbase
+!Dockerfile.pocketbase.dockerignore
+!pocketbase/
+!pocketbase/pb_hooks/
+!pocketbase/pb_hooks/**
+!pocketbase/pb_migrations/
+!pocketbase/pb_migrations/**
+!src/
+!src/lib/
+!src/lib/capabilities/
+!src/lib/capabilities/catalog.json
