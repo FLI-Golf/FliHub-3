@@ -243,10 +243,19 @@
 					<Plus class="size-5" />
 					Create an organization
 				</Card.Title>
+				<a
+					href={resolve('/(app)/organizations/setup-preview')}
+					class="inline-flex min-h-11 w-fit items-center rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-950 underline underline-offset-4 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+				>
+					Try guided setup preview
+				</a>
 				<Card.Description>
 					You become its Owner. Pick a starter template for suggested capabilities — you can adjust
 					them here and later in organization settings. Capabilities marked Planned or Upcoming are
-					not implemented software yet.
+					not implemented software yet. Templates suggest a starting configuration; they do not
+					select an activity or add a result method. Available scorekeeping, official results, and
+					standings currently use golf rules. Timing, match scoring, judging, and animal, vehicle,
+					or exhibit entries are planned.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
@@ -330,6 +339,10 @@
 						{#if template === 'race-event'}
 							<div class="flex flex-col gap-2">
 								<span class="text-sm font-medium">Race distances</span>
+								<p class="text-sm text-muted-foreground">
+									Distances are configuration only. Race timing and race results are not
+									implemented.
+								</p>
 								{#each presetList as preset (preset.key)}
 									<label class="flex items-center gap-2 text-sm">
 										<input

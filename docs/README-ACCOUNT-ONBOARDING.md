@@ -1,18 +1,19 @@
 # Account onboarding and fantasy entry
 
-Status: Planned — implementation has not started.
+Status: Core account activity selection, eligible-season discovery, and fan league creation implemented and merged in PR #27. Later sections preserve delivery history.
 
 Repository: FLI-Golf/FliHub-3
-Working branch: stage-1-testing
+Original implementation branch: stage-1-testing (historical).
+Current planning branch: feature/multi-event-foundation.
 Proposed repository location: docs/README-ACCOUNT-ONBOARDING.md
 
-## Why this work is needed
+## Original motivation (historical)
 
 A newly registered fan currently arrives at organization creation. Jim Fake's test account exposed the gap: someone who wants to create a fantasy league should first find the organization and season they want to follow.
 
 This is a separate, phased addition to the existing roadmap. It connects account onboarding, published organization pages, and fantasy participation. Existing organization operations and scoring must continue working throughout.
 
-## Intended experience
+## Intended experience and implemented core flow
 
 1. Ask what the person wants to do: Play fantasy, Start or manage a sports organization, or Join through an invitation.
 2. For fantasy, choose a published organization that has enabled fantasy participation. If registration started from that organization's published page, carry the selection forward.
@@ -109,13 +110,13 @@ Fantasy scoring, draft behavior, and standings continue under their existing roa
 - What happens to existing fantasy leagues if an organization later disables new participation.
 - How the default dashboard is chosen for accounts with several activities.
 
-## Delivery approach
+## Original delivery approach (historical)
 
 Implement and review one phase at a time on stage-1-testing. Use separate commits for reviewable milestones and document schema migrations alongside the changes that require them. Do not treat this plan as evidence that a feature already exists.
 
-Next action: begin Phase O1 with the current authentication, published-page, and fantasy permission code.
+Current next action: reuse completed onboarding for the organization configuration review in [MULTI-EVENT-ASSESSMENT.md](MULTI-EVENT-ASSESSMENT.md) and [README-MULTI-EVENT-PLATFORM.md](README-MULTI-EVENT-PLATFORM.md). Do not restart O1 or recreate the account welcome flow. The original O1–O6 sections are historical acceptance goals, not a new backlog.
 
-## Phase O2 implementation checkpoint
+## Phase O2 implementation checkpoint (historical)
 
 The first increment adds /account with activity selection and an Activities navigation link. New accounts land here by default. Existing organization members continue to /organizations, retaining the scorekeeper dashboard when applicable. Explicit login destinations remain honored.
 
@@ -139,7 +140,7 @@ Validation commands: node --test tests/account-welcome.test.mjs tests/fantasy-di
 
 Manual walkthrough: as Bob, enable Fantasy, publish the organization, and open Stage 1 Test Season for fantasy. As Jim, follow Play fantasy from the public page, sign in if needed, select FLI Golf Test League and Stage 1 Test Season, create a named fantasy league, and verify the commissioner lobby. Confirm Jim has no organization membership. Confirm a different-season draft is rejected, and closing fantasy enrollment prevents a new league while leaving the existing league accessible. Recheck Bob's controls and Morgan's assignments.
 
-## Draft room layout increment
+## Draft room layout increment (historical; later layout below supersedes it)
 
 Rosters appear across the top, with the active participant highlighted. The turn panel below them shows the participant on the clock, remaining seconds, and a recommended eligible athlete. Only the participant whose turn it is receives the recommendation Pick button. All athletes remain visible below, including drafted athletes and their participant labels. Picks so far moves to the bottom, after any pending substitutions.
 

@@ -39,6 +39,45 @@ export interface Capability {
 
 export const capabilities: Capability[] = [
 	{
+		title: 'Adaptable organization setup',
+		description:
+			'Next focus: plan setup around the activity, competition format, entry type, and result method.',
+		milestone: 'Multi-event plan · next focus',
+		status: 'planned',
+		progress:
+			'Existing account activities, organization templates, and shared capabilities provide the starting point. The next step is to review those foundations and agree on the first additional workflow before implementation.',
+		next: 'Keep golf working while designing clearer choices for sports, races, shows, and other competitions.'
+	},
+	{
+		title: 'Multiple sports and judged events',
+		description:
+			'Planned support for golf, bowling, pickleball, baseball, basketball, archery, races, dog shows, car shows, and pageants.',
+		milestone: 'Multi-event plan · future workflows',
+		status: 'planned',
+		progress:
+			'The plan separates people and teams from entries such as animals, vehicles, and exhibits. Timing, match results, measurements, judging, voting, and awards each need their own validated rules. These workflows are not implemented by selecting an existing template.',
+		next: 'Choose one additional activity and deliver its complete entry-to-published-result workflow first.'
+	},
+	{
+		title: 'Fantasy expansion',
+		description:
+			'Season-wide totals, live provisional scores, and fantasy rules for additional activities.',
+		milestone: 'Future fantasy increments',
+		status: 'planned',
+		progress:
+			'Published event fantasy standings already work for the current golf workflow. Season aggregation, live provisional scoring, and audited post-lock roster corrections remain future work. Other activities will need explicit fantasy policies.',
+		next: 'Agree on scope and scoring rules before adding new fantasy formats.'
+	},
+	{
+		title: 'Embeds and public API',
+		description: 'Share published results on other websites and through a read-only API.',
+		milestone: 'Phases 2E–2F',
+		status: 'planned',
+		progress:
+			'Hosted public organization pages are available today. Website embeds and the public API remain planned and must preserve the existing publication and privacy rules.',
+		next: 'Extend the shared publication rules when these delivery formats are implemented.'
+	},
+	{
 		title: 'Organizations, invitations & roles',
 		description:
 			'Multi-organization membership with invitation-based access and Owner, Admin, Scorekeeper, and Viewer roles. Creating an account grants no organization access.',
@@ -156,7 +195,7 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 1H',
 		status: 'complete',
 		progress:
-			'Owners/Admins approve only submitted event scorecards. Approval and reapproval now revalidate required scoring cells and snapshot individual strokes with the corresponding hole pars; missing data never becomes zero. Published versions remain authoritative until a reviewed correction is republished. Previous versions, reasons, authors, and timestamps are preserved, and client writes to version/audit records remain blocked. The Phase 1H foundation was merged in PR #20. On the current fantasy-scoring branch, the real demo was reapproved and published as v2 with 24 complete athlete snapshots across two nine-hole, par-27 rounds. Event fantasy standings now consume that published version.',
+			'Owners/Admins approve only submitted event scorecards. Approval and reapproval now revalidate required scoring cells and snapshot individual strokes with the corresponding hole pars; missing data never becomes zero. Published versions remain authoritative until a reviewed correction is republished. Previous versions, reasons, authors, and timestamps are preserved, and client writes to version/audit records remain blocked. The Phase 1H foundation was merged in PR #20. Merged through PR #28, the real demo was reapproved and published as v2 with 24 complete athlete snapshots across two nine-hole, par-27 rounds. Event fantasy standings now consume that published version.',
 		next: 'The playoff shootout remains documentation-only. Legacy snapshots without saved par require a reviewed new result version for fantasy scoring.',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1h',
@@ -181,12 +220,18 @@ export const capabilities: Capability[] = [
 		milestone: 'Phases 2A–2B',
 		status: 'complete',
 		progress:
-			'Fantasy membership and draft work is merged through PR #27. Invitations follow accept/approve permissions independently of organization staff roles. Each event has a saved randomized first-round order and a four-round snake draft, with server-owned turns, 7/15/30-second clocks, manual picks, and eligible timeout auto-picks. The mobile draft includes compact rosters, tappable athlete selections, separate Quick find results, and commissioner Pause/Resume. Jim’s six-participant draft completed with 24 unique athletes and two MPO plus two FPO per roster. The current scoring branch enforces activation/publication roster locks, preserves designated-substitute history, and blocks destructive demo resets after the lock. Existing narrated league/draft walkthroughs cover their recorded scope.',
+			'Fantasy membership and draft work is merged through PR #27. Invitations follow accept/approve permissions independently of organization staff roles. Each event has a saved randomized first-round order and a four-round snake draft, with server-owned turns, 7/15/30-second clocks, manual picks, and eligible timeout auto-picks. The mobile draft includes compact rosters, tappable athlete selections, separate Quick find results, and commissioner Pause/Resume. Jim’s six-participant draft completed with 24 unique athletes and two MPO plus two FPO per roster. The merged scoring implementation enforces activation/publication roster locks, preserves designated-substitute history, and blocks destructive demo resets after the lock. Existing narrated league/draft walkthroughs cover their recorded scope.',
 		next: 'Production auto-pick rankings and equal-rank ordering remain open. Post-lock roster corrections require a separate audited workflow.',
 		featureHref: '/account',
 		walkthroughs: [
-			{ href: '/walkthroughs/phase2ab-setup', label: 'Watch League Setup & Draft Prep' },
-			{ href: '/walkthroughs/phase2ab-live', label: 'Watch Live Draft & Roster Rules' }
+			{
+				href: '/walkthroughs/phase2ab-setup',
+				label: 'Watch League Setup & Draft Prep'
+			},
+			{
+				href: '/walkthroughs/phase2ab-live',
+				label: 'Watch Live Draft & Roster Rules'
+			}
 		]
 	},
 	{
@@ -196,7 +241,7 @@ export const capabilities: Capability[] = [
 		milestone: 'Phase 2C · event scoring',
 		status: 'complete',
 		progress:
-			'Implemented and verified locally on feature/fantasy-scoring; not yet merged. Published result snapshots preserve strokes and corresponding pars. Event standings sum four effective roster athletes across every required round, retain negative/positive golf signs, display even par as E, share equal ranks, and leave incomplete rosters unranked. An approved but unpublished correction does not replace the official result; republication replaces the contribution without duplicating scores. Approved fantasy participants can read their league without staff access. Roster locks preserve participant and athlete mappings, and block late substitutions and demo resets. The 90-test integration suite passed, including real publication, permissions, course edits, and correction replacement. Jim’s live six-participant standings were verified against published demo v2; all roster totals reconcile to the official athlete scores.',
+			'Merged in PR #28 and available in the deployed application. Published result snapshots preserve strokes and corresponding pars. Event standings sum four effective roster athletes across every required round, retain negative/positive golf signs, display even par as E, share equal ranks, and leave incomplete rosters unranked. An approved but unpublished correction does not replace the official result; republication replaces the contribution without duplicating scores. Approved fantasy participants can read their league without staff access. Roster locks preserve participant and athlete mappings, and block late substitutions and demo resets. The 90-test integration suite passed, including real publication, permissions, course edits, and correction replacement. Jim’s live six-participant standings were verified against published demo v2; all roster totals reconcile to the official athlete scores.',
 		next: 'Season-wide fantasy aggregation, live provisional scores, audited post-lock roster corrections, and a narrated scoring walkthrough remain pending.',
 		featureHref: '/account'
 	},
@@ -219,7 +264,7 @@ export const capabilityStatusMeta: Record<CapabilityStatus, { label: string; bad
 	{
 		planned: {
 			label: 'Planned',
-			badgeClass: ''
+			badgeClass: 'border-transparent bg-blue-600 text-white'
 		},
 		'in-progress': {
 			label: 'In progress',

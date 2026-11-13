@@ -54,6 +54,14 @@
 		<div class="flex flex-wrap items-center gap-3">
 			<h1 class="text-2xl font-semibold tracking-tight">{data.organization.name}</h1>
 			<Badge variant="secondary">Your role: {roleLabel(data.myRole)}</Badge>
+			{#if canManage}
+				<a
+					href={resolve('/(app)/organizations/[id]/settings', { id: data.organization.id })}
+					class="inline-flex min-h-11 items-center rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-950 underline underline-offset-4 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+				>
+					Organization settings
+				</a>
+			{/if}
 		</div>
 		<OrgNav
 			orgId={data.organization.id}

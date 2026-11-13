@@ -3,6 +3,14 @@
 Phase 1B adds configurable onboarding: starter templates, a capability
 catalog, and capability-aware organization navigation.
 
+## Supported workflow scope
+
+Templates suggest capabilities; they do not select an activity, competition format, entry type, or result method. Those are separate concepts in the [multi-event plan](README-MULTI-EVENT-PLATFORM.md) and [assessment](MULTI-EVENT-ASSESSMENT.md). Reuse [account activities](README-ACCOUNT-ONBOARDING.md) for navigation rather than rebuilding onboarding.
+
+Available scorekeeping and official results use golf holes and strokes. Competition standings aggregate published stroke totals, while event fantasy standings use strokes minus saved par and rank the lowest complete roster first. Race/Event distances are configuration only; race timing, race results, matches, judging, voting, awards, and animal/vehicle/exhibit entries are not implemented. Selecting a capability does not supply these workflows.
+
+The setup clarification changes descriptions only. It preserves template and capability IDs, availability, defaults, dependencies, stored selections, and backend permissions. Switching templates still re-applies suggestions for review before saving; no new automatic migration or conversion is introduced.
+
 ## Single source of truth
 
 The catalog lives in `src/lib/capabilities/catalog.json`. Both sides load the
@@ -16,18 +24,18 @@ same file — there is no forked list:
 
 ## Catalog
 
-| Capability        | Label                      | Availability | Depends on      | Milestone                 |
-| ----------------- | -------------------------- | ------------ | --------------- | ------------------------- |
-| `athletes`        | Athletes                   | available    | —               | Phase 1C                  |
-| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E              |
-| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D                  |
-| `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F              |
-| `events`          | Events                     | available    | —               | Phases 1D–1F              |
-| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H              |
-| `standings`       | Competition standings      | available    | scoring-results | Phase 1I                  |
-| `fantasy`         | Fantasy leagues            | available    | standings       | Phases 2A–2B (2C planned) |
-| `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred)       |
-| `reimbursements`  | Reimbursements & expenses  | upcoming     | —               | Phase 3+ (deferred)       |
+| Capability        | Label                      | Availability | Depends on      | Milestone                    |
+| ----------------- | -------------------------- | ------------ | --------------- | ---------------------------- |
+| `athletes`        | Athletes                   | available    | —               | Phase 1C                     |
+| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E                 |
+| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D                     |
+| `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F                 |
+| `events`          | Events                     | available    | —               | Phases 1D–1F                 |
+| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H                 |
+| `standings`       | Competition standings      | available    | scoring-results | Phase 1I                     |
+| `fantasy`         | Fantasy leagues            | available    | standings       | Phases 2A–2C (event scoring) |
+| `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred)          |
+| `reimbursements`  | Reimbursements & expenses  | upcoming     | —               | Phase 3+ (deferred)          |
 
 Three layers are kept separate:
 
@@ -84,7 +92,7 @@ here.
 
 ## Deferred decisions
 
-- Race scoring and timing rules (Phase 1G/1H scope).
+- Race scoring and timing rules remain unimplemented; Phases 1G/1H delivered golf stroke scoring and official results.
 - ~~Whether "available" capabilities should gate writes once those workflows
   exist~~ — answered in Phase 1C: available capabilities gate their writes
   (athletes does, via `pb_hooks/flihub_athletes.pb.js`); reads of preserved
@@ -190,7 +198,7 @@ partial unique indexes.
 Phase 1G (decisions recorded as D15) turned the scoring half of
 **Scoring & official results** into a working workflow; Phase 1H (D16) added
 official approval, publication, and corrections; Phase 1I (D17) added
-competition standings and public pages. Fantasy consumption remains planned.
+competition standings and public pages. Per-event golf fantasy consumption is implemented through PR #28; see [README-FANTASY-SCORING.md](README-FANTASY-SCORING.md).
 
 - **Permission matrix** — ordinary score entry requires BOTH the Scorekeeper
   role AND an active assignment as a group's scorekeeper in at least one

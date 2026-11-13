@@ -1,9 +1,10 @@
 # Master scoring
 
-Status: Event fantasy scoring implemented and verified locally; final review in progress. Not yet merged.
-Last updated: November 12, 2026.
+Status: Per-event golf fantasy scoring implemented, verified locally, and merged in PR #28. Remaining checklist entries retain their individual scope.
+Last updated: November 13, 2026.
 Repository: FLI-Golf/FliHub-3
-Working branch: feature/fantasy-scoring
+Implementation branch: feature/fantasy-scoring (historical).
+Multi-event planning: [MULTI-EVENT-ASSESSMENT.md](MULTI-EVENT-ASSESSMENT.md). Golf scoring remains a dedicated supported workflow; do not generalize its rules by changing labels.
 Baseline: main after PR #27, merge commit e6efa59.
 
 This document is the implementation and verification checklist for connecting

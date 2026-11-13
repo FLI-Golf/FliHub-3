@@ -162,7 +162,10 @@
 				<Card.Title class="text-base">Starter template</Card.Title>
 				<Card.Description>
 					Templates suggest capability defaults; switching template re-applies its suggestions,
-					which you can still adjust before saving.
+					which you can still adjust before saving. Templates do not select an activity or add a
+					result method. Available scorekeeping, official results, and standings currently use golf
+					rules. Timing, match scoring, judging, and animal, vehicle, or exhibit entries are
+					planned.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>

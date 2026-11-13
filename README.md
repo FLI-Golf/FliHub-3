@@ -6,11 +6,19 @@ using a new stack — see [docs/DECISIONS.md](docs/DECISIONS.md) for why and
 [docs/MIGRATION.md](docs/MIGRATION.md) for what still needs to be imported from
 the previous prototype.
 
-> **Status: Phase 1A.** Accounts, organizations, invitations, and roles are
-> implemented and verified locally (integration suite + browser acceptance
-> flow). Competitions, scoring, and fantasy features are **planned, not
-> implemented**. See [docs/ROADMAP.md](docs/ROADMAP.md) and
-> [Milestones.md](Milestones.md).
+> **Implemented:** Accounts, organizations, invitations, role permissions,
+> configurable capabilities, athletes, teams, competition structure, golf
+> scorekeeping, official-result publication and corrections, public standings,
+> private fantasy drafts, and per-event golf fantasy standings.
+
+**Current branch:** Guided multi-step competition setup is available as a
+preview. It separates organization, activity, format, competitors, and result
+method. The preview creates no records. Race timing, match scoring, judging,
+voting, awards, and animal/vehicle/exhibit entry workflows remain planned.
+
+See [the roadmap](docs/ROADMAP.md),
+[the multi-event plan](docs/README-MULTI-EVENT-PLATFORM.md), and
+[the setup preview guide](docs/README-SETUP-PREVIEW.md) for scope and next steps.
 
 ## Stack
 
