@@ -1,3 +1,5 @@
+export const prerender = true;
+
 import { existsSync, statSync } from 'node:fs';
 import type { PageServerLoad } from './$types';
 

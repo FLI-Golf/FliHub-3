@@ -28,3 +28,7 @@ export const load: PageServerLoad = ({ params }) => {
 		sizeMb: existsSync(file) ? Math.round((statSync(file).size / 1024 / 1024) * 10) / 10 : null
 	};
 };
+
+// Generate these pages while static video files are available during the build.
+export const prerender = true;
+export const entries = () => [{ walkthrough: 'phase2ab-setup' }, { walkthrough: 'phase2ab-live' }];
