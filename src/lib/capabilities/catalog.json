@@ -4,7 +4,7 @@
 		{
 			"id": "league",
 			"label": "League",
-			"description": "Ongoing league play with teams, seasons, and standings.",
+			"description": "Suggested capabilities for league play with teams and seasons. Available scoring and standings currently use golf rules.",
 			"defaultCapabilities": [
 				"athletes",
 				"teams",
@@ -18,7 +18,7 @@
 		{
 			"id": "race-event",
 			"label": "Race/Event",
-			"description": "Distance events with athletes, results, and standings.",
+			"description": "Distance-event configuration with suggested capabilities. Race timing and race results are not implemented; available scoring uses golf rules.",
 			"defaultCapabilities": [
 				"athletes",
 				"venues-courses",
@@ -34,7 +34,7 @@
 		{
 			"id": "custom",
 			"label": "Custom",
-			"description": "Start from nothing and choose capabilities deliberately.",
+			"description": "Choose capabilities individually. Custom setup does not add new entry types or result methods.",
 			"defaultCapabilities": []
 		}
 	],
@@ -66,7 +66,7 @@
 		{
 			"id": "venues-courses",
 			"label": "Venues & courses",
-			"description": "Course layouts with holes and positions; venue records planned.",
+			"description": "Golf course layouts with holes and positions. General venue records are planned.",
 			"availability": "available",
 			"milestone": "Phases 1D–1F",
 			"dependsOn": []
@@ -74,7 +74,7 @@
 		{
 			"id": "events",
 			"label": "Events",
-			"description": "Events, rounds, and group assignments.",
+			"description": "Standalone or season-linked events with golf rounds and group assignments.",
 			"availability": "available",
 			"milestone": "Phases 1D–1F",
 			"dependsOn": []
@@ -82,7 +82,7 @@
 		{
 			"id": "scoring-results",
 			"label": "Scoring & official results",
-			"description": "Mobile score entry and submission with Owner/Admin official-result approval, publication, and versioned corrections.",
+			"description": "Golf stroke entry and submission with Owner/Admin official-result approval, publication, and versioned corrections. Timing, match scoring, and judging are not implemented.",
 			"availability": "available",
 			"milestone": "Phases 1G–1H",
 			"dependsOn": ["events"]
@@ -90,7 +90,7 @@
 		{
 			"id": "standings",
 			"label": "Competition standings",
-			"description": "Standings computed from approved, published results.",
+			"description": "Golf competition standings from published official stroke totals; lowest complete total leads.",
 			"availability": "available",
 			"milestone": "Phase 1I",
 			"dependsOn": ["scoring-results"]
@@ -98,9 +98,9 @@
 		{
 			"id": "fantasy",
 			"label": "Fantasy leagues",
-			"description": "Private fantasy leagues with per-event snake drafts; scoring from published results arrives in Phase 2C.",
+			"description": "Private fantasy leagues with per-event snake drafts and event standings from published golf results. Scores use strokes minus saved par; lowest complete total wins.",
 			"availability": "available",
-			"milestone": "Phases 2A–2B (scoring 2C planned)",
+			"milestone": "Phases 2A–2C (event scoring)",
 			"dependsOn": ["standings"]
 		},
 		{

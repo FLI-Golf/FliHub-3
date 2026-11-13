@@ -246,7 +246,10 @@
 				<Card.Description>
 					You become its Owner. Pick a starter template for suggested capabilities — you can adjust
 					them here and later in organization settings. Capabilities marked Planned or Upcoming are
-					not implemented software yet.
+					not implemented software yet. Templates suggest a starting configuration; they do not
+					select an activity or add a result method. Available scorekeeping, official results, and
+					standings currently use golf rules. Timing, match scoring, judging, and animal, vehicle,
+					or exhibit entries are planned.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
@@ -330,6 +333,10 @@
 						{#if template === 'race-event'}
 							<div class="flex flex-col gap-2">
 								<span class="text-sm font-medium">Race distances</span>
+								<p class="text-sm text-muted-foreground">
+									Distances are configuration only. Race timing and race results are not
+									implemented.
+								</p>
 								{#each presetList as preset (preset.key)}
 									<label class="flex items-center gap-2 text-sm">
 										<input
