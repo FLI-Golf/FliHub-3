@@ -1,10 +1,14 @@
-import { existsSync } from 'node:fs';
+// Vite discovers these files during the build, including on Netlify.
+const walkthroughFiles = import.meta.glob('/static/walkthroughs/*', {
+	query: '?url',
+	import: 'default'
+});
 import type { PageServerLoad } from './$types';
 
 /**
  * Maps walkthrough routes to their reviewed playback assets (see
  * recordings/README.md). A card links to its walkthrough only when the asset
- * exists on disk; otherwise it shows "Walkthrough coming soon" — never a
+ * is present at build time; otherwise it shows "Walkthrough coming soon" — never a
  * broken link.
  */
 const WALKTHROUGH_ASSETS: Record<string, string[]> = {
@@ -51,7 +55,7 @@ const WALKTHROUGH_ASSETS: Record<string, string[]> = {
 export const load: PageServerLoad = () => {
 	const available: Record<string, boolean> = {};
 	for (const [route, assets] of Object.entries(WALKTHROUGH_ASSETS)) {
-		available[route] = assets.some((asset) => existsSync(asset));
+		available[route] = assets.some((asset) => Object.hasOwn(walkthroughFiles, `/${asset}`));
 	}
 	return { walkthroughAvailable: available };
 };
