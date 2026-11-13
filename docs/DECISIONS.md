@@ -1,5 +1,15 @@
 # Architecture and policy decisions
 
+## Guided setup decision checkpoint — November 13, 2026
+
+The user agreed to a guided organization/competition setup that progressively narrows choices: organization → activity → format → competitors → results → review. Keep these concepts separate in the design; League/Race/Event/Custom is not a sufficient hierarchy for different activities and result methods.
+
+Build a preview first, in a separate implementation commit after this documentation checkpoint. Back/Next preserves answers during navigation, incompatible downstream answers are cleared after an upstream change, and review explains relevant features and actual support. Unsupported paths remain explicitly planned. The prototype performs no database writes, including on the golf path, and does not replace existing organization creation/settings or account activity selection.
+
+An organization may eventually host multiple activities. Initial selections provide defaults, not permanent restrictions. Persistence, competition-level overrides, new entry identities, and result engines remain subject to a later reviewed design. Accounts retain permissions; competing identities need not have accounts. Never create animals or vehicles as athletes by relabeling fields.
+
+This checkpoint establishes the next milestone; earlier notes proposing race timing next are superseded. Existing golf behavior, capability IDs, saved configuration, backend role checks, organization isolation, and published history remain preserved. See the [multi-event plan](README-MULTI-EVENT-PLATFORM.md) for acceptance criteria and [ROADMAP.md](ROADMAP.md) for sequencing.
+
 Decisions are listed newest-last. Each entry records the choice, the reason,
 and the consequence for future work.
 

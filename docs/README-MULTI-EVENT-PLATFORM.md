@@ -1,5 +1,41 @@
 # Multi-Sport and Multi-Event Platform Plan
 
+## Agreed next increment: guided competition setup preview
+
+Decision checkpoint: November 13, 2026. This sequence supersedes the earlier immediate-action and setup-sequence recommendations below. The source assessment remains reference material; the setup-description clarification and direct organization settings link have been completed locally. The wizard described here has not been implemented.
+
+Reuse the existing account activities (Play fantasy, manage an organization, join through an invitation). Add the guided setup within the organization-management path, without changing existing organizations or their settings.
+
+| Step         | Question                                               | Examples                                                                                  |
+| ------------ | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Organization | Who organizes the competition?                         | Organization name and basic context                                                       |
+| Activity     | What will competitors participate in?                  | Disc golf, golf, baseball, bowling, running, darts, billiards, dog show, pageant          |
+| Format       | How will the competition run?                          | League season, tournament, series, single event, judged show                              |
+| Competitors  | What competes?                                         | Individuals, teams, pairs, animals, vehicles, exhibits                                    |
+| Results      | How are results determined?                            | Strokes, elapsed time, points, matches, measurements, judging, voting, placements, awards |
+| Review       | What configuration and support does this path require? | Selected answers, relevant features, support status, next steps                           |
+
+Each answer narrows later choices and supplies relevant wording. Keep activity, format, competing identity, and result method separate even when the interface suggests common combinations. Baseball leagues, bowling leagues, races, and pageants must not all inherit golf course and stroke settings. Internal capability IDs should not be the primary setup language.
+
+Organizations may eventually operate several activities; initial setup is a starting configuration, not a permanent activity restriction. Competition-specific rules and any inheritance from organization defaults still need a reviewed persistence design.
+
+### Prototype boundaries and acceptance criteria
+
+- Provide a separate, reachable preview from organization setup, with a clear return to the existing management flow. It must not replace working organization creation or settings yet.
+- Provide Back/Next, visible progress, required-choice validation, and a final review. Keep entered answers when moving backward and forward; a reload may reset the preview and must be explained. Durable preferences and draft persistence are outside this prototype.
+- If an earlier answer makes later selections incompatible, clear those selections and explain that they must be reviewed. Do not silently submit stale combinations.
+- Narrow choices with relevant descriptions. Treat examples as design suggestions, not complete sporting regulations. Show planned support as soon as a path is selected and again on review.
+- Let the existing golf-oriented path reach the final review. Other paths may also reach a clearly labeled planned-workflow preview. No path creates an organization, competition, entry, result, or preference in this increment.
+- Do not present a generic golf badge as evidence that a selected format or roster model works. Identify supported and planned parts separately; current golf support does not establish arbitrary pairs, brackets, or team rules.
+- Include review examples for bowling league/team/pin totals, individual race/elapsed time, and pageant/contestant/judged criteria. These are previews only.
+- Keep accounts and permission holders separate from competing entries; animals, vehicles, and exhibits must not be written to athlete records.
+- Keep mobile and keyboard operation practical, with labeled controls, visible focus, and clear validation. Never save on Back, Next, or Review.
+- Preserve existing golf, account onboarding, invitations, fantasy, capability gates, server permissions, and deployment behavior. No schema migration or production action is included.
+
+After reviewing the prototype, agree on the mapping and validation for one supported creation path before connecting database writes. Design any genuinely new entry or result workflow separately. Race timing is not the next implementation step yet.
+
+See [DECISIONS.md](DECISIONS.md), [ROADMAP.md](ROADMAP.md), [account onboarding](README-ACCOUNT-ONBOARDING.md), and the [source assessment](MULTI-EVENT-ASSESSMENT.md).
+
 Review checkpoint: see [MULTI-EVENT-ASSESSMENT.md](MULTI-EVENT-ASSESSMENT.md) for source findings and the recommended first increment. Reuse [completed account onboarding](README-ACCOUNT-ONBOARDING.md); account activity choices remain separate from organization/competition configuration. See [DECISIONS.md](DECISIONS.md) and [ROADMAP.md](ROADMAP.md) for boundaries and sequencing.
 
 Status: Proposed direction for review. This document describes planned architecture and product behavior; it does not mean these workflows are implemented.

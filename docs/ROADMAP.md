@@ -1,5 +1,19 @@
 # FliHub roadmap
 
+## Current next milestone: guided setup preview
+
+Agreed November 13, 2026. The setup-description clarification and organization settings link are complete locally. The next implementation is a reviewable multi-step setup preview, before race timing or a schema redesign. This ordering supersedes earlier next-action recommendations elsewhere in the planning documents.
+
+1. Record the agreed flow and prototype boundaries in the planning documents.
+2. Build a separately reachable preview: organization → activity → format → competitors → results → review.
+3. Review branching choices, wording, support labels, preserved answers, and mobile/keyboard behavior. Changing an upstream answer must invalidate incompatible downstream answers.
+4. Only after review, design and connect one supported creation path with server validation. Keep current organization creation available during the prototype.
+5. Select a genuinely new workflow and review its identity, result, publication, and correction model before adding schema migrations.
+
+The preview makes no database writes and does not store durable onboarding preferences. Golf can reach review; unsupported paths can be explored with explicit Planned labels and no creation action. An organization’s initial activity is not a permanent restriction. Reuse existing account activities and preserve all existing settings, golf operations, and permissions.
+
+See the [wizard acceptance criteria](README-MULTI-EVENT-PLATFORM.md#prototype-boundaries-and-acceptance-criteria) and [decision checkpoint](DECISIONS.md#guided-setup-decision-checkpoint--november-13-2026).
+
 This roadmap contains implemented milestones and planned work from [Milestones.md](../Milestones.md). Read each milestone status and checkpoint separately. A capability is only marked complete after its user-visible workflow and access-control behavior are verified end to end.
 
 Current checkpoint: account onboarding and fan creation merged in PR #27; per-event golf fantasy scoring merged in PR #28; Railway preparation merged in PR #29, followed by the deployed walkthrough fix (efa9cc3). Older prepared/pending notes below describe historical checkpoints, not the current event-scoring status.
