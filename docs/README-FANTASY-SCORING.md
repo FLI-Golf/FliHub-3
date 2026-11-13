@@ -1,6 +1,8 @@
 # Golf fantasy standings
 
-Status: Implementation prepared; Codespaces validation pending.
+Status: Per-event golf fantasy scoring implemented, verified locally, and merged in PR #28. Historical validation notes below remain useful for regression checks.
+
+Scope: golf only. Other result methods and entry types remain proposed in the [multi-event plan](README-MULTI-EVENT-PLATFORM.md) and [assessment](MULTI-EVENT-ASSESSMENT.md).
 Plan: [MASTER_SCORING.md](MASTER_SCORING.md).
 
 ## Rules

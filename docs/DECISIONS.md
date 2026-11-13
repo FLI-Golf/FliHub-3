@@ -685,3 +685,11 @@ refuses rollback once scoring rosters have been recorded.
 Implementation is prepared; real PocketBase and Codespaces walkthrough
 verification remains required. See docs/README-FANTASY-SCORING.md and the
 checklist in docs/MASTER_SCORING.md.
+
+## Multi-event planning boundaries — November 13, 2026
+
+The agreed review separates activity, competition format, competing entry, and result method. Reuse completed account onboarding; configuration belongs within organization/competition setup. Accounts and permissions represent people, while competing entries need not have accounts. Do not force animals, vehicles, or exhibits into athlete records.
+
+Preserve golf workflows, organization isolation, backend capability gates, role checks, published history, and missing-never-zero behavior. Labels do not implement timing, judging, match scoring, or new entry types. No broad schema redesign, production data changes, or automatic deployment is included.
+
+The [assessment](MULTI-EVENT-ASSESSMENT.md) recommends setup/catalog clarification first. This is a recommendation, not approval of a new activity, entry schema, or result engine. Activity inheritance, specialized roles, and the first additional workflow remain open in the [multi-event plan](README-MULTI-EVENT-PLATFORM.md). The [onboarding plan](README-ACCOUNT-ONBOARDING.md) contains historical milestones and should not be restarted.
