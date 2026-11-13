@@ -243,6 +243,12 @@
 					<Plus class="size-5" />
 					Create an organization
 				</Card.Title>
+				<a
+					href={resolve('/(app)/organizations/setup-preview')}
+					class="inline-flex min-h-11 w-fit items-center rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-950 underline underline-offset-4 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+				>
+					Try guided setup preview
+				</a>
 				<Card.Description>
 					You become its Owner. Pick a starter template for suggested capabilities — you can adjust
 					them here and later in organization settings. Capabilities marked Planned or Upcoming are
