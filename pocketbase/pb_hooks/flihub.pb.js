@@ -76,7 +76,36 @@ routerAdd(
 		};
 
 		const auth = e.auth;
-		const body = e.requestInfo().body || {};
+		const body = { ...(e.requestInfo().body || {}) };
+		// Guided submissions are validated before any transaction or record writes.
+		// Legacy callers remain compatible; they do not claim a guided activity profile.
+		if (Object.prototype.hasOwnProperty.call(body, 'guidedSetup')) {
+			if (!auth.getBool('verified'))
+				return e.json(403, {
+					code: 'unverified',
+					message: 'Verify your email before creating an organization.'
+				});
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM uses require
+			const { guidedOrganizationPlan } = require(`${__hooks}/guided_organization_rules.js`);
+			const plan = guidedOrganizationPlan(body.guidedSetup, catalog);
+			if (!plan)
+				return e.json(400, {
+					code: 'unsupported_setup',
+					message: 'This guided setup is preview-only.'
+				});
+			if (
+				['template', 'capabilities', 'raceDistances'].some((key) =>
+					Object.prototype.hasOwnProperty.call(body, key)
+				)
+			) {
+				return e.json(400, {
+					code: 'conflicting_setup',
+					message: 'Guided setup derives its own capabilities.'
+				});
+			}
+			Object.assign(body, plan);
+		}
+
 		const name = String(body.name || '').trim();
 		if (name.length < 2 || name.length > 120) {
 			return e.json(400, {
@@ -147,7 +176,8 @@ routerAdd(
 
 			recordEvent(txApp, org.id, auth.id, 'organization_created', auth.id, null, {
 				template: templateId,
-				capabilities
+				capabilities,
+				...(body.guidedSetup ? { guidedSetup: body.guidedSetup } : {})
 			});
 			created = { id: org.id, name: org.getString('name') };
 		});

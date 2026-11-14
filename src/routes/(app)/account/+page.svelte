@@ -71,8 +71,11 @@
 		{#if data.activity === 'organization'}
 			<h1 class="text-2xl font-semibold">Your sports organization</h1>
 			<p>Open your organizations or create one. Creating an organization makes you its Owner.</p>
-			<Button href={`${resolve('/(app)/organizations')}?create=1`} class="self-start"
-				>Continue to organizations</Button
+			<Button href={resolve('/(app)/organizations/new')} class="self-start"
+				>Create an organization</Button
+			>
+			<Button variant="outline" href={resolve('/(app)/organizations')} class="self-start"
+				>Open organizations</Button
 			>
 		{:else if data.activity === 'invitation'}
 			<h1 class="text-2xl font-semibold">Join an invitation</h1>

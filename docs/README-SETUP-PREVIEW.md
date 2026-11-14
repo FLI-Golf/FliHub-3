@@ -1,5 +1,7 @@
 # Guided setup preview
 
+Creation follow-up: [README-GUIDED-CREATION.md](README-GUIDED-CREATION.md) documents the separate writing route. This page remains about the non-writing preview; both routes now share `SetupWizard.svelte`.
+
 Implementation checkpoint: source prepared for local review. Codespaces type/lint/build and browser verification must pass before treating this increment as verified.
 
 Open Organizations and choose **Try guided setup preview**, or visit `/organizations/setup-preview` while signed in. The existing `(app)` layout requires a validated session and preserves the destination through login. The preview adds no loader, server action, endpoint, migration, capability grant, or database request. Existing organization creation and settings stay available.
