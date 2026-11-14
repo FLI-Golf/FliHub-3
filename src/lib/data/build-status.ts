@@ -1,7 +1,7 @@
 /** Shared build label and footer summary; detailed evidence lives in planned-features.ts. */
 export const buildStatus = {
 	label: 'Phase 2C',
-	scope: 'Golf workflows available · Multi-event planning',
+	scope: 'Golf workflows and guided creation available · Additional workflows planned',
 	summary:
-		'FliHub · Golf event operations, published results, drafts, and fantasy standings available today. Multi-sport and judged-event support is being planned.'
+		'FliHub · Guided disc-golf organization creation, golf operations, published results, drafts, and fantasy standings are available. Additional activity and result workflows remain planned.'
 } as const;

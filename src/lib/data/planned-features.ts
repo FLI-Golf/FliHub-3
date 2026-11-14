@@ -39,14 +39,26 @@ export interface Capability {
 
 export const capabilities: Capability[] = [
 	{
-		title: 'Adaptable organization setup',
+		title: 'Guided disc-golf organization setup',
 		description:
-			'Next focus: plan setup around the activity, competition format, entry type, and result method.',
-		milestone: 'Multi-event plan · next focus',
-		status: 'planned',
+			'Choose an activity, format, competitors, and result method through a six-step wizard.',
+		milestone: 'Guided creation · merged PR #32',
+		status: 'complete',
 		progress:
-			'Existing account activities, organization templates, and shared capabilities provide the starting point. The next step is to review those foundations and agree on the first additional workflow before implementation.',
-		next: 'Keep golf working while designing clearer choices for sports, races, shows, and other competitions.'
+			'Disc golf → League season → Teams → Strokes creates an organization and Owner membership with the existing golf capabilities. SvelteKit and PocketBase validate the supported mapping. Other combinations remain previews; no league, season, event, or result is created automatically.',
+		next: 'Use the organization setup guide to configure the league, season, teams, athletes, course, and event.',
+		featureHref: '/organizations/new'
+	},
+	{
+		title: 'Organization setup checklist',
+		description:
+			'A read-only guide from a newly created disc-golf organization to its first competition.',
+		milestone: 'Post-creation guidance · local review',
+		status: 'ready-to-verify',
+		progress:
+			'Owners/Admins of supported wizard-created organizations receive links to existing setup tools and organization-scoped record counts. Records found is not a readiness or completion claim. Disabled capabilities point to settings; unavailable counts remain Not checked.',
+		next: 'Verify links, role restrictions, disabled capabilities, and record counts locally before marking the guide complete.',
+		featureHref: '/organizations'
 	},
 	{
 		title: 'Multiple sports and judged events',

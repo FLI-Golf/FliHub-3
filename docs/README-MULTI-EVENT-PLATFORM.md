@@ -1,6 +1,14 @@
 # Multi-Sport and Multi-Event Platform Plan
 
-## Agreed next increment: guided competition setup preview
+## Current checkpoint — November 14, 2026
+
+The guided wizard and supported Disc golf → League season → Teams → Strokes organization creation were implemented and merged through PRs #31 and #32. See [README-GUIDED-CREATION.md](README-GUIDED-CREATION.md). Other combinations remain previews; specialized entry and result workflows are not implemented.
+
+The next local increment is a read-only setup checklist for Owners/Admins of organizations with the supported guided-creation audit profile. It links existing competition tools and shows non-archived record counts, never a completion or event-readiness percentage. No schema, result method, permissions, or capability defaults change. See [README-ORGANIZATION-SETUP-CHECKLIST.md](README-ORGANIZATION-SETUP-CHECKLIST.md) for verification and limitations.
+
+The original prototype-only acceptance criteria below are historical and do not override the separately validated creation path.
+
+## Original agreed increment: guided competition setup preview (historical)
 
 Decision checkpoint: November 13, 2026. This sequence supersedes the earlier immediate-action and setup-sequence recommendations below. The source assessment remains reference material; the setup-description clarification and direct organization settings link have been completed locally. The wizard described here has not been implemented.
 

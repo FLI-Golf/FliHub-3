@@ -1127,6 +1127,44 @@ export const actions: Actions = {
 		return { restored: true };
 	},
 
+	/** Final wizard submission; PocketBase creates both records transactionally. */
+	setupLeagueSeason: async ({ locals, request, params }) => {
+		const form = await request.formData();
+		const input = {
+			mode: String(form.get('mode') ?? ''),
+			leagueName: String(form.get('leagueName') ?? ''),
+			leagueId: String(form.get('leagueId') ?? ''),
+			seasonName: String(form.get('seasonName') ?? ''),
+			startsOn: String(form.get('startsOn') ?? ''),
+			endsOn: String(form.get('endsOn') ?? ''),
+			purseAmount: String(form.get('purseAmount') ?? '')
+		};
+		const denied = (status: number, message: string) =>
+			fail(status, { setupLeagueSeason: true, message, input });
+		if (!locals.pb || !locals.user) return denied(503, 'PocketBase is not configured.');
+		if (params.capability !== 'leagues-seasons' || !ID_PATTERN.test(params.id))
+			return denied(400, 'Use the Leagues & seasons setup page.');
+		try {
+			const created = await locals.pb.send<{
+				leagueId: string;
+				leagueName: string;
+				seasonId: string;
+				seasonName: string;
+			}>(`/api/flihub/organizations/${params.id}/league-season-setup`, {
+				method: 'POST',
+				body: input
+			});
+			return {
+				setupLeagueSeason: true,
+				setupLeagueSeasonCreated: true,
+				leagueName: created.leagueName,
+				seasonName: created.seasonName
+			};
+		} catch (err) {
+			return denied(pbErrorStatus(err), pbErrorMessage(err));
+		}
+	},
+
 	// --- Phase 1D: leagues ----------------------------------------------------
 	createLeague: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
