@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { buildStatus } from '$lib/data/build-status';
+	import InvitationNotice from '$lib/components/InvitationNotice.svelte';
 	import './layout.css';
 	import logoIcon from '#lib/assets/logos/logo_f.png';
 	import { resolve } from '$app/paths';
@@ -39,6 +40,10 @@
 				{#if data.user}
 					<Button variant="ghost" href={`${resolve('/(app)/account')}?choose=1`}>Activities</Button>
 					<Button variant="ghost" href={resolve('/(app)/organizations')}>Organizations</Button>
+					<a
+						class="inline-flex min-h-9 items-center rounded-md px-3 text-sm font-medium underline underline-offset-4"
+						href={resolve('/(app)/invitations')}>Invitations</a
+					>
 					{#if activeMembership}
 						<Badge variant="outline" class="gap-1">
 							{activeMembership.organization.name} · {roleLabel(activeMembership.role)}
@@ -63,6 +68,10 @@
 				<Button variant="ghost" size="sm" href={resolve('/(app)/organizations')}
 					>Organizations</Button
 				>
+				<a
+					class="inline-flex min-h-9 shrink-0 items-center rounded-md px-3 text-sm font-medium underline underline-offset-4"
+					href={resolve('/(app)/invitations')}>Invitations</a
+				>
 				{#if activeMembership}
 					<Badge variant="outline" class="gap-1 text-xs">
 						{activeMembership.organization.name} · {roleLabel(activeMembership.role)}
@@ -80,6 +89,9 @@
 	</header>
 
 	<main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+		{#if data.user?.verified}
+			{#key data.user.id}<InvitationNotice />{/key}
+		{/if}
 		{@render children()}
 	</main>
 

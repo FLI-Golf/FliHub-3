@@ -402,7 +402,7 @@ routerAdd(
 );
 
 // ---------------------------------------------------------------------------
-// POST /api/flihub/invitations/accept { token }
+// POST /api/flihub/invitations/accept { token } OR { invitationId }
 // Atomic acceptance: validates recipient, verification, expiry, revocation,
 // single use, and duplicate membership inside one transaction.
 // ---------------------------------------------------------------------------
@@ -441,10 +441,18 @@ routerAdd(
 		const auth = e.auth;
 		const body = e.requestInfo().body || {};
 		const token = String(body.token || '');
-		if (!token) {
-			return e.json(400, { code: 'invalid_token', message: 'Missing invitation token.' });
+		const invitationId = String(body.invitationId || '');
+		if ((!token && !invitationId) || (token && invitationId)) {
+			return e.json(400, { code: 'invalid_token', message: 'Provide one invitation reference.' });
 		}
-		const hash = $security.sha256(token);
+		if (invitationId && !/^[a-z0-9]{15}$/.test(invitationId))
+			return e.json(400, { code: 'invalid_invitation', message: 'Invalid invitation reference.' });
+		if (invitationId && !auth.getBool('verified'))
+			return e.json(403, {
+				code: 'email_not_verified',
+				message: 'Verify your email address before accepting invitations.'
+			});
+		const hash = token ? $security.sha256(token) : null;
 
 		let result = null;
 		let failure = null;
@@ -452,9 +460,13 @@ routerAdd(
 			e.app.runInTransaction((txApp) => {
 				let invitation = null;
 				try {
-					invitation = txApp.findFirstRecordByFilter('invitations', 'token_hash = {:hash}', {
-						hash
-					});
+					// An ID is not a bearer credential: match the verified recipient inside the transaction.
+					invitation = invitationId
+						? txApp.findFirstRecordByFilter('invitations', 'id = {:id} && email = {:email}', {
+								id: invitationId,
+								email: normalizeEmail(auth.getString('email'))
+							})
+						: txApp.findFirstRecordByFilter('invitations', 'token_hash = {:hash}', { hash });
 				} catch (_) {
 					failure = {
 						status: 404,
@@ -481,7 +493,11 @@ routerAdd(
 					};
 					return;
 				}
-				if (parsePbDate(invitation.getString('expires_at')) <= Date.now()) {
+				if (
+					status !== 'pending' ||
+					!Number.isFinite(parsePbDate(invitation.getString('expires_at'))) ||
+					parsePbDate(invitation.getString('expires_at')) <= Date.now()
+				) {
 					failure = {
 						status: 410,
 						code: 'invitation_expired',
