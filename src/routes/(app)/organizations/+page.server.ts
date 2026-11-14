@@ -1,19 +1,13 @@
 import { teeDisplay, type TeeSchedule } from '$lib/tee-times';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import {
-	listMyMemberships,
-	pbErrorMessage,
-	pbErrorStatus,
-	setActiveOrgCookie,
-	toOrganizationDTO
-} from '$lib/server/auth';
-import { capabilityDefinitions, templates } from '$lib/capabilities/catalog';
+import { listMyMemberships, setActiveOrgCookie, toOrganizationDTO } from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
+	if (url.searchParams.get('create') === '1') redirect(303, '/organizations/new');
 	const memberships =
 		locals.pb && locals.user ? await listMyMemberships(locals.pb, locals.user.id) : [];
-	if (memberships.length === 0 && url.searchParams.get('create') !== '1') {
+	if (memberships.length === 0) {
 		redirect(303, '/account');
 	}
 	const scorekeeperView =
@@ -97,57 +91,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	return {
 		scorekeeperView,
-		assignments,
-		catalog: {
-			templates,
-			capabilities: capabilityDefinitions
-		}
+		assignments
 	};
 };
 
 export const actions: Actions = {
-	/**
-	 * Creates an organization through the trusted PocketBase hook, which
-	 * atomically creates the Owner membership. Phase 1B: optionally carries the
-	 * starter template, capability selection, and race distances. The new
-	 * organization becomes the active one.
-	 */
-	create: async ({ locals, request, cookies }) => {
-		if (!locals.pb || !locals.user) {
-			return fail(503, { message: 'PocketBase is not configured.', name: '' });
-		}
-		const form = await request.formData();
-		const name = String(form.get('name') ?? '').trim();
-
-		const template = String(form.get('template') ?? '');
-		const body: Record<string, unknown> = { name };
-		if (template) {
-			body.template = template;
-			body.capabilities = form.getAll('capability').map(String);
-			const rawDistances = String(form.get('raceDistances') ?? '');
-			if (rawDistances) {
-				try {
-					body.raceDistances = JSON.parse(rawDistances);
-				} catch {
-					return fail(400, { message: 'Invalid race distance configuration.', name });
-				}
-			}
-		}
-
-		let organizationId: string;
-		try {
-			const result = await locals.pb.send<{ id: string }>('/api/flihub/organizations', {
-				method: 'POST',
-				body
-			});
-			organizationId = result.id;
-		} catch (err) {
-			return fail(pbErrorStatus(err), { message: pbErrorMessage(err), name });
-		}
-
-		setActiveOrgCookie(cookies, organizationId);
-		redirect(303, `/organizations/${organizationId}`);
-	},
+	/** Old browser forms cannot bypass the guided creation screen. */
+	create: async () =>
+		fail(400, { message: 'Use Create an organization to complete guided setup.' }),
 
 	/**
 	 * Switches the active organization. The choice is honored only when the
