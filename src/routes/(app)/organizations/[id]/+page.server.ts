@@ -8,6 +8,7 @@ import {
 	toOrganizationDTO
 } from '$lib/server/auth';
 import { capabilityDefinitions } from '$lib/capabilities/catalog';
+import { loadSetupChecklist } from '$lib/setup/checklist';
 
 interface MemberDTO {
 	id: string;
@@ -87,6 +88,7 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 		};
 	});
 
+	let setupChecklist: Awaited<ReturnType<typeof loadSetupChecklist>> = null;
 	let invitations: InvitationDTO[] | null = null;
 	let events: MembershipEventDTO[] | null = null;
 	if (canManage) {
@@ -108,6 +110,13 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 			expand: 'actor,subject_user',
 			sort: '-created'
 		});
+		setupChecklist = await loadSetupChecklist(pb, {
+			canManage,
+			organizationId: params.id,
+			capabilities: toOrganizationDTO(organization).capabilities,
+			creationDetails: eventRecords.find((record) => record.action === 'organization_created')
+				?.details
+		});
 		events = eventRecords.map((e) => {
 			const details = e.details;
 			return {
@@ -128,6 +137,7 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 		organization: toOrganizationDTO(organization),
 		myRole,
 		canManage,
+		setupChecklist,
 		enabledCapabilities: capabilityDefinitions.filter((c) =>
 			toOrganizationDTO(organization).capabilities.includes(c.id)
 		),

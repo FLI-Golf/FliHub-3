@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatSeasonPurse, seasonPurseInput } from '$lib/season-purse';
+	import LeagueSeasonSetup from '$lib/components/LeagueSeasonSetup.svelte';
 	import {
 		CircleAlert,
 		Pencil,
@@ -77,7 +78,9 @@
 		form && typeof form === 'object' ? (form as Record<string, unknown>) : null
 	);
 	const message = $derived(
-		formRecord && 'message' in formRecord ? String(formRecord.message) : null
+		formRecord && !('setupLeagueSeason' in formRecord) && 'message' in formRecord
+			? String(formRecord.message)
+			: null
 	);
 
 	const activeTeams = $derived(teams.filter((t) => t.status === 'active'));
@@ -106,6 +109,10 @@
 			<Alert.Title>Action failed</Alert.Title>
 			<Alert.Description>{message}</Alert.Description>
 		</Alert.Root>
+	{/if}
+
+	{#if canManage}
+		<LeagueSeasonSetup {leagues} {form} />
 	{/if}
 
 	<!-- Leagues -->
@@ -185,19 +192,6 @@
 				</div>
 			{/each}
 		</Card.Content>
-		{#if canManage}
-			<Card.Footer>
-				<form method="POST" action="?/createLeague" class="flex w-full flex-wrap items-end gap-3">
-					<div class="flex min-w-48 flex-1 flex-col gap-1.5">
-						<Label for="league-name">New league</Label>
-						<Input id="league-name" name="name" required maxlength={120} />
-					</div>
-					<Button type="submit">
-						<Plus class="mr-1 size-4" /> Add league
-					</Button>
-				</form>
-			</Card.Footer>
-		{/if}
 	</Card.Root>
 
 	<!-- Seasons (with divisions and team entries) -->
@@ -409,60 +403,6 @@
 				</section>
 			{/each}
 		</Card.Content>
-		{#if canManage}
-			<Card.Footer>
-				<form method="POST" action="?/createSeason" class="grid w-full gap-3 sm:grid-cols-2">
-					<div class="flex flex-col gap-1.5">
-						<Label for="season-league">League</Label>
-						<select
-							id="season-league"
-							name="league"
-							required
-							class="h-9 rounded-md border bg-background px-2 text-sm"
-						>
-							<option value="" disabled selected>Select a league</option>
-							{#each leagues.filter((l) => l.status === 'active') as league (league.id)}
-								<option value={league.id}>{league.name}</option>
-							{/each}
-						</select>
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="season-name">Season name</Label>
-						<Input id="season-name" name="name" required maxlength={120} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="season-starts">Starts on (optional)</Label>
-						<Input id="season-starts" name="startsOn" type="date" />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="season-ends">Ends on (optional)</Label>
-						<Input id="season-ends" name="endsOn" type="date" />
-					</div>
-
-					<div class="flex flex-col gap-1.5">
-						<Label for="season-purse">Season purse (USD, optional)</Label>
-						<Input
-							id="season-purse"
-							name="purseAmount"
-							type="text"
-							inputmode="decimal"
-							pattern={'[0-9]+([.][0-9]{1,2})?'}
-							placeholder="6000000.00"
-							aria-describedby="season-purse-help"
-						/>
-						<p id="season-purse-help" class="text-xs text-muted-foreground">
-							Enter dollars with up to two decimal places, without commas. Leave blank for no purse
-							set.
-						</p>
-					</div>
-					<div>
-						<Button type="submit">
-							<Plus class="mr-1 size-4" /> Add season
-						</Button>
-					</div>
-				</form>
-			</Card.Footer>
-		{/if}
 	</Card.Root>
 
 	{#if !canManage}

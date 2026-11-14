@@ -9,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import OrgNav from '$lib/components/OrgNav.svelte';
+	import OrganizationSetupChecklist from '$lib/components/OrganizationSetupChecklist.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -70,6 +71,13 @@
 			current="overview"
 		/>
 	</div>
+
+	{#if canManage && data.setupChecklist}
+		<OrganizationSetupChecklist
+			organizationId={data.organization.id}
+			checklist={data.setupChecklist}
+		/>
+	{/if}
 
 	{#if !data.organization.onboarded && canManage}
 		<Alert.Root>

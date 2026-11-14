@@ -226,15 +226,15 @@
 					>
 				</div>
 				<Card.Header
-					><Badge variant="secondary" class="w-fit">Next focus · planning</Badge><Card.Title
+					><Badge variant="secondary" class="w-fit">Guided setup · available</Badge><Card.Title
 						>Adaptable organization setup</Card.Title
 					></Card.Header
 				></summary
 			>
 			<Card.Content class="text-sm text-muted-foreground"
-				>Build on existing onboarding and templates. Separate the activity, competition format,
-				entry type, and result method. Review the shared capability catalog before implementing the
-				next workflow.</Card.Content
+				>Guided setup now separates activity, format, competitors, and results. Disc golf → League
+				season → Teams → Strokes can create an organization. Other combinations remain previews;
+				timing, judging, match scoring, and new entry types are planned.</Card.Content
 			>
 		</details></Card.Root
 	>
@@ -510,9 +510,9 @@ POCKETBASE_URL=http://127.0.0.1:8090</code
 		<h2 class="text-xl font-semibold tracking-tight">Progress & upcoming work</h2>
 	</div>
 	<p class="max-w-2xl text-muted-foreground">
-		Planned work appears first, followed by the available foundation and its walkthroughs.
-		Multi-event design is our next focus; new event workflows are not available yet. A capability is
-		marked Complete only after its workflow and access control are verified end to end.
+		Guided disc-golf organization creation is available. The setup checklist is ready for local
+		verification; additional activity and result workflows remain planned. A capability is marked
+		Complete only after its workflow and access control are verified end to end.
 	</p>
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each capabilities as capability (capability.title)}
