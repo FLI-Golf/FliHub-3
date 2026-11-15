@@ -1,3 +1,4 @@
+import { loadOrganizationNavigationCounts } from '$lib/server/organization-navigation-counts';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
@@ -133,7 +134,21 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 		});
 	}
 
+	const navigationOrganization = toOrganizationDTO(organization);
+	const navigationCounts = await loadOrganizationNavigationCounts(pb, {
+		organizationId: params.id,
+		userId: user.id,
+		isMember: true,
+		enabled: capabilityDefinitions
+			.filter(
+				(item) =>
+					item.availability === 'available' && navigationOrganization.capabilities.includes(item.id)
+			)
+			.map((item) => item.id)
+	});
+
 	return {
+		navigationCounts,
 		organization: toOrganizationDTO(organization),
 		myRole,
 		canManage,

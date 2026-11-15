@@ -240,11 +240,23 @@
 					<form method="POST" action="?/importRosters" class="flex flex-col items-start gap-2">
 						<input type="hidden" name="season" value={season.id} />
 						<Label for="roster-csv">Paste roster CSV</Label>
-						<p id="roster-csv-help" class="text-sm text-muted-foreground">
-							One athlete per line. Use team, first name, last name separated by commas. Repeat the
-							team name for every athlete. Skip the header and paste the reply as-is. Existing
-							matching assignments are skipped.
-						</p>
+						<div
+							id="roster-csv-help"
+							class="space-y-2 rounded-lg border border-red-200 bg-red-50/50 p-4 text-sm text-muted-foreground"
+						>
+							<p>
+								<strong class="text-red-900">Before importing rosters:</strong>
+								Import your athletes, then enter your teams into this season on
+								<strong class="text-red-900">
+									Leagues &amp; seasons → Spring 2027 → Team entries
+								</strong>. Creating organization teams does not enter them into a season.
+							</p>
+							<p>
+								One athlete per line. Use <code>team,firstName,lastName</code>, repeating the team
+								name for each athlete. Skip the header and paste the reply as-is. Existing matching
+								assignments are skipped.
+							</p>
+						</div>
 						<textarea
 							id="roster-csv"
 							name="csv"

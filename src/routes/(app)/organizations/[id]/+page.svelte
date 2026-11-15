@@ -7,6 +7,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { ShieldCheck, Settings } from 'lucide-svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import OrgNav from '$lib/components/OrgNav.svelte';
 	import OrganizationSetupChecklist from '$lib/components/OrganizationSetupChecklist.svelte';
@@ -54,17 +55,24 @@
 		</Button>
 		<div class="flex flex-wrap items-center gap-3">
 			<h1 class="text-2xl font-semibold tracking-tight">{data.organization.name}</h1>
-			<Badge variant="secondary">Your role: {roleLabel(data.myRole)}</Badge>
+
+			<Badge variant="secondary" class="gap-1.5">
+				<ShieldCheck class="size-4" aria-hidden="true" />
+				Your role: {roleLabel(data.myRole)}
+			</Badge>
+
 			{#if canManage}
 				<a
 					href={resolve('/(app)/organizations/[id]/settings', { id: data.organization.id })}
-					class="inline-flex min-h-11 items-center rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-950 underline underline-offset-4 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+					class="inline-flex min-h-11 items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-950 underline underline-offset-4 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 				>
+					<Settings class="size-4 shrink-0" aria-hidden="true" />
 					Organization settings
 				</a>
 			{/if}
 		</div>
 		<OrgNav
+			counts={data.navigationCounts}
 			orgId={data.organization.id}
 			enabledCapabilities={data.enabledCapabilities}
 			canManage={data.canManage}

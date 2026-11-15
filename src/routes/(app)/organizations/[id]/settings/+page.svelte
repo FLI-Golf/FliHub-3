@@ -88,6 +88,7 @@
 			{data.organization.name} — settings
 		</h1>
 		<OrgNav
+			counts={data.navigationCounts}
 			orgId={data.organization.id}
 			enabledCapabilities={enabledCaps}
 			canManage={data.canManage}

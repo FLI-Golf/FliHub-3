@@ -34,6 +34,7 @@
 			{data.organization.name} — {data.capability.label}
 		</h1>
 		<OrgNav
+			counts={data.navigationCounts}
 			orgId={data.organization.id}
 			enabledCapabilities={data.enabledCapabilities}
 			canManage={data.canManage}
