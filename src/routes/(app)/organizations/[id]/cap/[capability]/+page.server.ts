@@ -1,3 +1,4 @@
+import { loadOrganizationNavigationCounts } from '$lib/server/organization-navigation-counts';
 import { parseSeasonPurse } from '$lib/season-purse';
 import { toTeeInstant, type TeeSchedule } from '$lib/tee-times';
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
@@ -662,7 +663,17 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		}
 	}
 
+	const navigationCounts = await loadOrganizationNavigationCounts(pb, {
+		organizationId: params.id,
+		userId: user.id,
+		isMember: true,
+		enabled: capabilityDefinitions
+			.filter((item) => item.availability === 'available' && dto.capabilities.includes(item.id))
+			.map((item) => item.id)
+	});
+
 	return {
+		navigationCounts,
 		organization: dto,
 		myRole,
 		canManage: myRole === 'owner' || myRole === 'admin',
