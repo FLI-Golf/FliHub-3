@@ -17,7 +17,7 @@
 		'leagues-seasons': 'Open Leagues & seasons',
 		teams: 'Open Teams & rosters',
 		athletes: 'Open Athletes',
-		'venues-courses': 'Open Venues & courses',
+		'venues-courses': 'Open Courses',
 		events: 'Open Events'
 	};
 	const labels = {

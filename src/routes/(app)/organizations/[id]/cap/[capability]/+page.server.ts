@@ -1,3 +1,5 @@
+import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
+import type { GuidedEventInput } from '$lib/event-setup/types';
 import { loadOrganizationNavigationCounts } from '$lib/server/organization-navigation-counts';
 import { parseSeasonPurse } from '$lib/season-purse';
 import { toTeeInstant, type TeeSchedule } from '$lib/tee-times';
@@ -291,6 +293,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 	let eventsData = null;
 	if (capability.id === 'events' && enabled) {
+		let wizardReadFailure = false;
 		const filter = `organization = "${params.id}"`;
 		const [
 			eventRows,
@@ -318,36 +321,60 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			pb
 				.collection('season_entries')
 				.getFullList({ filter, sort: 'id' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb
 				.collection('teams')
 				.getFullList({ filter, sort: 'name' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb
 				.collection('athletes')
 				.getFullList({ filter, sort: 'lastName,firstName' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb.collection('memberships').getFullList({ filter, expand: 'user' }),
 			pb
 				.collection('roster_memberships')
 				.getFullList({ filter, sort: 'created' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb
 				.collection('substitutions')
 				.getFullList({ filter, sort: '-created' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb
 				.collection('courses')
 				.getFullList({ filter, sort: 'name' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb
 				.collection('course_holes')
 				.getFullList({ filter, sort: 'number' })
-				.catch(() => []),
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				}),
 			pb
 				.collection('hole_positions')
 				.getFullList({ filter, sort: 'label' })
-				.catch(() => [])
+				.catch(() => {
+					wizardReadFailure = true;
+					return [];
+				})
 		]);
 		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
 		const teamName = new Map(teamRows.map((t) => [t.id, String(t.name ?? '')]));
@@ -366,8 +393,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			])
 		);
 		eventsData = {
+			currentUserId: user.id,
+			setupLoadError: wizardReadFailure
+				? 'Some setup records could not be loaded. Refresh before using guided creation.'
+				: null,
 			events: eventRows.map((ev) => ({
 				id: ev.id,
+				venueName: String(ev.venueName ?? ''),
+				venueAddress: String(ev.venueAddress ?? ''),
 				season: String(ev.season ?? '') || null,
 				seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
 				name: String(ev.name ?? ''),
@@ -377,6 +410,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			})),
 			seasons: seasonRows.map((s) => ({
 				id: s.id,
+				status: String(s.status ?? ''),
 				name: String(s.name ?? ''),
 				startsOn: String(s.startsOn ?? '') || null,
 				endsOn: String(s.endsOn ?? '') || null
@@ -419,6 +453,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			})),
 			entries: entryRows.map((en) => ({
 				id: en.id,
+				teamActive: teamRows.some(
+					(team) => team.id === String(en.team) && team.status === 'active'
+				),
 				season: String(en.season ?? ''),
 				team: String(en.team ?? ''),
 				teamName: teamName.get(String(en.team ?? '')) ?? '',
@@ -426,6 +463,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			})),
 			rosterMemberships: rosterRows.map((m) => ({
 				entry: String(m.entry ?? ''),
+				athleteActive: athleteRows.some(
+					(athlete) => athlete.id === String(m.athlete) && athlete.status === 'active'
+				),
 				athlete: String(m.athlete ?? ''),
 				athleteName: athleteName.get(String(m.athlete ?? '')) ?? '',
 				status: (String(m.status) || 'active') as 'active' | 'archived'
@@ -471,7 +511,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 								.sort((a, b) => a - b)
 						}))
 						.sort((a, b) => a.label.localeCompare(b.label));
-					return { id: c.id, name: String(c.name ?? ''), labels };
+					return {
+						id: c.id,
+						name: String(c.name ?? ''),
+						labels,
+						holeIds: activeHoles.map((hole) => hole.id)
+					};
 				})
 		};
 	}
@@ -727,6 +772,41 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+	createGuidedEvent: async ({ locals, request, params }) => {
+		const raw = String((await request.formData()).get('guidedEvent') ?? '');
+		const denied = (status: number, message: string) =>
+			fail(status, {
+				guidedEventSetup: true,
+				message,
+				payload: raw.length <= 2000000 ? raw : ''
+			});
+		if (!locals.pb || !locals.user) return denied(503, 'PocketBase is not configured.');
+		if (params.capability !== 'events' || !ID_PATTERN.test(params.id))
+			return denied(400, 'Use the Events setup page.');
+		if (!raw || raw.length > 2000000)
+			return denied(400, 'The guided setup payload is missing or too large.');
+		let input: unknown;
+		try {
+			input = prepareGuidedTeeTimes(JSON.parse(raw) as GuidedEventInput);
+		} catch (err) {
+			return denied(400, err instanceof Error ? err.message : 'Invalid guided event input.');
+		}
+		try {
+			const result = await locals.pb.send<{ eventId: string; name: string }>(
+				`/api/flihub/organizations/${params.id}/guided-event`,
+				{ method: 'POST', body: input as Record<string, unknown> }
+			);
+			return {
+				guidedEventSetup: true,
+				guidedEventCreated: true,
+				guidedEventId: result.eventId,
+				guidedEventName: result.name
+			};
+		} catch (err) {
+			return denied(pbErrorStatus(err), pbErrorMessage(err));
+		}
+	},
+
 	saveTeeSchedule: async ({ locals, request, params }) => {
 		const pb = locals.pb;
 		if (!pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
@@ -734,11 +814,15 @@ export const actions: Actions = {
 		try {
 			const round = await pb.collection('rounds').getOne(String(form.get('round') ?? ''));
 			if (round.organization !== params.id || round.status !== 'active')
-				return fail(400, { message: 'Choose an active round in this organization.' });
+				return fail(400, {
+					message: 'Choose an active round in this organization.'
+				});
 			const timeZone = String(form.get('timeZone') ?? '');
 			const intervalMinutes = Number(form.get('interval'));
 			if (!Number.isInteger(intervalMinutes) || intervalMinutes < 1 || intervalMinutes > 240)
-				return fail(400, { message: 'Use an interval from 1 to 240 whole minutes.' });
+				return fail(400, {
+					message: 'Use an interval from 1 to 240 whole minutes.'
+				});
 			const ids = form.getAll('group').map(String);
 			const times = form.getAll('teeTime').map(String);
 			if (!ids.length || ids.length !== times.length)
@@ -774,10 +858,14 @@ export const actions: Actions = {
 
 	activateDemoScorekeeper: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) {
-			return fail(503, { scorekeeperInviteError: 'PocketBase is not configured.' });
+			return fail(503, {
+				scorekeeperInviteError: 'PocketBase is not configured.'
+			});
 		}
 		if (params.id !== '4ksk16f64guhf21') {
-			return fail(403, { scorekeeperInviteError: 'Demo activation is limited to Bobs Org.' });
+			return fail(403, {
+				scorekeeperInviteError: 'Demo activation is limited to Bobs Org.'
+			});
 		}
 		const form = await request.formData();
 		const invitationId = String(form.get('invitation') ?? '');
@@ -790,14 +878,18 @@ export const actions: Actions = {
 			});
 			return { scorekeeperActivationMessage: 'Demo scorekeeper activated.' };
 		} catch (err) {
-			return fail(pbErrorStatus(err), { scorekeeperInviteError: pbErrorMessage(err) });
+			return fail(pbErrorStatus(err), {
+				scorekeeperInviteError: pbErrorMessage(err)
+			});
 		}
 	},
 
 	bulkInviteScorekeepers: async ({ locals, request, params, url }) => {
 		const pb = locals.pb;
 		if (!pb || !locals.user) {
-			return fail(503, { scorekeeperInviteError: 'PocketBase is not configured.' });
+			return fail(503, {
+				scorekeeperInviteError: 'PocketBase is not configured.'
+			});
 		}
 		const form = await request.formData();
 		const lines = String(form.get('csv') ?? '')
@@ -806,7 +898,9 @@ export const actions: Actions = {
 			.filter(Boolean);
 
 		if (!lines.length || lines.length > 50) {
-			return fail(400, { scorekeeperInviteError: 'Enter between 1 and 50 email rows.' });
+			return fail(400, {
+				scorekeeperInviteError: 'Enter between 1 and 50 email rows.'
+			});
 		}
 		const invalid = lines.findIndex(
 			(email) => email.length > 254 || !/^[^\s@,;"<>]+@[^\s@,;"<>]+\.[^\s@,;"<>]+$/.test(email)
@@ -834,7 +928,9 @@ export const actions: Actions = {
 				});
 			}
 		} catch (err) {
-			return fail(pbErrorStatus(err), { scorekeeperInviteError: pbErrorMessage(err) });
+			return fail(pbErrorStatus(err), {
+				scorekeeperInviteError: pbErrorMessage(err)
+			});
 		}
 
 		const results: { email: string; link: string | null; message: string }[] = [];
@@ -1082,7 +1178,9 @@ export const actions: Actions = {
 			});
 		}
 		if (new Set(names.map((name) => name.toLowerCase())).size !== names.length) {
-			return fail(400, { message: 'Remove duplicate team names from the import and try again.' });
+			return fail(400, {
+				message: 'Remove duplicate team names from the import and try again.'
+			});
 		}
 
 		let imported = 0;
@@ -1204,7 +1302,9 @@ export const actions: Actions = {
 			if (league.organization !== params.id) {
 				return fail(403, { message: 'Choose a league in this organization.' });
 			}
-			await locals.pb.send(`/api/flihub/leagues/${leagueId}/delete-empty`, { method: 'POST' });
+			await locals.pb.send(`/api/flihub/leagues/${leagueId}/delete-empty`, {
+				method: 'POST'
+			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
@@ -1275,7 +1375,9 @@ export const actions: Actions = {
 		if (!purse.ok) return fail(400, { message: purse.message });
 		const status = String(form.get('status') ?? 'planned');
 		if (!['planned', 'active', 'completed'].includes(status)) {
-			return fail(400, { message: 'Season status must be planned, active, or completed.' });
+			return fail(400, {
+				message: 'Season status must be planned, active, or completed.'
+			});
 		}
 		try {
 			await locals.pb.collection('seasons').update(String(form.get('season') ?? ''), {
@@ -1437,7 +1539,9 @@ export const actions: Actions = {
 			const endsAt = multiDay ? String(form.get('endsAt') ?? '') : '';
 			if (multiDay) {
 				if (!startsAt || !endsAt) {
-					return fail(400, { message: 'Multi-day events require a start and end.' });
+					return fail(400, {
+						message: 'Multi-day events require a start and end.'
+					});
 				}
 				const endMessage = eventDateMessage(
 					endsAt,
@@ -1450,7 +1554,9 @@ export const actions: Actions = {
 				);
 				if (endMessage) return fail(400, { message: endMessage });
 				if (new Date(endsAt + 'Z').getTime() <= new Date(startsAt + 'Z').getTime()) {
-					return fail(400, { message: 'The event end must be after its start.' });
+					return fail(400, {
+						message: 'The event end must be after its start.'
+					});
 				}
 			}
 
@@ -1458,6 +1564,10 @@ export const actions: Actions = {
 				organization: params.id,
 				season: String(form.get('season') ?? '') || null,
 				name: String(form.get('name') ?? '').trim(),
+				...(form.has('venueName') ? { venueName: String(form.get('venueName') ?? '').trim() } : {}),
+				...(form.has('venueAddress')
+					? { venueAddress: String(form.get('venueAddress') ?? '').trim() }
+					: {}),
 				status: 'planned',
 				startsAt: startsAt ? new Date(startsAt + 'Z').toISOString() : null,
 				endsAt: endsAt ? new Date(endsAt + 'Z').toISOString() : null
@@ -1480,7 +1590,9 @@ export const actions: Actions = {
 		});
 		const status = String(form.get('status') ?? 'planned');
 		if (!['planned', 'active', 'completed'].includes(status)) {
-			return fail(400, { message: 'Event status must be planned, active, or completed.' });
+			return fail(400, {
+				message: 'Event status must be planned, active, or completed.'
+			});
 		}
 		try {
 			const seasonId = String(form.get('season') ?? '');
@@ -1506,7 +1618,9 @@ export const actions: Actions = {
 			const endsAt = multiDay ? String(form.get('endsAt') ?? '') : '';
 			if (multiDay) {
 				if (!startsAt || !endsAt) {
-					return fail(400, { message: 'Multi-day events require a start and end.' });
+					return fail(400, {
+						message: 'Multi-day events require a start and end.'
+					});
 				}
 				const endMessage = eventDateMessage(
 					endsAt,
@@ -1519,7 +1633,9 @@ export const actions: Actions = {
 				);
 				if (endMessage) return fail(400, { message: endMessage });
 				if (new Date(endsAt + 'Z').getTime() <= new Date(startsAt + 'Z').getTime()) {
-					return fail(400, { message: 'The event end must be after its start.' });
+					return fail(400, {
+						message: 'The event end must be after its start.'
+					});
 				}
 			}
 
@@ -1527,6 +1643,12 @@ export const actions: Actions = {
 				.collection('events')
 				.update(String(form.get('event') ?? ''), {
 					name: String(form.get('name') ?? '').trim(),
+					...(form.has('venueName')
+						? { venueName: String(form.get('venueName') ?? '').trim() }
+						: {}),
+					...(form.has('venueAddress')
+						? { venueAddress: String(form.get('venueAddress') ?? '').trim() }
+						: {}),
 					season: String(form.get('season') ?? '') || null,
 					startsAt: startsAt ? new Date(startsAt + 'Z').toISOString() : null,
 					endsAt: endsAt ? new Date(endsAt + 'Z').toISOString() : null,
@@ -1603,7 +1725,9 @@ export const actions: Actions = {
 		try {
 			const season = await pb.collection('seasons').getOne(seasonId);
 			if (season.organization !== params.id || season.status === 'archived') {
-				return fail(400, { message: 'Select a current season in this organization.' });
+				return fail(400, {
+					message: 'Select a current season in this organization.'
+				});
 			}
 
 			const orgFilter = pb.filter('organization = {:org}', { org: params.id });
@@ -1920,14 +2044,20 @@ export const actions: Actions = {
 		try {
 			const course = await pb.collection('courses').getOne(courseId);
 			if (course.organization !== params.id || course.status !== 'active') {
-				return fail(400, { message: 'Select an active course in this organization.' });
+				return fail(400, {
+					message: 'Select an active course in this organization.'
+				});
 			}
 
 			const holes = await pb.collection('course_holes').getFullList({
-				filter: pb.filter('course = {:course} && status = "active"', { course: courseId })
+				filter: pb.filter('course = {:course} && status = "active"', {
+					course: courseId
+				})
 			});
 			const positions = await pb.collection('hole_positions').getFullList({
-				filter: pb.filter('hole.course = {:course} && status = "active"', { course: courseId })
+				filter: pb.filter('hole.course = {:course} && status = "active"', {
+					course: courseId
+				})
 			});
 
 			for (const [, physical, name, par, label, distance, unit] of rows) {

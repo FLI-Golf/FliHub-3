@@ -318,7 +318,7 @@
 					<h3 class="font-semibold">Ready to create the organization</h3>
 					<p class="mt-2">
 						You will become its Owner. This creates the organization with Athletes, Teams &amp;
-						rosters, Leagues &amp; seasons, Venues &amp; courses, Events, Scoring &amp; official
+						rosters, Leagues &amp; seasons, Courses, Events, Scoring &amp; official
 						results, and Competition standings enabled.
 					</p>
 					<p class="mt-2">

@@ -10,7 +10,7 @@ Overview, capability pages, and Settings now supply counts to the shared OrgNav.
 | Athletes                   | Non-archived athlete identities, including reserves                                                                               |
 | Teams & rosters            | Separate non-archived team and season roster-spot counts                                                                          |
 | Leagues & seasons          | Separate non-archived league and season counts                                                                                    |
-| Venues & courses           | Non-archived courses; no claim of implemented generic venues                                                                      |
+| Courses           | Non-archived courses; no claim of implemented generic venues                                                                      |
 | Events                     | Non-archived events                                                                                                               |
 | Scoring & official results | Visible scorecards and published result records for non-archived events                                                           |
 | Competition standings      | Published result records, not ranked rows or computed standing positions                                                          |
@@ -32,6 +32,6 @@ As Morgan or Casey, verify only their permitted counts are returned and private 
 
 ## Course layout summary
 
-The Venues & courses mini card now has two count rows: courses and physical holes, followed by Red and Blue saved basket-position/tee-set records. Each query excludes archived records and archived parents, stays scoped to the current organization, and uses the signed-in client's existing collection rules. Red/Blue labels are matched as stored; this summary does not rename or merge position labels. Other named positions remain available in the course editor but are not included in these two named counters.
+The Courses mini card now has two count rows: courses and physical holes, followed by Red and Blue saved basket-position/tee-set records. Each query excludes archived records and archived parents, stays scoped to the current organization, and uses the signed-in client's existing collection rules. Red/Blue labels are matched as stored; this summary does not rename or merge position labels. Other named positions remain available in the course editor but are not included in these two named counters.
 
 Counts cover all visible non-archived courses in the organization, not just East course. Nine physical holes with one Red and one Blue position each produce 9 physical holes, Red 9, Blue 9. Playing the same holes in two event rounds does not create 18 physical holes. Positions on every hole do not establish that event rounds, assignments, or scoring are configured. Failures remain unavailable rather than zero. No schema or record changes are included.

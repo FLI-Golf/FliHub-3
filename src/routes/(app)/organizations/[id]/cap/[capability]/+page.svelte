@@ -11,6 +11,7 @@
 	import RostersManager from '$lib/components/RostersManager.svelte';
 	import CompetitionsManager from '$lib/components/CompetitionsManager.svelte';
 	import EventsManager from '$lib/components/EventsManager.svelte';
+	import GuidedEventSetup from '$lib/components/GuidedEventSetup.svelte';
 	import EventOpsManager from '$lib/components/EventOpsManager.svelte';
 	import CoursesManager from '$lib/components/CoursesManager.svelte';
 	import ScoringManager from '$lib/components/ScoringManager.svelte';
@@ -57,7 +58,11 @@
 		</Alert.Root>
 		{#if data.canManage}
 			<div>
-				<Button href={resolve('/(app)/organizations/[id]/settings', { id: data.organization.id })}>
+				<Button
+					href={resolve('/(app)/organizations/[id]/settings', {
+						id: data.organization.id
+					})}
+				>
 					Open settings
 				</Button>
 			</div>
@@ -95,6 +100,19 @@
 			{form}
 		/>
 	{:else if data.capability.id === 'events' && data.capability.availability === 'available' && data.eventsData}
+		{#if data.canManage}
+			<GuidedEventSetup
+				seasons={data.eventsData.seasons}
+				courses={data.eventsData.courses}
+				entries={data.eventsData.entries}
+				roster={data.eventsData.rosterMemberships}
+				members={data.eventsData.members}
+				currentUserId={data.eventsData.currentUserId}
+				capabilities={data.organization.capabilities}
+				loadError={data.eventsData.setupLoadError}
+				{form}
+			/>
+		{/if}
 		<EventsManager
 			events={data.eventsData.events}
 			seasons={data.eventsData.seasons}

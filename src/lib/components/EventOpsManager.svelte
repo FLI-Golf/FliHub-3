@@ -176,10 +176,10 @@
 	 * event — minus anyone already in a group for this event. The hook
 	 * re-enforces all of this on the backend.
 	 */
-	function eligibleFor(groupId: string) {
+	function eligibleFor(groupId: string, includeAssigned = false) {
 		if (!event) return [];
 		const assignedEntryIds = teamsOf(groupId).map((gt) => gt.entry);
-		const taken = new Set(activeGroupAthletes.map((ga) => ga.athlete));
+		const taken = new Set(includeAssigned ? [] : activeGroupAthletes.map((ga) => ga.athlete));
 		const out: { entry: string; athlete: string; name: string }[] = [];
 		for (const entryId of assignedEntryIds) {
 			const subbedOut = new Set(
@@ -195,18 +195,37 @@
 			for (const s of substitutions) {
 				if (s.event !== event.id || s.entry !== entryId) continue;
 				if (taken.has(s.athleteIn) || out.some((o) => o.athlete === s.athleteIn)) continue;
-				out.push({ entry: entryId, athlete: s.athleteIn, name: `${s.athleteInName} (reserve)` });
+				out.push({
+					entry: entryId,
+					athlete: s.athleteIn,
+					name: `${s.athleteInName} (reserve)`
+				});
 			}
 		}
 		return out;
+	}
+
+	function emptyAthleteMessage(groupId: string): string {
+		const candidates = eligibleFor(groupId, true);
+		if (candidates.length === 0)
+			return 'No eligible roster athletes were found for the assigned teams. Review their season rosters and any event substitutions.';
+		const assignedHere = new Set(athletesOf(groupId).map((assignment) => assignment.athlete));
+		if (candidates.every((candidate) => assignedHere.has(candidate.athlete)))
+			return 'All currently eligible athletes for this group are already assigned.';
+		return 'No additional eligible athletes are available. Some are assigned to another group in this event; review those assignments before making changes.';
 	}
 
 	const formRecord = $derived(
 		form && typeof form === 'object' ? (form as Record<string, unknown>) : null
 	);
 	const message = $derived(
-		formRecord && 'message' in formRecord ? String(formRecord.message) : null
+		formRecord && !('guidedEventSetup' in formRecord) && 'message' in formRecord
+			? String(formRecord.message)
+			: null
 	);
+	$effect(() => {
+		if (formRecord?.guidedEventId) selectedEvent = String(formRecord.guidedEventId);
+	});
 </script>
 
 <div class="flex flex-col gap-6">
@@ -300,81 +319,90 @@
 					</div>
 				{/each}
 				{#if canManage}
-					<form
-						method="POST"
-						action="?/addRound"
-						class="flex flex-wrap items-end gap-2 border-t pt-3"
-					>
-						<input type="hidden" name="event" value={event.id} />
-						<div class="flex w-24 flex-col gap-1">
-							<Label for="round-number" class="text-xs">Round #</Label>
-							<Input
-								id="round-number"
-								name="number"
-								type="number"
-								min="1"
-								step="1"
-								required
-								class="h-8"
-							/>
-						</div>
-						<div class="flex min-w-36 flex-1 flex-col gap-1">
-							<Label for="round-name" class="text-xs">Name (optional)</Label>
-							<Input id="round-name" name="name" maxlength={120} class="h-8" />
-						</div>
-						<div class="flex min-w-36 flex-col gap-1">
-							<Label for="round-course" class="text-xs">Course (optional)</Label>
-							<select
-								id="round-course"
-								name="course"
-								bind:value={roundCourse}
-								class="h-8 rounded-md border bg-background px-2 text-sm"
-							>
-								<option value="" selected>No course</option>
-								{#each courses as c (c.id)}
-									<option value={c.id}>{c.name}</option>
-								{/each}
-							</select>
-						</div>
-						<div class="flex min-w-44 flex-col gap-1">
-							<Label for="round-poslabel" class="text-xs">Positions (optional)</Label>
-							{#if roundCourseLabels.length > 0}
-								<!-- The organizer chooses from the positions that actually exist
+					<details class="rounded-lg border bg-muted/20 p-4">
+						<summary class="cursor-pointer font-medium"
+							>{eventRounds.length > 0 ? 'Add another round' : 'Add the first round'}</summary
+						>
+						<p class="my-3 text-sm text-muted-foreground">
+							Optional new-round form. Existing rounds are listed above; nothing is added until you
+							choose Add round.
+						</p>
+						<form
+							method="POST"
+							action="?/addRound"
+							class="flex flex-wrap items-end gap-2 border-t pt-3"
+						>
+							<input type="hidden" name="event" value={event.id} />
+							<div class="flex w-24 flex-col gap-1">
+								<Label for="round-number" class="text-xs">Round #</Label>
+								<Input
+									id="round-number"
+									name="number"
+									type="number"
+									min="1"
+									step="1"
+									required
+									class="h-8"
+								/>
+							</div>
+							<div class="flex min-w-36 flex-1 flex-col gap-1">
+								<Label for="round-name" class="text-xs">Name (optional)</Label>
+								<Input id="round-name" name="name" maxlength={120} class="h-8" />
+							</div>
+							<div class="flex min-w-36 flex-col gap-1">
+								<Label for="round-course" class="text-xs">Course (optional)</Label>
+								<select
+									id="round-course"
+									name="course"
+									bind:value={roundCourse}
+									class="h-8 rounded-md border bg-background px-2 text-sm"
+								>
+									<option value="" selected>No course</option>
+									{#each courses as c (c.id)}
+										<option value={c.id}>{c.name}</option>
+									{/each}
+								</select>
+							</div>
+							<div class="flex min-w-44 flex-col gap-1">
+								<Label for="round-poslabel" class="text-xs">Positions (optional)</Label>
+								{#if roundCourseLabels.length > 0}
+									<!-- The organizer chooses from the positions that actually exist
 								     on the selected course's holes. A named position must cover
 								     EVERY active hole; incomplete labels are shown with their
 								     coverage and missing holes, and cannot be selected. -->
-								<select
-									id="round-poslabel"
-									name="positionLabel"
-									class="h-8 rounded-md border bg-background px-2 text-sm"
-								>
-									<option value="" selected>Any / not specified</option>
-									{#each roundCourseLabels as l (l.label)}
-										{#if l.missing.length === 0}
-											<option value={l.label}>{l.label} — all {l.total} holes</option>
-										{:else}
-											<option value={l.label} disabled>
-												{l.label} — {l.total - l.missing.length}/{l.total} holes (missing hole {l.missing.join(
-													', '
-												)})
-											</option>
-										{/if}
-									{/each}
-								</select>
-							{:else}
-								<Input
-									id="round-poslabel"
-									name="positionLabel"
-									maxlength={40}
-									placeholder="red"
-									class="h-8"
-								/>
-							{/if}
-						</div>
-						<Button variant="outline" size="sm" type="submit">
-							<Plus class="mr-1 size-3.5" /> Add round
-						</Button>
-					</form>
+									<select
+										id="round-poslabel"
+										name="positionLabel"
+										class="h-8 rounded-md border bg-background px-2 text-sm"
+									>
+										<option value="" selected>Any / not specified</option>
+										{#each roundCourseLabels as l (l.label)}
+											{#if l.missing.length === 0}
+												<option value={l.label}>{l.label} — all {l.total} holes</option>
+											{:else}
+												<option value={l.label} disabled>
+													{l.label} — {l.total - l.missing.length}/{l.total} holes (missing hole {l.missing.join(
+														', '
+													)})
+												</option>
+											{/if}
+										{/each}
+									</select>
+								{:else}
+									<Input
+										id="round-poslabel"
+										name="positionLabel"
+										maxlength={40}
+										placeholder="red"
+										class="h-8"
+									/>
+								{/if}
+							</div>
+							<Button variant="outline" size="sm" type="submit">
+								<Plus class="mr-1 size-3.5" /> Add round
+							</Button>
+						</form>
+					</details>
 				{/if}
 			</Card.Content>
 		</Card.Root>
@@ -390,7 +418,8 @@
 					Teams join a group through their season entries; athletes come from those teams' season
 					rosters plus this event's substitutions — a reserve appears only for the event where the
 					substitution applies, and assignments never change the season roster. One scorekeeper per
-					group (any member — score entry permissions arrive in Phase 1G).
+					group. Owners and Admins can score; Scorekeepers need an assignment. Viewers cannot enter
+					scores.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-3">
@@ -573,8 +602,7 @@
 									</form>
 								{:else}
 									<p class="text-xs text-muted-foreground">
-										No eligible athletes: only rostered athletes of assigned teams, or reserves
-										brought in by a substitution for this event, can be assigned.
+										{emptyAthleteMessage(group.id)}
 									</p>
 								{/if}
 							{/if}
@@ -583,33 +611,48 @@
 				{/each}
 
 				{#if canManage}
-					<form
-						method="POST"
-						action="?/createGroup"
-						class="flex flex-wrap items-end gap-3 border-t pt-4"
-					>
-						<input type="hidden" name="event" value={event.id} />
-						<div class="flex min-w-44 flex-1 flex-col gap-1.5">
-							<Label for="group-name">New group</Label>
-							<Input id="group-name" name="name" required maxlength={80} placeholder="Group 1" />
-						</div>
-						<div class="flex min-w-44 flex-col gap-1.5">
-							<Label for="group-scorekeeper">Scorekeeper (optional)</Label>
-							<select
-								id="group-scorekeeper"
-								name="scorekeeper"
-								class="h-9 rounded-md border bg-background px-2 text-sm"
-							>
-								<option value="" selected>No scorekeeper yet</option>
-								{#each members as member (member.userId)}
-									<option value={member.userId}>{member.name} ({member.role})</option>
-								{/each}
-							</select>
-						</div>
-						<Button type="submit">
-							<Plus class="mr-1 size-4" /> Create group
-						</Button>
-					</form>
+					<details class="rounded-lg border bg-muted/20 p-4">
+						<summary class="cursor-pointer font-medium"
+							>{eventGroups.length > 0 ? 'Add another group' : 'Add the first group'}</summary
+						>
+						<p class="my-3 text-sm text-muted-foreground">
+							Optional new-group form. Existing groups are listed above; nothing is added until you
+							choose Create group.
+						</p>
+						<form
+							method="POST"
+							action="?/createGroup"
+							class="flex flex-wrap items-end gap-3 border-t pt-4"
+						>
+							<input type="hidden" name="event" value={event.id} />
+							<div class="flex min-w-44 flex-1 flex-col gap-1.5">
+								<Label for="group-name">New group</Label>
+								<Input
+									id="group-name"
+									name="name"
+									required
+									maxlength={80}
+									placeholder="Enter a unique group name"
+								/>
+							</div>
+							<div class="flex min-w-44 flex-col gap-1.5">
+								<Label for="group-scorekeeper">Scorekeeper (optional)</Label>
+								<select
+									id="group-scorekeeper"
+									name="scorekeeper"
+									class="h-9 rounded-md border bg-background px-2 text-sm"
+								>
+									<option value="" selected>Assign a scorekeeper later</option>
+									{#each members as member (member.userId)}
+										<option value={member.userId}>{member.name} ({member.role})</option>
+									{/each}
+								</select>
+							</div>
+							<Button type="submit">
+								<Plus class="mr-1 size-4" /> Create group
+							</Button>
+						</form>
+					</details>
 				{/if}
 			</Card.Content>
 		</Card.Root>

@@ -703,3 +703,28 @@ The agreed review separates activity, competition format, competing entry, and r
 Preserve golf workflows, organization isolation, backend capability gates, role checks, published history, and missing-never-zero behavior. Labels do not implement timing, judging, match scoring, or new entry types. No broad schema redesign, production data changes, or automatic deployment is included.
 
 The [assessment](MULTI-EVENT-ASSESSMENT.md) recommends setup/catalog clarification first. This is a recommendation, not approval of a new activity, entry schema, or result engine. Activity inheritance, specialized roles, and the first additional workflow remain open in the [multi-event plan](README-MULTI-EVENT-PLATFORM.md). The [onboarding plan](README-ACCOUNT-ONBOARDING.md) contains historical milestones and should not be restarted.
+
+## Guided event creation — November 17, 2026
+
+The next prepared increment reuses existing competition records for a new,
+single- or multi-day, season-linked team golf event. Event details, complete course
+positions, editable groups, current roster lineups and authorized scorekeepers
+are reviewed before one atomic creation transaction. No existing event is
+modified by this endpoint. Existing tee-time, substitution, scoring and
+publication tools retain their behavior.
+
+The event start date is midnight UTC; a multi-day end covers its selected last
+day through 23:59:59.999 UTC. Local tee times are configured separately in the
+existing scheduler. Repeat-submission checks are scoped to organization, season,
+name and that exact date, not a universal uniqueness rule. A follow-up migration
+adds optional event-local venue name/address fields; no new result method is included. See [guided event setup](README-GUIDED-EVENT-SETUP.md)
+for batch limits, current-data validation and required verification.
+
+## Guided event dates and tee scheduling follow-up
+
+The wizard supports multi-day dates through the existing event startsAt/endsAt
+fields and generates per-round group starts during Lineups. It reuses existing
+timezone conversion and teeSchedule JSON, defaults to ten-minute intervals and
+reviews the complete schedule before atomic creation. No new migration is
+required beyond the earlier venue fields. Separate round times are explicit;
+playing duration is not inferred. Existing editing and scoring locks remain.

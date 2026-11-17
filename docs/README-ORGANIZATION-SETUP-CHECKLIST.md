@@ -6,7 +6,7 @@ Status: implementation prepared for local review on feature/organization-setup-c
 
 Owners/Admins of organizations created through the supported Disc golf → League season → Teams → Strokes wizard mapping see a read-only setup guide on the organization overview. The server recognizes version 1 guidedSetup provenance in the trusted organization_created audit details. It does not guess an activity from the League template or modify legacy organizations.
 
-Steps link to existing Leagues & seasons, Teams & rosters, Athletes, Venues & courses, and Events tools. Team season entry and roster building have separate links on the roster step. Rounds and group assignments remain in the event tools; this guide creates nothing and changes no permissions, schema, defaults, score rules, or published records.
+Steps link to existing Leagues & seasons, Teams & rosters, Athletes, Courses, and Events tools. Team season entry and roster building have separate links on the roster step. Rounds and group assignments remain in the event tools; this guide creates nothing and changes no permissions, schema, defaults, score rules, or published records.
 
 For each enabled step, the loader requests one identity row plus totalItems from the relevant collections, scoped to this organization and excluding archived records. It never reads athlete_private. Counts are organization-wide and may span unrelated seasons/events. They are presence hints, not eligibility, completeness, or event readiness. There is no completion percentage or checkbox that can bypass validation.
 
