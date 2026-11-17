@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import ScoreCompletionMark from '$lib/components/ScoreCompletionMark.svelte';
 	import { ArrowLeft, BadgeCheck, CircleAlert, History, Lock, Megaphone } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -22,6 +23,23 @@
 			: null
 	);
 	const allSubmitted = $derived(data.totalCards > 0 && data.submittedCount === data.totalCards);
+	const publicationComplete = $derived(
+		Boolean(
+			data.result?.status === 'published' &&
+			officialVersion &&
+			data.result.currentVersion === data.result.publishedVersion
+		)
+	);
+	const greenBadge = 'gap-2 border-green-300 bg-green-100 text-green-950';
+	const blueBadge = 'gap-2 border-blue-300 bg-blue-100 text-blue-950';
+	const amberBadge = 'gap-2 border-amber-300 bg-amber-100 text-amber-950';
+	const resultPanelClass = $derived(
+		data.result?.status === 'correcting'
+			? 'border-amber-300 bg-amber-50/40'
+			: publicationComplete
+				? 'border-green-300 bg-green-50/40'
+				: 'border-blue-200 bg-blue-50/30'
+	);
 
 	const formRecord = $derived(
 		form && typeof form === 'object' ? (form as Record<string, unknown>) : null
@@ -82,11 +100,12 @@
 	{/if}
 
 	<!-- Submission readiness -->
-	<Card.Root>
+	<Card.Root class={allSubmitted ? 'border-green-300 bg-green-50/40' : ''}>
 		<Card.Header>
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<Card.Title class="text-base">Submitted scorecards</Card.Title>
-				<Badge variant={allSubmitted ? 'default' : 'secondary'}>
+				<Badge variant="outline" class={allSubmitted ? greenBadge : amberBadge}>
+					{#if allSubmitted}<ScoreCompletionMark />{/if}
 					{data.submittedCount}/{data.totalCards} submitted
 				</Badge>
 			</div>
@@ -97,16 +116,28 @@
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">
 			{#each data.submissionGrid as row (row.roundId)}
-				<div class="flex flex-col gap-1 rounded-md border p-2 text-sm">
-					<span class="font-medium">
-						Round {row.roundNumber}{row.positionLabel ? ` · ${row.positionLabel}` : ''}
+				{@const roundSubmitted =
+					row.hasCourse &&
+					row.groups.length > 0 &&
+					row.groups.every((cell) => cell.status === 'submitted')}
+				<div
+					class={`flex flex-col gap-3 rounded-xl border p-4 text-sm ${roundSubmitted ? 'border-green-300 bg-green-50' : 'border-amber-200 bg-amber-50/40'}`}
+				>
+					<span class="flex flex-wrap items-center gap-2 font-semibold">
+						{#if roundSubmitted}<ScoreCompletionMark />{/if}Round {row.roundNumber}{row.positionLabel
+							? ` · ${row.positionLabel}`
+							: ''}
 						{#if !row.hasCourse}
 							<span class="text-destructive"> — no course (blocks approval)</span>
 						{/if}
 					</span>
 					<div class="flex flex-wrap gap-1.5">
 						{#each row.groups as cell (cell.groupName)}
-							<Badge variant={cell.status === 'submitted' ? 'default' : 'outline'}>
+							<Badge
+								variant="outline"
+								class={`min-h-9 px-3 py-2 ${cell.status === 'submitted' ? greenBadge : amberBadge}`}
+							>
+								{#if cell.status === 'submitted'}<ScoreCompletionMark />{/if}
 								{cell.groupName}: {cell.status}
 							</Badge>
 						{/each}
@@ -117,21 +148,50 @@
 	</Card.Root>
 
 	<!-- Result status + controls -->
-	<Card.Root>
+	<Card.Root class={resultPanelClass}>
 		<Card.Header>
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<Card.Title class="flex items-center gap-2 text-base">
-					<BadgeCheck class="size-4" />
+					<BadgeCheck
+						class={`size-5 ${publicationComplete ? 'text-green-700' : data.result?.status === 'correcting' ? 'text-amber-700' : 'text-blue-700'}`}
+					/>
 					Official result
 				</Card.Title>
 				{#if data.result}
-					<Badge variant={data.result.status === 'published' ? 'default' : 'secondary'}>
-						{statusLabel[data.result.status] ?? data.result.status} · v{data.result.currentVersion}
+					<Badge
+						variant="outline"
+						class={data.result.status === 'correcting'
+							? amberBadge
+							: publicationComplete
+								? greenBadge
+								: blueBadge}
+					>
+						{#if publicationComplete}<ScoreCompletionMark
+							/>{:else if data.result.status === 'approved'}<BadgeCheck
+								class="size-4"
+								aria-hidden="true"
+							/>{/if}
+						{publicationComplete
+							? 'Published — complete'
+							: (statusLabel[data.result.status] ?? data.result.status)} · v{data.result
+							.currentVersion}
 					</Badge>
 				{:else}
-					<Badge variant="outline">Not approved yet</Badge>
+					<Badge variant="outline" class={blueBadge}>Not approved yet</Badge>
 				{/if}
 			</div>
+			{#if publicationComplete}<p
+					role="status"
+					class="flex items-center gap-2 rounded-lg border border-green-300 bg-green-100 p-3 text-sm font-semibold text-green-950"
+				>
+					<ScoreCompletionMark />Official result published. Approval and publication are complete
+					for this version.
+				</p>{:else if data.result?.status === 'approved'}<p
+					role="status"
+					class="rounded-lg border border-blue-300 bg-blue-100 p-3 text-sm text-blue-950"
+				>
+					Approved and awaiting publication. Publish this version to make it the official result.
+				</p>{/if}
 			{#if data.result?.status === 'correcting'}
 				<Card.Description>
 					Under correction{data.result.pendingReason
@@ -147,7 +207,11 @@
 					{#if !data.result || data.result.status === 'correcting'}
 						<form method="POST" action="?/approveResult">
 							<input type="hidden" name="result" value={data.result?.id ?? ''} />
-							<Button type="submit" disabled={!allSubmitted}>
+							<Button
+								type="submit"
+								disabled={!allSubmitted}
+								class="min-h-11 border border-blue-700 bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500"
+							>
 								{data.result ? 'Reapprove (new version)' : 'Approve result'}
 							</Button>
 						</form>
@@ -160,8 +224,11 @@
 					{#if data.result?.status === 'approved'}
 						<form method="POST" action="?/publishResult">
 							<input type="hidden" name="result" value={data.result.id} />
-							<Button type="submit">
-								<Megaphone class="mr-1 size-4" /> Publish
+							<Button
+								type="submit"
+								class="min-h-11 border border-green-800 bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-500"
+							>
+								<Megaphone class="mr-1 size-4" /> Publish official result
 							</Button>
 						</form>
 					{/if}
@@ -182,11 +249,18 @@
 				</div>
 			{/if}
 			{#if officialVersion}
-				<div class="flex flex-col gap-2" data-testid="official-result">
-					<p class="text-sm font-medium">
-						Official published result — v{officialVersion.version}, published
+				<div
+					class="flex flex-col gap-3 rounded-xl border border-green-300 bg-green-50 p-4"
+					data-testid="official-result"
+				>
+					<p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-green-950">
+						<ScoreCompletionMark />Official published result — v{officialVersion.version}, published
 						{when(officialVersion.publishedAt)} by {officialVersion.publishedByName}
 					</p>
+					{#if !publicationComplete}<p class="text-xs text-green-950">
+							This is the last published official version. Newer approval or correction work is not
+							published yet.
+						</p>{/if}
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm" data-testid="official-totals">
 							<thead>
@@ -218,8 +292,11 @@
 				</div>
 			{/if}
 			{#if pendingVersion}
-				<div class="flex flex-col gap-2" data-testid="pending-result">
-					<p class="text-sm font-medium">
+				<div
+					class="flex flex-col gap-3 rounded-xl border border-blue-300 bg-blue-50 p-4"
+					data-testid="pending-result"
+				>
+					<p class="text-sm font-semibold text-blue-950">
 						Approved v{pendingVersion.version} — awaiting publication (NOT the official result until published).
 						Approved {when(pendingVersion.approvedAt)} by
 						{pendingVersion.approvedByName}.
@@ -272,9 +349,12 @@
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-2">
 				{#each data.versions as version (version.version)}
-					<div class="rounded-md border p-2 text-sm">
+					<div
+						class={`rounded-lg border p-3 text-sm ${version.publishedAt ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}`}
+					>
 						<p class="font-medium">
-							v{version.version}
+							{#if version.publishedAt}<span class="mr-1 inline-flex"><ScoreCompletionMark /></span
+								>{/if}v{version.version}
 							{#if data.result && version.version === data.result.currentVersion}
 								<Badge variant="secondary">current</Badge>
 							{/if}
