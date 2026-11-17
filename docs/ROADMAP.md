@@ -1,5 +1,11 @@
 # FliHub roadmap
 
+## Current increment: guided team golf event setup
+
+PRs #32–#34 delivered guided organization creation, the setup checklist, atomic league/season creation, invitation notifications and navigation count cards. The next prepared increment guides a new team golf event through event details, rounds, groups, roster lineups, scorekeepers and review. It reuses existing records and saves the event setup atomically, with a small migration for optional event venue name/address and no new result method.
+
+See [guided event setup](README-GUIDED-EVENT-SETUP.md) for scope and required verification. Keep this increment pending until its automated checks and narrow browser walkthrough pass. Earlier next-milestone notes below are historical checkpoints.
+
 ## Current next milestone: guided setup preview
 
 Agreed November 13, 2026. The setup-description clarification and organization settings link are complete locally. The next implementation is a reviewable multi-step setup preview, before race timing or a schema redesign. This ordering supersedes earlier next-action recommendations elsewhere in the planning documents.

@@ -29,7 +29,7 @@ same file — there is no forked list:
 | `athletes`        | Athletes                   | available    | —               | Phase 1C                     |
 | `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E                 |
 | `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D                     |
-| `venues-courses`  | Venues & courses           | available    | —               | Phases 1D–1F                 |
+| `venues-courses`  | Courses           | available    | —               | Phases 1D–1F                 |
 | `events`          | Events                     | available    | —               | Phases 1D–1F                 |
 | `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H                 |
 | `standings`       | Competition standings      | available    | scoring-results | Phase 1I                     |
@@ -166,7 +166,7 @@ this phase.
 Phase 1F (decisions recorded as D14) turned two more capabilities into
 working workflows:
 
-- **Venues & courses** — a course-layout manager: courses with numbered,
+- **Courses** — a course-layout manager: courses with numbered,
   named holes (par defaults suggested at 3 in the UI) and labeled positions
   (e.g. "red"/"blue") carrying a positive distance with an explicit unit.
   Venue records (physical locations) remain planned and are labeled as such.

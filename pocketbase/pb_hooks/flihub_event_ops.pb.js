@@ -52,7 +52,7 @@ onRecordCreateRequest((e) => {
 	}
 	if (!caps.includes('venues-courses')) {
 		throw new BadRequestError(
-			'capability_disabled: The Venues & courses capability is not enabled for this organization.'
+			'capability_disabled: The Courses capability is not enabled for this organization.'
 		);
 	}
 	e.next();
@@ -69,7 +69,7 @@ onRecordUpdateRequest((e) => {
 	}
 	if (!caps.includes('venues-courses')) {
 		throw new BadRequestError(
-			'capability_disabled: The Venues & courses capability is not enabled for this organization.'
+			'capability_disabled: The Courses capability is not enabled for this organization.'
 		);
 	}
 	const original = e.record.original();
@@ -93,7 +93,7 @@ onRecordCreateRequest((e) => {
 	}
 	if (!caps.includes('venues-courses')) {
 		throw new BadRequestError(
-			'capability_disabled: The Venues & courses capability is not enabled for this organization.'
+			'capability_disabled: The Courses capability is not enabled for this organization.'
 		);
 	}
 	let course;
@@ -121,7 +121,7 @@ onRecordUpdateRequest((e) => {
 	}
 	if (!caps.includes('venues-courses')) {
 		throw new BadRequestError(
-			'capability_disabled: The Venues & courses capability is not enabled for this organization.'
+			'capability_disabled: The Courses capability is not enabled for this organization.'
 		);
 	}
 	const original = e.record.original();
@@ -150,7 +150,7 @@ onRecordCreateRequest((e) => {
 	}
 	if (!caps.includes('venues-courses')) {
 		throw new BadRequestError(
-			'capability_disabled: The Venues & courses capability is not enabled for this organization.'
+			'capability_disabled: The Courses capability is not enabled for this organization.'
 		);
 	}
 	let hole;
@@ -178,7 +178,7 @@ onRecordUpdateRequest((e) => {
 	}
 	if (!caps.includes('venues-courses')) {
 		throw new BadRequestError(
-			'capability_disabled: The Venues & courses capability is not enabled for this organization.'
+			'capability_disabled: The Courses capability is not enabled for this organization.'
 		);
 	}
 	const original = e.record.original();

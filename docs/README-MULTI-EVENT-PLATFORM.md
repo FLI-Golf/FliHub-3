@@ -1,5 +1,11 @@
 # Multi-Sport and Multi-Event Platform Plan
 
+## Current checkpoint — guided event setup
+
+The organization setup checklist, atomic league/season creation, invitation notifications and navigation count cards were merged through PRs #33 and #34. The next prepared increment is guided creation of a new, single- or multi-day, season-linked team golf event using existing teams, rosters and course positions. It includes optional event-local venue name/address fields, separate from round courses. It does not implement another sport, reusable venue catalog, entry model or result method.
+
+See [README-GUIDED-EVENT-SETUP.md](README-GUIDED-EVENT-SETUP.md). Verification remains pending; no progress status is promoted by this change. Earlier checkpoint and preview-only notes below are historical.
+
 ## Current checkpoint — November 14, 2026
 
 The guided wizard and supported Disc golf → League season → Teams → Strokes organization creation were implemented and merged through PRs #31 and #32. See [README-GUIDED-CREATION.md](README-GUIDED-CREATION.md). Other combinations remain previews; specialized entry and result workflows are not implemented.

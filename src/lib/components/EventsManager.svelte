@@ -9,6 +9,8 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 
 	interface FliEvent {
+		venueName?: string;
+		venueAddress?: string;
 		id: string;
 		season: string | null;
 		seasonName: string | null;
@@ -57,12 +59,19 @@
 		form && typeof form === 'object' ? (form as Record<string, unknown>) : null
 	);
 	const message = $derived(
-		formRecord && 'message' in formRecord ? String(formRecord.message) : null
+		formRecord && !('guidedEventSetup' in formRecord) && 'message' in formRecord
+			? String(formRecord.message)
+			: null
 	);
 
 	/** PB dates ('YYYY-MM-DD HH:mm:ss.SSSZ') -> datetime-local input value. */
 	function toInput(iso: string | null): string {
 		return iso ? iso.replace(' ', 'T').slice(0, 16) : '';
+	}
+	function usesPlanningDates(item: FliEvent): boolean {
+		const start = toInput(item.startsAt),
+			end = toInput(item.endsAt);
+		return start.endsWith('T00:00') && (!end || end.endsWith('T23:59') || end.endsWith('T00:00'));
 	}
 	function display(iso: string | null): string {
 		return iso ? iso.slice(0, 16) : 'Not scheduled';
@@ -85,8 +94,8 @@
 				Events ({events.length})
 			</Card.Title>
 			<Card.Description>
-				An event belongs to one season or runs independently. Rounds and group assignments arrive in
-				Phase 1F.
+				An event belongs to one season or runs independently. Use the guided team-event setup above,
+				or the existing planning and editing tools below.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">
@@ -110,11 +119,30 @@
 						<Badge variant={event.status === 'archived' ? 'secondary' : 'default'}>
 							{event.status}
 						</Badge>
+						{#if event.venueName || event.venueAddress}<div
+								class="w-full rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm"
+							>
+								<span class="font-medium">Venue: {event.venueName || 'Location'}</span
+								>{#if event.venueAddress}<span class="mt-1 block whitespace-pre-wrap"
+										>{event.venueAddress}</span
+									>{/if}
+							</div>{/if}
 						<div class="w-full text-sm text-muted-foreground">
 							{#if event.startsAt}
-								<span>Starts {display(event.startsAt)}</span>
-								{#if event.endsAt}
-									<span> · Ends {display(event.endsAt)}</span>
+								{#if usesPlanningDates(event)}
+									<span class="font-medium"
+										>Planning {event.endsAt ? 'dates' : 'date'}: {event.startsAt.slice(
+											0,
+											10
+										)}{#if event.endsAt}
+											→ {event.endsAt.slice(0, 10)}{/if} (UTC)</span
+									>
+									<p class="mt-1 text-xs">
+										Tee times are managed separately in the round schedules below.
+									</p>
+								{:else}
+									<span>Starts {display(event.startsAt)} UTC</span>
+									{#if event.endsAt}<span> · Ends {display(event.endsAt)} UTC</span>{/if}
 								{/if}
 							{:else}
 								<span>Start date needed — use Edit to schedule this event.</span>
@@ -156,89 +184,112 @@
 	</Card.Root>
 
 	{#if canManage}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Add an event</Card.Title>
-				<Card.Description>
-					Choose a season or leave it independent — either way the event stays inside this
-					organization.
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<form method="POST" action="?/createEvent" class="grid gap-3 sm:grid-cols-2">
-					<div class="flex flex-col gap-1.5">
-						<Label for="event-name">Event name</Label>
-						<Input id="event-name" name="name" required maxlength={120} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="event-season">Season</Label>
-						<select
-							id="event-season"
-							bind:value={newSeasonId}
-							name="season"
-							class="h-9 rounded-md border bg-background px-2 text-sm"
-						>
-							<option value="">Independent (no season)</option>
-							{#each seasons as season (season.id)}
-								<option value={season.id}>{season.name}</option>
-							{/each}
-						</select>
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="event-starts">Starts at (optional)</Label>
-						<Input
-							id="event-starts"
-							name="startsAt"
-							type="datetime-local"
-							min={seasonMinimum(newSeason)}
-							max={seasonMaximum(newSeason)}
-							aria-describedby="event-date-help"
-							required={newMultiDay}
-						/>
-						<p id="event-date-help" class="text-sm text-muted-foreground">
-							{seasonDateHelp(newSeason)}
-						</p>
-					</div>
-
-					<div class="flex flex-col gap-2">
-						<label class="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								name="multiDay"
-								value="yes"
-								bind:checked={newMultiDay}
-								aria-controls="event-end-fields"
-								aria-expanded={newMultiDay}
+		<details class="rounded-lg border p-4">
+			<summary class="cursor-pointer font-medium"
+				>Advanced event creation · independent or date-time planning</summary
+			>
+			<p class="my-3 text-sm text-muted-foreground">
+				For a new season-linked team event with rounds and groups, use the guided setup above. These
+				existing controls create only the event record.
+			</p>
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Add an event</Card.Title>
+					<Card.Description>
+						Choose a season or leave it independent — either way the event stays inside this
+						organization.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<form method="POST" action="?/createEvent" class="grid gap-3 sm:grid-cols-2">
+						<div class="flex flex-col gap-1.5">
+							<Label for="event-name">Event name</Label>
+							<Input id="event-name" name="name" required maxlength={120} />
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<Label for="new-event-venueName">Venue name (optional)</Label><Input
+								id="new-event-venueName"
+								name="venueName"
+								maxlength={120}
 							/>
-							Multi-day event
-						</label>
-						{#if newMultiDay}
-							<div id="event-end-fields" class="flex flex-col gap-1.5">
-								<Label for="event-ends">Ends at</Label>
-								<Input
-									id="event-ends"
-									name="endsAt"
-									type="datetime-local"
-									required
-									min={seasonMinimum(newSeason)}
-									max={seasonMaximum(newSeason)}
-									aria-describedby="event-end-help"
-								/>
-								<p id="event-end-help" class="text-sm text-muted-foreground">
-									Choose an end after the start. {seasonDateHelp(newSeason)}
-								</p>
-							</div>
-						{/if}
-					</div>
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<Label for="new-event-venueAddress">Venue address (optional)</Label><Input
+								id="new-event-venueAddress"
+								name="venueAddress"
+								maxlength={500}
+							/>
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<Label for="event-season">Season</Label>
+							<select
+								id="event-season"
+								bind:value={newSeasonId}
+								name="season"
+								class="h-9 rounded-md border bg-background px-2 text-sm"
+							>
+								<option value="">Independent (no season)</option>
+								{#each seasons as season (season.id)}
+									<option value={season.id}>{season.name}</option>
+								{/each}
+							</select>
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<Label for="event-starts">Starts at (optional)</Label>
+							<Input
+								id="event-starts"
+								name="startsAt"
+								type="datetime-local"
+								min={seasonMinimum(newSeason)}
+								max={seasonMaximum(newSeason)}
+								aria-describedby="event-date-help"
+								required={newMultiDay}
+							/>
+							<p id="event-date-help" class="text-sm text-muted-foreground">
+								{seasonDateHelp(newSeason)}
+							</p>
+						</div>
 
-					<div class="flex items-end">
-						<Button type="submit">
-							<Plus class="mr-1 size-4" /> Add event
-						</Button>
-					</div>
-				</form>
-			</Card.Content>
-		</Card.Root>
+						<div class="flex flex-col gap-2">
+							<label class="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									name="multiDay"
+									value="yes"
+									bind:checked={newMultiDay}
+									aria-controls="event-end-fields"
+									aria-expanded={newMultiDay}
+								/>
+								Multi-day event
+							</label>
+							{#if newMultiDay}
+								<div id="event-end-fields" class="flex flex-col gap-1.5">
+									<Label for="event-ends">Ends at</Label>
+									<Input
+										id="event-ends"
+										name="endsAt"
+										type="datetime-local"
+										required
+										min={seasonMinimum(newSeason)}
+										max={seasonMaximum(newSeason)}
+										aria-describedby="event-end-help"
+									/>
+									<p id="event-end-help" class="text-sm text-muted-foreground">
+										Choose an end after the start. {seasonDateHelp(newSeason)}
+									</p>
+								</div>
+							{/if}
+						</div>
+
+						<div class="flex items-end">
+							<Button type="submit">
+								<Plus class="mr-1 size-4" /> Add event
+							</Button>
+						</div>
+					</form>
+				</Card.Content>
+			</Card.Root>
+		</details>
 	{:else}
 		<p class="text-sm text-muted-foreground">
 			Your role ({myRole}) can view events but not manage them.
@@ -260,6 +311,22 @@
 				<div class="flex flex-col gap-1.5">
 					<Label for="edit-event-name">Event name</Label>
 					<Input id="edit-event-name" name="name" required maxlength={120} value={editing.name} />
+				</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="edit-event-venueName">Venue name (optional)</Label><Input
+						id="edit-event-venueName"
+						name="venueName"
+						maxlength={120}
+						value={editing.venueName ?? ''}
+					/>
+				</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="edit-event-venueAddress">Venue address (optional)</Label><Input
+						id="edit-event-venueAddress"
+						name="venueAddress"
+						maxlength={500}
+						value={editing.venueAddress ?? ''}
+					/>
 				</div>
 				<div class="flex flex-col gap-1.5">
 					<Label for="edit-event-season">Season</Label>

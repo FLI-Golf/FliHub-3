@@ -65,8 +65,8 @@
 		},
 		{
 			"id": "venues-courses",
-			"label": "Venues & courses",
-			"description": "Golf course layouts with holes and positions. General venue records are planned.",
+			"label": "Courses",
+			"description": "Golf and disc golf course layouts with holes and basket positions or tee sets.",
 			"availability": "available",
 			"milestone": "Phases 1D–1F",
 			"dependsOn": []
