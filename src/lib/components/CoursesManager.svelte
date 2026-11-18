@@ -153,13 +153,15 @@
 						{#if holesOf(course.id).length === 0}
 							<p class="text-sm text-muted-foreground">No holes on this course yet.</p>
 						{/if}
-						{#each holesOf(course.id) as hole (hole.id)}
-							<div class="flex flex-col gap-1.5 rounded-md border p-2 pl-3">
+						{#each holesOf(course.id) as hole, index (hole.id)}
+							<div
+								class="flex flex-col gap-1.5 rounded-md border p-2 pl-3 {index % 2 === 0 ? 'bg-white' : 'bg-slate-300'}"
+							>
 								<div class="flex flex-wrap items-center justify-between gap-2">
 									<div class="flex items-center gap-2 text-sm">
 										<Flag class="size-3.5" />
-										<span class="font-medium">Hole {hole.number} — {hole.name}</span>
-										<Badge variant="outline">Par {hole.par}</Badge>
+										<span class="font-bold text-blue-900">Hole {hole.number} — {hole.name}</span>
+										<Badge variant="outline" class="font-bold text-blue-900">Par {hole.par}</Badge>
 									</div>
 									{#if canManage}
 										<form method="POST" action="?/archiveHole">

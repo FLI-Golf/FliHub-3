@@ -8,7 +8,6 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import OrgNav from '$lib/components/OrgNav.svelte';
 	import { availabilityMeta, type RaceDistance, type TemplateId } from '$lib/capabilities/catalog';
 	import type { PageProps } from './$types';
 
@@ -69,9 +68,6 @@
 		distances = distances.filter((_, i) => i !== index);
 	}
 
-	const enabledCaps = $derived(
-		capabilityDefs.filter((c) => data.organization.capabilities.includes(c.id))
-	);
 </script>
 
 <svelte:head>
@@ -87,13 +83,6 @@
 			<Settings class="size-6" />
 			{data.organization.name} — settings
 		</h1>
-		<OrgNav
-			counts={data.navigationCounts}
-			orgId={data.organization.id}
-			enabledCapabilities={enabledCaps}
-			canManage={data.canManage}
-			current="settings"
-		/>
 	</div>
 
 	{#if !data.organization.onboarded}

@@ -3,14 +3,13 @@ import { submitExpense, reviewExpense } from '$lib/server/expenses';
 import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
-import { loadOrganizationNavigationCounts } from '$lib/server/organization-navigation-counts';
 import { parseSeasonPurse } from '$lib/season-purse';
 import { toTeeInstant, type TeeSchedule } from '$lib/tee-times';
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
 import { pbErrorMessage, pbErrorStatus, toOrganizationDTO } from '$lib/server/auth';
-import { capabilityDefinitions, getCapability } from '$lib/capabilities/catalog';
+import { getCapability } from '$lib/capabilities/catalog';
 import type { StandingsTable } from '$lib/public-page';
 
 const ID_PATTERN = /^[a-z0-9]{15}$/;
@@ -748,23 +747,13 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		}
 	}
 
-	const navigationCounts = await loadOrganizationNavigationCounts(pb, {
-		organizationId: params.id,
-		userId: user.id,
-		isMember: true,
-		enabled: capabilityDefinitions
-			.filter((item) => item.availability === 'available' && dto.capabilities.includes(item.id))
-			.map((item) => item.id)
-	});
 
 	return {
-		navigationCounts,
 		organization: dto,
 		myRole,
 		canManage: myRole === 'owner' || myRole === 'admin',
 		capability,
 		enabled,
-		enabledCapabilities: capabilityDefinitions.filter((c) => dto.capabilities.includes(c.id)),
 		expenses,
 		expenseUserId: expenses ? user.id : null,
 		sponsors,

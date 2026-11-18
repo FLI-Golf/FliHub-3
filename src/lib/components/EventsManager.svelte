@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import type { TeeSchedule } from '$lib/tee-times';
 	import {
 		CircleAlert,
+		CircleX,
+		SquareCheck,
 		Pencil,
-		Plus,
 		CalendarDays,
 		Archive,
 		ArchiveRestore,
 		MapPin,
 		Layers,
 		SlidersHorizontal,
-		Clock,
 		CheckCircle2,
-		CirclePlay,
-		Settings2
+		CirclePlay
 	} from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -41,7 +41,24 @@
 		endsOn?: string | null;
 	}
 
+	interface SetupData {
+		rounds: {
+			event: string;
+			status: string;
+			number: number;
+			courseName: string | null;
+			positionLabel: string | null;
+			teeSchedule: TeeSchedule | null;
+		}[];
+		groups: { event: string; id: string; status: string; scorekeeper: string | null }[];
+		groupTeams: { group: string; entry: string; status: string }[];
+		groupAthletes: { group: string; entry: string; status: string }[];
+		entries: { id: string; season: string; status: string }[];
+		members: { userId: string; role: string }[];
+	}
+
 	interface Props {
+		setupData: SetupData;
 		events: FliEvent[];
 		seasons: SeasonOption[];
 		canManage: boolean;
@@ -50,14 +67,56 @@
 		form: unknown;
 	}
 
-	let { events, seasons, canManage, myRole, form }: Props = $props();
+	let { events, setupData, seasons, canManage, myRole, form }: Props = $props();
 
 	let editing = $state<FliEvent | null>(null);
-	let newSeasonId = $state('');
-	let newMultiDay = $state(false);
 	let editMultiDay = $state(false);
-	const newSeason = $derived(seasons.find((s) => s.id === newSeasonId));
 	const editSeason = $derived(seasons.find((s) => s.id === editing?.season));
+
+	function eventSetup(event: FliEvent) {
+		const rounds = setupData.rounds.filter(
+			(round) => round.event === event.id && round.status === 'active'
+		);
+		const groups = setupData.groups.filter(
+			(group) => group.event === event.id && group.status === 'active'
+		);
+		const groupIds = new Set(groups.map((group) => group.id));
+		const eligibleEntries = new Set(
+			setupData.entries
+				.filter((entry) => entry.season === event.season && entry.status === 'active')
+				.map((entry) => entry.id)
+		);
+		const teams = setupData.groupTeams.filter(
+			(team) =>
+				groupIds.has(team.group) && eligibleEntries.has(team.entry) && team.status === 'active'
+		);
+		const assignedEntries = new Set(teams.map((team) => team.entry));
+		const athletes = setupData.groupAthletes.filter(
+			(athlete) =>
+				athlete.status === 'active' &&
+				teams.some((team) => team.group === athlete.group && team.entry === athlete.entry)
+		);
+		const entriesWithLineups = new Set(athletes.map((athlete) => athlete.entry));
+		const missingLineups = assignedEntries.size - entriesWithLineups.size;
+		const scoringMembers = new Set(
+			setupData.members
+				.filter((member) => ['owner', 'admin', 'scorekeeper'].includes(member.role))
+				.map((member) => member.userId)
+		);
+		const scorekeepers = groups.filter(
+			(group) => group.scorekeeper && scoringMembers.has(group.scorekeeper)
+		).length;
+
+		return {
+			rounds,
+			groups,
+			assignedEntries,
+			eligibleEntries,
+			athletes,
+			missingLineups,
+			scorekeepers
+		};
+	}
 
 	function seasonMinimum(option: SeasonOption | undefined) {
 		return option?.startsOn ? option.startsOn.slice(0, 10) + 'T00:00' : undefined;
@@ -111,6 +170,19 @@
 	}
 </script>
 
+{#snippet setupItem(complete: boolean, label: string)}
+	<li class="flex items-start gap-2">
+		{#if complete}
+			<SquareCheck class="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden="true" />
+			<span class="sr-only">Complete:</span>
+		{:else}
+			<CircleX class="mt-0.5 size-4 shrink-0 text-red-700" aria-hidden="true" />
+			<span class="sr-only">Needs attention:</span>
+		{/if}
+		<span>{label}</span>
+	</li>
+{/snippet}
+
 <div class="flex flex-col gap-6">
 	{#if message}
 		<Alert.Root variant="destructive">
@@ -131,16 +203,14 @@
 					{events.length}
 				</span>
 			</Card.Title>
-			<Card.Description>
-				An event belongs to one season or runs independently. Use the guided team-event setup above,
-				or the existing planning and editing tools below.
-			</Card.Description>
+			<Card.Description>Review each event’s setup and open it to make changes.</Card.Description>
 		</Card.Header>
 		<Card.Content class="grid gap-4 pt-5 xl:grid-cols-2">
 			{#if events.length === 0}
 				<p class="text-sm text-muted-foreground">No events yet.</p>
 			{/if}
 			{#each events as event (event.id)}
+				{@const setup = eventSetup(event)}
 				<div
 					class="flex min-w-0 flex-col justify-between gap-4 rounded-xl border border-l-4 {event.status ===
 					'archived'
@@ -197,10 +267,6 @@
 										)}{#if event.endsAt}
 											→ {event.endsAt.slice(0, 10)}{/if} (UTC)
 									</span>
-									<p class="mt-1 text-xs">
-										<Clock class="mr-1 inline-block size-3.5" aria-hidden="true" />Tee times are
-										managed separately in the round schedules below.
-									</p>
 								{:else}
 									<span>Starts {display(event.startsAt)} UTC</span>
 									{#if event.endsAt}<span> · Ends {display(event.endsAt)} UTC</span>{/if}
@@ -210,6 +276,54 @@
 							{/if}
 						</div>
 					</div>
+					{#if event.status !== 'archived'}
+						<div class="grid gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+							<h4 class="font-semibold">Event setup</h4>
+							<ul class="grid gap-1">
+								{@render setupItem(
+									Boolean(event.startsAt),
+									event.startsAt ? 'Event date set' : 'Event date needed'
+								)}
+								{#if setup.rounds.length === 0}
+									{@render setupItem(false, 'Rounds needed')}
+								{/if}
+								{#each setup.rounds as round}
+									{@const scheduled = new Set(round.teeSchedule?.slots.map((slot) => slot.group))}
+									{@const teeCount = setup.groups.filter((group) => scheduled.has(group.id)).length}
+									{@render setupItem(
+										Boolean(round.courseName),
+										`Round ${round.number} · ${round.courseName ?? 'Course needed'}${round.positionLabel ? ' · ' + round.positionLabel : ''}`
+									)}
+									{@render setupItem(
+										setup.groups.length > 0 && teeCount === setup.groups.length,
+										`Round ${round.number} tee times · ${setup.groups.length ? teeCount + '/' + setup.groups.length + ' saved' : 'Add groups first'}`
+									)}
+								{/each}
+								{@render setupItem(
+									setup.groups.length > 0,
+									setup.groups.length ? setup.groups.length + ' groups' : 'Groups needed'
+								)}
+								{#if event.season}
+									{@render setupItem(
+										setup.eligibleEntries.size > 0 &&
+											setup.assignedEntries.size === setup.eligibleEntries.size,
+										`${setup.assignedEntries.size}/${setup.eligibleEntries.size} season teams assigned`
+									)}
+									{@render setupItem(
+										setup.assignedEntries.size > 0 && setup.missingLineups === 0,
+										`${setup.athletes.length} athlete assignments${setup.missingLineups ? ' · Lineups needed for ' + setup.missingLineups + ' team(s)' : ''}`
+									)}
+								{/if}
+								{@render setupItem(
+									setup.groups.length > 0 && setup.scorekeepers === setup.groups.length,
+									setup.groups.length
+										? `${setup.scorekeepers}/${setup.groups.length} groups with scorekeepers`
+										: 'Scorekeepers · Add groups first'
+								)}
+							</ul>
+						</div>
+					{/if}
+
 					<div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
 						{#if event.status !== 'archived'}
 							<Button
@@ -257,115 +371,7 @@
 		</Card.Content>
 	</Card.Root>
 
-	{#if canManage}
-		<details class="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-4">
-			<summary class="cursor-pointer font-medium">
-				<Settings2 class="mr-2 inline-block size-4" aria-hidden="true" />Advanced event creation ·
-				independent or date-time planning
-			</summary>
-			<p class="my-3 text-sm text-muted-foreground">
-				For a new season-linked team event with rounds and groups, use the guided setup above. These
-				existing controls create only the event record.
-			</p>
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>Add an event</Card.Title>
-					<Card.Description>
-						Choose a season or leave it independent — either way the event stays inside this
-						organization.
-					</Card.Description>
-				</Card.Header>
-				<Card.Content>
-					<form method="POST" action="?/createEvent" class="grid gap-3 sm:grid-cols-2">
-						<div class="flex flex-col gap-1.5">
-							<Label for="event-name">Event name</Label>
-							<Input id="event-name" name="name" required maxlength={120} />
-						</div>
-						<div class="flex flex-col gap-1.5">
-							<Label for="new-event-venueName">Venue name (optional)</Label><Input
-								id="new-event-venueName"
-								name="venueName"
-								maxlength={120}
-							/>
-						</div>
-						<div class="flex flex-col gap-1.5">
-							<Label for="new-event-venueAddress">Venue address (optional)</Label><Input
-								id="new-event-venueAddress"
-								name="venueAddress"
-								maxlength={500}
-							/>
-						</div>
-						<div class="flex flex-col gap-1.5">
-							<Label for="event-season">Season</Label>
-							<select
-								id="event-season"
-								bind:value={newSeasonId}
-								name="season"
-								class="h-9 rounded-md border bg-background px-2 text-sm"
-							>
-								<option value="">Independent (no season)</option>
-								{#each seasons as season (season.id)}
-									<option value={season.id}>{season.name}</option>
-								{/each}
-							</select>
-						</div>
-						<div class="flex flex-col gap-1.5">
-							<Label for="event-starts">Starts at (optional)</Label>
-							<Input
-								id="event-starts"
-								name="startsAt"
-								type="datetime-local"
-								min={seasonMinimum(newSeason)}
-								max={seasonMaximum(newSeason)}
-								aria-describedby="event-date-help"
-								required={newMultiDay}
-							/>
-							<p id="event-date-help" class="text-sm text-muted-foreground">
-								{seasonDateHelp(newSeason)}
-							</p>
-						</div>
-
-						<div class="flex flex-col gap-2">
-							<label class="flex items-center gap-2 text-sm">
-								<input
-									type="checkbox"
-									name="multiDay"
-									value="yes"
-									bind:checked={newMultiDay}
-									aria-controls="event-end-fields"
-									aria-expanded={newMultiDay}
-								/>
-								Multi-day event
-							</label>
-							{#if newMultiDay}
-								<div id="event-end-fields" class="flex flex-col gap-1.5">
-									<Label for="event-ends">Ends at</Label>
-									<Input
-										id="event-ends"
-										name="endsAt"
-										type="datetime-local"
-										required
-										min={seasonMinimum(newSeason)}
-										max={seasonMaximum(newSeason)}
-										aria-describedby="event-end-help"
-									/>
-									<p id="event-end-help" class="text-sm text-muted-foreground">
-										Choose an end after the start. {seasonDateHelp(newSeason)}
-									</p>
-								</div>
-							{/if}
-						</div>
-
-						<div class="flex items-end">
-							<Button type="submit">
-								<Plus class="mr-1 size-4" /> Add event
-							</Button>
-						</div>
-					</form>
-				</Card.Content>
-			</Card.Root>
-		</details>
-	{:else}
+	{#if !canManage}
 		<p class="text-sm text-muted-foreground">
 			Your role ({myRole}) can view events but not manage them.
 		</p>

@@ -36,14 +36,11 @@
 		fantasy: Crown
 	};
 	function cardClass(active: boolean): string {
-		return `flex min-h-32 min-w-0 flex-col gap-3 rounded-xl border p-4 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${active ? 'border-blue-600 bg-blue-50 text-blue-950 ring-1 ring-blue-600' : 'border-border bg-card text-card-foreground hover:border-blue-300 hover:bg-blue-50/50'}`;
+		return `flex min-w-0 flex-col gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${active ? 'border-blue-600 bg-blue-50 text-blue-950 ring-1 ring-blue-600' : 'border-border bg-white text-card-foreground even:bg-slate-300 hover:border-blue-300 hover:bg-blue-50 even:hover:bg-blue-50'}`;
 	}
 </script>
 
-<nav
-	class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4"
-	aria-label="Organization sections"
->
+<nav class="grid gap-1.5" aria-label="Organization sections">
 	<a
 		href={resolve('/(app)/organizations/[id]', { id: orgId })}
 		aria-current={current === 'overview' ? 'page' : undefined}
@@ -57,7 +54,7 @@
 		<span class="flex flex-wrap items-center gap-x-3 gap-y-2"
 			><NavigationCountBadges items={counts.overview} /></span
 		>
-		<span class="mt-auto text-xs text-muted-foreground">Organization and membership</span>
+		<span class="sr-only">Organization and membership</span>
 	</a>
 	{#each enabledCapabilities as capability (capability.id)}
 		{@const meta = availabilityMeta[capability.availability]}
@@ -112,7 +109,7 @@
 					class="min-w-0 leading-snug font-semibold break-words">Public page</span
 				></span
 			>
-			<span class="mt-auto text-xs text-muted-foreground">Branding and publication</span>
+			<span class="sr-only">Branding and publication</span>
 		</a>
 		<a
 			href={resolve('/(app)/organizations/[id]/settings', { id: orgId })}
@@ -124,7 +121,7 @@
 					class="min-w-0 leading-snug font-semibold break-words">Settings</span
 				></span
 			>
-			<span class="mt-auto text-xs text-muted-foreground">Configuration and capabilities</span>
+			<span class="sr-only">Configuration and capabilities</span>
 		</a>
 	{/if}
 </nav>

@@ -309,7 +309,7 @@
 						{/if}
 						{#each entriesOf(season.id) as entry (entry.id)}
 							<div
-								class="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 {entry.status ===
+								class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-2 even:bg-slate-300 {entry.status ===
 								'archived'
 									? 'opacity-60'
 									: ''}"

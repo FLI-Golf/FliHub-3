@@ -296,7 +296,7 @@
 				<Clock class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Tee schedules
 			</a>
 			<a
-				class="rounded-lg border border-violet-300 bg-violet-50 px-4 py-3 font-semibold text-violet-950 underline underline-offset-4"
+				class="rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 font-semibold text-blue-950 underline underline-offset-4"
 				href="#event-rounds"
 				onclick={(e) => {
 					const section = e.currentTarget.ownerDocument.getElementById('event-rounds');
@@ -306,7 +306,7 @@
 				<Flag class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Rounds & courses
 			</a>
 			<a
-				class="rounded-lg border border-teal-300 bg-teal-50 px-4 py-3 font-semibold text-teal-950 underline underline-offset-4"
+				class="rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 font-semibold text-blue-950 underline underline-offset-4"
 				href="#event-groups"
 				onclick={(e) => {
 					const section = e.currentTarget.ownerDocument.getElementById('event-groups');
@@ -345,19 +345,21 @@
 
 			<details
 				id="event-rounds"
-				class="group/rounds scroll-mt-6 rounded-xl border-2 border-violet-200 bg-violet-50 p-4"
+				class="group/rounds scroll-mt-6 rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm sm:p-6"
 			>
 				<summary
-					class="cursor-pointer text-base font-bold text-violet-950 focus-visible:outline-2 focus-visible:outline-offset-4"
+					class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 text-white focus-visible:outline-2 focus-visible:outline-offset-4"
 				>
-					<Flag class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Rounds &
-					courses
+					<span class="text-lg font-bold">
+						<Flag class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Rounds &
+						courses
+					</span>
 					<span
-						class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-violet-300 bg-white px-2 text-xs font-bold text-violet-950"
+						class="ml-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-blue-300 bg-white px-2 text-xs font-bold text-blue-950"
 					>
 						{eventRounds.length}
-					</span><span class="ml-1 text-xs font-normal">rounds</span>
-					<span class="mt-1 block text-sm font-normal">
+					</span><span class="ml-1 text-xs">{eventRounds.length === 1 ? 'round' : 'rounds'}</span>
+					<span class="mt-1 block text-sm">
 						{eventRounds
 							.map(
 								(round) =>
@@ -365,9 +367,9 @@
 							)
 							.join(' / ') || 'No rounds configured'}
 					</span>
-					<span class="mt-2 block text-xs font-medium group-open/rounds:hidden">
+					<span class="mt-2 block text-xs font-semibold group-open/rounds:hidden">
 						<Eye class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Show details
-					</span><span class="mt-2 hidden text-xs font-medium group-open/rounds:block">
+					</span><span class="mt-2 hidden text-xs font-semibold group-open/rounds:block">
 						<EyeOff class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Hide
 						details
 					</span>
@@ -513,24 +515,28 @@
 			<!-- Groups -->
 			<details
 				id="event-groups"
-				class="group/groups scroll-mt-6 rounded-xl border-2 border-teal-200 bg-teal-50 p-4"
+				class="group/groups scroll-mt-6 rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm sm:p-6"
 			>
-				<summary class="cursor-pointer font-bold text-teal-950">
-					<Users class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Groups &
-					lineups
+				<summary
+					class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 text-white focus-visible:outline-2 focus-visible:outline-offset-4"
+				>
+					<span class="text-lg font-bold">
+						<Users class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Groups &
+						lineups
+					</span>
 					<span
-						class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-teal-300 bg-white px-2 text-xs font-bold"
+						class="ml-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-blue-300 bg-white px-2 text-xs font-bold text-blue-950"
 					>
 						{eventGroups.filter((group) => group.status === 'active').length}
-					</span> <span class="text-xs font-normal">groups</span>
+					</span> <span class="text-xs">groups</span>
 					<span
-						class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-teal-300 bg-white px-2 text-xs font-bold"
+						class="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-blue-300 bg-white px-2 text-xs font-bold text-blue-950"
 					>
 						{activeGroupAthletes.length}
-					</span> <span class="text-xs font-normal">athlete assignments</span>
-					<span class="mt-2 block text-xs font-medium group-open/groups:hidden">
+					</span> <span class="text-xs">athlete assignments</span>
+					<span class="mt-2 block text-xs font-semibold group-open/groups:hidden">
 						<Eye class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Show details
-					</span><span class="mt-2 hidden text-xs font-medium group-open/groups:block">
+					</span><span class="mt-2 hidden text-xs font-semibold group-open/groups:block">
 						<EyeOff class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Hide
 						details
 					</span>

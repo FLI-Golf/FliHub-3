@@ -7,7 +7,6 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
 
 	interface Athlete {
 		id: string;
@@ -151,11 +150,8 @@
 					No athletes yet. Create one below{#if canManage}&nbsp;or import a CSV list{/if}.
 				</p>
 			{/if}
-			{#each athletes as athlete, index (athlete.id)}
-				{#if index > 0}
-					<Separator class="my-3" />
-				{/if}
-				<div class="flex flex-wrap items-center gap-2">
+			{#each athletes as athlete (athlete.id)}
+				<div class="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-3 even:bg-slate-300">
 					<div class="flex min-w-0 flex-1 flex-col">
 						<span class="truncate font-medium">{nameOf(athlete)}</span>
 						<span class="truncate text-sm text-muted-foreground">

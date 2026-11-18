@@ -87,7 +87,7 @@
 			{/if}
 			{#each teams as team (team.id)}
 				<div
-					class="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 {team.status ===
+					class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 even:bg-slate-300 {team.status ===
 					'archived'
 						? 'opacity-60'
 						: ''}"
