@@ -202,6 +202,33 @@
 </section>
 
 <section
+	id="current-focus"
+	class="my-5 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 text-blue-950"
+	aria-labelledby="current-focus-heading"
+>
+	<div class="flex flex-wrap items-center justify-between gap-2">
+		<h2 id="current-focus-heading" class="text-lg font-bold">Current focus</h2>
+		<p class="text-xs text-blue-800">
+			Last reviewed <time datetime="2026-11-18">Nov 18, 2026</time>
+		</p>
+	</div>
+	<dl class="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+		<div>
+			<dt class="font-semibold">Last completed</dt>
+			<dd>Reimbursements &amp; expenses merged in PR #43, following Sponsorships in PR #42.</dd>
+		</div>
+		<div>
+			<dt class="font-semibold">Working on</dt>
+			<dd>Adding this homepage checkpoint.</dd>
+		</div>
+		<div>
+			<dt class="font-semibold">Next step</dt>
+			<dd>Verify the card on desktop and mobile.</dd>
+		</div>
+	</dl>
+</section>
+
+<section
 	id="planned-features"
 	class="scroll-mt-6 space-y-5 py-5"
 	aria-labelledby="workflow-heading"
