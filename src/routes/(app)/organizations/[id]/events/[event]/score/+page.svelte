@@ -6,12 +6,21 @@
 	import ScoreCompletionMark from '$lib/components/ScoreCompletionMark.svelte';
 	import { cardProgress } from '$lib/scoring/card-progress';
 	let pendingSaves = $state(0);
+	let fillingEvent = $state(false);
 	function trackSave(change: number) {
 		pendingSaves = Math.max(0, pendingSaves + change);
 	}
 	import { teeDisplay } from '$lib/tee-times';
 	import { resolve } from '$app/paths';
-	import { ArrowLeft, CircleAlert, ClipboardCheck, History, Lock, Send } from 'lucide-svelte';
+	import {
+		ArrowLeft,
+		CircleAlert,
+		ClipboardCheck,
+		History,
+		Layers,
+		Lock,
+		Send
+	} from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -318,7 +327,7 @@
 						disabled={pendingSaves > 0 || submitting}
 						style="background-color: #16a34a; color: white;"
 					>
-						Fill missing scores with demo data
+						Fill missing · current scorecard
 					</Button>
 				</form>
 				<Button
@@ -332,6 +341,82 @@
 			</section>
 		{/if}
 
+		{#if import.meta.env.DEV && data.canManage && !data.resultStatus}
+			<section
+				class="space-y-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-950"
+				aria-label="Event-wide test scores"
+			>
+				<h2 class="flex items-center gap-2 font-semibold">
+					<Layers class="size-5" aria-hidden="true" />Demo testing — entire event
+				</h2>
+				<p class="text-sm">
+					Generate missing test scores across every active group and round. Existing scores are
+					preserved; submitted cards are skipped. This can take a moment. Review and submit each
+					card afterward.
+				</p>
+				<form
+					method="POST"
+					action="?/fillAllDemoScores"
+					use:enhance={() => {
+						fillingEvent = true;
+						return async ({ update }) => {
+							try {
+								await update({ reset: false });
+							} finally {
+								fillingEvent = false;
+							}
+						};
+					}}
+				>
+					<Button
+						type="submit"
+						disabled={pendingSaves > 0 || submitting || fillingEvent}
+						class="min-h-11 bg-blue-700 text-white hover:bg-blue-800"
+					>
+						<Layers class="mr-2 size-4" aria-hidden="true" />{fillingEvent
+							? 'Filling missing event scores…'
+							: 'Fill missing · entire event'}
+					</Button>
+				</form>
+				<form
+					method="POST"
+					action="?/submitAllDemoScorecards"
+					use:enhance={() => {
+						fillingEvent = true;
+						return async ({ update }) => {
+							try {
+								await update({ reset: false });
+							} finally {
+								fillingEvent = false;
+							}
+						};
+					}}
+				>
+					<Button
+						type="submit"
+						disabled={pendingSaves > 0 || submitting || fillingEvent}
+						class="min-h-11 bg-green-700 text-white hover:bg-green-800"
+					>
+						<Send class="mr-2 size-4" aria-hidden="true" />{fillingEvent
+							? 'Processing event scorecards…'
+							: 'Submit all complete scorecards'}
+					</Button>
+				</form>
+				<p class="text-xs">
+					For rapid development testing: checks the entire event for complete scores before
+					submitting draft cards. Already submitted cards are skipped. Approval and publication
+					remain separate.
+				</p>
+
+				{#if formRecord?.eventDemoSummary}<p
+						role="status"
+						class="rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-950"
+					>
+						{String(formRecord.eventDemoSummary)}
+					</p>{/if}
+			</section>
+		{/if}
+
 		<details
 			class="group/full-scorecard overflow-hidden rounded-xl border border-blue-200 bg-blue-50/40"
 			data-testid="all-holes-overview"
@@ -340,31 +425,35 @@
 			<summary
 				class="flex min-h-14 cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-xl bg-blue-50 px-4 py-3 text-blue-950 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
 			>
-				<span class="flex items-center gap-3"
-					><svg
+				<span class="flex items-center gap-3">
+					<svg
 						aria-hidden="true"
 						viewBox="0 0 24 24"
 						class="size-6 shrink-0"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
-						><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle
+					>
+						<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle
 							cx="12"
 							cy="12"
 							r="3"
-						/></svg
-					><span
-						><span class="block font-semibold">Full scorecard · {group.name}</span><span
+						/>
+					</svg><span>
+						<span class="block font-semibold">Full scorecard · {group.name}</span><span
 							class="block text-xs"
-							>All {data.rounds.reduce((count, item) => count + item.holes.length, 0)} holes · Saved scores</span
-						></span
-					></span
-				>
-				<span class="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-semibold"
-					><span class="group-open/full-scorecard:hidden">Show scorecard</span><span
-						class="hidden group-open/full-scorecard:inline">Hide scorecard</span
-					></span
-				>
+						>
+							All {data.rounds.reduce((count, item) => count + item.holes.length, 0)} holes · Saved scores
+						</span>
+					</span>
+				</span>
+				<span class="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-semibold">
+					<span class="group-open/full-scorecard:hidden">Show scorecard</span><span
+						class="hidden group-open/full-scorecard:inline"
+					>
+						Hide scorecard
+					</span>
+				</span>
 			</summary>
 			<p class="my-3 px-4 text-sm text-muted-foreground">
 				Saved scores across all rounds. Missing scores appear as dashes.
@@ -392,9 +481,9 @@
 									: 'border-b bg-muted'}
 							>
 								<th colspan={groupAthletes.length + 1} class="p-2 text-left">
-									{#if isCardComplete(overviewRound.id, group.id)}<span class="mr-2 inline-flex"
-											><ScoreCompletionMark /><span class="sr-only">Scores complete.</span></span
-										>{/if}Round {overviewRound.number}
+									{#if isCardComplete(overviewRound.id, group.id)}<span class="mr-2 inline-flex">
+											<ScoreCompletionMark /><span class="sr-only">Scores complete.</span>
+										</span>{/if}Round {overviewRound.number}
 									{overviewRound.positionLabel ? ` · ${overviewRound.positionLabel}` : ''}
 								</th>
 							</tr>
@@ -478,9 +567,11 @@
 				)}
 				{@const progress = progressFor(r.id, group.id)}
 				{#if index > 0}<div class="flex items-center gap-2 px-3 text-xs text-muted-foreground">
-						<span class="h-px flex-1 bg-border"></span><span class="rounded-full bg-muted px-3 py-1"
-							>Intermission</span
-						><span class="h-px flex-1 bg-border"></span>
+						<span class="h-px flex-1 bg-border"></span><span
+							class="rounded-full bg-muted px-3 py-1"
+						>
+							Intermission
+						</span><span class="h-px flex-1 bg-border"></span>
 					</div>{/if}
 				<button
 					type="button"
@@ -489,29 +580,32 @@
 					onclick={() => (selectedRound = r.id)}
 					class={`flex min-h-20 w-full flex-wrap items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed ${round.id === r.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${locked ? 'border-slate-200 bg-slate-100 text-slate-600' : complete ? 'border-green-300 bg-green-50 text-green-950 hover:bg-green-100' : 'border-blue-300 bg-blue-50 text-blue-950 hover:bg-blue-100'}`}
 				>
-					<span class="flex min-w-0 items-start gap-3"
-						>{#if locked}<Lock
+					<span class="flex min-w-0 items-start gap-3">
+						{#if locked}<Lock
 								class="mt-1 size-5 shrink-0"
 								aria-hidden="true"
 							/>{:else if complete}<span class="mt-1"><ScoreCompletionMark /></span>{:else}<span
 								class="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white"
-								>{r.number}</span
-							>{/if}<span
-							><span class="block text-base font-bold">{roundLabel(r.id)}</span><span
+							>
+								{r.number}
+							</span>{/if}<span>
+							<span class="block text-base font-bold">{roundLabel(r.id)}</span><span
 								class="mt-1 block text-xs"
-								>{#if locked}Submit Round {blockingRounds(
+							>
+								{#if locked}Submit Round {blockingRounds(
 										r.id,
 										group.id,
 										data.rounds,
 										data.scorecards
 									).join(', ')} for {group.name} first.{:else}{group.name} · {progress.recorded}/{progress.required}
-									scores saved{/if}</span
-							></span
-						></span
-					>
+									scores saved{/if}
+							</span>
+						</span>
+					</span>
 					<span
 						class={`rounded-full border px-3 py-1 text-xs font-bold ${locked ? 'border-slate-300 bg-slate-200' : complete ? 'border-green-300 bg-green-100' : 'border-blue-300 bg-white'}`}
-						>{locked
+					>
+						{locked
 							? 'Locked'
 							: submitted
 								? 'Submitted'
@@ -525,8 +619,8 @@
 											: 'Viewing'
 										: r.id === nextRoundId
 											? 'Ready to start'
-											: 'View round'}</span
-					>
+											: 'View round'}
+					</span>
 				</button>
 			{/each}
 		</div>
@@ -558,8 +652,9 @@
 					</Card.Title>
 					{#if scoresComplete}<span
 							class="inline-flex items-center gap-2 rounded-md border border-green-300 bg-green-100 px-2 py-1 text-sm font-medium text-green-900"
-							><ScoreCompletionMark />Scores complete</span
-						>{/if}
+						>
+							<ScoreCompletionMark />Scores complete
+						</span>{/if}
 					{#if isDraft}
 						<Badge variant="secondary">Draft</Badge>
 					{:else}
@@ -646,8 +741,9 @@
 									disabled={currentIndex === 0 || pendingSaves > 0}
 									onclick={() => openHole(round.holes[currentIndex - 1].id)}
 									style="background-color: #16a34a !important; color: white !important;"
-									>Previous hole</Button
 								>
+									Previous hole
+								</Button>
 								<Button
 									type="button"
 									disabled={holeMissing > 0 || pendingSaves > 0}
@@ -659,8 +755,10 @@
 									type="button"
 									variant="outline"
 									disabled={pendingSaves > 0 || submitting}
-									onclick={() => (reviewing[cardKey] = true)}>View scorecard</Button
+									onclick={() => (reviewing[cardKey] = true)}
 								>
+									View scorecard
+								</Button>
 							</div>
 						</section>
 					{/if}
@@ -686,13 +784,16 @@
 							type="button"
 							variant="outline"
 							disabled={submitting || pendingSaves > 0}
-							onclick={() => (reviewing[cardKey] = false)}>Back to hole entry</Button
+							onclick={() => (reviewing[cardKey] = false)}
 						>
+							Back to hole entry
+						</Button>
 					{/if}
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
-							<caption class="sr-only">Saved strokes for Round {round.number}, {group.name}</caption
-							>
+							<caption class="sr-only">
+								Saved strokes for Round {round.number}, {group.name}
+							</caption>
 							<thead>
 								<tr class="border-b text-left">
 									<th scope="col" class="py-1.5 pr-2 font-medium">Hole</th>
@@ -712,18 +813,20 @@
 										<td class="py-1.5 pr-2">
 											<!-- Display numbering may continue (10–18 on a second pass);
 											     scores stay keyed by the physical hole. -->
-											<span class="inline-flex items-center gap-2 font-medium"
-												>{#if holeComplete(hole.id)}<ScoreCompletionMark /><span class="sr-only"
-														>All scores saved for hole</span
-													>{/if}{hole.number + round.displayOffset}</span
-											>
+											<span class="inline-flex items-center gap-2 font-medium">
+												{#if holeComplete(hole.id)}<ScoreCompletionMark /><span class="sr-only">
+														All scores saved for hole
+													</span>{/if}{hole.number + round.displayOffset}
+											</span>
 											{#if editable}<button
 													type="button"
 													disabled={submitting || pendingSaves > 0}
 													onclick={() => openHole(hole.id)}
 													class="ml-2 text-xs underline"
-													aria-label="Edit hole {hole.number + round.displayOffset}">Edit</button
-												>{/if}
+													aria-label="Edit hole {hole.number + round.displayOffset}"
+												>
+													Edit
+												</button>{/if}
 											<span class="block text-xs text-muted-foreground">
 												{hole.name} · Par {hole.par}{hole.positionMissing
 													? ' · ⚠ position missing'
@@ -751,8 +854,9 @@
 											{total.recorded ? total.total : '—'}
 											{#if total.missing > 0}<span
 													class="block text-xs font-normal text-muted-foreground"
-													>{total.recorded ? 'Partial' : 'Not started'} · {total.missing} missing</span
-												>{/if}
+												>
+													{total.recorded ? 'Partial' : 'Not started'} · {total.missing} missing
+												</span>{/if}
 										</td>
 									{/each}
 								</tr>
@@ -873,37 +977,41 @@
 
 		{#if cardChanges.length > 0}
 			<details class="rounded-lg border p-4">
-				<summary class="flex cursor-pointer items-center gap-2 font-semibold"
-					><History class="size-4" aria-hidden="true" />Recent change history ({cardChanges.length})</summary
-				>
+				<summary class="flex cursor-pointer items-center gap-2 font-semibold">
+					<History class="size-4" aria-hidden="true" />Recent change history ({cardChanges.length})
+				</summary>
 				<p class="my-3 text-sm text-muted-foreground">
 					Recent audit entries returned for this card, newest first. This is an edit log, not
 					another scorecard or a complete event audit export.
 				</p>
 				<div class="overflow-x-auto">
 					<table class="w-full text-sm">
-						<caption class="sr-only"
-							>Recent score changes for Round {round.number}, {group.name}</caption
-						><thead
-							><tr class="border-b text-left"
-								>{#each ['Time (UTC)', 'Who', 'Action', 'Athlete', 'Hole', 'Before', 'After', 'Reason'] as label (label)}<th
+						<caption class="sr-only">
+							Recent score changes for Round {round.number}, {group.name}
+						</caption><thead>
+							<tr class="border-b text-left">
+								{#each ['Time (UTC)', 'Who', 'Action', 'Athlete', 'Hole', 'Before', 'After', 'Reason'] as label (label)}<th
 										scope="col"
-										class="p-2 whitespace-nowrap">{label}</th
-									>{/each}</tr
-							></thead
-						><tbody
-							>{#each cardChanges as change, index (index)}<tr class="border-b"
-									><td class="p-2 whitespace-nowrap"
-										>{change.created ? change.created.replace('T', ' ').slice(0, 19) : '—'}</td
-									><td class="p-2">{change.authorName}</td><td class="p-2">{change.action}</td><td
-										class="p-2">{change.athleteName ?? '—'}</td
-									><td class="p-2"
-										>{change.holeNumber ? change.holeNumber + round.displayOffset : '—'}</td
-									><td class="p-2 text-center">{change.prevStrokes ?? '—'}</td><td
-										class="p-2 text-center">{change.newStrokes ?? '—'}</td
-									><td class="p-2">{change.reason ?? '—'}</td></tr
-								>{/each}</tbody
-						>
+										class="p-2 whitespace-nowrap"
+									>
+										{label}
+									</th>{/each}
+							</tr>
+						</thead><tbody>
+							{#each cardChanges as change, index (index)}<tr class="border-b">
+									<td class="p-2 whitespace-nowrap">
+										{change.created ? change.created.replace('T', ' ').slice(0, 19) : '—'}
+									</td><td class="p-2">{change.authorName}</td><td class="p-2">
+										{change.action}
+									</td><td class="p-2">{change.athleteName ?? '—'}</td><td class="p-2">
+										{change.holeNumber ? change.holeNumber + round.displayOffset : '—'}
+									</td><td class="p-2 text-center">{change.prevStrokes ?? '—'}</td><td
+										class="p-2 text-center"
+									>
+										{change.newStrokes ?? '—'}
+									</td><td class="p-2">{change.reason ?? '—'}</td>
+								</tr>{/each}
+						</tbody>
 					</table>
 				</div>
 			</details>

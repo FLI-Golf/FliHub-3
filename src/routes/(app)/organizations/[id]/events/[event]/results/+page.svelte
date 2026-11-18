@@ -203,17 +203,45 @@
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-3">
 			{#if data.canManage}
+				{#if !data.result || data.result.status === 'correcting'}
+					<p
+						class="rounded-xl border-2 border-blue-300 bg-blue-50 p-4 text-sm font-medium text-blue-950"
+					>
+						<BadgeCheck class="mr-2 inline-block size-5" aria-hidden="true" />
+						{allSubmitted
+							? 'Next step: approve the submitted scores using the blue button below. Approval creates a result version; publish it afterward to update official and fantasy standings.'
+							: 'Next step: submit every required scorecard. Approval becomes available when all cards are submitted.'}
+					</p>
+				{:else if data.result.status === 'approved'}
+					<p
+						class="rounded-xl border-2 border-green-300 bg-green-50 p-4 text-sm font-medium text-green-950"
+					>
+						<Megaphone class="mr-2 inline-block size-5" aria-hidden="true" />Next step: publish the
+						approved version using the green button below. Publication makes it available to
+						official and fantasy standings.
+					</p>
+				{/if}
 				<div class="flex flex-wrap items-center gap-2">
 					{#if !data.result || data.result.status === 'correcting'}
-						<form method="POST" action="?/approveResult">
+						<form
+							method="POST"
+							action="?/approveResult"
+							class="w-full rounded-xl border border-blue-200 bg-white p-4"
+						>
 							<input type="hidden" name="result" value={data.result?.id ?? ''} />
-							<Button
+							<button
 								type="submit"
 								disabled={!allSubmitted}
-								class="min-h-11 border border-blue-700 bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500"
+								class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border-2 border-blue-800 bg-blue-700 px-6 py-3 text-base font-bold text-white shadow-md hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+								data-testid="approve-official-result"
 							>
-								{data.result ? 'Reapprove (new version)' : 'Approve result'}
-							</Button>
+								<BadgeCheck class="size-5" aria-hidden="true" />
+								{data.result ? 'Reapprove result · new version' : 'Approve result'}
+							</button>
+							<p class="mt-3 text-xs text-slate-600">
+								{data.submittedCount}/{data.totalCards} scorecards submitted. Approval preserves a numbered
+								snapshot; it does not publish it.
+							</p>
 						</form>
 						{#if !allSubmitted}
 							<p class="text-sm text-muted-foreground">
@@ -222,14 +250,19 @@
 						{/if}
 					{/if}
 					{#if data.result?.status === 'approved'}
-						<form method="POST" action="?/publishResult">
+						<form
+							method="POST"
+							action="?/publishResult"
+							class="w-full rounded-xl border border-green-200 bg-white p-4"
+						>
 							<input type="hidden" name="result" value={data.result.id} />
-							<Button
+							<button
 								type="submit"
-								class="min-h-11 border border-green-800 bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-500"
+								class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border-2 border-green-800 bg-green-700 px-6 py-3 text-base font-bold text-white shadow-md hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green-700"
+								data-testid="publish-official-result"
 							>
-								<Megaphone class="mr-1 size-4" /> Publish official result
-							</Button>
+								<Megaphone class="size-5" aria-hidden="true" />Publish official result
+							</button>
 						</form>
 					{/if}
 					{#if data.result && data.result.status !== 'correcting'}
@@ -353,8 +386,9 @@
 						class={`rounded-lg border p-3 text-sm ${version.publishedAt ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}`}
 					>
 						<p class="font-medium">
-							{#if version.publishedAt}<span class="mr-1 inline-flex"><ScoreCompletionMark /></span
-								>{/if}v{version.version}
+							{#if version.publishedAt}<span class="mr-1 inline-flex">
+									<ScoreCompletionMark />
+								</span>{/if}v{version.version}
 							{#if data.result && version.version === data.result.currentVersion}
 								<Badge variant="secondary">current</Badge>
 							{/if}

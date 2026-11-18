@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { Check, Users } from 'lucide-svelte';
+	import { ArrowRight, Check, Trophy, Users } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -52,9 +52,9 @@
 			{lobby.approvedCount} of {lobby.league.participantLimit} seats approved
 		</Badge>
 		{#if lobby.seatsFilled}
-			<Badge class="bg-green-600 text-white hover:bg-green-600" data-testid="seats-filled"
-				>Seats filled</Badge
-			>
+			<Badge class="bg-green-600 text-white hover:bg-green-600" data-testid="seats-filled">
+				Seats filled
+			</Badge>
 		{/if}
 	</div>
 	<div class="flex flex-col gap-2" data-testid="seat-progress">
@@ -109,9 +109,9 @@
 				use:enhance
 				class="flex flex-col items-start gap-3"
 			>
-				<label for="demo-password" class="text-sm font-medium"
-					>Password for the new demo accounts</label
-				>
+				<label for="demo-password" class="text-sm font-medium">
+					Password for the new demo accounts
+				</label>
 				<Input
 					id="demo-password"
 					name="demoPassword"
@@ -125,9 +125,9 @@
 				<p class="text-sm">
 					Use 12–72 characters. Keep this password if you want to sign in as a demo participant.
 				</p>
-				<Button type="submit" style="background-color: #166534; color: white;"
-					>Fill remaining places with demo participants</Button
-				>
+				<Button type="submit" style="background-color: #166534; color: white;">
+					Fill remaining places with demo participants
+				</Button>
 			</form>
 		</section>
 	{/if}
@@ -145,9 +145,9 @@
 		class={complete ? 'border-green-300 dark:border-green-800' : ''}
 	>
 		<Card.Header>
-			<Card.Title class="flex items-center gap-2"
-				><Users class="size-4" /> Fantasy participants</Card.Title
-			>
+			<Card.Title class="flex items-center gap-2">
+				<Users class="size-4" /> Fantasy participants
+			</Card.Title>
 			<Card.Description>
 				Invited fantasy participants accept their seat, then the commissioner approves it. Only
 				approved seats count toward the limit.
@@ -157,9 +157,7 @@
 			{#each lobby.members as member (member.id)}
 				<div class="flex flex-wrap items-center gap-2 text-sm" data-testid="lobby-member">
 					<span class="font-medium">{member.name}</span>
-					<Badge variant="outline" class="text-[10px] capitalize"
-						>{roleLabel(member.role)}</Badge
-					>
+					<Badge variant="outline" class="text-[10px] capitalize">{roleLabel(member.role)}</Badge>
 					<Badge
 						variant={member.status === 'approved' ? 'default' : 'secondary'}
 						class="text-[10px] capitalize {member.status === 'approved'
@@ -220,8 +218,23 @@
 				<p class="text-sm text-muted-foreground">No drafts yet.</p>
 			{/if}
 			{#each lobby.drafts as draft (draft.id)}
-				<div class="flex flex-wrap items-center gap-2 text-sm" data-testid="lobby-draft">
-					<span class="font-medium">{draft.eventName}</span>
+				<div
+					class="flex flex-wrap items-center gap-3 rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 shadow-sm"
+					data-testid="lobby-draft"
+				>
+					{#if draft.status === 'complete'}
+						<a
+							class="inline-flex min-h-11 items-center gap-2 rounded-md text-base font-bold text-blue-900 underline underline-offset-4 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-4"
+							href={resolve('/(app)/organizations/[id]/fantasy/[league]/draft/[draft]/standings', {
+								id: data.organizationId,
+								league: lobby.league.id,
+								draft: draft.id
+							})}
+							aria-label="View standings for {draft.eventName}"
+						>
+							<Trophy class="size-5" aria-hidden="true" />{draft.eventName}
+						</a>
+					{:else}<span class="text-base font-bold">{draft.eventName}</span>{/if}
 					<Badge variant="secondary" class="text-[10px] capitalize">{draft.status}</Badge>
 					<Badge variant="outline" class="text-[10px]">{draft.pickSeconds}s clock</Badge>
 					<Button
@@ -237,15 +250,21 @@
 						Open draft room
 					</Button>
 					{#if draft.status === 'complete'}
-						<Button
-							size="sm"
-							variant="outline"
+						<a
 							href={resolve('/(app)/organizations/[id]/fantasy/[league]/draft/[draft]/standings', {
 								id: data.organizationId,
 								league: lobby.league.id,
 								draft: draft.id
-							})}>Fantasy standings</Button
+							})}
+							class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-green-800 bg-green-700 px-4 py-2 font-semibold text-white shadow-sm hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green-700"
+							aria-label="View standings for {draft.eventName}"
+							data-testid="view-draft-standings"
 						>
+							<Trophy class="size-4" aria-hidden="true" />View standings<ArrowRight
+								class="size-4"
+								aria-hidden="true"
+							/>
+						</a>
 					{/if}
 				</div>
 			{/each}
