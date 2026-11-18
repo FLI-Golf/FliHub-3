@@ -3,7 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ArrowLeft, Clock3, Megaphone } from 'lucide-svelte';
+	import { ArrowLeft, ArrowRight, CircleCheck, Clock3, Megaphone, Trophy } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -154,9 +154,9 @@
 					<caption class="sr-only">Fantasy participants and their drafted athletes</caption>
 					<thead>
 						<tr class="border-y bg-muted">
-							<th scope="col" class="sticky left-0 z-10 w-28 bg-muted px-2 py-1 text-left"
-								>Participant</th
-							>
+							<th scope="col" class="sticky left-0 z-10 w-28 bg-muted px-2 py-1 text-left">
+								Participant
+							</th>
 							<th scope="col" class="px-2 py-1 text-left">MPO 1</th>
 							<th scope="col" class="px-2 py-1 text-left">MPO 2</th>
 							<th scope="col" class="px-2 py-1 text-left">FPO 1</th>
@@ -181,9 +181,9 @@
 									<span class="block max-w-28 break-words">{roster.name}</span>
 
 									{#if current}
-										<span class="block text-[10px]"
-											>{board.draft.status === 'paused' ? 'Turn paused' : 'On the clock'}</span
-										>
+										<span class="block text-[10px]">
+											{board.draft.status === 'paused' ? 'Turn paused' : 'On the clock'}
+										</span>
 									{/if}
 								</th>
 								{#each ['male', 'female'] as gender (gender)}
@@ -347,7 +347,47 @@
 			aria-label="Draft controls"
 		>
 			<div class="p-2 sm:p-3">
-				{#if board.draft.status === 'complete'}{@render compactRosters()}{/if}
+				{#if board.draft.status === 'complete'}
+					{@render compactRosters()}
+					<section
+						aria-labelledby="draft-complete-heading"
+						class="my-4 space-y-3 rounded-xl border-2 border-green-300 bg-green-50 p-5 text-green-950"
+						data-testid="draft-complete-next-steps"
+					>
+						<h2 id="draft-complete-heading" class="flex items-center gap-2 text-lg font-bold">
+							<CircleCheck class="size-6 shrink-0" aria-hidden="true" />Draft complete — rosters
+							saved
+						</h2>
+						<p class="text-sm leading-relaxed">
+							Your picks are saved. Continue to event standings to follow {board.event.name}.
+							Fantasy scores will populate after the event’s official results are published.
+						</p>
+						<div class="flex flex-wrap gap-3">
+							<Button
+								href={resolve(
+									'/(app)/organizations/[id]/fantasy/[league]/draft/[draft]/standings',
+									{ id: data.organizationId, league: data.leagueId, draft: board.draft.id }
+								)}
+								class="min-h-11 bg-green-700 text-white hover:bg-green-800"
+							>
+								<Trophy class="mr-2 size-4" aria-hidden="true" />Continue to event standings<ArrowRight
+									class="ml-2 size-4"
+									aria-hidden="true"
+								/>
+							</Button>
+							<Button
+								variant="outline"
+								href={resolve('/(app)/organizations/[id]/fantasy/[league]', {
+									id: data.organizationId,
+									league: data.leagueId
+								})}
+								class="min-h-11 border-green-300 bg-white text-green-950"
+							>
+								<ArrowLeft class="mr-2 size-4" aria-hidden="true" />Back to league
+							</Button>
+						</div>
+					</section>
+				{/if}
 				{#if ['ready', 'paused'].includes(board.draft.status)}
 					{@render compactRosters()}
 					<div class="my-2 border-t"></div>
@@ -389,8 +429,10 @@
 								<input type="hidden" name="operation" value="resume" /><Button
 									type="submit"
 									style="background-color: #166534; color: white;"
-									data-testid="resume-draft">Resume draft</Button
+									data-testid="resume-draft"
 								>
+									Resume draft
+								</Button>
 							</form>
 						{:else}<p class="text-sm">Waiting for the commissioner to resume.</p>{/if}
 					</section>
@@ -406,8 +448,10 @@
 									type="submit"
 									variant="outline"
 									style="background-color: #fef3c7; color: #78350f;"
-									data-testid="pause-draft">Pause draft</Button
+									data-testid="pause-draft"
 								>
+									Pause draft
+								</Button>
 							</form>
 						{/if}
 						<div class="flex flex-wrap items-center justify-between gap-3">
@@ -431,9 +475,9 @@
 								class="flex items-center gap-2 text-2xl font-bold tabular-nums"
 								data-testid="draft-clock"
 							>
-								<Clock3 class="size-7" />{remainingSeconds ?? '—'}<span class="text-sm font-normal"
-									>seconds</span
-								>
+								<Clock3 class="size-7" />{remainingSeconds ?? '—'}<span class="text-sm font-normal">
+									seconds
+								</span>
 							</div>
 						</div>
 						{#if recommendation}
@@ -453,8 +497,10 @@
 											type="submit"
 											disabled={remainingSeconds === 0}
 											style="background-color: #166534; color: white;"
-											data-testid="pick-recommendation">Pick {recommendation.name}</Button
+											data-testid="pick-recommendation"
 										>
+											Pick {recommendation.name}
+										</Button>
 									</form>
 								{/if}
 							</div>
@@ -464,9 +510,9 @@
 							server processes the timeout pick.
 						</p>
 						<div class="mt-1 rounded-md bg-white p-2 text-slate-950">
-							<label for="draft-quick-find" class="mb-1 block text-xs font-semibold"
-								>Quick find an athlete</label
-							>
+							<label for="draft-quick-find" class="mb-1 block text-xs font-semibold">
+								Quick find an athlete
+							</label>
 							<div class="flex items-center gap-2">
 								<input
 									id="draft-quick-find"
@@ -480,8 +526,10 @@
 									<button
 										type="button"
 										class="min-h-11 rounded-md border border-slate-300 px-3 text-sm"
-										onclick={() => (athleteSearch = '')}>Clear</button
+										onclick={() => (athleteSearch = '')}
 									>
+										Clear
+									</button>
 								{/if}
 							</div>
 
@@ -553,16 +601,18 @@
 								class="rounded-md border bg-white p-2 text-black"
 							>
 								<option value="30" selected>30 seconds — recommended for testing</option><option
-									value="15">15 seconds</option
-								><option value="7">7 seconds</option>
+									value="15"
+								>
+									15 seconds
+								</option><option value="7">7 seconds</option>
 							</select>
-							<label class="flex items-center gap-2 text-sm"
-								><input type="checkbox" name="confirm" value="RESET" required /> Clear the picks from
-								this demo draft.</label
-							>
-							<Button type="submit" style="background-color: #b91c1c; color: white;"
-								>Stop and reset demo draft</Button
-							>
+							<label class="flex items-center gap-2 text-sm">
+								<input type="checkbox" name="confirm" value="RESET" required /> Clear the picks from this
+								demo draft.
+							</label>
+							<Button type="submit" style="background-color: #b91c1c; color: white;">
+								Stop and reset demo draft
+							</Button>
 						</form>
 					</details>
 				{/if}

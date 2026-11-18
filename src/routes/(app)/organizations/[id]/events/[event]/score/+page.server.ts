@@ -1,3 +1,8 @@
+import {
+	DemoFillError,
+	fillEventDemoScores,
+	submitEventDemoScorecards
+} from '$lib/server/fill-event-demo-scores';
 import type { TeeSchedule } from '$lib/tee-times';
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -236,6 +241,50 @@ async function ensureScorecard(
 }
 
 export const actions: Actions = {
+	submitAllDemoScorecards: async ({ locals, params }) => {
+		if (!import.meta.env.DEV) return fail(404, { message: 'Not found.' });
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		try {
+			const host = new URL(locals.pb.baseURL).hostname;
+			if (!['127.0.0.1', 'localhost', '[::1]'].includes(host))
+				return fail(403, {
+					message: 'Event-wide test submission requires the local development PocketBase.'
+				});
+			const result = await submitEventDemoScorecards(
+				locals.pb,
+				params.id,
+				params.event,
+				locals.user.id
+			);
+			return {
+				eventDemoSummary: `Submitted ${result.submitted} complete scorecards. Skipped ${result.skipped} already submitted cards. Scores were unchanged. Next: review, approve, and publish the official result separately.`
+			};
+		} catch (err) {
+			return fail(err instanceof DemoFillError ? err.status : pbErrorStatus(err), {
+				message: err instanceof DemoFillError ? err.message : pbErrorMessage(err)
+			});
+		}
+	},
+	fillAllDemoScores: async ({ locals, params }) => {
+		if (!import.meta.env.DEV) return fail(404, { message: 'Not found.' });
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		try {
+			const host = new URL(locals.pb.baseURL).hostname;
+			if (!['127.0.0.1', 'localhost', '[::1]'].includes(host)) {
+				return fail(403, {
+					message: 'Event-wide test filling requires the local development PocketBase.'
+				});
+			}
+			const result = await fillEventDemoScores(locals.pb, params.id, params.event, locals.user.id);
+			return {
+				eventDemoSummary: `Added ${result.added} test scores across ${result.touched} scorecards. Skipped ${result.skipped} locked scorecards. Existing scores were preserved. Review and submit each scorecard manually; no results were approved or published.`
+			};
+		} catch (err) {
+			return fail(err instanceof DemoFillError ? err.status : pbErrorStatus(err), {
+				message: err instanceof DemoFillError ? err.message : pbErrorMessage(err)
+			});
+		}
+	},
 	// Creates or updates one score cell. The hook derives event/round/group/
 	// entry and records the author; rules enforce the D15 permission matrix.
 	enterScore: async ({ locals, request, params }) => {
