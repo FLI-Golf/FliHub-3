@@ -772,6 +772,37 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+	randomizeTestGroups: async ({ locals, request, params }) => {
+		if (!import.meta.env.DEV)
+			return fail(403, { message: 'Test grouping is available only in development.' });
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		const eventId = String((await request.formData()).get('event') ?? '');
+		if (params.capability !== 'events' || !ID_PATTERN.test(eventId))
+			return fail(400, { message: 'Choose an event on the Events page.' });
+		try {
+			const event = await locals.pb.collection('events').getOne(eventId);
+			if (event.organization !== params.id) return fail(404, { message: 'Event not found.' });
+			const result = await locals.pb.send<{
+				eventId: string;
+				groups: number;
+				teams: number;
+				athletes: number;
+				males: number;
+				females: number;
+				other: number;
+			}>(`/api/flihub/demo/events/${eventId}/randomize-groups`, { method: 'POST', body: {} });
+			return {
+				randomizedEventId: result.eventId,
+				randomizedSummary: `Built ${result.groups} randomized groups with ${result.teams} teams and ${result.athletes} roster athletes. Pool: ${result.males} MPO / ${result.females} FPO${result.other ? ` / ${result.other} without a draft division` : ''}. Review the groups and expanded tee schedules before continuing.`
+			};
+		} catch (error) {
+			return fail(pbErrorStatus(error), {
+				teeScheduleEvent: eventId,
+				message: pbErrorMessage(error)
+			});
+		}
+	},
+
 	createGuidedEvent: async ({ locals, request, params }) => {
 		const raw = String((await request.formData()).get('guidedEvent') ?? '');
 		const denied = (status: number, message: string) =>
