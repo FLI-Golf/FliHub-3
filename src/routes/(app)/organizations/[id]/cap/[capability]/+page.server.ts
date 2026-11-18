@@ -1,3 +1,4 @@
+import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
 import { loadOrganizationNavigationCounts } from '$lib/server/organization-navigation-counts';
@@ -73,6 +74,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const organization = await pb.collection('organizations').getOne(params.id);
 	const dto = toOrganizationDTO(organization);
 	const enabled = dto.capabilities.includes(capability.id);
+
+	let sponsors: Sponsor[] | null = null;
+	if (capability.id === 'sponsorships' && enabled && (myRole === 'owner' || myRole === 'admin')) {
+		sponsors = await pb.collection('sponsors').getFullList<Sponsor>({
+			filter: pb.filter('organization = {:organization}', { organization: params.id }),
+			sort: 'name,id',
+			fields: 'id,name,contactName,contactEmail,stage,followUpOn,nextAction,notes,archived'
+		});
+	}
 
 	// Phase 1C: the athletes capability is implemented software — load its records.
 	// Identity fields live on `athletes` (all member roles); contact/eligibility
@@ -725,6 +735,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		capability,
 		enabled,
 		enabledCapabilities: capabilityDefinitions.filter((c) => dto.capabilities.includes(c.id)),
+		sponsors,
 		athletes,
 		teams,
 		rosters,
@@ -772,6 +783,98 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+	saveSponsor: async ({ locals, params, request }) => {
+		const { pb, user } = locals;
+		if (!pb || !user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (params.capability !== 'sponsorships' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Sponsorships page not found.' });
+		}
+
+		const form = await request.formData();
+		const read = (key: string) => String(form.get(key) ?? '').trim();
+		const id = read('sponsor');
+		const intent = read('intent');
+		if (
+			!['create', 'edit', 'archive', 'restore'].includes(intent) ||
+			(intent !== 'create' && !ID_PATTERN.test(id))
+		) {
+			return fail(400, { message: 'Choose a valid sponsor action.' });
+		}
+
+		try {
+			const organization = await pb.collection('organizations').getOne(params.id);
+			const memberships = await pb.collection('memberships').getFullList({
+				filter: pb.filter('organization = {:organization} && user = {:user}', {
+					organization: params.id,
+					user: user.id
+				})
+			});
+			if (
+				!memberships.some(({ role }) => role === 'owner' || role === 'admin') ||
+				!toOrganizationDTO(organization).capabilities.includes('sponsorships')
+			) {
+				return fail(403, { message: 'Sponsorships must be enabled and managed by an Owner or Admin.' });
+			}
+
+			const collection = pb.collection('sponsors');
+			if (intent !== 'create') {
+				const sponsor = await collection.getOne(id);
+				if (sponsor.organization !== params.id) {
+					return fail(404, { message: 'Sponsor not found in this organization.' });
+				}
+				if (intent === 'archive' || intent === 'restore') {
+					await collection.update(id, { archived: intent === 'archive' });
+					return { sponsorMessage: intent === 'archive' ? 'Sponsor archived.' : 'Sponsor restored.' };
+				}
+			}
+
+			const values = {
+				name: read('name'),
+				contactName: read('contactName'),
+				contactEmail: read('contactEmail'),
+				stage: read('stage'),
+				followUpOn: read('followUpOn'),
+				nextAction: read('nextAction'),
+				notes: read('notes')
+			};
+			const invalid = (message: string) =>
+				fail(400, { sponsorError: message, sponsorId: id, sponsorValues: values });
+			if (!values.name || values.name.length > 120) {
+				return invalid('Enter a sponsor name of 1–120 characters.');
+			}
+			if (!sponsorStages.some(({ value }) => value === values.stage)) {
+				return invalid('Choose a sales stage.');
+			}
+			if (values.followUpOn) {
+				const date = new Date(values.followUpOn + 'T00:00:00Z');
+				if (
+					!/^\d{4}-\d{2}-\d{2}$/.test(values.followUpOn) ||
+					!Number.isFinite(date.getTime()) ||
+					date.toISOString().slice(0, 10) !== values.followUpOn
+				) {
+					return invalid('Enter a valid follow-up date.');
+				}
+			}
+
+			try {
+				if (intent === 'create') {
+					await collection.create({ ...values, organization: params.id });
+				} else {
+					await collection.update(id, values);
+				}
+			} catch (err) {
+				return fail(pbErrorStatus(err), {
+					sponsorError: pbErrorMessage(err),
+					sponsorId: id,
+					sponsorValues: values
+				});
+			}
+			return { sponsorMessage: intent === 'create' ? 'Sponsor added.' : 'Sponsor updated.' };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+	},
+
 	randomizeTestGroups: async ({ locals, request, params }) => {
 		if (!import.meta.env.DEV)
 			return fail(403, { message: 'Test grouping is available only in development.' });

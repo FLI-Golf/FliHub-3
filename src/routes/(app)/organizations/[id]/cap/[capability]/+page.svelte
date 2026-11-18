@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import SponsorsManager from '$lib/components/SponsorsManager.svelte';
 	import OrgNav from '$lib/components/OrgNav.svelte';
 	import AthletesManager from '$lib/components/AthletesManager.svelte';
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
@@ -66,6 +67,15 @@
 					Open settings
 				</Button>
 			</div>
+		{/if}
+	{:else if data.capability.id === 'sponsorships'}
+		{#if data.sponsors}
+			<SponsorsManager sponsors={data.sponsors} {form} />
+		{:else}
+			<Alert.Root>
+				<Lock class="size-4" />
+				<Alert.Title>Owner or Admin access required</Alert.Title>
+			</Alert.Root>
 		{/if}
 	{:else if data.capability.id === 'athletes' && data.capability.availability === 'available' && data.athletes}
 		<AthletesManager

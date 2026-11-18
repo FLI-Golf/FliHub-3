@@ -1,21 +1,21 @@
 # Current focus
 
-Last reviewed: 2026-11-17
+Last reviewed: 2026-11-18
 
 ## Last completed
-PR #40: fantasy results navigation and development scoring tools.
 
-Clean event was verified through drafting, scoring, submission,
-official approval, publication, and fantasy standings.
-All six fantasy participant totals reconciled to published result v1.
+Sponsorships — initial organization sales tracker verified in Codespaces.
+Verified sponsor creation, editing, archiving, restoration, role permissions,
+and the active sponsor count.
 
 ## Working on
-Homepage checkpoint card — started, not implemented.
+
+Sponsorships branch closeout. The homepage Current focus card is still pending
+on `feature/homepage-current-focus`.
 
 ## Next session
-Add a compact Current focus card near the top of the homepage.
-Show last completed work, current task, next step, and review date.
-Keep the existing workflow categories.
+
+Open the Sponsorships PR after `npm run check` passes.
 
 ## Saved test data
 Preserve Clean event, its completed draft, published result v1,
