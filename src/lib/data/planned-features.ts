@@ -14,7 +14,10 @@ export type CapabilityStatus = 'planned' | 'in-progress' | 'ready-to-verify' | '
  * from feature completion. */
 export type NarrationStatus = 'not-started' | 'scripted' | 'recorded';
 
+export type CapabilityCategory = 'organization' | 'competition' | 'results' | 'fantasy';
+
 export interface Capability {
+	category: CapabilityCategory;
 	title: string;
 	description: string;
 	/** Phase reference from Milestones.md, e.g. "Phase 1A". */
@@ -39,6 +42,7 @@ export interface Capability {
 
 export const capabilities: Capability[] = [
 	{
+		category: 'competition',
 		title: 'Guided disc-golf organization setup',
 		description:
 			'Choose an activity, format, competitors, and result method through a six-step wizard.',
@@ -50,17 +54,19 @@ export const capabilities: Capability[] = [
 		featureHref: '/organizations/new'
 	},
 	{
+		category: 'competition',
 		title: 'Organization setup checklist',
 		description:
 			'A read-only guide from a newly created disc-golf organization to its first competition.',
-		milestone: 'Post-creation guidance · local review',
+		milestone: 'Post-creation guidance · verification follow-up',
 		status: 'ready-to-verify',
 		progress:
 			'Owners/Admins of supported wizard-created organizations receive links to existing setup tools and organization-scoped record counts. Records found is not a readiness or completion claim. Disabled capabilities point to settings; unavailable counts remain Not checked.',
-		next: 'Verify links, role restrictions, disabled capabilities, and record counts locally before marking the guide complete.',
+		next: 'The setup links and counts have been exercised in development. Confirm the remaining role and disabled-capability cases before marking this guide complete.',
 		featureHref: '/organizations'
 	},
 	{
+		category: 'competition',
 		title: 'Multiple sports and judged events',
 		description:
 			'Planned support for golf, bowling, pickleball, baseball, basketball, archery, races, dog shows, car shows, and pageants.',
@@ -71,6 +77,7 @@ export const capabilities: Capability[] = [
 		next: 'Choose one additional activity and deliver its complete entry-to-published-result workflow first.'
 	},
 	{
+		category: 'fantasy',
 		title: 'Fantasy expansion',
 		description:
 			'Season-wide totals, live provisional scores, and fantasy rules for additional activities.',
@@ -81,6 +88,7 @@ export const capabilities: Capability[] = [
 		next: 'Agree on scope and scoring rules before adding new fantasy formats.'
 	},
 	{
+		category: 'results',
 		title: 'Embeds and public API',
 		description: 'Share published results on other websites and through a read-only API.',
 		milestone: 'Phases 2E–2F',
@@ -90,19 +98,21 @@ export const capabilities: Capability[] = [
 		next: 'Extend the shared publication rules when these delivery formats are implemented.'
 	},
 	{
+		category: 'organization',
 		title: 'Organizations, invitations & roles',
 		description:
 			'Multi-organization membership with invitation-based access and Owner, Admin, Scorekeeper, and Viewer roles. Creating an account grants no organization access.',
 		milestone: 'Phase 1A',
 		status: 'complete',
 		progress:
-			'Registration, email verification, and server-validated sessions; organization creation and switching; copy-link invitations with verified-recipient acceptance; Owner/Admin/Scorekeeper/Viewer enforcement with atomic ownership transfer and an audit trail. Merged in PR #2 and verified by 15 integration tests plus a 9-step browser flow. Narrated walkthrough video available.',
+			'Registration, email verification, and server-validated sessions; organization creation and switching; copy-link invitations and recipient-scoped in-app notices with verified-recipient acceptance; Owner/Admin/Scorekeeper/Viewer enforcement with atomic ownership transfer and an audit trail. Merged in PR #2 and verified by 15 integration tests plus a 9-step browser flow. Narrated walkthrough video available.',
 		next: 'Invitation email delivery (copy-link only today).',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1a',
 		narration: 'recorded'
 	},
 	{
+		category: 'organization',
 		title: 'Organization templates & capabilities',
 		description:
 			'Starter templates (League, Race/Event, Custom) with capability-aware navigation that never bypasses role permissions.',
@@ -115,6 +125,7 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'organization',
 		title: 'Account activities & fan fantasy entry',
 		description:
 			'Choose Play fantasy, manage an organization, or join through an invitation. Fans can create a fantasy league without organization staff membership.',
@@ -126,6 +137,7 @@ export const capabilities: Capability[] = [
 		featureHref: '/account'
 	},
 	{
+		category: 'organization',
 		title: 'Athlete identity',
 		description:
 			'Sport-neutral athlete records with organization-scoped identity, CSV import, and role-based management. Athletes are records, not accounts.',
@@ -139,6 +151,7 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'competition',
 		title: 'Competition structure',
 		description:
 			'Leagues, seasons, divisions, team entries, and events with organization-scoped relationships. Teams enter seasons directly; events belong to one season or run independently.',
@@ -151,6 +164,7 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'organization',
 		title: 'Season rosters & reserve pools',
 		description:
 			'Season rosters attached to team entries, separate reserve pools, and append-only event substitutions that never rewrite participation history.',
@@ -163,18 +177,20 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'competition',
 		title: 'Event operations',
 		description:
 			'Course layouts with holes and labeled positions, ordered event rounds, groups with team and athlete assignments, and per-group scorekeepers.',
 		milestone: 'Phase 1F',
 		status: 'complete',
 		progress:
-			'Courses with numbered/named holes and labeled positions with explicit units; ordered course-backed rounds; event groups with team and athlete assignments; and per-group scorekeeper assignments. Eligible athletes come from season rosters plus designated event substitutions. Mobile scoring now enforces score-entry permissions; group assignment alone does not grant a Viewer scoring access. Single-round and two-round event formats are supported. Venue records remain planned. The Phase 1F foundation was merged in PR #14 with its integration and browser walkthrough verification; narrated setup walkthrough available.',
+			'Courses with numbered/named holes and labeled positions with explicit units; ordered course-backed rounds; event groups with team and athlete assignments; and per-group scorekeeper assignments. Eligible athletes come from season rosters plus designated event substitutions. Mobile scoring now enforces score-entry permissions; group assignment alone does not grant a Viewer scoring access. Single-round and two-round event formats are supported. Guided event creation now saves the event, rounds, groups, roster lineups, scorekeeper assignments, and tee schedules together. Optional venue name and address are saved on the event; a separate venue collection remains planned. Event controls include count badges, collapsible cards, and direct event selection. Randomized test-group rebuilding is a development-only tool. The Phase 1F foundation was merged in PR #14 with its integration and browser walkthrough verification; narrated setup walkthrough available.',
 		featureHref: '/organizations',
 		walkthroughHref: '/walkthroughs/phase1f',
 		narration: 'recorded'
 	},
 	{
+		category: 'competition',
 		title: 'Disc golf demonstration event',
 		description:
 			'A two-round event on a nine-hole course with red/blue basket positions, six groups, and assigned scorekeepers.',
@@ -189,6 +205,7 @@ export const capabilities: Capability[] = [
 		walkthroughLabel: 'Watch event setup walkthrough (Phase 1F)'
 	},
 	{
+		category: 'results',
 		title: 'Mobile scorekeeping',
 		description:
 			'Phone-friendly scoring with per-hole strokes and a Draft → Submitted workflow. Missing scores never become zero.',
@@ -201,6 +218,7 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'results',
 		title: 'Official results & corrections',
 		description:
 			'Approval and publication with versioned corrections that preserve author, time, reason, and previous values.',
@@ -214,6 +232,7 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'results',
 		title: 'Competition standings',
 		description: 'Standings produced only from approved and published official results.',
 		milestone: 'Phase 1I',
@@ -226,6 +245,7 @@ export const capabilities: Capability[] = [
 		narration: 'recorded'
 	},
 	{
+		category: 'fantasy',
 		title: 'Fantasy league & snake draft',
 		description:
 			'Private fantasy leagues with configurable participant limits and per-event four-round snake drafts. The six-person demo drafts 24 athletes.',
@@ -247,6 +267,7 @@ export const capabilities: Capability[] = [
 		]
 	},
 	{
+		category: 'fantasy',
 		title: 'Event fantasy scoring & explanations',
 		description:
 			'Golf fantasy scores from published results: strokes minus saved par, with four-athlete explanations. Lowest complete score wins.',
@@ -258,6 +279,7 @@ export const capabilities: Capability[] = [
 		featureHref: '/account'
 	},
 	{
+		category: 'results',
 		title: 'Branded public pages',
 		description:
 			'Hosted public organization pages, followed later by website embeds and a read-only public API.',
