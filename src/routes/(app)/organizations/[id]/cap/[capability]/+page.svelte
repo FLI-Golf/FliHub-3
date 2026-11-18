@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { Clock, Lock, ToggleRight } from 'lucide-svelte';
+	import { Clock, Lock, Minus, Plus, ToggleRight } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -101,17 +101,36 @@
 		/>
 	{:else if data.capability.id === 'events' && data.capability.availability === 'available' && data.eventsData}
 		{#if data.canManage}
-			<GuidedEventSetup
-				seasons={data.eventsData.seasons}
-				courses={data.eventsData.courses}
-				entries={data.eventsData.entries}
-				roster={data.eventsData.rosterMemberships}
-				members={data.eventsData.members}
-				currentUserId={data.eventsData.currentUserId}
-				capabilities={data.organization.capabilities}
-				loadError={data.eventsData.setupLoadError}
-				{form}
-			/>
+			<details class="group/create rounded-xl border-2 border-blue-200 bg-blue-50/50 p-4">
+				<summary
+					class="flex cursor-pointer list-none items-center gap-3 font-semibold text-blue-950 focus-visible:outline-2 focus-visible:outline-offset-4 [&::-webkit-details-marker]:hidden"
+				>
+					<span
+						class="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-green-700 bg-green-600 text-white"
+					>
+						<Plus class="size-5 group-open/create:hidden" aria-hidden="true" />
+						<Minus class="hidden size-5 group-open/create:block" aria-hidden="true" />
+					</span>
+					<span>
+						{data.eventsData.events.filter((event) => event.status !== 'archived').length > 0
+							? 'Create another event'
+							: 'Set up your first event'}
+					</span>
+				</summary>
+				<div class="pt-4">
+					<GuidedEventSetup
+						seasons={data.eventsData.seasons}
+						courses={data.eventsData.courses}
+						entries={data.eventsData.entries}
+						roster={data.eventsData.rosterMemberships}
+						members={data.eventsData.members}
+						currentUserId={data.eventsData.currentUserId}
+						capabilities={data.organization.capabilities}
+						loadError={data.eventsData.setupLoadError}
+						{form}
+					/>
+				</div>
+			</details>
 		{/if}
 		<EventsManager
 			events={data.eventsData.events}
@@ -175,7 +194,9 @@
 			<Card.Header>
 				<div class="flex items-center justify-between gap-2">
 					<Card.Title class="text-base">{data.capability.label}</Card.Title>
-					<Badge variant="secondary" class={meta.badgeClass}>{meta.label}</Badge>
+					<Badge variant="secondary" class={meta.badgeClass}>
+						{meta.label}
+					</Badge>
 				</div>
 				<Card.Description>{data.capability.description}</Card.Description>
 			</Card.Header>

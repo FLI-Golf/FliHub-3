@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { shuffled } from '$lib/event-setup/shuffle';
 	import { tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { prepareGuidedTeeTimes, GUIDED_TEE_ZONES as timeZones } from '$lib/event-setup/schedule';
@@ -247,9 +248,9 @@
 			validation = 'Select teams and keep this wizard setup within 64 groups.';
 			return;
 		}
-		const ordered = seasonEntries
-			.filter((entry) => selectedEntries.includes(entry.id))
-			.map((entry) => entry.id);
+		const ordered = shuffled(
+			seasonEntries.filter((entry) => selectedEntries.includes(entry.id)).map((entry) => entry.id)
+		);
 		groups = Array.from({ length: Math.ceil(ordered.length / teamsPerGroup) }, (_, index) => ({
 			key: String(index),
 			name: `Group ${index + 1}`,
@@ -699,7 +700,10 @@
 			{#if needsGenerate}<p class="text-sm font-medium text-red-700" role="status">
 					Next step: press “Generate suggested groups” to build the groups. Next stays locked until
 					you do.
-				</p>{:else if !selectedEntries.length}<p class="text-sm font-medium text-amber-800" role="status">
+				</p>{:else if !selectedEntries.length}<p
+					class="text-sm font-medium text-amber-800"
+					role="status"
+				>
 					Select at least one team to continue.
 				</p>{:else if !groupsReady}<p class="text-sm font-medium text-amber-800" role="status">
 					{validateStage(2)}
@@ -787,8 +791,8 @@
 						/>
 					</div>{/each}
 				{#if firstUnsetRound >= 0}<p class="text-sm font-medium text-red-700" role="status">
-						Next step: set the first group’s date and time for Round {firstUnsetRound + 1}. Next stays
-						locked until every round has a start time.
+						Next step: set the first group’s date and time for Round {firstUnsetRound + 1}. Next
+						stays locked until every round has a start time.
 					</p>{:else if !teesReady}<p class="text-sm font-medium text-amber-800" role="status">
 						{validateStage(3)}
 					</p>{:else}<p class="text-sm font-medium text-green-700" role="status">

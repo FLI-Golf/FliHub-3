@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { Clock, Eye, EyeOff, Save, WandSparkles } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
 		generateTeeTimes,
@@ -79,102 +80,176 @@
 	}
 </script>
 
-<section class="space-y-3 rounded-md border p-4" aria-label="Round {round.number} tee times">
-	<h3 class="font-semibold">Round {round.number} tee times</h3>
-	{#if canManage}
-		<form method="POST" action="?/saveTeeSchedule" onsubmit={validate} class="space-y-3">
-			<input type="hidden" name="round" value={round.id} />
-			<div class="flex flex-wrap gap-3">
-				<label class="flex flex-col gap-1 text-sm"
-					>Timezone<input
-						name="timeZone"
-						bind:value={timeZone}
-						required
-						class="rounded-md border bg-background p-2"
-					/></label
-				>
-				<label class="flex flex-col gap-1 text-sm"
-					>First tee time<input
-						type="datetime-local"
-						bind:value={first}
-						class="rounded-md border bg-background p-2"
-					/></label
-				>
-				<label class="flex flex-col gap-1 text-sm"
-					>Interval in minutes<input
-						name="interval"
-						type="number"
-						min="1"
-						max="240"
-						step="1"
-						bind:value={interval}
-						required
-						class="w-24 rounded-md border bg-background p-2"
-					/></label
-				>
-			</div>
-			<p class="text-sm text-muted-foreground">
-				Use a timezone such as America/Phoenix or America/Los_Angeles. Set the order, then generate
-				times. Generating replaces the draft times below. Changing timezone reinterprets the clock
-				times. Save to apply the full schedule.
-			</p>
-			<Button type="button" variant="outline" onclick={generate} disabled={draft.length === 0}
-				>Generate tee times</Button
+<section
+	class="space-y-5 rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm sm:p-6"
+	aria-label="Round {round.number} tee times"
+>
+	<details class="group/schedule">
+		<summary
+			class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 text-white focus-visible:outline-2 focus-visible:outline-offset-4"
+		>
+			<span class="text-lg font-bold">
+				<Clock class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Round {round.number}
+				tee times
+			</span>
+			<span
+				class="ml-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-blue-300 bg-white px-2 text-xs font-bold text-blue-950"
+				aria-label="{(round.teeSchedule?.slots ?? []).filter((slot) =>
+					groups.some((group) => group.id === slot.group && group.status === 'active')
+				).length} saved tee times"
 			>
-			{#each draft as slot, index (slot.group)}
-				<div class="flex flex-wrap items-center gap-2 rounded-md border p-2">
-					<input type="hidden" name="group" value={slot.group} />
-					<span class="text-sm">{index + 1}. {slot.name}</span>
-					<Button
-						type="button"
-						size="sm"
-						variant="outline"
-						disabled={index === 0}
-						onclick={() => move(index, -1)}
-						aria-label="Move {slot.name} earlier">Up</Button
-					>
-					<Button
-						type="button"
-						size="sm"
-						variant="outline"
-						disabled={index === draft.length - 1}
-						onclick={() => move(index, 1)}
-						aria-label="Move {slot.name} later">Down</Button
-					>
-					<input
-						type="datetime-local"
-						name="teeTime"
-						bind:value={slot.local}
-						required
-						aria-label="Tee time for {slot.name}"
-						class="rounded-md border bg-background p-2 text-sm"
-					/>
-				</div>
-			{/each}
-			{#if problem}<p role="alert" class="text-sm text-destructive">
-					{problem}
-				</p>{/if}
-			<Button type="submit" disabled={draft.length === 0}
-				>Save round {round.number} tee times</Button
-			>
-		</form>
-	{/if}
-	{#if !round.teeSchedule}<p class="text-sm text-muted-foreground">
-			No tee times saved for this round.
-		</p>
-	{:else}
-		<h4 class="text-sm font-medium">
-			Saved schedule · {round.teeSchedule.timeZone}
-		</h4>
-		{#each round.teeSchedule.slots as slot (slot.group)}
-			{#if groups.some((group) => group.id === slot.group && group.status === 'active')}
-				<p class="text-sm">
-					{groups.find((group) => group.id === slot.group)?.name} · {teeDisplay(
-						slot.startsAt,
+				{(round.teeSchedule?.slots ?? []).filter((slot) =>
+					groups.some((group) => group.id === slot.group && group.status === 'active')
+				).length}
+			</span>
+			<span class="ml-1 text-xs">saved tee times</span>
+			<span class="mt-1 block text-sm">
+				{groups.filter((group) => group.status === 'active').length} groups · {round.teeSchedule
+					? round.teeSchedule.timeZone
+					: 'No saved schedule'}
+			</span>
+			{#if round.teeSchedule?.slots[0]}<span class="mt-1 block text-sm">
+					First saved tee: {teeDisplay(
+						round.teeSchedule.slots[0].startsAt,
 						round.teeSchedule.timeZone
 					)}
-				</p>
+				</span>{/if}
+			<span class="mt-2 block text-xs font-semibold group-open/schedule:hidden">
+				<Eye class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Show details
+			</span><span class="mt-2 hidden text-xs font-semibold group-open/schedule:block">
+				<EyeOff class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Hide details
+			</span>
+		</summary>
+		<div class="space-y-5 pt-4">
+			{#if canManage}
+				<form
+					method="POST"
+					action="?/saveTeeSchedule"
+					onsubmit={validate}
+					class="space-y-4 rounded-xl border border-slate-300 bg-white p-4 text-slate-950"
+				>
+					<input type="hidden" name="round" value={round.id} />
+					<p class="text-sm font-bold text-blue-900">Edit schedule · Save below to apply changes</p>
+					<div class="flex flex-wrap gap-4 rounded-lg bg-blue-50 p-3">
+						<label class="flex min-w-0 flex-col gap-2 text-sm font-semibold">
+							Timezone<input
+								name="timeZone"
+								bind:value={timeZone}
+								required
+								class="min-h-11 min-w-0 rounded-md border border-slate-400 bg-white p-2 text-slate-950"
+							/>
+						</label>
+						<label class="flex min-w-0 flex-col gap-2 text-sm font-semibold">
+							First tee time<input
+								type="datetime-local"
+								bind:value={first}
+								class="min-h-11 min-w-0 rounded-md border border-slate-400 bg-white p-2 text-slate-950"
+							/>
+						</label>
+						<label class="flex min-w-0 flex-col gap-2 text-sm font-semibold">
+							Interval in minutes<input
+								name="interval"
+								type="number"
+								min="1"
+								max="240"
+								step="1"
+								bind:value={interval}
+								required
+								class="min-h-11 w-24 rounded-md border border-slate-400 bg-white p-2 text-slate-950"
+							/>
+						</label>
+					</div>
+					<p class="text-sm text-muted-foreground">
+						Use a timezone such as America/Phoenix or America/Los_Angeles. Set the order, then
+						generate times. Generating replaces the draft times below. Changing timezone
+						reinterprets the clock times. Save to apply the full schedule.
+					</p>
+					<Button
+						type="button"
+						variant="outline"
+						class="min-h-11 border-blue-400 bg-blue-50 font-semibold text-blue-950 hover:bg-blue-100"
+						onclick={generate}
+						disabled={draft.length === 0}
+					>
+						<WandSparkles
+							class="mr-1.5 inline-block size-4 align-middle"
+							aria-hidden="true"
+						/>Generate tee times
+					</Button>
+					{#each draft as slot, index (slot.group)}
+						<div
+							class="flex flex-wrap items-center gap-3 rounded-lg border border-slate-300 bg-slate-50 p-3 even:bg-white"
+						>
+							<input type="hidden" name="group" value={slot.group} />
+							<span class="mr-auto text-sm font-bold">
+								{index + 1}. {slot.name}
+							</span>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								disabled={index === 0}
+								onclick={() => move(index, -1)}
+								aria-label="Move {slot.name} earlier"
+							>
+								Up
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								disabled={index === draft.length - 1}
+								onclick={() => move(index, 1)}
+								aria-label="Move {slot.name} later"
+							>
+								Down
+							</Button>
+							<input
+								type="datetime-local"
+								name="teeTime"
+								bind:value={slot.local}
+								required
+								aria-label="Tee time for {slot.name}"
+								class="min-h-11 max-w-full min-w-0 rounded-md border border-slate-400 bg-white p-2 text-sm text-slate-950"
+							/>
+						</div>
+					{/each}
+					{#if problem}<p role="alert" class="text-sm text-destructive">
+							{problem}
+						</p>{/if}
+					<Button
+						type="submit"
+						class="min-h-11 bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800"
+						disabled={draft.length === 0}
+					>
+						<Save class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Save round {round.number}
+						tee times
+					</Button>
+				</form>
 			{/if}
-		{/each}
-	{/if}
+			{#if !round.teeSchedule}<p class="text-sm text-muted-foreground">
+					No tee times saved for this round.
+				</p>
+			{:else}
+				<div
+					class="space-y-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950"
+				>
+					<h4 class="text-sm font-bold">
+						<Save class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />Saved
+						schedule · {round.teeSchedule.timeZone}
+					</h4>
+					{#each round.teeSchedule.slots as slot (slot.group)}
+						{#if groups.some((group) => group.id === slot.group && group.status === 'active')}
+							<p class="rounded-md border border-emerald-200 bg-white/80 px-3 py-2 text-sm">
+								{groups.find((group) => group.id === slot.group)?.name} · {teeDisplay(
+									slot.startsAt,
+									round.teeSchedule.timeZone
+								)}
+							</p>
+						{/if}
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</details>
 </section>
