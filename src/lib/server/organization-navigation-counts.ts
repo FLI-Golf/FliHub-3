@@ -128,6 +128,9 @@ const definitions: Record<string, Definition[]> = {
 			condition: 'publishedVersion > 0 && event.status != "archived"'
 		}
 	],
+	reimbursements: [
+		{ collection: 'expenses', label: 'Organization expenses', shortLabel: '' }
+	],
 	sponsorships: [
 		{
 			collection: 'sponsors',

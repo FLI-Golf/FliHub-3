@@ -10,12 +10,14 @@ and the active sponsor count.
 
 ## Working on
 
-Sponsorships branch closeout. The homepage Current focus card is still pending
-on `feature/homepage-current-focus`.
+Reimbursements & expenses — organization expense submission, protected receipts,
+and Owner/Admin review. Codespaces verification is pending.
+The homepage Current focus card is still pending on `feature/homepage-current-focus`.
 
 ## Next session
 
-Open the Sponsorships PR after `npm run check` passes.
+Verify expense submission, receipt downloads, approval and return using separate
+organization member, reviewer, and outsider accounts.
 
 ## Saved test data
 Preserve Clean event, its completed draft, published result v1,

@@ -75,7 +75,7 @@
 					class="min-w-0 leading-snug font-semibold break-words">{capability.label}</span
 				></span
 			>
-			{#if counts[capability.id]?.length && (capability.id !== 'sponsorships' || canManage)}
+			{#if counts[capability.id]?.length && (canManage || (capability.id !== 'sponsorships' && capability.id !== 'reimbursements'))}
 				{#if capability.id === 'venues-courses'}
 					<span class="flex flex-wrap items-center gap-x-3 gap-y-2">
 						<NavigationCountBadges

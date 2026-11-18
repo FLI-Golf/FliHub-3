@@ -115,8 +115,8 @@
 			"id": "reimbursements",
 			"label": "Reimbursements & expenses",
 			"description": "Expense tracking and reimbursements.",
-			"availability": "upcoming",
-			"milestone": "Phase 3+ (deferred)",
+			"availability": "available",
+			"milestone": "Phase 3: Expense submission and review",
 			"dependsOn": []
 		}
 	]
