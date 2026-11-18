@@ -1,3 +1,5 @@
+import type { Expense } from '$lib/expenses/model';
+import { submitExpense, reviewExpense } from '$lib/server/expenses';
 import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
@@ -74,6 +76,34 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const organization = await pb.collection('organizations').getOne(params.id);
 	const dto = toOrganizationDTO(organization);
 	const enabled = dto.capabilities.includes(capability.id);
+
+	let expenses: Expense[] | null = null;
+	if (capability.id === 'reimbursements' && enabled) {
+		const records = await pb.collection('expenses').getFullList({
+			filter:
+				myRole === 'owner' || myRole === 'admin'
+					? pb.filter('organization = {:organization}', { organization: params.id })
+					: pb.filter('organization = {:organization} && submitter = {:submitter}', {
+							organization: params.id,
+							submitter: user.id
+						}),
+			sort: '-created,id',
+			fields: 'id,expenseOn,vendor,category,purpose,amountCents,receipt,status,reviewNote,submitter,submitterName'
+		});
+		expenses = records.map((record) => ({
+			id: record.id,
+			expenseOn: String(record.expenseOn),
+			vendor: String(record.vendor),
+			category: String(record.category),
+			purpose: String(record.purpose),
+			amountCents: Number(record.amountCents),
+			hasReceipt: Boolean(record.receipt),
+			status: record.status as Expense['status'],
+			reviewNote: String(record.reviewNote ?? ''),
+			submitter: String(record.submitter),
+			submitterName: String(record.submitterName ?? '')
+		}));
+	}
 
 	let sponsors: Sponsor[] | null = null;
 	if (capability.id === 'sponsorships' && enabled && (myRole === 'owner' || myRole === 'admin')) {
@@ -735,6 +765,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		capability,
 		enabled,
 		enabledCapabilities: capabilityDefinitions.filter((c) => dto.capabilities.includes(c.id)),
+		expenses,
+		expenseUserId: expenses ? user.id : null,
 		sponsors,
 		athletes,
 		teams,
@@ -783,6 +815,8 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+	submitExpense,
+	reviewExpense,
 	saveSponsor: async ({ locals, params, request }) => {
 		const { pb, user } = locals;
 		if (!pb || !user) return fail(503, { message: 'PocketBase is not configured.' });

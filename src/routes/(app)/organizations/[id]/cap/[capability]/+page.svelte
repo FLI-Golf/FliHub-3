@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import ExpensesManager from '$lib/components/ExpensesManager.svelte';
 	import SponsorsManager from '$lib/components/SponsorsManager.svelte';
 	import OrgNav from '$lib/components/OrgNav.svelte';
 	import AthletesManager from '$lib/components/AthletesManager.svelte';
@@ -68,6 +69,14 @@
 				</Button>
 			</div>
 		{/if}
+	{:else if data.expenses && data.expenseUserId}
+		<ExpensesManager
+			expenses={data.expenses}
+			organizationId={data.organization.id}
+			userId={data.expenseUserId}
+			canManage={data.canManage}
+			{form}
+		/>
 	{:else if data.capability.id === 'sponsorships'}
 		{#if data.sponsors}
 			<SponsorsManager sponsors={data.sponsors} {form} />
