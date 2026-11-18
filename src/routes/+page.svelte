@@ -1,928 +1,326 @@
 <script lang="ts">
-	import { buildStatus } from '$lib/data/build-status';
 	import { resolve } from '$app/paths';
-	import { AlertCircle, CircleCheck, Construction, Map, Server } from 'lucide-svelte';
-	import * as Alert from '$lib/components/ui/alert/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
+	import {
+		Users,
+		Flag,
+		ClipboardCheck,
+		Trophy,
+		Eye,
+		EyeOff,
+		ArrowRight,
+		Plus,
+		LogIn,
+		Map,
+		Server,
+		CircleCheck,
+		CircleAlert,
+		Play,
+		Layers
+	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { capabilities, capabilityStatusMeta } from '$lib/data/planned-features';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { buildStatus } from '$lib/data/build-status';
+	import {
+		capabilities,
+		capabilityStatusMeta,
+		type Capability,
+		type CapabilityCategory
+	} from '$lib/data/planned-features';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-
-	const narrationLabels: Record<string, string> = {
-		'not-started': 'not started',
-		scripted: 'scripted',
-		recorded: 'recorded'
-	};
+	const groups = [
+		{
+			id: 'organization',
+			title: 'Organization & people',
+			icon: Users,
+			color: 'border-blue-200 bg-blue-50 text-blue-950',
+			summary: 'Accounts, invitations, roles, athletes, teams, and season rosters.'
+		},
+		{
+			id: 'competition',
+			title: 'Competition operations',
+			icon: Flag,
+			color: 'border-teal-200 bg-teal-50 text-teal-950',
+			summary: 'Guided setup, leagues, seasons, courses, event groups, and tee schedules.'
+		},
+		{
+			id: 'results',
+			title: 'Scoring & results',
+			icon: ClipboardCheck,
+			color: 'border-violet-200 bg-violet-50 text-violet-950',
+			summary: 'Mobile scorecards, reviewed results, corrections, standings, and public pages.'
+		},
+		{
+			id: 'fantasy',
+			title: 'Fantasy',
+			icon: Trophy,
+			color: 'border-orange-200 bg-orange-50 text-orange-950',
+			summary: 'Private leagues, participant invitations, snake drafts, and event scoring.'
+		}
+	] as const;
+	const inCategory = (category: CapabilityCategory) =>
+		capabilities.filter((item) => item.category === category && item.status !== 'planned');
+	const planned = capabilities.filter((item) => item.status === 'planned');
+	const completeCount = capabilities.filter((item) => item.status === 'complete').length;
+	const reviewCount = capabilities.filter(
+		(item) => item.status === 'ready-to-verify' || item.status === 'in-progress'
+	).length;
 </script>
 
-<!-- Hero -->
-<section class="flex flex-col items-start gap-4 py-6 sm:py-10">
-	<div class="flex flex-wrap items-center gap-2">
-		<Badge>{buildStatus.label} · {buildStatus.scope}</Badge>
-		<Badge variant="outline">SvelteKit</Badge>
-		<Badge variant="outline">Tailwind CSS</Badge>
-		<Badge variant="outline">shadcn-svelte</Badge>
-		<Badge variant="outline">PocketBase</Badge>
-	</div>
-	<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
-		FliHub — organizations, competitions & events
+<svelte:head>
+	<title>FliHub — competitions, results & fantasy</title>
+	<meta
+		name="description"
+		content="Manage your golf organization, prepare events, publish reviewed results, and run private fantasy drafts. Explore available workflows and upcoming plans."
+	/>
+</svelte:head>
+
+{#snippet disclosure()}
+	<span class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold group-open/panel:hidden">
+		<Eye class="size-4" aria-hidden="true" />Show details
+	</span>
+	<span class="mt-3 hidden items-center gap-1.5 text-xs font-semibold group-open/panel:inline-flex">
+		<EyeOff class="size-4" aria-hidden="true" />Hide details
+	</span>
+{/snippet}
+
+{#snippet capabilityCard(capability: Capability)}
+	{@const meta = capabilityStatusMeta[capability.status]}
+	<details
+		class="group/feature rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm"
+	>
+		<summary
+			class="cursor-pointer list-none p-4 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
+			<span class="flex flex-wrap items-start justify-between gap-2">
+				<span class="font-semibold">{capability.title}</span>
+				<Badge class={meta.badgeClass}>{meta.label}</Badge>
+			</span>
+			<span class="mt-2 block text-sm leading-relaxed text-slate-600">
+				{capability.description}
+			</span>
+			<span
+				class="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 group-open/feature:hidden"
+			>
+				<Eye class="size-4" aria-hidden="true" />Show details
+			</span>
+			<span
+				class="mt-3 hidden items-center gap-1.5 text-xs font-medium text-slate-600 group-open/feature:inline-flex"
+			>
+				<EyeOff class="size-4" aria-hidden="true" />Hide details
+			</span>
+		</summary>
+		<div class="space-y-3 border-t border-slate-200 p-4">
+			<p class="text-sm leading-relaxed text-slate-600">{capability.progress}</p>
+			{#if capability.next}<p class="text-sm leading-relaxed">
+					<strong>Next:</strong>
+					{capability.next}
+				</p>{/if}
+			<div class="flex flex-wrap gap-2">
+				{#if capability.featureHref}<Button
+						size="sm"
+						variant="ghost"
+						href={capability.featureHref}
+						class="bg-purple-100 text-purple-950 hover:bg-purple-200"
+					>
+						<ArrowRight class="mr-1.5 size-4" aria-hidden="true" />Open feature
+					</Button>{/if}
+				{#each capability.walkthroughs ?? [] as walkthrough (walkthrough.href)}
+					{#if data.walkthroughAvailable?.[walkthrough.href]}<Button
+							size="sm"
+							variant="ghost"
+							href={walkthrough.href}
+							class="h-auto min-h-9 bg-orange-100 whitespace-normal text-orange-950 hover:bg-orange-200"
+						>
+							<Play class="mr-1.5 size-4 shrink-0" aria-hidden="true" />{walkthrough.label}
+						</Button>{:else}<span class="text-xs text-slate-500">Walkthrough coming soon</span>{/if}
+				{/each}
+				{#if capability.walkthroughHref}
+					{#if data.walkthroughAvailable?.[capability.walkthroughHref]}<Button
+							size="sm"
+							variant="ghost"
+							href={capability.walkthroughHref}
+							class="h-auto min-h-9 bg-orange-100 whitespace-normal text-orange-950 hover:bg-orange-200"
+						>
+							<Play
+								class="mr-1.5 size-4 shrink-0"
+								aria-hidden="true"
+							/>{capability.walkthroughLabel ?? 'Watch walkthrough'}
+						</Button>{:else}<span class="text-xs text-slate-500">Walkthrough coming soon</span>{/if}
+				{/if}
+			</div>
+			<p class="text-xs text-slate-500">{capability.milestone}</p>
+			{#if capability.narration}<p class="text-xs text-slate-500">
+					Narration: {capability.narration === 'not-started' ? 'not started' : capability.narration}
+				</p>{/if}
+		</div>
+	</details>
+{/snippet}
+
+<section
+	class="my-6 rounded-2xl border border-blue-200 bg-blue-50 p-6 text-blue-950 shadow-sm sm:p-9"
+>
+	<Badge variant="outline" class="border-blue-300 bg-white text-blue-950">
+		{buildStatus.label} · Golf workflows available
+	</Badge>
+	<h1 class="mt-4 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">
+		Your organization. Your competition. One place to run it.
 	</h1>
-	<p class="max-w-2xl text-lg text-muted-foreground">
-		Available today: golf event operations, published results, private fantasy drafts, and event
-		standings. Next, we are planning adaptable setup for multiple sports and judged events,
-		including shows and pageants. New timing, judging, and match workflows remain planned.
+	<p class="mt-4 max-w-2xl text-base leading-relaxed text-blue-900 sm:text-lg">
+		Set up your golf organization, prepare an event, record scores, and publish reviewed results.
+		Bring fans into the competition with private fantasy leagues and drafts.
 	</p>
-	<div class="flex flex-wrap gap-2">
-		{#if data.user}
-			<Button href={resolve('/(app)/account')}>Choose an activity</Button>
-		{:else}
-			<Button href={resolve('/(auth)/register')}>Create account</Button>
-			<Button variant="outline" href={resolve('/(auth)/login')}>Sign in</Button>
-		{/if}
-		<Button variant="outline" href="#planned-features">View progress & plans</Button>
+	<div class="mt-6 flex flex-wrap gap-3">
+		{#if data.user}<Button
+				href={resolve('/(app)/account')}
+				class="min-h-11 bg-blue-700 text-white hover:bg-blue-800"
+			>
+				<ArrowRight class="mr-2 size-4" aria-hidden="true" />Choose an activity
+			</Button>
+		{:else}<Button
+				href={resolve('/(auth)/register')}
+				class="min-h-11 bg-green-700 text-white hover:bg-green-800"
+			>
+				<Plus class="mr-2 size-4" aria-hidden="true" />Create account
+			</Button><Button
+				variant="outline"
+				href={resolve('/(auth)/login')}
+				class="min-h-11 bg-white text-blue-950"
+			>
+				<LogIn class="mr-2 size-4" aria-hidden="true" />Sign in
+			</Button>{/if}
+		<Button
+			variant="outline"
+			href="#planned-features"
+			class="min-h-11 border-blue-300 bg-white text-blue-950"
+		>
+			<Layers class="mr-2 size-4" aria-hidden="true" />Explore workflows
+		</Button>
 	</div>
+	{#if data.user}<p class="mt-3 text-sm text-blue-800">Signed in as {data.user.email}.</p>{/if}
 </section>
 
-<Separator class="my-6" />
-
-<!-- Near-term direction -->
-<section class="grid gap-4 py-4 md:grid-cols-3" aria-label="Platform direction">
-	<Card.Root>
-		<details class="group">
-			<summary
-				class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-				><div
-					class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
-				>
-					<span class="text-sm font-semibold"
-						><span class="group-open:hidden"
-							><svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								class="size-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-								<circle cx="12" cy="12" r="3" />
-							</svg><span class="sr-only">Show more</span></span
-						><span class="hidden group-open:inline"
-							><svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								class="size-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-								<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-							</svg><span class="sr-only">Show less</span></span
-						></span
-					><span aria-hidden="true" class="flex items-center gap-2">
-						<span class="text-xs font-medium">
-							<span class="group-open:hidden">Show more</span>
-							<span class="hidden group-open:inline">Show less</span>
-						</span>
-						<span class="text-xs font-medium"
-							><span class="group-open:hidden"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg><span class="sr-only">Show more</span></span
-							><span class="hidden group-open:inline"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-									<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-								</svg><span class="sr-only">Show less</span></span
-							></span
-						><span
-							class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-							><span
-								class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-							></span></span
-						></span
-					>
-				</div>
-				<Card.Header
-					><Badge class="w-fit bg-green-600 text-white">Available today</Badge><Card.Title
-						>Golf operations & fantasy</Card.Title
-					></Card.Header
-				></summary
-			>
-			<Card.Content class="text-sm text-muted-foreground"
-				>Manage organizations, athletes, teams, and events. Enter scores, publish reviewed results,
-				run private drafts, and see event fantasy standings. Golf fantasy uses strokes minus saved
-				par; lowest wins.</Card.Content
-			>
-		</details></Card.Root
-	>
-	<Card.Root>
-		<details class="group">
-			<summary
-				class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-				><div
-					class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
-				>
-					<span class="text-sm font-semibold"
-						><span class="group-open:hidden"
-							><svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								class="size-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-								<circle cx="12" cy="12" r="3" />
-							</svg><span class="sr-only">Show more</span></span
-						><span class="hidden group-open:inline"
-							><svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								class="size-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-								<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-							</svg><span class="sr-only">Show less</span></span
-						></span
-					><span aria-hidden="true" class="flex items-center gap-2">
-						<span class="text-xs font-medium">
-							<span class="group-open:hidden">Show more</span>
-							<span class="hidden group-open:inline">Show less</span>
-						</span>
-						<span class="text-xs font-medium"
-							><span class="group-open:hidden"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg><span class="sr-only">Show more</span></span
-							><span class="hidden group-open:inline"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-									<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-								</svg><span class="sr-only">Show less</span></span
-							></span
-						><span
-							class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-							><span
-								class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-							></span></span
-						></span
-					>
-				</div>
-				<Card.Header
-					><Badge variant="secondary" class="w-fit">Guided setup · available</Badge><Card.Title
-						>Adaptable organization setup</Card.Title
-					></Card.Header
-				></summary
-			>
-			<Card.Content class="text-sm text-muted-foreground"
-				>Guided setup now separates activity, format, competitors, and results. Disc golf → League
-				season → Teams → Strokes can create an organization. Other combinations remain previews;
-				timing, judging, match scoring, and new entry types are planned.</Card.Content
-			>
-		</details></Card.Root
-	>
-	<Card.Root>
-		<details class="group">
-			<summary
-				class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-				><div
-					class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
-				>
-					<span class="text-sm font-semibold"
-						><span class="group-open:hidden"
-							><svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								class="size-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-								<circle cx="12" cy="12" r="3" />
-							</svg><span class="sr-only">Show more</span></span
-						><span class="hidden group-open:inline"
-							><svg
-								aria-hidden="true"
-								viewBox="0 0 24 24"
-								class="size-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-								<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-							</svg><span class="sr-only">Show less</span></span
-						></span
-					><span aria-hidden="true" class="flex items-center gap-2">
-						<span class="text-xs font-medium">
-							<span class="group-open:hidden">Show more</span>
-							<span class="hidden group-open:inline">Show less</span>
-						</span>
-						<span class="text-xs font-medium"
-							><span class="group-open:hidden"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg><span class="sr-only">Show more</span></span
-							><span class="hidden group-open:inline"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-									<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-								</svg><span class="sr-only">Show less</span></span
-							></span
-						><span
-							class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-							><span
-								class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-							></span></span
-						></span
-					>
-				</div>
-				<Card.Header
-					><Badge variant="outline" class="w-fit">Planned</Badge><Card.Title
-						>More sports & event types</Card.Title
-					></Card.Header
-				></summary
-			>
-			<Card.Content class="text-sm text-muted-foreground"
-				>Support additional sports, races, dog shows, car shows, and pageants through dedicated
-				timing, match, judging, and award workflows. Animals, vehicles, and exhibits need suitable
-				entry records; they are not supported yet.</Card.Content
-			>
-		</details></Card.Root
-	>
-</section>
-
-<!-- Setup status -->
-<section id="setup" class="flex flex-col gap-4 py-4">
-	<h2 class="text-xl font-semibold tracking-tight">Backend setup status</h2>
-
-	{#if data.pocketbase.configured}
-		<Alert.Root>
-			<CircleCheck class="size-4" />
-			<Alert.Title>PocketBase URL configured</Alert.Title>
-			<Alert.Description>
-				This server is configured to use the PocketBase instance at
-				<code class="rounded bg-muted px-1 py-0.5 text-sm">{data.pocketbase.url}</code>. This
-				reports configuration only — it does not check which collections that instance has.
-				Collection migrations ship with the repository (see
-				<code class="rounded bg-muted px-1 py-0.5 text-sm">pocketbase/pb_migrations/</code>);
-				feature availability is shown in the capability progress below.
-			</Alert.Description>
-		</Alert.Root>
-	{:else}
-		<Alert.Root>
-			<AlertCircle class="size-4" />
-			<Alert.Title>PocketBase is not configured yet</Alert.Title>
-			<Alert.Description>
-				The application runs without it. To prepare backend development, run a local PocketBase
-				instance and point the app at it. No paid service is required.
-			</Alert.Description>
-		</Alert.Root>
-
-		<Card.Root class="max-w-2xl">
-			<details class="group">
+<section
+	id="planned-features"
+	class="scroll-mt-6 space-y-5 py-5"
+	aria-labelledby="workflow-heading"
+>
+	<div>
+		<h2 id="workflow-heading" class="text-2xl font-bold tracking-tight">
+			What you can do with FliHub
+		</h2>
+		<p class="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+			Four areas, from organization setup to published results. Open a category to explore its
+			features and walkthroughs. Badges count feature areas, not organization records.
+		</p>
+	</div>
+	<div class="flex flex-wrap gap-3 text-sm">
+		<span
+			class="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-2 font-medium text-green-950"
+		>
+			<CircleCheck class="size-4" aria-hidden="true" />{completeCount} complete
+		</span>
+		<span
+			class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 font-medium text-amber-950"
+		>
+			<CircleAlert class="size-4" aria-hidden="true" />{reviewCount} verification follow-up
+		</span>
+		<a
+			href="#upcoming"
+			class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-3 py-2 font-medium text-slate-700 underline underline-offset-4"
+		>
+			<Map class="size-4" aria-hidden="true" />{planned.length} planned areas
+		</a>
+	</div>
+	<div class="grid items-start gap-5 lg:grid-cols-2">
+		{#each groups as group (group.id)}
+			{@const items = inCategory(group.id)}
+			{@const Icon = group.icon}
+			<details class="group/panel overflow-hidden rounded-xl border-2 shadow-sm {group.color}">
 				<summary
-					class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-					><div
-						class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
-					>
-						<span class="text-sm font-semibold"
-							><span class="group-open:hidden"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg><span class="sr-only">Show more</span></span
-							><span class="hidden group-open:inline"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-									<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-								</svg><span class="sr-only">Show less</span></span
-							></span
-						><span aria-hidden="true" class="flex items-center gap-2">
-							<span class="text-xs font-medium">
-								<span class="group-open:hidden">Show more</span>
-								<span class="hidden group-open:inline">Show less</span>
-							</span>
-							<span class="text-xs font-medium"
-								><span class="group-open:hidden"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-										<circle cx="12" cy="12" r="3" />
-									</svg><span class="sr-only">Show more</span></span
-								><span class="hidden group-open:inline"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-										<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-									</svg><span class="sr-only">Show less</span></span
-								></span
-							><span
-								class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-								><span
-									class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-								></span></span
-							></span
-						>
-					</div>
-					<Card.Header>
-						<Card.Title class="flex items-center gap-2">
-							<Server class="size-5" />
-							Local PocketBase setup
-						</Card.Title>
-						<Card.Description>
-							PocketBase provides authentication, the database, and file storage for FliHub.
-						</Card.Description>
-					</Card.Header></summary
+					class="cursor-pointer list-none p-5 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
 				>
-				<Card.Content>
-					<ol class="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-						<li>
-							Download PocketBase from pocketbase.io and place the binary in the
-							<code class="rounded bg-muted px-1 py-0.5">pocketbase/</code> directory (it is git-ignored).
-						</li>
-						<li>
-							Run <code class="rounded bg-muted px-1 py-0.5">./pocketbase/pocketbase serve</code>
-							to start the local instance at http://127.0.0.1:8090.
-						</li>
-						<li>
-							Copy <code class="rounded bg-muted px-1 py-0.5">.env.example</code>
-							to
-							<code class="rounded bg-muted px-1 py-0.5">.env</code> and set
-							<code class="rounded bg-muted px-1 py-0.5">POCKETBASE_URL</code>.
-						</li>
-						<li>Restart the dev server.</li>
-					</ol>
-				</Card.Content>
-			</details>
-			<Card.Footer>
-				<Dialog.Root>
-					<Dialog.Trigger>
-						{#snippet child({ props })}
-							<Button {...props} variant="outline">View example configuration</Button>
-						{/snippet}
-					</Dialog.Trigger>
-					<Dialog.Content>
-						<Dialog.Header>
-							<Dialog.Title>Environment configuration</Dialog.Title>
-							<Dialog.Description>
-								Create a <code>.env</code> file in the repository root. The example file contains no secrets.
-							</Dialog.Description>
-						</Dialog.Header>
-						<pre class="overflow-x-auto rounded-md bg-muted p-4 text-sm"><code
-								># .env
-POCKETBASE_URL=http://127.0.0.1:8090</code
-							></pre>
-						<Dialog.Footer>
-							<p class="text-sm text-muted-foreground">
-								Full instructions live in the README and
-								<code>pocketbase/README.md</code>.
-							</p>
-						</Dialog.Footer>
-					</Dialog.Content>
-				</Dialog.Root>
-			</Card.Footer>
-		</Card.Root>
-	{/if}
-</section>
-
-<Separator class="my-6" />
-
-<!-- Capability progress -->
-<section id="planned-features" class="flex flex-col gap-4 py-4">
-	<div class="flex items-center gap-2">
-		<Map class="size-5" />
-		<h2 class="text-xl font-semibold tracking-tight">Progress & upcoming work</h2>
-	</div>
-	<p class="max-w-2xl text-muted-foreground">
-		Guided disc-golf organization creation is available. The setup checklist is ready for local
-		verification; additional activity and result workflows remain planned. A capability is marked
-		Complete only after its workflow and access control are verified end to end.
-	</p>
-	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-		{#each capabilities as capability (capability.title)}
-			{@const meta = capabilityStatusMeta[capability.status]}
-			<Card.Root class="flex flex-col">
-				<details class="group">
-					<summary
-						class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-						><div
-							class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
+					<span class="flex flex-wrap items-center gap-3">
+						<span
+							class="inline-flex size-11 items-center justify-center rounded-xl border border-current/15 bg-white/80"
 						>
-							<span class="text-sm font-semibold"
-								><span class="group-open:hidden"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-										<circle cx="12" cy="12" r="3" />
-									</svg><span class="sr-only">Show more</span></span
-								><span class="hidden group-open:inline"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-										<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-									</svg><span class="sr-only">Show less</span></span
-								></span
-							><span aria-hidden="true" class="flex items-center gap-2">
-								<span class="text-xs font-medium">
-									<span class="group-open:hidden">Show more</span>
-									<span class="hidden group-open:inline">Show less</span>
-								</span>
-								<span class="text-xs font-medium"
-									><span class="group-open:hidden"
-										><svg
-											aria-hidden="true"
-											viewBox="0 0 24 24"
-											class="size-5"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-											<circle cx="12" cy="12" r="3" />
-										</svg><span class="sr-only">Show more</span></span
-									><span class="hidden group-open:inline"
-										><svg
-											aria-hidden="true"
-											viewBox="0 0 24 24"
-											class="size-5"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-											<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-										</svg><span class="sr-only">Show less</span></span
-									></span
-								><span
-									class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-									><span
-										class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-									></span></span
-								></span
-							>
-						</div>
-						<Card.Header>
-							<div class="flex items-start justify-between gap-2">
-								<Card.Title class="text-base">{capability.title}</Card.Title>
-								<Badge variant="secondary" class={`shrink-0 ${meta.badgeClass}`}>
-									{meta.label}
-								</Badge>
-							</div>
-							<Card.Description>{capability.description}</Card.Description>
-						</Card.Header></summary
-					>
-					<div class="flex flex-col gap-2 px-6 pb-4">
-						<p class="text-sm text-muted-foreground">{capability.progress}</p>
-						{#if capability.next}
-							<p class="text-sm">
-								<span class="font-medium">Next:</span>
-								<span class="text-muted-foreground"> {capability.next}</span>
-							</p>
-						{/if}
-						{#if capability.narration}
-							<p class="text-xs text-muted-foreground">
-								Narration: {narrationLabels[capability.narration]}
-							</p>
-						{/if}
-					</div>
-				</details>
-				<Card.Content class="mt-auto flex flex-col gap-2"
-					><div class="flex flex-wrap items-center gap-2 pt-1">
-						{#if capability.featureHref}
-							<Button
-								size="sm"
-								variant="ghost"
-								href={capability.featureHref}
-								class="bg-purple-100 text-purple-950 hover:bg-purple-200"
-							>
-								Open feature
-							</Button>
-						{/if}
-						{#each capability.walkthroughs ?? [] as walkthrough (walkthrough.href)}
-							{#if data.walkthroughAvailable?.[walkthrough.href]}
-								<Button
-									size="sm"
-									variant="ghost"
-									href={walkthrough.href}
-									class="bg-orange-100 text-orange-950 hover:bg-orange-200"
-								>
-									{walkthrough.label}
-								</Button>
-							{:else}
-								<span class="text-xs text-muted-foreground">Walkthrough coming soon</span>
-							{/if}
-						{/each}
-						{#if capability.walkthroughHref && data.walkthroughAvailable?.[capability.walkthroughHref]}
-							<Button
-								size="sm"
-								variant="ghost"
-								href={capability.walkthroughHref}
-								class="bg-orange-100 text-orange-950 hover:bg-orange-200"
-							>
-								{capability.walkthroughLabel ?? 'Watch walkthrough'}
-							</Button>
-						{:else if capability.walkthroughHref}
-							<span class="text-xs text-muted-foreground">Walkthrough coming soon</span>
-						{/if}
-					</div>
-					<p class="text-xs text-muted-foreground">{capability.milestone}</p>
-				</Card.Content>
-			</Card.Root>
+							<Icon class="size-6" aria-hidden="true" />
+						</span><span class="text-lg font-bold">{group.title}</span><span
+							class="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full border border-current/20 bg-white px-2 text-sm font-bold"
+						>
+							{items.length}
+						</span><span class="text-xs">feature areas</span>
+					</span>
+					<span class="mt-3 block text-sm leading-relaxed">{group.summary}</span>
+					{@render disclosure()}
+				</summary>
+				<div class="space-y-3 border-t border-current/10 p-4">
+					{#each items as item (item.title)}{@render capabilityCard(item)}{/each}
+				</div>
+			</details>
 		{/each}
 	</div>
 </section>
 
-<Separator class="my-6" />
-
-<!-- Honest current state -->
-<section class="flex flex-col gap-4 py-4 pb-10">
-	<div class="flex items-center gap-2">
-		<Construction class="size-5" />
-		<h2 class="text-xl font-semibold tracking-tight">Current state</h2>
-	</div>
-	<div class="grid gap-4 lg:grid-cols-2">
-		<Card.Root>
-			<details class="group">
-				<summary
-					class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-					><div
-						class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
-					>
-						<span class="text-sm font-semibold"
-							><span class="group-open:hidden"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg><span class="sr-only">Show more</span></span
-							><span class="hidden group-open:inline"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-									<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-								</svg><span class="sr-only">Show less</span></span
-							></span
-						><span aria-hidden="true" class="flex items-center gap-2">
-							<span class="text-xs font-medium">
-								<span class="group-open:hidden">Show more</span>
-								<span class="hidden group-open:inline">Show less</span>
-							</span>
-							<span class="text-xs font-medium"
-								><span class="group-open:hidden"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-										<circle cx="12" cy="12" r="3" />
-									</svg><span class="sr-only">Show more</span></span
-								><span class="hidden group-open:inline"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-										<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-									</svg><span class="sr-only">Show less</span></span
-								></span
-							><span
-								class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-								><span
-									class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-								></span></span
-							></span
-						>
-					</div>
-					<Card.Header>
-						<Card.Title class="text-base">What works today</Card.Title>
-						<Card.Description
-							>Implemented through event fantasy scoring; remaining work is listed in the capability
-							cards.</Card.Description
-						>
-					</Card.Header></summary
-				>
-				<Card.Content>
-					<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-						<li>
-							Accounts with verified email, hardened server-validated sessions, organizations with
-							Owner/Admin/Scorekeeper/Viewer roles, copy-link invitations, and audited membership
-							changes (1A).
-						</li>
-						<li>
-							Configurable onboarding templates with capability-aware navigation that never bypasses
-							role permissions (1B).
-						</li>
-						<li>
-							Sport-neutral athlete records with CSV import and Owner/Admin-only private fields
-							(1C).
-						</li>
-						<li>
-							Leagues, seasons, divisions, direct season team entries, and independent or
-							season-linked events (1D).
-						</li>
-						<li>
-							Season rosters, reserve pools, and append-only event substitutions that preserve
-							participation history (1E).
-						</li>
-						<li>
-							Courses with labeled basket positions, ordered rounds, and staffed event groups with
-							assigned scorekeepers (1F).
-						</li>
-						<li>
-							Phone-first score entry with Draft → Submitted scorecards, missing-never-zero
-							submission, and locked submissions with reasoned, audited reopen (1G).
-						</li>
-						<li>
-							Owner/Admin-only official-result approval and publication with snapshotted totals,
-							reasoned reopening with no unpublish, and versioned, forgery-proof correction history
-							(1H).
-						</li>
-
-						<li>
-							Published organization pages and competition standings from published official results
-							(1I).
-						</li>
-						<li>
-							Account activity selection and fan-created fantasy leagues for eligible seasons,
-							without staff membership (PR #27).
-						</li>
-						<li>
-							Private fantasy participation, completed snake drafts, compact mobile selections,
-							athlete search, and commissioner Pause/Resume (2A–2B).
-						</li>
-						<li>
-							Event fantasy standings from saved strokes and pars, four-athlete explanations, shared
-							ranks, and correction-safe result replacement (2C event scoring; merged in PR #28).
-						</li>
-					</ul>
-				</Card.Content>
-			</details></Card.Root
+<section id="upcoming" class="scroll-mt-6 py-5" aria-labelledby="upcoming-heading">
+	<h2 id="upcoming-heading" class="mb-3 text-xl font-bold">What’s next</h2>
+	<details
+		class="group/panel rounded-xl border-2 border-slate-300 bg-slate-50 text-slate-800 shadow-sm"
+	>
+		<summary
+			class="cursor-pointer list-none p-5 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
 		>
-		<Card.Root>
-			<details class="group">
-				<summary
-					class="block cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
-					><div
-						class="mb-4 flex items-center justify-between gap-3 rounded-t-lg border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-950"
-					>
-						<span class="text-sm font-semibold"
-							><span class="group-open:hidden"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg><span class="sr-only">Show more</span></span
-							><span class="hidden group-open:inline"
-								><svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									class="size-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-									<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-								</svg><span class="sr-only">Show less</span></span
-							></span
-						><span aria-hidden="true" class="flex items-center gap-2">
-							<span class="text-xs font-medium">
-								<span class="group-open:hidden">Show more</span>
-								<span class="hidden group-open:inline">Show less</span>
-							</span>
-							<span class="text-xs font-medium"
-								><span class="group-open:hidden"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-										<circle cx="12" cy="12" r="3" />
-									</svg><span class="sr-only">Show more</span></span
-								><span class="hidden group-open:inline"
-									><svg
-										aria-hidden="true"
-										viewBox="0 0 24 24"
-										class="size-5"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M3 8c2 3 5 5 9 5s7-2 9-5" />
-										<path d="m3 14 2-3m3 6 1-4m6 4-1-4m7 1-2-3" />
-									</svg><span class="sr-only">Show less</span></span
-								></span
-							><span
-								class="inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-400 p-0.5 transition-colors group-open:bg-blue-600"
-								><span
-									class="size-5 rounded-full bg-white shadow-sm transition-transform group-open:translate-x-5"
-								></span></span
-							></span
-						>
-					</div>
-					<Card.Header>
-						<Card.Title class="text-base">Get started</Card.Title>
-						<Card.Description>
-							Create an account, verify your email, then choose Play fantasy, manage an
-							organization, or join through an invitation.
-						</Card.Description>
-					</Card.Header></summary
+			<span class="flex items-center gap-3">
+				<Map class="size-6" aria-hidden="true" /><span class="text-lg font-bold">
+					Upcoming workflows
+				</span><span
+					class="inline-flex size-8 items-center justify-center rounded-full border border-slate-300 bg-white font-bold"
 				>
-				<p class="px-6 pb-4 text-sm text-muted-foreground">Choose an activity to continue.</p>
-			</details>
-			<Card.Content class="flex flex-col gap-3">
-				{#if data.user}
-					<p class="text-sm text-muted-foreground">
-						Signed in as {data.user.email}.
-					</p>
-					<Button href={resolve('/(app)/account')}>Choose an activity</Button>
-				{:else}
-					<Button href={resolve('/(auth)/register')}>Create account</Button>
-					<Button variant="outline" href={resolve('/(auth)/login')}>Sign in</Button>
-				{/if}
-			</Card.Content>
-		</Card.Root>
-	</div>
+					{planned.length}
+				</span>
+			</span><span class="mt-3 block text-sm">
+				More sports and judged events, fantasy expansion, embeds, and a public API. Timing, match
+				scoring, judging, and new entry types remain planned.
+			</span>{@render disclosure()}
+		</summary>
+		<div class="grid gap-3 border-t border-slate-200 p-4 md:grid-cols-3">
+			{#each planned as item (item.title)}{@render capabilityCard(item)}{/each}
+		</div>
+	</details>
+</section>
+
+<section class="py-5 pb-10" aria-label="Technical information">
+	<details
+		id="setup"
+		class="group/panel rounded-xl border border-slate-200 bg-slate-50 p-5 text-slate-700"
+	>
+		<summary
+			class="cursor-pointer list-none focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
+			<span class="inline-flex items-center gap-2 font-semibold">
+				<Server class="size-5" aria-hidden="true" />Technical details & backend configuration
+			</span>{@render disclosure()}
+		</summary>
+		<div class="mt-4 space-y-4 border-t border-slate-200 pt-4 text-sm leading-relaxed">
+			<p>
+				Built with SvelteKit, Tailwind CSS, shadcn-svelte, and PocketBase. Capability status
+				describes verified workflows; it does not imply that every planned activity is implemented.
+			</p>
+			{#if data.pocketbase.configured}<p>
+					<strong>PocketBase URL configured:</strong>
+					<code class="rounded bg-white px-1 break-all">{data.pocketbase.url}</code>. Configuration
+					alone does not confirm connectivity or collection migrations.
+				</p>{:else}<p>
+					<strong>PocketBase is not configured.</strong> Start a local instance and set
+					<code>POCKETBASE_URL=http://127.0.0.1:8090</code> in your development environment.
+				</p>{/if}
+			<p>
+				Collection migrations are in <code>pocketbase/pb_migrations/</code>. See
+				<code>README.md</code>
+				and <code>pocketbase/README.md</code> for setup instructions. Available walkthrough links appear
+				only when their video assets are included in the build.
+			</p>
+		</div>
+	</details>
 </section>
