@@ -128,6 +128,14 @@ const definitions: Record<string, Definition[]> = {
 			condition: 'publishedVersion > 0 && event.status != "archived"'
 		}
 	],
+	sponsorships: [
+		{
+			collection: 'sponsors',
+			label: 'Active sponsors',
+			shortLabel: '',
+			condition: 'archived = false'
+		}
+	],
 	fantasy: [
 		{
 			collection: 'fantasy_members',

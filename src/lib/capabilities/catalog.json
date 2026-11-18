@@ -107,8 +107,8 @@
 			"id": "sponsorships",
 			"label": "Sponsorships",
 			"description": "Sponsorship sales and tracking.",
-			"availability": "upcoming",
-			"milestone": "Phase 3+ (deferred)",
+			"availability": "available",
+			"milestone": "Phase 3: Sponsor tracker",
 			"dependsOn": []
 		},
 		{

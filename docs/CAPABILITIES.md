@@ -34,7 +34,7 @@ same file — there is no forked list:
 | `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H                 |
 | `standings`       | Competition standings      | available    | scoring-results | Phase 1I                     |
 | `fantasy`         | Fantasy leagues            | available    | standings       | Phases 2A–2C (event scoring) |
-| `sponsorships`    | Sponsorships               | upcoming     | —               | Phase 3+ (deferred)          |
+| `sponsorships`    | Sponsorships               | available     | —               | Phase 3: Sponsor tracker          |
 | `reimbursements`  | Reimbursements & expenses  | upcoming     | —               | Phase 3+ (deferred)          |
 
 Three layers are kept separate:
