@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { Users } from 'lucide-svelte';
+	import { Check, Users } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -13,6 +13,32 @@
 	let { data, form }: PageProps = $props();
 
 	const lobby = $derived(data.lobby);
+	const seatLimit = $derived(lobby.league.participantLimit);
+	const openSeats = $derived(Math.max(seatLimit - lobby.approvedCount, 0));
+	const pendingCount = $derived(lobby.members.filter((m) => m.status === 'accepted').length);
+	const invitedCount = $derived(lobby.members.filter((m) => m.status === 'invited').length);
+	const progress = $derived(
+		seatLimit > 0 ? Math.round((lobby.approvedCount / seatLimit) * 100) : 0
+	);
+
+	const complete = $derived(lobby.seatsFilled);
+	const barColor = $derived(
+		complete ? 'bg-green-600' : progress >= 50 ? 'bg-lime-500' : 'bg-amber-500'
+	);
+	const roleLabel = (role: string) =>
+		role === 'owner' ? 'commissioner' : role === 'manager' ? 'participant' : role;
+
+	const nextStep = $derived.by(() => {
+		if (lobby.seatsFilled) return 'All seats approved. Drafts are open.';
+		if (!lobby.isOwner) {
+			return `Waiting on the commissioner. ${openSeats} ${openSeats === 1 ? 'seat is' : 'seats are'} still open.`;
+		}
+		if (pendingCount > 0) {
+			return `${pendingCount} ${pendingCount === 1 ? 'request is' : 'requests are'} waiting for your approval.`;
+		}
+		if (invitedCount > 0) return 'Waiting for invited participants to accept.';
+		return `${openSeats} ${openSeats === 1 ? 'seat' : 'seats'} still open. Invite participants to continue.`;
+	});
 </script>
 
 <svelte:head>
@@ -26,8 +52,34 @@
 			{lobby.approvedCount} of {lobby.league.participantLimit} seats approved
 		</Badge>
 		{#if lobby.seatsFilled}
-			<Badge data-testid="seats-filled">Seats filled</Badge>
+			<Badge class="bg-green-600 text-white hover:bg-green-600" data-testid="seats-filled"
+				>Seats filled</Badge
+			>
 		{/if}
+	</div>
+	<div class="flex flex-col gap-2" data-testid="seat-progress">
+		<p
+			class="flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium {complete
+				? 'border-green-300 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100'
+				: 'border-border bg-muted/40'}"
+			data-testid="next-step"
+		>
+			{#if complete}<Check class="size-4 text-green-600" />{/if}
+			{nextStep}
+		</p>
+		<div
+			class="h-2 w-full overflow-hidden rounded-full bg-muted"
+			role="progressbar"
+			aria-label="Approved seats"
+			aria-valuemin={0}
+			aria-valuemax={seatLimit}
+			aria-valuenow={lobby.approvedCount}
+		>
+			<div class="h-full transition-all duration-500 {barColor}" style:width="{progress}%"></div>
+		</div>
+		<p class="text-xs text-muted-foreground">
+			{seatLimit} seats: the commissioner plus {seatLimit - 1} participants.
+		</p>
 	</div>
 	<p class="text-sm text-muted-foreground">
 		A private fantasy league. Seats are personal: fantasy membership grants no organization
@@ -88,7 +140,10 @@
 		</div>
 	{/if}
 
-	<Card.Root data-testid="lobby-members">
+	<Card.Root
+		data-testid="lobby-members"
+		class={complete ? 'border-green-300 dark:border-green-800' : ''}
+	>
 		<Card.Header>
 			<Card.Title class="flex items-center gap-2"
 				><Users class="size-4" /> Fantasy participants</Card.Title
@@ -102,10 +157,14 @@
 			{#each lobby.members as member (member.id)}
 				<div class="flex flex-wrap items-center gap-2 text-sm" data-testid="lobby-member">
 					<span class="font-medium">{member.name}</span>
-					<Badge variant="outline" class="text-[10px] capitalize">{member.role}</Badge>
+					<Badge variant="outline" class="text-[10px] capitalize"
+						>{roleLabel(member.role)}</Badge
+					>
 					<Badge
 						variant={member.status === 'approved' ? 'default' : 'secondary'}
-						class="text-[10px] capitalize"
+						class="text-[10px] capitalize {member.status === 'approved'
+							? 'bg-green-600 text-white hover:bg-green-600'
+							: ''}"
 					>
 						{member.status}
 					</Badge>

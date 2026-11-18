@@ -379,6 +379,10 @@
 			return 'Choose an authorized scorekeeper for every group. Viewers cannot enter scores.';
 		return '';
 	}
+	const needsGenerate = $derived(selectedEntries.length > 0 && groups.length === 0);
+	const groupsReady = $derived(validateStage(2) === '');
+	const teesReady = $derived(validateStage(3) === '');
+	const firstUnsetRound = $derived(rounds.findIndex((round) => !round.teeStartLocal));
 	async function advance() {
 		validation = validateStage(step);
 		if (validation) {
@@ -683,9 +687,25 @@
 				<button
 					type="button"
 					onclick={generateGroups}
-					class="min-h-11 rounded-md border bg-white px-4 py-2">Generate suggested groups</button
+					class={`min-h-11 rounded-md px-5 py-2 font-semibold ${
+						needsGenerate
+							? 'bg-red-600 text-white ring-2 ring-red-300 hover:bg-red-700'
+							: groups.length
+								? 'bg-green-600 text-white hover:bg-green-700'
+								: 'border bg-white'
+					}`}>Generate suggested groups</button
 				>
 			</div>
+			{#if needsGenerate}<p class="text-sm font-medium text-red-700" role="status">
+					Next step: press “Generate suggested groups” to build the groups. Next stays locked until
+					you do.
+				</p>{:else if !selectedEntries.length}<p class="text-sm font-medium text-amber-800" role="status">
+					Select at least one team to continue.
+				</p>{:else if !groupsReady}<p class="text-sm font-medium text-amber-800" role="status">
+					{validateStage(2)}
+				</p>{:else}<p class="text-sm font-medium text-green-700" role="status">
+					Groups are ready. Press Next to continue.
+				</p>{/if}
 			{#each groups as group, index (group.key)}<div
 					class="flex flex-col gap-3 rounded-lg border bg-white p-4"
 				>
@@ -757,9 +777,23 @@
 							bind:value={rounds[index].teeStartLocal}
 							min={date ? date + 'T00:00' : undefined}
 							max={(multiDay ? endDate : date) ? (multiDay ? endDate : date) + 'T23:59' : undefined}
-							class="min-h-11 rounded-md border bg-background px-3 py-2"
+							class={`min-h-11 rounded-md border-2 bg-background px-3 py-2 ${
+								!round.teeStartLocal
+									? 'border-red-500 ring-2 ring-red-200'
+									: teePreview.error
+										? 'border-amber-500'
+										: 'border-green-600'
+							}`}
 						/>
 					</div>{/each}
+				{#if firstUnsetRound >= 0}<p class="text-sm font-medium text-red-700" role="status">
+						Next step: set the first group’s date and time for Round {firstUnsetRound + 1}. Next stays
+						locked until every round has a start time.
+					</p>{:else if !teesReady}<p class="text-sm font-medium text-amber-800" role="status">
+						{validateStage(3)}
+					</p>{:else}<p class="text-sm font-medium text-green-700" role="status">
+						Tee times are set. Press Next to continue.
+					</p>{/if}
 				<p class="text-sm text-muted-foreground">
 					The default interval is 10 minutes: 09:00, 09:10, 09:20 and so on. Set a separate start
 					for the next round, allowing enough time to play the preceding round. Changing the
@@ -890,7 +924,8 @@
 			{#if step < 5}<button
 					type="button"
 					onclick={advance}
-					class="min-h-11 rounded-md bg-blue-700 px-5 py-2 font-medium text-white"
+					disabled={(step === 2 && !groupsReady) || (step === 3 && !teesReady)}
+					class="min-h-11 rounded-md bg-blue-700 px-5 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
 					>{step === 4 ? 'Review setup' : 'Next'}</button
 				>
 			{:else}<form
