@@ -97,7 +97,7 @@ try {
 	await p.click('button:has-text("Add season")');
 	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.fill('#team-name', 'Blue Heron Flyers');
@@ -127,7 +127,7 @@ try {
 	await addAthlete('Sam', 'Finch', 'male');
 	await addAthlete('Ben', 'Reed', 'male');
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.waitForSelector('text=Season roster — Summer 2026', { timeout: 15000 });
@@ -246,7 +246,7 @@ try {
 
 	console.log('Step 6: substitution makes the reserve eligible for THIS event only');
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.selectOption('#sub-event', { label: 'Week 1' });
@@ -276,7 +276,7 @@ try {
 
 	console.log('Step 7: season roster preserved by group assignment');
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.waitForSelector('text=Season roster — Summer 2026', { timeout: 15000 });

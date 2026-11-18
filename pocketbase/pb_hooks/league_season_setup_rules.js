@@ -12,8 +12,8 @@ function validateLeagueSeasonSetup(body) {
 	const leagueName = read('leagueName');
 	const leagueId = read('leagueId');
 	const seasonName = read('seasonName');
-	if (mode === 'new' && (!leagueName || leagueName.length > 120))
-		return invalid('League names need 1–120 characters.');
+	if (mode === 'new' && (leagueName.length < 3 || leagueName.length > 120))
+		return invalid('League names need 3–120 characters.');
 	if (mode === 'existing' && !/^[a-z0-9]{15}$/.test(leagueId))
 		return invalid('Choose an existing league.');
 	if (!seasonName || seasonName.length > 120) return invalid('Season names need 1–120 characters.');

@@ -110,7 +110,7 @@ try {
 
 	console.log('Step 3: team entered directly into the season (no division yet)');
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.fill('#team-name', 'Basket Cases');

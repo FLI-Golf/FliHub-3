@@ -100,13 +100,23 @@
 					</div>
 					{#if canManage}
 						<div class="flex items-center gap-2">
-							<Button variant="outline" size="sm" onclick={() => (renaming = team)}>
+							<Button
+								variant="outline"
+								size="sm"
+								class="bg-blue-700 text-white hover:bg-blue-800 hover:text-white"
+								onclick={() => (renaming = team)}
+							>
 								<Pencil class="mr-1 size-3.5" /> Rename
 							</Button>
 							{#if team.status === 'active'}
 								<form method="POST" action="?/archiveTeam">
 									<input type="hidden" name="team" value={team.id} />
-									<Button variant="outline" size="sm" type="submit">
+									<Button
+										variant="ghost"
+										size="sm"
+										type="submit"
+										class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+									>
 										<Archive class="mr-1 size-3.5" /> Archive
 									</Button>
 								</form>
@@ -137,16 +147,22 @@
 						<Label for="team-name">Team name</Label>
 						<Input id="team-name" name="name" required maxlength={120} />
 					</div>
-					<Button type="submit">
+					<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
 						<Plus class="mr-1 size-4" /> Add team
 					</Button>
 				</form>
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Bulk add teams</Card.Title>
+		<details
+			class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm"
+		>
+			<summary
+				class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4"
+			>
+				Bulk add teams
+			</summary>
+			<Card.Header class="pt-4">
 				<Card.Description>
 					Copy the example into chat, add your team list, then paste the reply below.
 				</Card.Description>
@@ -159,7 +175,11 @@
 					rows="10"
 					value={teamCsvPrompt}
 					class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
-				<Button type="button" onclick={copyTeamCsvPrompt}>Copy example for chat</Button>
+				<Button
+					type="button"
+					class="bg-black text-white hover:bg-slate-800"
+					onclick={copyTeamCsvPrompt}>Copy example for chat</Button
+				>
 				<p role="status" class="text-sm">{teamCopyStatus}</p>
 				<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
 					<Label for="team-csv">Team names, one per line</Label>
@@ -175,10 +195,12 @@
 						required
 						rows="5"
 						class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
-					<Button type="submit">Import teams</Button>
+					<Button type="submit" class="bg-green-700 text-white hover:bg-green-800"
+						>Import teams</Button
+					>
 				</form>
 			</Card.Content>
-		</Card.Root>
+		</details>
 	{:else}
 		<p class="text-sm text-muted-foreground">
 			Your role ({myRole}) can view teams but not manage them.

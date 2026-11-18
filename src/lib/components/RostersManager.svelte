@@ -4,6 +4,7 @@
 		ArrowRightLeft,
 		CircleAlert,
 		ClipboardList,
+		Minus,
 		Plus,
 		UserMinus,
 		Users
@@ -219,9 +220,26 @@
 		</div>
 
 		{#if canManage}
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>Import season rosters — {season.name}</Card.Title>
+			<details
+				class="group/roster-import rounded-xl border bg-card p-4"
+				open={typeof formRecord?.rostersImported === 'number'}
+			>
+				<summary
+					class="flex cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden"
+				>
+					<span
+						class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-green-700 text-white group-open/roster-import:hidden"
+					>
+						<Plus class="size-4" aria-hidden="true" />
+					</span>
+					<span
+						class="hidden size-8 shrink-0 items-center justify-center rounded-full bg-red-700 text-white group-open/roster-import:inline-flex"
+					>
+						<Minus class="size-4" aria-hidden="true" />
+					</span>
+					Import season rosters — {season.name}
+				</summary>
+				<Card.Header class="pt-4">
 					<Card.Description>
 						Enter teams into this season and add athletes before importing. Copy the prompt into
 						chat, add your roster list, then paste the reply below.
@@ -235,7 +253,11 @@
 						rows="9"
 						value={rosterImportPrompt}
 						class="w-full rounded-md border bg-background p-2 font-mono text-xs"></textarea>
-					<Button type="button" onclick={copyRosterImportPrompt}>Copy example for chat</Button>
+					<Button
+						type="button"
+						class="bg-black text-white hover:bg-slate-800"
+						onclick={copyRosterImportPrompt}>Copy example for chat</Button
+					>
 					<p role="status" class="text-sm">{rosterCopyStatus}</p>
 					<form method="POST" action="?/importRosters" class="flex flex-col items-start gap-2">
 						<input type="hidden" name="season" value={season.id} />
@@ -248,7 +270,7 @@
 								<strong class="text-red-900">Before importing rosters:</strong>
 								Import your athletes, then enter your teams into this season on
 								<strong class="text-red-900">
-									Leagues &amp; seasons → Spring 2027 → Team entries
+									Leagues &amp; seasons → {season.name} → Team entries
 								</strong>. Creating organization teams does not enter them into a season.
 							</p>
 							<p>
@@ -267,6 +289,7 @@
 							class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
 						<Button
 							type="submit"
+							class="bg-green-700 text-white hover:bg-green-800"
 							disabled={!seasonEntries.some((entry) => entry.status === 'active')}
 							>Import rosters</Button
 						>
@@ -278,16 +301,18 @@
 						</p>
 					{/if}
 				</Card.Content>
-			</Card.Root>
+			</details>
 		{/if}
 
 		<!-- Season roster: one card section per team entry -->
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="flex items-center gap-2">
-					<ClipboardList class="size-5" />
-					Season roster — {season.name}
-				</Card.Title>
+		<details class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm">
+			<summary
+				class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4"
+			>
+				<ClipboardList class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />
+				Season roster — {season.name}
+			</summary>
+			<Card.Header class="pt-4">
 				<Card.Description>
 					Athletes are assigned to a team's season entry, so participation history is kept per
 					season. Removed members stay listed as past members — history is never rewritten.
@@ -300,11 +325,11 @@
 						page.
 					</p>
 				{/if}
-				{#each seasonEntries as entry (entry.id)}
+				{#each seasonEntries as entry, index (entry.id)}
 					<div
-						class="flex flex-col gap-2 rounded-md border p-3 {entry.status === 'archived'
-							? 'opacity-60'
-							: ''}"
+						class="flex flex-col gap-2 rounded-md border p-3 {index % 2 === 0
+							? 'bg-white'
+							: 'bg-slate-300'} {entry.status === 'archived' ? 'opacity-60' : ''}"
 					>
 						<div class="flex items-center gap-2">
 							<span class="font-medium">{entry.teamName}</span>
@@ -330,7 +355,12 @@
 								{#if canManage && member.status === 'active'}
 									<form method="POST" action="?/removeRosterMember">
 										<input type="hidden" name="membership" value={member.id} />
-										<Button variant="outline" size="sm" type="submit">
+										<Button
+											variant="outline"
+											size="sm"
+											type="submit"
+											class="bg-red-700 text-white hover:bg-red-800 hover:text-white"
+										>
 											<UserMinus class="mr-1 size-3.5" /> Remove
 										</Button>
 									</form>
@@ -373,15 +403,17 @@
 					</div>
 				{/each}
 			</Card.Content>
-		</Card.Root>
+		</details>
 
 		<!-- Reserve pools -->
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="flex items-center gap-2">
-					<Users class="size-5" />
-					Reserve pools — {season.name}
-				</Card.Title>
+		<details class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm">
+			<summary
+				class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4"
+			>
+				<Users class="mr-1.5 inline-block size-4 align-middle" aria-hidden="true" />
+				Reserve pools — {season.name}
+			</summary>
+			<Card.Header class="pt-4">
 				<Card.Description>
 					Reserve pools are not teams: they never enter a season, so their athletes are excluded
 					from ordinary scheduling. A pool's optional gender restriction is pilot configuration, not
@@ -440,7 +472,12 @@
 								{#if canManage && member.status === 'active'}
 									<form method="POST" action="?/removeReserveMember">
 										<input type="hidden" name="member" value={member.id} />
-										<Button variant="outline" size="sm" type="submit">
+										<Button
+											variant="outline"
+											size="sm"
+											type="submit"
+											class="bg-red-700 text-white hover:bg-red-800 hover:text-white"
+										>
 											<UserMinus class="mr-1 size-3.5" /> Remove
 										</Button>
 									</form>
@@ -500,13 +537,13 @@
 								<option value="other">Other only</option>
 							</select>
 						</div>
-						<Button type="submit">
+						<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
 							<Plus class="mr-1 size-4" /> Create pool
 						</Button>
 					</form>
 				{/if}
 			</Card.Content>
-		</Card.Root>
+		</details>
 
 		<!-- Substitutions -->
 		<Card.Root>
@@ -617,7 +654,10 @@
 									<Label for="sub-reason" class="text-xs">Reason (optional)</Label>
 									<Input id="sub-reason" name="reason" maxlength={500} />
 								</div>
-								<Button type="submit">
+								<Button
+									type="submit"
+									class="bg-red-700 text-white hover:bg-red-800 hover:text-white"
+								>
 									<ArrowRightLeft class="mr-1 size-4" /> Record substitution
 								</Button>
 							</div>

@@ -26,6 +26,7 @@ test('valid setup keeps calendar dates and blank purse semantics', () => {
 for (const invalid of [
 	{ mode: '' },
 	{ leagueName: '' },
+	{ leagueName: ' AB ' },
 	{ seasonName: '' },
 	{ seasonName: 'x'.repeat(121) },
 	{ startsOn: '2027-02-30' },

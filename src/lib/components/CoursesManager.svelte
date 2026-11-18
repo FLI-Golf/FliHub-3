@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Archive, ArchiveRestore, CircleAlert, Flag, MapPin, Plus } from 'lucide-svelte';
+	import { Archive, ArchiveRestore, CircleAlert, Flag, MapPin, Plus, Trash2, X } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -117,9 +117,9 @@
 			{#if courses.length === 0}
 				<p class="text-sm text-muted-foreground">No courses yet.</p>
 			{/if}
-			{#each courses as course (course.id)}
+			{#each courses as course, index (course.id)}
 				<div
-					class="flex flex-col gap-2 rounded-md border p-3 {course.status === 'archived'
+					class="flex flex-col gap-2 rounded-md border p-3 {index % 2 === 0 ? 'bg-white' : 'bg-slate-100'} {course.status === 'archived'
 						? 'opacity-60'
 						: ''}"
 				>
@@ -153,9 +153,9 @@
 						{#if holesOf(course.id).length === 0}
 							<p class="text-sm text-muted-foreground">No holes on this course yet.</p>
 						{/if}
-						{#each holesOf(course.id) as hole, index (hole.id)}
+						{#each holesOf(course.id) as hole, holeIndex (hole.id)}
 							<div
-								class="flex flex-col gap-1.5 rounded-md border p-2 pl-3 {index % 2 === 0 ? 'bg-white' : 'bg-slate-300'}"
+								class="flex flex-col gap-1.5 rounded-md border p-2 pl-3 {holeIndex % 2 === 0 ? 'bg-white' : 'bg-slate-300'}"
 							>
 								<div class="flex flex-wrap items-center justify-between gap-2">
 									<div class="flex items-center gap-2 text-sm">
@@ -166,7 +166,10 @@
 									{#if canManage}
 										<form method="POST" action="?/archiveHole">
 											<input type="hidden" name="hole" value={hole.id} />
-											<Button variant="ghost" size="sm" type="submit">Remove</Button>
+											<Button size="sm" type="submit" class="bg-red-700 text-white hover:bg-red-800">
+												<Trash2 class="size-4" aria-hidden="true" />
+												Remove
+											</Button>
 										</form>
 									{/if}
 								</div>
@@ -181,10 +184,10 @@
 													<input type="hidden" name="position" value={position.id} />
 													<button
 														type="submit"
-														class="ml-1 text-muted-foreground hover:text-foreground"
+														class="ml-1 inline-flex size-6 items-center justify-center rounded bg-red-700 text-white hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2"
 														aria-label="Remove {position.label} position"
 													>
-														×
+														<X class="size-3.5" aria-hidden="true" />
 													</button>
 												</form>
 											{/if}
@@ -312,7 +315,7 @@
 							placeholder="Course name"
 						/>
 					</div>
-					<Button type="submit">
+					<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
 						<Plus class="mr-1 size-4" /> Create course
 					</Button>
 				</form>

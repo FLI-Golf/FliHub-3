@@ -97,7 +97,7 @@ try {
 	await p.click('button:has-text("Add season")');
 	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.fill('#team-name', 'Blue Heron Flyers');
@@ -141,7 +141,7 @@ try {
 
 	console.log('Step 4: season roster — athlete assigned to the team entry');
 	await nav()
-		.getByRole('link', { name: /Teams & rosters/ })
+		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
 	await p.waitForSelector('text=Season roster — Summer 2026', { timeout: 15000 });

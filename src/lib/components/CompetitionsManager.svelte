@@ -132,7 +132,7 @@
 			{/if}
 			{#each leagues as league (league.id)}
 				<div
-					class="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 {league.status ===
+					class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 even:bg-slate-300 {league.status ===
 					'archived'
 						? 'opacity-60'
 						: ''}"
@@ -145,7 +145,11 @@
 					</div>
 					{#if canManage}
 						<div class="flex items-center gap-2">
-							<Button variant="outline" size="sm" onclick={() => (renamingLeague = league)}>
+							<Button
+								size="sm"
+								class="bg-blue-700 text-white hover:bg-blue-800"
+								onclick={() => (renamingLeague = league)}
+							>
 								<Pencil class="mr-1 size-3.5" /> Rename
 							</Button>
 							<form
@@ -175,7 +179,12 @@
 							{#if league.status === 'active'}
 								<form method="POST" action="?/archiveLeague">
 									<input type="hidden" name="league" value={league.id} />
-									<Button variant="outline" size="sm" type="submit">
+									<Button
+										variant="ghost"
+										size="sm"
+										type="submit"
+										class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+									>
 										<Archive class="mr-1 size-3.5" /> Archive
 									</Button>
 								</form>
@@ -212,25 +221,29 @@
 			{/if}
 			{#each seasons as season (season.id)}
 				<section
-					class="flex flex-col gap-3 rounded-md border p-4 {season.status === 'archived'
+					class="flex flex-col gap-4 rounded-xl border border-blue-200 p-4 {season.status === 'archived'
 						? 'opacity-60'
 						: ''}"
 					data-season={season.id}
 				>
 					<div class="flex flex-wrap items-center justify-between gap-2">
-						<div class="flex flex-wrap items-center gap-2">
-							<span class="font-medium">{season.name}</span>
-							<Badge variant="outline">Fantasy {season.fantasyEnabled ? 'open' : 'closed'}</Badge>
-							<Badge variant="outline">{season.leagueName}</Badge>
-							<Badge variant={season.status === 'archived' ? 'secondary' : 'default'}>
-								{season.status}
-							</Badge>
-							<span class="text-sm text-muted-foreground">{scheduleOf(season)}</span>
-							<span class="text-sm font-medium">{formatSeasonPurse(season)}</span>
+						<div class="flex min-w-0 flex-col gap-2">
+							<h3 class="text-lg font-bold text-blue-950">{season.name}</h3>
+							<div class="flex flex-wrap items-center gap-2">
+								<Badge variant="outline">Fantasy {season.fantasyEnabled ? 'open' : 'closed'}</Badge>
+								<Badge variant="outline">{season.leagueName}</Badge>
+								<Badge variant={season.status === 'archived' ? 'secondary' : 'default'}>
+									{season.status}
+								</Badge>
+							</div>
 						</div>
 						{#if canManage}
 							<div class="flex items-center gap-2">
-								<Button variant="outline" size="sm" onclick={() => (editingSeason = season)}>
+								<Button
+									size="sm"
+									class="bg-red-700 text-white hover:bg-red-800"
+									onclick={() => (editingSeason = season)}
+								>
 									<Pencil class="mr-1 size-3.5" /> Edit
 								</Button>
 								{#if season.status === 'archived'}
@@ -243,13 +256,29 @@
 								{:else}
 									<form method="POST" action="?/archiveSeason">
 										<input type="hidden" name="season" value={season.id} />
-										<Button variant="outline" size="sm" type="submit">
+										<Button
+											variant="ghost"
+											size="sm"
+											type="submit"
+											class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+										>
 											<Archive class="mr-1 size-3.5" /> Archive
 										</Button>
 									</form>
 								{/if}
 							</div>
 						{/if}
+					</div>
+
+					<div class="grid gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950 sm:grid-cols-2">
+						<div class="flex items-center gap-2">
+							<CalendarRange class="size-4 shrink-0" aria-hidden="true" />
+							<span>{scheduleOf(season)}</span>
+						</div>
+						<div class="flex items-center gap-2 font-semibold">
+							<Trophy class="size-4 shrink-0" aria-hidden="true" />
+							<span>{formatSeasonPurse(season)}</span>
+						</div>
 					</div>
 
 					<Separator />
@@ -335,7 +364,7 @@
 											<input type="hidden" name="entry" value={entry.id} />
 											<select
 												name="division"
-												class="h-8 rounded-md border bg-background px-2 text-sm"
+												class="h-8 rounded-md border border-blue-300 bg-blue-50 px-2 text-sm text-blue-950 focus-visible:outline-2 focus-visible:outline-blue-600"
 												aria-label="Assign division"
 											>
 												<option value="" selected={!entry.division}>No division</option>
@@ -343,11 +372,11 @@
 													<option value={d.id} selected={entry.division === d.id}>{d.name}</option>
 												{/each}
 											</select>
-											<Button variant="outline" size="sm" type="submit">Assign</Button>
+											<Button size="sm" type="submit" class="bg-green-700 text-white hover:bg-green-800">Assign</Button>
 										</form>
 										<form method="POST" action="?/withdrawEntry">
 											<input type="hidden" name="entry" value={entry.id} />
-											<Button variant="ghost" size="sm" type="submit">Withdraw</Button>
+											<Button variant="ghost" size="sm" type="submit" class="text-orange-800 hover:bg-orange-100 hover:text-orange-900">Withdraw</Button>
 										</form>
 									</div>
 								{:else if canManage}
