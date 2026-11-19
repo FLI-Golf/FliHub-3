@@ -5,6 +5,7 @@ export interface PayoutEvent {
 	leagueId?: string;
 	leagueName?: string;
 	topWeight?: number;
+	lowerWeight?: number;
 	teams: { entry: string; total: number }[];
 	athletes: { athlete: string; entry: string }[];
 }
@@ -12,7 +13,12 @@ export interface PayoutEvent {
 export const minimumPerProCents = 800_000;
 
 /** Work in pairs of cents so two pros always receive precisely equal amounts. */
-export function placeShares(purseCents: number, teamCount: number, topWeight: number) {
+export function placeShares(
+	purseCents: number,
+	teamCount: number,
+	topWeight: number,
+	lowerWeight = 0
+) {
 	if (
 		!Number.isSafeInteger(purseCents) ||
 		teamCount < 1 ||
@@ -20,11 +26,12 @@ export function placeShares(purseCents: number, teamCount: number, topWeight: nu
 	)
 		return null;
 	const pool = BigInt(purseCents) / 2n - BigInt(minimumPerProCents) * BigInt(teamCount);
-	const weights = Array.from({ length: teamCount }, (_, i) => {
+	const baseWeights = Array.from({ length: teamCount }, (_, i) => {
 		const placeWeight = teamCount - i - 1;
 		// A zero slider setting gives the agreed linear curve. Higher settings blend toward quadratic.
 		return BigInt(placeWeight * (100 - topWeight) + placeWeight * placeWeight * topWeight);
 	});
+	const weights = liftLowerPlaces(baseWeights, lowerWeight);
 	const weightTotal = weights.reduce((sum, weight) => sum + weight, 0n);
 	if (!weightTotal) return [Math.floor(purseCents / 2)];
 	const shares = weights.map((weight, i) => ({
@@ -43,10 +50,10 @@ export function placeShares(purseCents: number, teamCount: number, topWeight: nu
 	return shares.map((share) => minimumPerProCents + Number(share.cents));
 }
 
-export function tournamentAwards(event: PayoutEvent, topWeight: number) {
+export function tournamentAwards(event: PayoutEvent, topWeight: number, lowerWeight = 0) {
 	const teams = [...event.teams].sort((a, b) => a.total - b.total);
 	const shares =
-		event.purseCents === null ? null : placeShares(event.purseCents, teams.length, topWeight);
+		event.purseCents === null ? null : placeShares(event.purseCents, teams.length, topWeight, lowerWeight);
 	const lineups = new Map<string, Set<string>>();
 	for (const athlete of event.athletes) {
 		const lineup = lineups.get(athlete.entry) ?? new Set<string>();
@@ -71,4 +78,32 @@ export function tournamentAwards(event: PayoutEvent, topWeight: number) {
 		start = end;
 	}
 	return { awards, unallocated, held };
+}
+
+/** Places 7 and below (index 6 onward) can be lifted by the lower-places slider. */
+export const lowerTierStart = 6;
+
+/**
+ * Moves pool weight from places 1-6 to places 7 and below. The lift is added equally to each lower
+ * place, and places 1-6 shrink proportionally so the total never changes. At 100 the lift stops where
+ * 6th place would equal 7th, so the order of finish is never inverted. Zero leaves the curve unchanged.
+ */
+function liftLowerPlaces(base: bigint[], lowerWeight: number) {
+	const setting = BigInt(Math.max(0, Math.min(100, Math.round(lowerWeight || 0))));
+	if (!setting || base.length <= lowerTierStart) return base;
+	const top = base.slice(0, lowerTierStart);
+	const bottom = base.slice(lowerTierStart);
+	const topTotal = top.reduce((sum, weight) => sum + weight, 0n);
+	const bottomTotal = bottom.reduce((sum, weight) => sum + weight, 0n);
+	const sixth = top[lowerTierStart - 1];
+	const step = sixth - bottom[0];
+	if (topTotal <= 0n || step <= 0n) return base;
+	const scale = (sixth * BigInt(bottom.length) + topTotal) * 100n;
+	const bottomScaled = bottom.map((weight) => weight * scale + step * topTotal * setting);
+	const bottomScaledTotal = bottomScaled.reduce((sum, weight) => sum + weight, 0n);
+	const topScaledTotal = (topTotal + bottomTotal) * scale - bottomScaledTotal;
+	return [
+		...top.map((weight) => weight * topScaledTotal),
+		...bottomScaled.map((weight) => weight * topTotal)
+	];
 }

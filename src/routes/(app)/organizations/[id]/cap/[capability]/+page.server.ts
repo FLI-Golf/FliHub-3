@@ -768,7 +768,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				const [seasons, events, leagues] = await Promise.all([
 					pb.collection('seasons').getFullList({ filter, fields: 'id,league,purseAmountCents,purseCurrency' }),
 					pb.collection('events').getFullList({ filter: `${filter} && status != "archived"`, fields: 'id,season,startsAt' }),
-					pb.collection('leagues').getFullList({ filter, fields: 'id,name,payoutTopWeight' })
+					pb.collection('leagues').getFullList({ filter, fields: 'id,name,payoutTopWeight,payoutLowerWeight' })
 				]);
 				const purses = new Map(seasons.filter((season) => season.purseCurrency === 'USD').map((season) => [
 					season.id,
@@ -785,6 +785,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 							event.leagueId = league.id;
 							event.leagueName = String(league.name);
 							event.topWeight = league.payoutTopWeight;
+							event.lowerWeight = Number(league.payoutLowerWeight ?? 0);
 						}
 					}
 				}
@@ -858,9 +859,10 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const leagueId = String(form.get('league') ?? '');
 		const weight = String(form.get('topWeight') ?? '');
+		const lowerWeight = String(form.get('lowerWeight') ?? '0');
 		if (params.capability !== 'standings' || !ID_PATTERN.test(params.id) || !ID_PATTERN.test(leagueId))
 			return fail(404, { message: 'League not found.' });
-		if (!/^\d{1,3}$/.test(weight) || Number(weight) > 100)
+		if (!/^\d{1,3}$/.test(weight) || Number(weight) > 100 || !/^\d{1,3}$/.test(lowerWeight) || Number(lowerWeight) > 100)
 			return fail(400, { message: 'Choose an emphasis between 0 and 100.' });
 		try {
 			const owner = await pb.collection('memberships').getFirstListItem(
@@ -869,7 +871,7 @@ export const actions: Actions = {
 			if (!owner) return fail(403, { message: 'Only the organization Owner can save a payout curve.' });
 			const league = await pb.collection('leagues').getOne(leagueId);
 			if (league.organization !== params.id) return fail(404, { message: 'League not found.' });
-			await pb.collection('leagues').update(leagueId, { payoutTopWeight: Number(weight) });
+			await pb.collection('leagues').update(leagueId, { payoutTopWeight: Number(weight), payoutLowerWeight: Number(lowerWeight) });
 			return { payoutCurveSaved: true };
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err, 'Unable to save the payout curve.') });

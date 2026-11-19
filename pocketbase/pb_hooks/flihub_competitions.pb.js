@@ -88,6 +88,7 @@ onRecordCreateRequest((e) => {
 		);
 	}
 	e.record.set('payoutTopWeight', 0);
+	e.record.set('payoutLowerWeight', 0);
 	e.next();
 }, 'leagues');
 
@@ -114,7 +115,8 @@ onRecordUpdateRequest((e) => {
 			'immutable_relation: A record cannot be moved to another organization.'
 		);
 	}
-	if (originalLeague && originalLeague.getInt('payoutTopWeight') !== e.record.getInt('payoutTopWeight')) {
+	if (originalLeague && (originalLeague.getInt('payoutTopWeight') !== e.record.getInt('payoutTopWeight') ||
+		originalLeague.getInt('payoutLowerWeight') !== e.record.getInt('payoutLowerWeight'))) {
 		const [owner] = e.app.findRecordsByFilter(
 			'memberships',
 			'organization = {:org} && user = {:user} && role = "owner"',

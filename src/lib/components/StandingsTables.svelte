@@ -21,6 +21,7 @@
 	let sortBy = $state('rank');
 
 	let drafts = $state<Record<string, number>>({});
+	let lowerDrafts = $state<Record<string, number>>({});
 	let saving = $state(false);
 	let saveStatus = $state<{ ok: boolean; message: string } | null>(null);
 	let selectedEvent = $state('');
@@ -29,9 +30,19 @@
 		payoutEvents.find((event) => event.event === selectedEvent) ?? payoutEvents[0]
 	);
 	const topWeight = $derived(chartEvent ? weightFor(chartEvent, drafts) : 0);
+	const lowerWeight = $derived(chartEvent ? lowerWeightFor(chartEvent, lowerDrafts) : 0);
 
 	function weightFor(event: PayoutEvent, overrides: Record<string, number>) {
 		return (event.leagueId ? overrides[event.leagueId] : undefined) ?? event.topWeight ?? 0;
+	}
+
+	function lowerWeightFor(event: PayoutEvent, overrides: Record<string, number>) {
+		return (event.leagueId ? overrides[event.leagueId] : undefined) ?? event.lowerWeight ?? 0;
+	}
+
+	function previewLower(weight: number) {
+		if (chartEvent?.leagueId) lowerDrafts[chartEvent.leagueId] = weight;
+		saveStatus = null;
 	}
 
 	function previewCurve(weight: number) {
@@ -42,11 +53,11 @@
 	const chartShares = $derived(
 		chartEvent?.purseCents == null
 			? null
-			: placeShares(chartEvent.purseCents, chartEvent.teams.length, topWeight)
+			: placeShares(chartEvent.purseCents, chartEvent.teams.length, topWeight, lowerWeight)
 	);
 	const earningsByEvent = $derived(
 		new Map(
-			payoutEvents.map((event) => [event.event, tournamentAwards(event, weightFor(event, drafts))])
+			payoutEvents.map((event) => [event.event, tournamentAwards(event, weightFor(event, drafts), lowerWeightFor(event, lowerDrafts))])
 		)
 	);
 
@@ -154,11 +165,24 @@
 							class="w-full accent-emerald-700"
 						/>
 					</label>
+					<label class="grid w-full max-w-md gap-2 text-sm font-medium">
+						Places 7–12 boost · {lowerWeight}%
+						<input
+							type="range"
+							min="0"
+							max="100"
+							step="1"
+							value={lowerWeight}
+							disabled={saving || !chartEvent.leagueId}
+							oninput={(event) => previewLower(event.currentTarget.valueAsNumber)}
+							class="w-full accent-emerald-700"
+						/>
+					</label>
 					<button
 						type="button"
 						class="rounded-md border bg-white px-3 py-2 text-sm font-medium"
 						disabled={saving || !chartEvent.leagueId}
-						onclick={() => previewCurve(0)}>Preview standard curve</button
+						onclick={() => { previewCurve(0); previewLower(0); }}>Preview standard curve</button
 					>
 				</div>
 				{#if chartEvent.leagueId}
@@ -179,6 +203,7 @@
 									if (result.type === 'success') {
 										await update({ reset: false });
 										delete drafts[league];
+										delete lowerDrafts[league];
 										saveStatus = { ok: true, message: 'League payout curve saved.' };
 									} else {
 										saveStatus = {
@@ -199,14 +224,15 @@
 					>
 						<input type="hidden" name="league" value={chartEvent.leagueId} />
 						<input type="hidden" name="topWeight" value={topWeight} />
+						<input type="hidden" name="lowerWeight" value={lowerWeight} />
 						<button
 							type="submit"
-							disabled={saving || topWeight === chartEvent.topWeight}
+							disabled={saving || (topWeight === chartEvent.topWeight && lowerWeight === (chartEvent.lowerWeight ?? 0))}
 							class="rounded-md bg-emerald-800 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-50"
 						>
 							{saving ? 'Saving…' : 'Save league payout curve'}
 						</button>
-						<p class="text-sm">{chartEvent.leagueName} · Saved emphasis: {chartEvent.topWeight}%</p>
+						<p class="text-sm">{chartEvent.leagueName} · Saved emphasis: {chartEvent.topWeight}% · Places 7–12 boost: {chartEvent.lowerWeight ?? 0}%</p>
 					</form>
 				{:else}
 					<p class="text-sm">
