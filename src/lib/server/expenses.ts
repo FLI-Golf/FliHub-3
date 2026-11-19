@@ -86,6 +86,49 @@ export async function submitExpense({
 	}
 }
 
+export async function replaceExpenseReceipt({
+	locals,
+	params,
+	request
+}: ExpenseActionEvent) {
+	const { pb, user } = locals;
+	if (!pb || !user)
+		return fail(401, { expenseError: 'Sign in to replace a receipt.' });
+	if (params.capability !== 'reimbursements' || !idPattern.test(params.id))
+		return fail(404, { expenseError: 'Expenses page not found.' });
+
+	const form = await request.formData();
+	const expense = String(form.get('expense') ?? '');
+	if (!idPattern.test(expense))
+		return fail(400, { expenseError: 'Choose a valid expense.' });
+
+	const receipt = form.get('receipt');
+	if (
+		!(receipt instanceof File) ||
+		!receipt.name ||
+		!receipt.size ||
+		receipt.size > 5 * 1024 * 1024 ||
+		!['application/pdf', 'image/jpeg', 'image/png'].includes(receipt.type)
+	) {
+		return fail(400, { expenseError: 'Choose a PDF, JPEG, or PNG receipt up to 5 MB.' });
+	}
+
+	const payload = new FormData();
+	payload.set('receipt', receipt);
+
+	try {
+		await pb.send(
+			`/api/flihub/organizations/${params.id}/expenses/${expense}/replace-receipt`,
+			{ method: 'POST', body: payload }
+		);
+		return { expenseMessage: 'Receipt replaced and expense resubmitted.' };
+	} catch (err) {
+		return fail(pbErrorStatus(err), {
+			expenseError: pbErrorMessage(err, 'Unable to replace the receipt.')
+		});
+	}
+}
+
 export async function reviewExpense({
 	locals,
 	params,

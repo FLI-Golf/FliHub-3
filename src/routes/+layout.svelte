@@ -4,6 +4,7 @@
 	import './layout.css';
 	import logoIcon from '#lib/assets/logos/logo_f.png';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import type { LayoutProps } from './$types';
@@ -88,7 +89,11 @@
 		</nav>
 	</header>
 
-	<main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+	<main
+		class="mx-auto w-full flex-1 px-4 py-8 {page.data.organizationNav
+			? 'max-w-screen-2xl'
+			: 'max-w-6xl'}"
+	>
 		{#if data.user?.verified}
 			{#key data.user.id}<InvitationNotice />{/key}
 		{/if}

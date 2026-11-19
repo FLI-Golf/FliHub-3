@@ -49,7 +49,7 @@
 		},
 		{
 			"id": "teams",
-			"label": "Teams & rosters",
+			"label": "Teams, rosters & substitutions",
 			"description": "Teams, season rosters, and reserve pools.",
 			"availability": "available",
 			"milestone": "Phases 1D–1E",

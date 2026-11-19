@@ -221,7 +221,7 @@ function publicEventResult(app, orgId, event, parCache) {
  * caller): per-season aggregation by summed strokes plus standalone-event
  * tables. Only events with a currently published official result count.
  */
-function buildStandings(app, orgId, events, parCache) {
+function buildStandings(app, orgId, events, parCache, includePayoutInputs = false) {
 	const seasonName = new Map();
 	const resolveSeasonName = (seasonId) => {
 		if (!seasonName.has(seasonId)) {
@@ -257,7 +257,9 @@ function buildStandings(app, orgId, events, parCache) {
 				const id = key === 'entry' ? row.entry : row.athlete;
 				if (!rows.has(id)) {
 					rows.set(id, {
+						id,
 						name: key === 'entry' ? row.teamName : row[label],
+						teamNames: new Set(),
 						played: 0,
 						total: 0,
 						par: 0,
@@ -265,6 +267,7 @@ function buildStandings(app, orgId, events, parCache) {
 					});
 				}
 				const bucket = rows.get(id);
+				if (key === 'athlete' && row.teamName) bucket.teamNames.add(row.teamName);
 				bucket.played += 1;
 				bucket.total += row.total;
 				if (row.par === null) bucket.parKnown = false;
@@ -273,6 +276,8 @@ function buildStandings(app, orgId, events, parCache) {
 		}
 		const toRow = (r) => ({
 			name: r.name,
+			...(includePayoutInputs ? { id: r.id } : {}),
+			...(key === 'athlete' ? { teamNames: Array.from(r.teamNames).sort() } : {}),
 			played: r.played,
 			eventsCounted: counted,
 			total: r.total,
@@ -300,6 +305,13 @@ function buildStandings(app, orgId, events, parCache) {
 			season: seasonId,
 			seasonName: resolveSeasonName(seasonId),
 			events: results.map((r) => ({ event: r.event, eventName: r.eventName })),
+			...(includePayoutInputs ? { payoutEvents: results.map((r) => ({
+				event: r.event,
+				eventName: r.eventName,
+				purseCents: null,
+				teams: r.teams.map(({ entry, total }) => ({ entry, total })),
+				athletes: r.athletes.map(({ athlete, entry }) => ({ athlete, entry }))
+			})) } : {}),
 			teams: aggregate(results, 'entry', 'teamName'),
 			athletes: aggregate(results, 'athlete', 'athleteName')
 		});
@@ -442,7 +454,7 @@ function buildMemberStandings(app, orgId) {
 		0,
 		{ org: orgId }
 	);
-	return buildStandings(app, orgId, events, new Map());
+	return buildStandings(app, orgId, events, new Map(), true);
 }
 
 module.exports = {

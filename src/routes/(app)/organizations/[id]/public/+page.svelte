@@ -9,7 +9,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import OrgNav from '$lib/components/OrgNav.svelte';
 	import PublicOrgPage from '$lib/components/PublicOrgPage.svelte';
 	import type { PageProps } from './$types';
 
@@ -29,12 +28,6 @@
 		<h1 class="text-2xl font-semibold tracking-tight">
 			{data.organizationName} — Public page
 		</h1>
-		<OrgNav
-			orgId={data.organizationId}
-			enabledCapabilities={data.enabledCapabilities}
-			canManage={data.canManage}
-			current="public"
-		/>
 	</div>
 
 	{#if form?.message}

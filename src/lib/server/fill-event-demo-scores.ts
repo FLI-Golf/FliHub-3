@@ -78,7 +78,8 @@ export async function fillEventDemoScores(
 	organizationId: string,
 	eventId: string,
 	userId: string,
-	random: () => number = Math.random
+	random: () => number = Math.random,
+	seasonDemoGenerated = false
 ) {
 	const { rounds, groups, assignments, cards, scores, holes } = await loadDemoEvent(
 		pb,
@@ -127,6 +128,7 @@ export async function fillEventDemoScores(
 						organization: organizationId,
 						scorecard: scorecardId,
 						...cell,
+						...(seasonDemoGenerated ? { seasonDemoGenerated } : {}),
 						strokes: 2 + Math.floor(random() * 4)
 					});
 					added++;

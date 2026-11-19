@@ -32,3 +32,30 @@ export function formatSeasonPurse(season: SeasonPurse): string {
 	const cents = BigInt(season.purseAmountCents);
 	return `Season purse: USD $${(cents / 100n).toLocaleString('en-US')}.${String(cents % 100n).padStart(2, '0')}`;
 }
+
+export function allocateTournamentPurses(
+	totalCents: number,
+	events: { id: string; startsAt: string }[]
+): Map<string, number> {
+	if (!Number.isSafeInteger(totalCents) || totalCents < 0 || events.length === 0)
+		return new Map();
+
+	const ordered = [...events].sort(
+		(a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id)
+	);
+	const total = BigInt(totalCents);
+	// Regular events have three shares each and the finale has five.
+	const regular = (total * 3n) / (BigInt(ordered.length - 1) * 3n + 5n);
+	const finale = total - regular * BigInt(ordered.length - 1);
+	return new Map(
+		ordered.map((event, index) => [
+			event.id,
+			Number(index === ordered.length - 1 ? finale : regular)
+		])
+	);
+}
+
+export function formatTournamentPurse(cents: number): string {
+	const amount = BigInt(cents);
+	return `$${(amount / 100n).toLocaleString('en-US')}.${String(amount % 100n).padStart(2, '0')}`;
+}

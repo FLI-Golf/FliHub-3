@@ -7,7 +7,6 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import ExpensesManager from '$lib/components/ExpensesManager.svelte';
 	import SponsorsManager from '$lib/components/SponsorsManager.svelte';
-	import OrgNav from '$lib/components/OrgNav.svelte';
 	import AthletesManager from '$lib/components/AthletesManager.svelte';
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
 	import RostersManager from '$lib/components/RostersManager.svelte';
@@ -36,13 +35,6 @@
 		<h1 class="text-2xl font-semibold tracking-tight">
 			{data.organization.name} — {data.capability.label}
 		</h1>
-		<OrgNav
-			counts={data.navigationCounts}
-			orgId={data.organization.id}
-			enabledCapabilities={data.enabledCapabilities}
-			canManage={data.canManage}
-			current={data.capability.id}
-		/>
 	</div>
 
 	{#if !data.enabled}
@@ -152,6 +144,7 @@
 			</details>
 		{/if}
 		<EventsManager
+			setupData={data.eventsData}
 			events={data.eventsData.events}
 			seasons={data.eventsData.seasons}
 			canManage={data.canManage}
@@ -200,7 +193,7 @@
 				totals among ranked rows share a position. Pending corrections never count until
 				republished.
 			</p>
-			<StandingsTables standings={data.standingsData.standings} testid="member-standings" />
+			<StandingsTables standings={data.standingsData.standings} testid="member-standings" canAdjustPayouts={data.myRole === 'owner'} />
 		</div>
 	{:else if data.capability.id === 'fantasy' && data.capability.availability === 'available' && data.fantasyData}
 		<FantasyManager

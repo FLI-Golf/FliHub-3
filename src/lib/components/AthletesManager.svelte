@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CircleAlert, Download, Pencil, Plus, UserRound, Archive } from 'lucide-svelte';
+	import { CircleAlert, Download, Pencil, Plus, UserRound, Archive, X } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -7,7 +7,6 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
 
 	interface Athlete {
 		id: string;
@@ -151,11 +150,10 @@
 					No athletes yet. Create one below{#if canManage}&nbsp;or import a CSV list{/if}.
 				</p>
 			{/if}
-			{#each athletes as athlete, index (athlete.id)}
-				{#if index > 0}
-					<Separator class="my-3" />
-				{/if}
-				<div class="flex flex-wrap items-center gap-2">
+			{#each athletes as athlete (athlete.id)}
+				<div
+					class="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-3 even:bg-slate-300"
+				>
 					<div class="flex min-w-0 flex-1 flex-col">
 						<span class="truncate font-medium">{nameOf(athlete)}</span>
 						<span class="truncate text-sm text-muted-foreground">
@@ -171,13 +169,14 @@
 					{#if athlete.status === 'archived'}
 						<Badge variant="outline">Archived</Badge>
 					{:else}
-						<Badge variant="secondary">Active</Badge>
+						<Badge variant="secondary" class="bg-blue-700 text-white">Active</Badge>
 					{/if}
 					{#if canManage}
 						<div class="flex flex-wrap gap-1">
 							<Button
 								variant="ghost"
 								size="xs"
+								class="bg-red-700 text-white hover:bg-red-800 hover:text-white"
 								onclick={() => {
 									editing = athlete;
 								}}
@@ -192,6 +191,7 @@
 										type="submit"
 										variant="ghost"
 										size="xs"
+										class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
 										onclick={(e) => {
 											if (!confirm(`Archive ${nameOf(athlete)}? Records are preserved.`))
 												e.preventDefault();
@@ -215,77 +215,117 @@
 	</Card.Root>
 
 	{#if canManage}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="flex items-center gap-2 text-base">
-					<Plus class="size-5" />
+		<details class="group/add-athlete rounded-xl border bg-card p-4">
+			<summary class="cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
+				<span class="flex items-center gap-2 group-open/add-athlete:hidden">
+					<span
+						class="inline-flex size-8 items-center justify-center rounded-full bg-green-700 text-white"
+					>
+						<Plus class="size-4" aria-hidden="true" />
+					</span>
 					Add an athlete
-				</Card.Title>
-				<Card.Description
-					>Accounts are not required — athletes are records, not users.</Card.Description
-				>
-			</Card.Header>
-			<Card.Content>
-				<form method="POST" action="?/createAthlete" class="grid gap-3 sm:grid-cols-2">
-					<div class="flex flex-col gap-1.5">
-						<Label for="firstName">First name</Label>
-						<Input id="firstName" name="firstName" required maxlength={60} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="lastName">Last name</Label>
-						<Input id="lastName" name="lastName" required maxlength={60} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="displayName">Display name (optional)</Label>
-						<Input id="displayName" name="displayName" maxlength={120} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="gender">Gender (optional)</Label>
-						<select
-							id="gender"
-							name="gender"
-							class="rounded-md border bg-background px-2 py-1.5 text-sm"
+				</span>
+				<span class="hidden items-center gap-2 group-open/add-athlete:flex">
+					<span
+						class="inline-flex size-8 items-center justify-center rounded-full bg-red-700 text-white"
+					>
+						<X class="size-4" aria-hidden="true" />
+					</span>
+					Close athlete form
+				</span>
+			</summary>
+			<div class="mt-4">
+				<Card.Root>
+					<Card.Header>
+						<Card.Description
+							>Accounts are not required — athletes are records, not users.</Card.Description
 						>
-							<option value="unspecified">Unspecified</option>
-							<option value="female">Female</option>
-							<option value="male">Male</option>
-							<option value="other">Other</option>
-						</select>
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="nationality">Nationality (optional)</Label>
-						<Input id="nationality" name="nationality" maxlength={60} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="email">
-							Contact email <Badge variant="outline" class="ml-1 text-xs">private</Badge>
-						</Label>
-						<Input id="email" name="email" type="email" maxlength={254} />
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<Label for="phone">
-							Phone <Badge variant="outline" class="ml-1 text-xs">private</Badge>
-						</Label>
-						<Input id="phone" name="phone" maxlength={40} />
-					</div>
-					<div class="flex flex-col gap-1.5 sm:col-span-2">
-						<Label for="eligibilityNotes">
-							Eligibility notes <Badge variant="outline" class="ml-1 text-xs">private</Badge>
-						</Label>
-						<Input id="eligibilityNotes" name="eligibilityNotes" maxlength={2000} />
-					</div>
-					<div>
-						<Button type="submit">Add athlete</Button>
-					</div>
-				</form>
-			</Card.Content>
-			<Card.Footer>
-				<Button variant="outline" onclick={() => (showImport = true)}>
-					<Download class="size-4" />
-					Import CSV
-				</Button>
-			</Card.Footer>
-		</Card.Root>
+					</Card.Header>
+					<Card.Content>
+						<form method="POST" action="?/createAthlete" class="grid gap-3 sm:grid-cols-2">
+							<div class="flex flex-col gap-1.5">
+								<Label for="firstName">First name</Label>
+								<Input id="firstName" name="firstName" required maxlength={60} />
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<Label for="lastName">Last name</Label>
+								<Input id="lastName" name="lastName" required maxlength={60} />
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<Label for="displayName">Display name (optional)</Label>
+								<Input id="displayName" name="displayName" maxlength={120} />
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<Label for="gender">Gender (optional)</Label>
+								<select
+									id="gender"
+									name="gender"
+									class="rounded-md border bg-background px-2 py-1.5 text-sm"
+								>
+									<option value="unspecified">Unspecified</option>
+									<option value="female">Female</option>
+									<option value="male">Male</option>
+									<option value="other">Other</option>
+								</select>
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<Label for="nationality">Nationality (optional)</Label>
+								<Input id="nationality" name="nationality" maxlength={60} />
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<Label for="email">
+									Contact email <Badge variant="outline" class="ml-1 text-xs">private</Badge>
+								</Label>
+								<Input id="email" name="email" type="email" maxlength={254} />
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<Label for="phone">
+									Phone <Badge variant="outline" class="ml-1 text-xs">private</Badge>
+								</Label>
+								<Input id="phone" name="phone" maxlength={40} />
+							</div>
+							<div class="flex flex-col gap-1.5 sm:col-span-2">
+								<Label for="eligibilityNotes">
+									Eligibility notes <Badge variant="outline" class="ml-1 text-xs">private</Badge>
+								</Label>
+								<Input id="eligibilityNotes" name="eligibilityNotes" maxlength={2000} />
+							</div>
+							<div>
+								<Button type="submit" class="bg-green-700 text-white hover:bg-green-800"
+									>Add athlete</Button
+								>
+							</div>
+						</form>
+					</Card.Content>
+					<section class="mt-4 space-y-3 rounded-md border p-4" aria-label="Athlete CSV example">
+						<h3 class="font-semibold">Bulk add athletes</h3>
+						<p class="text-sm text-muted-foreground">
+							Copy the prompt into chat, replace the placeholder with your athlete list, then paste
+							the CSV reply into Import CSV.
+						</p>
+						<textarea
+							bind:this={athleteImportPromptField}
+							aria-label="Athlete CSV chat prompt with three example rows"
+							readonly
+							rows="8"
+							value={athleteImportChatPrompt}
+							class="w-full rounded-md border bg-background p-2 font-mono text-xs"></textarea>
+						<Button
+							type="button"
+							class="bg-black text-white hover:bg-slate-800"
+							onclick={copyAthleteImportExample}>Copy example for chat</Button
+						>
+						<p role="status" class="text-sm">{athleteImportCopyStatus}</p>
+					</section>
+					<Card.Footer>
+						<Button variant="outline" onclick={() => (showImport = true)}>
+							<Download class="size-4" />
+							Import CSV
+						</Button>
+					</Card.Footer>
+				</Card.Root>
+			</div>
+		</details>
 	{:else}
 		<p class="text-sm text-muted-foreground">
 			Your role ({myRole}) can view athletes but not manage them.
@@ -389,25 +429,6 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
-
-{#if canManage}
-	<section class="mt-4 space-y-3 rounded-md border p-4" aria-label="Athlete CSV example">
-		<h3 class="font-semibold">Bulk add athletes</h3>
-		<p class="text-sm text-muted-foreground">
-			Copy the prompt into chat, replace the placeholder with your athlete list, then paste the CSV
-			reply into Import CSV.
-		</p>
-		<textarea
-			bind:this={athleteImportPromptField}
-			aria-label="Athlete CSV chat prompt with three example rows"
-			readonly
-			rows="8"
-			value={athleteImportChatPrompt}
-			class="w-full rounded-md border bg-background p-2 font-mono text-xs"></textarea>
-		<Button type="button" onclick={copyAthleteImportExample}>Copy example for chat</Button>
-		<p role="status" class="text-sm">{athleteImportCopyStatus}</p>
-	</section>
-{/if}
 
 <!-- Import dialog -->
 <Dialog.Root open={showImport} onOpenChange={(open) => !open && (showImport = false)}>

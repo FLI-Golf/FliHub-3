@@ -1,3 +1,4 @@
+import type { PayoutEvent } from '$lib/standings-payouts';
 /**
  * Phase 1I — public page payload types.
  *
@@ -56,7 +57,9 @@ export interface PublicEventResult {
 }
 
 export interface StandingsRow {
+	id?: string;
 	name: string;
+	teamNames?: string[];
 	played: number;
 	/** Events counted in this standings view (denominator for "X of Y"). */
 	eventsCounted: number;
@@ -72,6 +75,7 @@ export interface StandingsRow {
 
 export interface StandingsTable {
 	scope: 'season' | 'event';
+	payoutEvents?: PayoutEvent[];
 	season?: string;
 	seasonName?: string;
 	event?: string;

@@ -14,6 +14,7 @@ export interface Expense {
 	hasReceipt: boolean;
 	status: keyof typeof expenseStatuses;
 	reviewNote: string;
+	returnHistory: { decision: 'returned'; note: string; reviewedAt: string; reviewer: string }[];
 	submitter: string;
 	submitterName: string;
 }

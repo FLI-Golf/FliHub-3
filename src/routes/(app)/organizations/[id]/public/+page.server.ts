@@ -1,8 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
-import { pbErrorMessage, pbErrorStatus, toOrganizationDTO } from '$lib/server/auth';
-import { capabilityDefinitions } from '$lib/capabilities/catalog';
+import { pbErrorMessage, pbErrorStatus } from '$lib/server/auth';
 import type { PublicPagePayload } from '$lib/public-page';
 
 const ID_PATTERN = /^[a-z0-9]{15}$/;
@@ -29,7 +28,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const myRole = String(mine.role) as OrgRole;
 
 	const organization = await pb.collection('organizations').getOne(params.id);
-	const dto = toOrganizationDTO(organization);
 
 	let preview: { preview: { published: boolean; slug: string }; page: PublicPagePayload };
 	try {
@@ -56,7 +54,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		organizationName: String(organization.name ?? ''),
 		myRole,
 		canManage: myRole === 'owner' || myRole === 'admin',
-		enabledCapabilities: capabilityDefinitions.filter((c) => dto.capabilities.includes(c.id)),
 		publicPage: {
 			slug: String(organization.publicSlug ?? ''),
 			published: Boolean(organization.publicPublished),

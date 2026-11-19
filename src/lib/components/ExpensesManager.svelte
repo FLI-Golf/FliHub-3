@@ -199,8 +199,8 @@
 				>
 			</p>
 			<p class="text-sm whitespace-pre-wrap">{expense.purpose}</p>
-			{#if expense.hasReceipt}
-				<div>
+			<div class="flex flex-wrap items-start gap-3">
+				{#if expense.hasReceipt}
 					<a
 						class="inline-flex items-center gap-2 text-sm text-blue-700 underline"
 						href={resolve(
@@ -215,7 +215,43 @@
 					>
 						<ReceiptText aria-hidden="true" class="size-4" /> Download receipt
 					</a>
-				</div>
+				{/if}
+				{#if expense.status === 'returned' && expense.submitter === userId}
+					<details>
+						<summary class="cursor-pointer text-sm text-blue-700 underline">
+							{expense.hasReceipt ? 'Replace receipt' : 'Add replacement receipt'}
+						</summary>
+						<form
+							method="POST"
+							action="?/replaceExpenseReceipt"
+							enctype="multipart/form-data"
+							class="mt-2 grid gap-2"
+						>
+							<input type="hidden" name="expense" value={expense.id} />
+							<label class="grid gap-1 text-sm font-medium">
+								New receipt (PDF, JPEG, or PNG up to 5 MB)
+								<input
+									class={field}
+									type="file"
+									name="receipt"
+									accept="application/pdf,image/jpeg,image/png"
+									required
+								/>
+							</label>
+							<Button type="submit">Replace and resubmit</Button>
+						</form>
+					</details>
+				{/if}
+			</div>
+			{#if expense.returnHistory.length}
+				<details class="text-sm">
+					<summary class="cursor-pointer font-medium">Review history</summary>
+					<ul class="mt-2 grid gap-2">
+						{#each expense.returnHistory as review}
+							<li class="whitespace-pre-wrap"><strong>Returned</strong> · {review.note}</li>
+						{/each}
+					</ul>
+				</details>
 			{/if}
 			{#if expense.reviewNote}
 				<p class="text-sm whitespace-pre-wrap">

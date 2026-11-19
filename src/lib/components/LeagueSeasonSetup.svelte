@@ -42,6 +42,9 @@
 	const activeLeagues = $derived(leagues.filter((league) => league.status === 'active'));
 	const selectedLeague = $derived(activeLeagues.find((league) => league.id === leagueId));
 	const steps = ['League', 'Season', 'Review'];
+	const leagueNameLength = $derived(leagueName.trim().length);
+	const validLeagueName = $derived(leagueNameLength >= 3 && leagueNameLength <= 120);
+	const canAdvanceLeague = $derived(mode === 'new' ? validLeagueName : Boolean(selectedLeague));
 
 	async function move(next: number) {
 		step = next;
@@ -52,8 +55,8 @@
 	async function advance() {
 		validation = '';
 		if (step === 0) {
-			if (mode === 'new' && (!leagueName.trim() || leagueName.trim().length > 120))
-				validation = 'Enter a league name of 1–120 characters.';
+			if (mode === 'new' && !validLeagueName)
+				validation = 'Enter a league name of 3–120 characters.';
 			else if (mode === 'existing' && !selectedLeague) validation = 'Choose an active league.';
 		} else if (step === 1) {
 			if (!seasonName.trim() || seasonName.trim().length > 120)
@@ -172,10 +175,13 @@
 			<input
 				id="setup-league-name"
 				bind:value={leagueName}
+				minlength="3"
+				aria-describedby="setup-league-name-help"
 				maxlength="120"
 				class="min-h-11 w-full rounded-md border bg-background px-3 py-2"
 				placeholder="Coastal Disc Golf League"
 			/>
+			<p id="setup-league-name-help" class="text-sm text-muted-foreground">Use 3–120 characters.</p>
 		{:else}
 			<label for="setup-existing-league" class="font-medium">Existing league</label>
 			<select
@@ -278,7 +284,8 @@
 			<button
 				type="button"
 				onclick={advance}
-				class="min-h-11 rounded-md bg-blue-700 px-5 py-2 font-medium text-white"
+				disabled={step === 0 && !canAdvanceLeague}
+				class="min-h-11 rounded-md bg-blue-700 px-5 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600"
 				>{step === 1 ? 'Review' : 'Next'}</button
 			>
 		{:else}

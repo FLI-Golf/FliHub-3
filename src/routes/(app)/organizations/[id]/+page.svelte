@@ -9,7 +9,6 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { ShieldCheck, Settings } from 'lucide-svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import OrgNav from '$lib/components/OrgNav.svelte';
 	import OrganizationSetupChecklist from '$lib/components/OrganizationSetupChecklist.svelte';
 	import type { PageProps } from './$types';
 
@@ -71,13 +70,6 @@
 				</a>
 			{/if}
 		</div>
-		<OrgNav
-			counts={data.navigationCounts}
-			orgId={data.organization.id}
-			enabledCapabilities={data.enabledCapabilities}
-			canManage={data.canManage}
-			current="overview"
-		/>
 	</div>
 
 	{#if canManage && data.setupChecklist}

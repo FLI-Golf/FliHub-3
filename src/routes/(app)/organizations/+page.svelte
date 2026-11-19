@@ -89,6 +89,7 @@
 				</Card.Content>
 				<Card.Footer>
 					<Button
+						class="bg-blue-700 text-white hover:bg-blue-800"
 						href={resolve('/(app)/organizations/[id]/events/[event]/score', {
 							id: assignment.organizationId,
 							event: assignment.eventId
