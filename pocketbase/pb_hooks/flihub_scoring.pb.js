@@ -301,6 +301,16 @@ onRecordCreateRequest((e) => {
 	if (!e.auth || !e.auth.id) {
 		throw new BadRequestError('unauthenticated: Score entry requires a signed-in caller.');
 	}
+	// Only season demo fills by an Owner or Admin can mark new scores for undo.
+	if (e.record.getBool('seasonDemoGenerated')) {
+		const membership = e.app.findRecordsByFilter(
+			'memberships',
+			'organization = {:org} && user = {:user} && (role = "owner" || role = "admin")',
+			'', 1, 0, { org: orgId, user: e.auth.id }
+		)[0];
+		if (!membership)
+			throw new ForbiddenError('Owner or Admin access required to mark season demo scores.');
+	}
 	e.record.set('enteredBy', e.auth.id);
 	e.next();
 	const collection = e.app.findCollectionByNameOrId('score_changes');
@@ -356,6 +366,7 @@ onRecordUpdateRequest((e) => {
 		throw new BadRequestError('unauthenticated: Score entry requires a signed-in caller.');
 	}
 	const prevStrokes = original ? original.getInt('strokes') : 0;
+	e.record.set('seasonDemoGenerated', false);
 	e.record.set('enteredBy', e.auth.id);
 	e.next();
 	if (e.record.getInt('strokes') !== prevStrokes) {

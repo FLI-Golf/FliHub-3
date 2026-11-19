@@ -312,9 +312,34 @@
 			{:else}Tee time awaiting setup{/if}
 		</p>
 
+		{#if teamTotals.length}
+			<section class="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-4" aria-labelledby="round-team-scores">
+				<h2 id="round-team-scores" class="font-bold text-blue-950">Team scores · current round</h2>
+				<ul class="grid grid-cols-2 gap-2 sm:gap-3">
+					{#each teamTotals as team (team.teamName)}
+						<li class="min-w-0 rounded-lg border border-blue-200 bg-white p-3">
+							<h3 class="wrap-break-word font-bold text-blue-950">{team.teamName}</h3>
+							<p class="mt-1 text-2xl font-extrabold text-blue-950 tabular-nums">
+								{team.recorded ? team.total : '—'}
+							</p>
+							<p class="text-xs text-slate-700">
+								{!team.recorded ? 'Not started' : team.missing ? 'Partial total' : 'Team total'}
+								{#if team.missing}
+									· {team.missing} score{team.missing === 1 ? '' : 's'} missing
+								{/if}
+							</p>
+						</li>
+					{/each}
+				</ul>
+				<p class="text-xs text-blue-950">Team scores add both athletes’ strokes. Lower is better.</p>
+			</section>
+		{/if}
+
 		{#if data.canManage && editable}
-			<section class="space-y-3 rounded-md border border-amber-400 bg-amber-50 p-4 text-black">
-				<h2 class="font-semibold">Demo testing — current scorecard</h2>
+			<details class="space-y-3 rounded-md border border-amber-400 bg-amber-50 p-4 text-black">
+				<summary class="cursor-pointer rounded-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4">
+					<ClipboardCheck class="mr-1 inline-block size-5 align-middle" aria-hidden="true" />Demo testing — current scorecard
+				</summary>
 				<p class="text-sm">
 					Fill missing scores for this group and round with generated test values. Existing scores
 					are preserved. Review the results before submitting.
@@ -338,17 +363,17 @@
 				>
 					Review scorecard
 				</Button>
-			</section>
+			</details>
 		{/if}
 
 		{#if import.meta.env.DEV && data.canManage && !data.resultStatus}
-			<section
+			<details
 				class="space-y-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-950"
-				aria-label="Event-wide test scores"
+				open={Boolean(formRecord?.eventDemoSummary)}
 			>
-				<h2 class="flex items-center gap-2 font-semibold">
-					<Layers class="size-5" aria-hidden="true" />Demo testing — entire event
-				</h2>
+				<summary class="cursor-pointer rounded-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4">
+					<Layers class="mr-1 inline-block size-5 align-middle" aria-hidden="true" />Demo testing — entire event
+				</summary>
 				<p class="text-sm">
 					Generate missing test scores across every active group and round. Existing scores are
 					preserved; submitted cards are skipped. This can take a moment. Review and submit each
@@ -414,7 +439,7 @@
 					>
 						{String(formRecord.eventDemoSummary)}
 					</p>{/if}
-			</section>
+			</details>
 		{/if}
 
 		<details
@@ -862,21 +887,6 @@
 								</tr>
 							</tbody>
 						</table>
-					</div>
-
-					<div class="flex flex-col gap-1 text-sm">
-						{#each teamTotals as team (team.teamName)}
-							<p>
-								<span class="font-medium">{team.teamName}</span>
-								— {team.missing > 0 ? 'partial total' : 'team total'}
-								{team.recorded ? team.total : '—'}{team.missing > 0
-									? ` (${team.missing} score${team.missing === 1 ? '' : 's'} missing)`
-									: ''}
-							</p>
-						{/each}
-						<p class="text-xs text-muted-foreground">
-							Demo team score adds both athletes' strokes; lower is better.
-						</p>
 					</div>
 
 					{#if missingCount > 0}

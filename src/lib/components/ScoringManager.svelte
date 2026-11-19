@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { deserialize, enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	const dev = import.meta.env.DEV;
-	import { BadgeCheck, ClipboardList, Smartphone } from 'lucide-svelte';
+	import { BadgeCheck, ClipboardList, DollarSign, Layers, Smartphone } from 'lucide-svelte';
+	import { formatTournamentPurse } from '$lib/season-purse';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -9,11 +13,14 @@
 		id: string;
 		name: string;
 		seasonName: string | null;
+		seasonId: string | null;
+		tournamentPurseCents: number | null;
 		roundCount: number;
 		groupCount: number;
 		submittedCount: number;
 		scorecardCount: number;
 		resultStatus: string | null;
+		resultId: string | null;
 		resultVersion: number | null;
 	}
 
@@ -36,15 +43,88 @@
 		message: string;
 	}
 
+	interface DemoScoringResult {
+		id: string;
+		message: string;
+		ok: boolean;
+	}
+
+	const demoOperationLabels = {
+		fill: 'Filling missing demo scores',
+		submit: 'Submitting complete scorecards',
+		undo: 'Undoing draft demo scores'
+	};
+
 	const invitationForm = $derived(
 		form && typeof form === 'object'
 			? (form as {
 					scorekeeperInvitations?: InvitationResult[];
 					scorekeeperInviteError?: string;
 					scorekeeperActivationMessage?: string;
+					demoScoringError?: string;
+					demoScoringResults?: DemoScoringResult[];
 				})
 			: null
 	);
+
+	let demoSeason = $state('');
+	let demoPanelOpen = $state(false);
+	let demoPending = $state(false);
+	let pendingResultEvent = $state('');
+	let resultActionError = $state<{ id: string; message: string } | null>(null);
+	const scoringBusy = $derived(demoPending || Boolean(pendingResultEvent));
+	let batchResults = $state<DemoScoringResult[] | null>(null);
+	let batchError = $state('');
+	let progress = $state<{ label: string; total: number; currentEvent: string } | null>(null);
+	const demoSeasons = $derived(
+		new Map(events.flatMap((event) => event.seasonId && event.seasonName ? [[event.seasonId, event.seasonName] as const] : []))
+	);
+	const chosenDemoSeason = $derived(demoSeasons.has(demoSeason) ? demoSeason : demoSeasons.keys().next().value);
+	const demoEvents = $derived(events.filter((event) => event.seasonId === chosenDemoSeason));
+	const demoResults = $derived(new Map((batchResults ?? invitationForm?.demoScoringResults)?.map((row) => [row.id, row])));
+
+	async function runDemoBatch(action: URL, formData: FormData, operation: keyof typeof demoOperationLabels) {
+		const selected = [...demoEvents];
+		const results: DemoScoringResult[] = [];
+		batchResults = [];
+		batchError = '';
+		demoPending = true;
+		progress = { label: demoOperationLabels[operation], total: selected.length, currentEvent: '' };
+
+		try {
+			for (const event of selected) {
+				progress.currentEvent = event.name;
+				formData.set('event', event.id);
+				const response = await fetch(action, {
+					method: 'POST',
+					headers: { accept: 'application/json', 'x-sveltekit-action': 'true' },
+					body: formData
+				});
+				const result = deserialize(await response.text());
+				if (result.type === 'failure' && typeof result.data?.demoScoringError === 'string') {
+					results.push({ id: event.id, ok: false, message: result.data.demoScoringError });
+				} else if (result.type === 'success' && Array.isArray(result.data?.demoScoringResults)) {
+					const outcome = result.data.demoScoringResults.find((row) => row.id === event.id);
+					if (!outcome) throw new Error('Missing event outcome.');
+					results.push(outcome);
+				} else {
+					throw new Error('Unexpected scoring response.');
+				}
+				batchResults = [...results];
+			}
+		} catch {
+			batchError = `Couldn’t confirm the outcome for ${progress.currentEvent}. Remaining tournaments were skipped. Check its scorecards before retrying.`;
+		} finally {
+			progress.currentEvent = '';
+			try {
+				await invalidateAll();
+			} catch {
+				batchError += ' Refresh the page to update the scorecard counts.';
+			} finally {
+				demoPending = false;
+			}
+		}
+	}
 
 	const scorekeeperInvitePrompt = [
 		'Extract scorekeeper email addresses from my list for FliHub.',
@@ -227,6 +307,156 @@
 		</details>
 	{/if}
 
+	{#if dev && (myRole === 'owner' || myRole === 'admin') && demoSeasons.size}
+		<details
+			class="rounded-md border-2 border-amber-300 bg-amber-50 text-amber-950"
+			bind:open={demoPanelOpen}
+		>
+			<summary class="cursor-pointer rounded-md p-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">
+				<Layers class="mr-1 size-5 inline-block align-middle" aria-hidden="true" />
+				Demo testing — enter entire season scores
+			</summary>
+			<div class="space-y-4 px-4 pb-4">
+				<p class="text-sm">
+					Generate missing test scores for the selected season. Existing scores are preserved and
+					submitted cards are skipped. Review the scorecards before submitting. Approval and
+					publication remain separate. Undo clears untouched scores generated here while their scorecards
+					are still drafts.
+				</p>
+				<form method="POST" action="?/scoreSeasonDemo" class="space-y-4" use:enhance={({ action, cancel, formData, submitter }) => {
+					const operation = submitter?.getAttribute('value');
+					if (scoringBusy) {
+						cancel();
+						return;
+					}
+					const resultEventId = submitter?.getAttribute('data-result-event');
+					if (resultEventId) {
+						const event = demoEvents.find((item) => item.id === resultEventId);
+						const publishing = submitter?.getAttribute('name') === 'result';
+						const verb = publishing ? 'Publish' : 'Approve';
+						if (!event || !confirm(`${verb} the result for ${event.name}?`)) {
+							cancel();
+							return;
+						}
+						pendingResultEvent = event.id;
+						resultActionError = null;
+						return async ({ result }) => {
+							try {
+								if (result.type === 'success') {
+									await invalidateAll();
+								} else {
+									resultActionError = {
+										id: event.id,
+										message: result.type === 'failure' && typeof result.data?.message === 'string'
+											? result.data.message
+											: `${verb} action could not be confirmed. Open Official results to check the event.`
+									};
+								}
+							} catch {
+								resultActionError = { id: event.id, message: 'Refresh the page to check the current result status.' };
+							} finally {
+								pendingResultEvent = '';
+							}
+						};
+					}
+					cancel();
+					if (operation !== 'fill' && operation !== 'submit' && operation !== 'undo') return;
+					if (operation === 'undo' && !confirm('Clear untouched draft scores generated by this season tool?')) return;
+					formData.set('operation', operation);
+					void runDemoBatch(action, formData, operation);
+				}}>
+					<label class="grid w-fit gap-1 text-sm font-medium">
+						Season
+						<select name="season" class="rounded-md border bg-white px-3 py-2" value={chosenDemoSeason} disabled={scoringBusy} onchange={(event) => {
+							demoSeason = event.currentTarget.value;
+							progress = null;
+							batchResults = [];
+							batchError = '';
+						}}>
+							{#each demoSeasons as [id, name] (id)}
+								<option value={id}>{name}</option>
+							{/each}
+						</select>
+					</label>
+					<ul class="grid gap-2">
+						{#each demoEvents as event (event.id)}
+							{@const result = demoResults.get(event.id)}
+							{@const resultsUrl = resolve('/(app)/organizations/[id]/events/[event]/results', { id: organizationId, event: event.id })}
+							{@const expectedCards = event.roundCount * event.groupCount}
+							<li class="grid gap-1 rounded-md border bg-white p-3 text-sm">
+								<input type="hidden" name="event" value={event.id} />
+								<a class="font-semibold text-blue-800 underline" href={resolve('/(app)/organizations/[id]/events/[event]/score', { id: organizationId, event: event.id })}>{event.name}</a>
+								<span>{event.submittedCount}/{expectedCards} scorecards submitted</span>
+								<div class="mt-1 flex flex-wrap items-center gap-2">
+									<Button href={resultsUrl} variant="outline" size="sm">Review results</Button>
+									{#if event.resultStatus}
+										<Badge variant="outline" class="capitalize">
+											{event.resultStatus === 'correcting' ? 'Under correction' : event.resultStatus}
+										</Badge>
+										{#if event.resultStatus === 'approved' && event.resultId}
+											<Button
+												type="submit"
+												size="sm"
+												name="result"
+												value={event.resultId}
+												formaction={resultsUrl + '?/publishResult'}
+												data-result-event={event.id}
+												class="bg-green-700 text-white hover:bg-green-800"
+												disabled={scoringBusy}
+											>
+												{pendingResultEvent === event.id ? 'Publishing…' : 'Publish result'}
+											</Button>
+										{/if}
+									{:else if expectedCards > 0 && event.submittedCount === expectedCards}
+										<Button
+											type="submit"
+											size="sm"
+											formaction={resultsUrl + '?/approveResult'}
+											data-result-event={event.id}
+											class="bg-blue-700 text-white hover:bg-blue-800"
+											disabled={scoringBusy}
+										>
+											<BadgeCheck class="size-4" aria-hidden="true" />
+											{pendingResultEvent === event.id ? 'Approving…' : 'Approve result'}
+										</Button>
+									{/if}
+								</div>
+								{#if resultActionError?.id === event.id}
+									<p role="alert" class="text-red-800">{resultActionError.message}</p>
+								{/if}
+								{#if result}<span class={result.ok ? 'text-green-800' : 'text-red-800'}>{result.message}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+					<div class="flex flex-wrap gap-2">
+						<Button type="submit" name="operation" value="fill" disabled={scoringBusy} class="bg-blue-700 text-white hover:bg-blue-800">Fill missing demo scores</Button>
+						<Button type="submit" name="operation" value="submit" disabled={scoringBusy} class="bg-green-700 text-white hover:bg-green-800">Submit complete scorecards</Button>
+						<Button type="submit" name="operation" value="undo" disabled={scoringBusy} variant="outline" class="border-orange-400 text-orange-900 hover:bg-orange-100 hover:text-orange-950">Undo draft demo scores</Button>
+					</div>
+					{#if invitationForm?.demoScoringError}<p role="alert" class="text-sm text-red-800">{invitationForm.demoScoringError}</p>{/if}
+					{#if progress}
+						{@const finished = batchResults?.length ?? 0}
+						<div class="space-y-2 rounded-lg border border-amber-300 bg-white p-3 text-sm">
+							<label for="demo-scoring-progress" class="font-semibold">{progress.label}</label>
+							<progress id="demo-scoring-progress" class="block h-3 w-full accent-blue-700" value={finished} max={progress.total}></progress>
+							<p role="status">
+								{finished} of {progress.total} tournaments processed.
+								{#if progress.currentEvent}
+									Working on {progress.currentEvent}…
+								{:else if demoPending}
+									Refreshing scorecard counts…
+								{:else if finished === progress.total}
+									{batchResults?.filter((result) => !result.ok).length ?? 0} need attention.
+								{/if}
+							</p>
+						</div>
+					{/if}
+					{#if batchError}<p role="alert" class="text-sm text-red-800">{batchError}</p>{/if}
+				</form>
+			</div>
+		</details>
+	{/if}
+
 	<Card.Root>
 		<Card.Header>
 			<Card.Title class="flex items-center gap-2">
@@ -268,6 +498,12 @@
 							{event.groupCount} group{event.groupCount === 1 ? '' : 's'} ·
 							{event.submittedCount}/{event.scorecardCount || event.roundCount * event.groupCount}
 							scorecards submitted
+							{#if event.tournamentPurseCents !== null}
+								<Badge variant="outline" class="ml-1 gap-1 border-green-900 bg-green-900 font-extrabold text-white">
+									<DollarSign class="size-3" aria-hidden="true" />
+									<span class="sr-only">Tournament purse: </span>{formatTournamentPurse(event.tournamentPurseCents)}
+								</Badge>
+							{/if}
 						</span>
 					</div>
 					<div class="flex flex-wrap items-center gap-2">

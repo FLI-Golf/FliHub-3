@@ -193,7 +193,7 @@
 				totals among ranked rows share a position. Pending corrections never count until
 				republished.
 			</p>
-			<StandingsTables standings={data.standingsData.standings} testid="member-standings" />
+			<StandingsTables standings={data.standingsData.standings} testid="member-standings" canAdjustPayouts={data.myRole === 'owner'} />
 		</div>
 	{:else if data.capability.id === 'fantasy' && data.capability.availability === 'available' && data.fantasyData}
 		<FantasyManager

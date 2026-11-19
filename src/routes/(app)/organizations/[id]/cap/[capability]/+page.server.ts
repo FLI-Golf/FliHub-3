@@ -1,9 +1,10 @@
+import { DemoFillError, fillEventDemoScores, submitEventDemoScorecards } from '$lib/server/fill-event-demo-scores';
 import type { Expense } from '$lib/expenses/model';
 import { submitExpense, reviewExpense } from '$lib/server/expenses';
 import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
-import { parseSeasonPurse } from '$lib/season-purse';
+import { allocateTournamentPurses, parseSeasonPurse } from '$lib/season-purse';
 import { toTeeInstant, type TeeSchedule } from '$lib/tee-times';
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -614,6 +615,23 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				pb.collection('event_results').getFullList({ filter })
 			]);
 		const seasonName = new Map(seasonRows.map((s) => [s.id, String(s.name ?? '')]));
+		const tournamentPurses = new Map(
+			seasonRows
+				.filter((season) => season.purseCurrency === 'USD')
+				.flatMap((season) =>
+					Array.from(
+						allocateTournamentPurses(
+							Number(season.purseAmountCents),
+							eventRows
+								.filter((event) => event.season === season.id && event.status !== 'archived')
+								.map((event) => ({
+									id: event.id,
+									startsAt: String(event.startsAt ?? '')
+								}))
+						)
+					)
+				)
+		);
 		const resultByEvent = new Map(resultRows.map((r) => [String(r.event), r]));
 
 		const scorekeeperDirectory: {
@@ -683,12 +701,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 					return {
 						id: ev.id,
 						name: String(ev.name ?? ''),
+						seasonId: String(ev.season ?? '') || null,
 						seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
+						tournamentPurseCents: tournamentPurses.get(ev.id) ?? null,
 						roundCount,
 						groupCount,
 						scorecardCount: cards.length,
 						submittedCount: cards.filter((c) => String(c.status) === 'submitted').length,
 						resultStatus: result ? String(result.status) : null,
+						resultId: result?.id ?? null,
 						resultVersion: result ? Number(result.currentVersion) : null
 					};
 				})
@@ -742,6 +763,34 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				method: 'GET'
 			})) as { standings: StandingsTable[] };
 			standingsData = { standings: response.standings };
+			try {
+				const filter = pb.filter('organization = {:org}', { org: params.id });
+				const [seasons, events, leagues] = await Promise.all([
+					pb.collection('seasons').getFullList({ filter, fields: 'id,league,purseAmountCents,purseCurrency' }),
+					pb.collection('events').getFullList({ filter: `${filter} && status != "archived"`, fields: 'id,season,startsAt' }),
+					pb.collection('leagues').getFullList({ filter, fields: 'id,name,payoutTopWeight' })
+				]);
+				const purses = new Map(seasons.filter((season) => season.purseCurrency === 'USD').map((season) => [
+					season.id,
+					allocateTournamentPurses(Number(season.purseAmountCents), events.filter((event) => event.season === season.id).map((event) => ({ id: event.id, startsAt: String(event.startsAt ?? '') })))
+				]));
+				const seasonLeague = new Map(seasons.map((season) => [season.id, String(season.league ?? '')]));
+				const leagueById = new Map(leagues.map((league) => [league.id, league]));
+				for (const table of standingsData.standings) {
+					const seasonPurses = table.season ? purses.get(table.season) : undefined;
+					const league = table.season ? leagueById.get(seasonLeague.get(table.season) ?? '') : undefined;
+					for (const event of table.payoutEvents ?? []) {
+						event.purseCents = seasonPurses?.get(event.event) ?? null;
+						if (league && typeof league.payoutTopWeight === 'number') {
+							event.leagueId = league.id;
+							event.leagueName = String(league.name);
+							event.topWeight = league.payoutTopWeight;
+						}
+					}
+				}
+			} catch {
+				// Published stroke standings remain available if purse data cannot be loaded.
+			}
 		} catch {
 			standingsData = { standings: [] };
 		}
@@ -804,6 +853,86 @@ function parseCsvLine(line: string): string[] {
  * re-checked here so failures surface as form errors, not surprises.
  */
 export const actions: Actions = {
+	saveLeaguePayoutCurve: async ({ locals: { pb, user }, params, request }) => {
+		if (!pb || !user) return fail(401, { message: 'Sign in to save a payout curve.' });
+		const form = await request.formData();
+		const leagueId = String(form.get('league') ?? '');
+		const weight = String(form.get('topWeight') ?? '');
+		if (params.capability !== 'standings' || !ID_PATTERN.test(params.id) || !ID_PATTERN.test(leagueId))
+			return fail(404, { message: 'League not found.' });
+		if (!/^\d{1,3}$/.test(weight) || Number(weight) > 100)
+			return fail(400, { message: 'Choose an emphasis between 0 and 100.' });
+		try {
+			const owner = await pb.collection('memberships').getFirstListItem(
+				pb.filter('organization = {:org} && user = {:user} && role = "owner"', { org: params.id, user: user.id })
+			).catch(() => null);
+			if (!owner) return fail(403, { message: 'Only the organization Owner can save a payout curve.' });
+			const league = await pb.collection('leagues').getOne(leagueId);
+			if (league.organization !== params.id) return fail(404, { message: 'League not found.' });
+			await pb.collection('leagues').update(leagueId, { payoutTopWeight: Number(weight) });
+			return { payoutCurveSaved: true };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err, 'Unable to save the payout curve.') });
+		}
+	},
+
+	scoreSeasonDemo: async ({ locals, params, request }) => {
+		if (!import.meta.env.DEV || params.capability !== 'scoring-results')
+			return fail(404, { demoScoringError: 'Not found.' });
+		const { pb, user } = locals;
+		if (!pb || !user) return fail(503, { demoScoringError: 'PocketBase is not configured.' });
+		if (!['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname))
+			return fail(403, { demoScoringError: 'Season scoring tools require local development PocketBase.' });
+
+		const form = await request.formData();
+		const season = String(form.get('season') ?? '');
+		const operation = form.get('operation');
+		const ids = [...new Set(form.getAll('event').map(String))];
+		if (![params.id, season, ...ids].every((id) => ID_PATTERN.test(id)) || !ids.length ||
+			(operation !== 'fill' && operation !== 'submit' && operation !== 'undo'))
+			return fail(400, { demoScoringError: 'Choose a season and scoring action.' });
+
+		try {
+			const membership = await pb.collection('memberships').getFirstListItem(
+				pb.filter('organization = {:org} && user = {:user} && (role = "owner" || role = "admin")', { org: params.id, user: user.id })
+			).catch(() => null);
+			if (!membership) return fail(403, { demoScoringError: 'Only Owners and Admins can use season scoring tools.' });
+			const rows = await pb.collection('events').getFullList({
+				filter: pb.filter('organization = {:org} && season = {:season} && status != "archived"', { org: params.id, season }),
+				sort: 'startsAt,id'
+			});
+			const events = rows.filter((row) => ids.includes(row.id));
+			if (events.length !== ids.length)
+				return fail(400, { demoScoringError: 'All selected events must belong to this season.' });
+
+			const demoScoringResults = [];
+			for (const event of events) {
+				try {
+					let message: string;
+					if (operation === 'fill') {
+						const { added } = await fillEventDemoScores(pb, params.id, event.id, user.id, Math.random, true);
+						message = added ? `Added ${added} demo scores.` : 'No missing demo scores.';
+					} else if (operation === 'undo') {
+						const { removed, locked } = await pb.send<{ removed: number; locked: number }>(
+							`/api/flihub/demo/organizations/${params.id}/seasons/${season}/events/${event.id}/undo-scores`,
+							{ method: 'POST' }
+						);
+						message = `Removed ${removed} generated draft scores. ${locked} submitted or previously submitted scores kept.`;
+					} else {
+						const { submitted, skipped } = await submitEventDemoScorecards(pb, params.id, event.id, user.id);
+						message = `Submitted ${submitted} cards. ${skipped} already submitted.`;
+					}
+					demoScoringResults.push({ id: event.id, ok: true, message });
+				} catch (err) {
+					demoScoringResults.push({ id: event.id, ok: false, message: err instanceof DemoFillError ? err.message : pbErrorMessage(err) });
+				}
+			}
+			return { demoScoringResults };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { demoScoringError: pbErrorMessage(err, 'Unable to process season scores.') });
+		}
+	},
+
 	submitExpense,
 	reviewExpense,
 	saveSponsor: async ({ locals, params, request }) => {

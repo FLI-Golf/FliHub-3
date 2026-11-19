@@ -90,10 +90,21 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const totalCards = activeRounds.length * activeGroups.length;
 
 	const result = resultRows[0] ?? null;
+	const canManage = myRole === 'owner' || myRole === 'admin';
+	const preview =
+		canManage && totalCards > 0 && submittedCount === totalCards &&
+		(!result || result.status === 'correcting')
+			? await pb
+					.send<{ teams: Pick<VersionTotals['teams'][number], 'entry' | 'teamName' | 'total'>[] }>(
+						`/api/flihub/organizations/${params.id}/events/${params.event}/result-preview`, { method: 'GET' }
+					)
+					.catch(() => null)
+			: null;
 	return {
 		organizationId: params.id,
 		myRole,
-		canManage: myRole === 'owner' || myRole === 'admin',
+		canManage,
+		previewTeams: preview?.teams ?? [],
 		event: { id: String(event.id), name: String(event.name) },
 		submissionGrid,
 		submittedCount,

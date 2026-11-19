@@ -87,6 +87,7 @@ onRecordCreateRequest((e) => {
 			'capability_disabled: The Leagues & seasons capability is not enabled for this organization.'
 		);
 	}
+	e.record.set('payoutTopWeight', 0);
 	e.next();
 }, 'leagues');
 
@@ -112,6 +113,14 @@ onRecordUpdateRequest((e) => {
 		throw new BadRequestError(
 			'immutable_relation: A record cannot be moved to another organization.'
 		);
+	}
+	if (originalLeague && originalLeague.getInt('payoutTopWeight') !== e.record.getInt('payoutTopWeight')) {
+		const [owner] = e.app.findRecordsByFilter(
+			'memberships',
+			'organization = {:org} && user = {:user} && role = "owner"',
+			'', 1, 0, { org: org.id, user: e.auth?.id ?? '' }
+		);
+		if (!owner) throw new ForbiddenError('Only the organization Owner can save a payout curve.');
 	}
 	e.next();
 }, 'leagues');

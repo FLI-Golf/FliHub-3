@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import ScoreCompletionMark from '$lib/components/ScoreCompletionMark.svelte';
-	import { ArrowLeft, BadgeCheck, CircleAlert, History, Lock, Megaphone } from 'lucide-svelte';
+	import { ArrowLeft, BadgeCheck, CircleAlert, Flag, History, Lock, Megaphone } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -22,6 +22,27 @@
 			? (data.versions.find((v) => v.version === data.result?.currentVersion) ?? null)
 			: null
 	);
+	const reviewTeams = $derived(
+		(!data.result || data.result.status === 'correcting') ? data.previewTeams : pendingVersion?.totals.teams ?? officialVersion?.totals.teams ?? []
+	);
+	const lowestTeamTotal = $derived(reviewTeams.reduce((lowest, team) => Math.min(lowest, team.total), Infinity));
+	const firstPlaceTeams = $derived(
+		reviewTeams.filter((team) => team.total === lowestTeamTotal)
+	);
+	const reviewTies = $derived(tiedTotals(reviewTeams));
+	const officialVersionTies = $derived(tiedTotals(officialVersion?.totals.teams ?? []));
+	const pendingVersionTies = $derived(tiedTotals(pendingVersion?.totals.teams ?? []));
+
+	function tiedTotals(teams: { total: number }[]) {
+		const seen = new Set<number>();
+		const ties = new Set<number>();
+		for (const { total } of teams) {
+			if (seen.has(total)) ties.add(total);
+			seen.add(total);
+		}
+		return ties;
+	}
+
 	const allSubmitted = $derived(data.totalCards > 0 && data.submittedCount === data.totalCards);
 	const publicationComplete = $derived(
 		Boolean(
@@ -90,6 +111,25 @@
 			</p>
 		{/if}
 	</div>
+
+	{#if firstPlaceTeams.length > 1}
+		<div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+			<p class="flex items-center gap-2 font-bold">
+				<Flag class="size-4" aria-hidden="true" />
+				Tie for first · {firstPlaceTeams.length} teams at {firstPlaceTeams[0].total} strokes
+			</p>
+			<p class="mt-1">{firstPlaceTeams.map((team) => team.teamName).join(' · ')}</p>
+			<p class="mt-1">Playoff pending.</p>
+		</div>
+	{/if}
+
+	{#if data.previewTeams.some((team) => reviewTies.has(team.total) && !firstPlaceTeams.includes(team))}
+		<ul class="grid gap-1 text-sm">
+			{#each data.previewTeams.filter((team) => reviewTies.has(team.total) && !firstPlaceTeams.includes(team)) as team (team.entry)}
+				<li>{team.teamName} · {team.total} strokes <Badge variant="outline" class={amberBadge}>Tied</Badge></li>
+			{/each}
+		</ul>
+	{/if}
 
 	{#if message}
 		<Alert.Root variant="destructive">
@@ -308,7 +348,10 @@
 							<tbody>
 								{#each officialVersion.totals.teams as team (team.entry)}
 									<tr class="border-b">
-										<td class="py-1.5 pr-2">{team.teamName}</td>
+										<td class="py-1.5 pr-2">
+											{team.teamName}
+											{#if officialVersionTies.has(team.total)}<Badge variant="outline" class={amberBadge}>Tied</Badge>{/if}
+										</td>
 										{#each officialVersion.totals.rounds as round (round.round)}
 											<td class="px-1 py-1.5 text-center">{team.roundTotals[round.round] ?? 0}</td>
 										{/each}
@@ -348,7 +391,10 @@
 							<tbody>
 								{#each pendingVersion.totals.teams as team (team.entry)}
 									<tr class="border-b">
-										<td class="py-1.5 pr-2">{team.teamName}</td>
+										<td class="py-1.5 pr-2">
+											{team.teamName}
+											{#if pendingVersionTies.has(team.total)}<Badge variant="outline" class={amberBadge}>Tied</Badge>{/if}
+										</td>
 										{#each pendingVersion.totals.rounds as round (round.round)}
 											<td class="px-1 py-1.5 text-center">{team.roundTotals[round.round] ?? 0}</td>
 										{/each}
