@@ -24,6 +24,7 @@ onRecordCreateRequest((e) => {
 	);
 	e.record.set('status', 'submitted');
 	e.record.set('reviewNote', '');
+	e.record.set('returnHistory', null);
 	e.record.set('reviewer', '');
 	e.record.set('reviewedAt', '');
 	e.next();
@@ -79,6 +80,62 @@ routerAdd(
 		});
 
 		return e.json(200, { status: decision });
+	},
+	$apis.requireAuth('users')
+);
+
+routerAdd(
+	'POST',
+	'/api/flihub/organizations/{org}/expenses/{id}/replace-receipt',
+	(e) => {
+		const org = e.request.pathValue('org');
+		const id = e.request.pathValue('id');
+		const receipts = e.findUploadedFiles('receipt') ?? [];
+		if (receipts.length !== 1)
+			throw new BadRequestError('Choose one replacement receipt.');
+
+		e.app.runInTransaction((app) => {
+			const membership = app.findRecordsByFilter(
+				'memberships',
+				'organization = {:org} && user = {:user}',
+				'',
+				1,
+				0,
+				{ org, user: e.auth.id }
+			)[0];
+			if (!membership)
+				throw new ForbiddenError('Organization membership required.');
+
+			const organization = app.findRecordById('organizations', org);
+			const capabilities = JSON.parse(
+				String(organization.get('capabilities') ?? '[]')
+			);
+			if (!Array.isArray(capabilities) || !capabilities.includes('reimbursements'))
+				throw new ForbiddenError('Reimbursements & expenses is disabled.');
+
+			const expense = app.findRecordById('expenses', id);
+			if (expense.getString('organization') !== org || expense.getString('submitter') !== e.auth.id)
+				throw new NotFoundError('Expense not found.');
+			if (expense.getString('status') !== 'returned')
+				throw new BadRequestError('Only a returned expense can be resubmitted.');
+
+			const history = JSON.parse(expense.getString('returnHistory') || 'null') ?? [];
+			history.push({
+				decision: 'returned',
+				note: expense.getString('reviewNote'),
+				reviewer: expense.getString('reviewer'),
+				reviewedAt: expense.getString('reviewedAt')
+			});
+			expense.set('returnHistory', history);
+			expense.set('receipt', receipts);
+			expense.set('status', 'submitted');
+			expense.set('reviewNote', '');
+			expense.set('reviewer', '');
+			expense.set('reviewedAt', '');
+			app.save(expense);
+		});
+
+		return e.json(200, { status: 'submitted' });
 	},
 	$apis.requireAuth('users')
 );

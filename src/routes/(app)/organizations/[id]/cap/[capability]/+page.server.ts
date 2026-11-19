@@ -1,6 +1,6 @@
 import { DemoFillError, fillEventDemoScores, submitEventDemoScorecards } from '$lib/server/fill-event-demo-scores';
 import type { Expense } from '$lib/expenses/model';
-import { submitExpense, reviewExpense } from '$lib/server/expenses';
+import { submitExpense, reviewExpense, replaceExpenseReceipt } from '$lib/server/expenses';
 import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
@@ -88,7 +88,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 							submitter: user.id
 						}),
 			sort: '-created,id',
-			fields: 'id,expenseOn,vendor,category,purpose,amountCents,receipt,status,reviewNote,submitter,submitterName'
+			fields: 'id,expenseOn,vendor,category,purpose,amountCents,receipt,status,reviewNote,returnHistory,submitter,submitterName'
 		});
 		expenses = records.map((record) => ({
 			id: record.id,
@@ -100,6 +100,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			hasReceipt: Boolean(record.receipt),
 			status: record.status as Expense['status'],
 			reviewNote: String(record.reviewNote ?? ''),
+			returnHistory: Array.isArray(record.returnHistory) ? record.returnHistory : [],
 			submitter: String(record.submitter),
 			submitterName: String(record.submitterName ?? '')
 		}));
@@ -984,6 +985,7 @@ export const actions: Actions = {
 
 	submitExpense,
 	reviewExpense,
+	replaceExpenseReceipt,
 	saveSponsor: async ({ locals, params, request }) => {
 		const { pb, user } = locals;
 		if (!pb || !user) return fail(503, { message: 'PocketBase is not configured.' });
