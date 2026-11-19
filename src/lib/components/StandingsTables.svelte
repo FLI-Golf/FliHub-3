@@ -22,6 +22,8 @@
 
 	let drafts = $state<Record<string, number>>({});
 	let lowerDrafts = $state<Record<string, number>>({});
+	let modeDrafts = $state<Record<string, boolean>>({});
+	let eventDrafts = $state<Record<string, { top?: number; lower?: number }>>({});
 	let saving = $state(false);
 	let saveStatus = $state<{ ok: boolean; message: string } | null>(null);
 	let selectedEvent = $state('');
@@ -29,24 +31,72 @@
 	const chartEvent = $derived(
 		payoutEvents.find((event) => event.event === selectedEvent) ?? payoutEvents[0]
 	);
-	const topWeight = $derived(chartEvent ? weightFor(chartEvent, drafts) : 0);
-	const lowerWeight = $derived(chartEvent ? lowerWeightFor(chartEvent, lowerDrafts) : 0);
+	const topWeight = $derived(chartEvent ? curveFor(chartEvent).top : 0);
+	const lowerWeight = $derived(chartEvent ? curveFor(chartEvent).lower : 0);
+	const perTournament = $derived(chartEvent ? perTournamentFor(chartEvent) : false);
+	const dirty = $derived(
+		!!chartEvent &&
+			(perTournament !== (chartEvent.perTournament ?? false) ||
+				topWeight !== savedCurve(chartEvent).top ||
+				lowerWeight !== savedCurve(chartEvent).lower)
+	);
 
-	function weightFor(event: PayoutEvent, overrides: Record<string, number>) {
-		return (event.leagueId ? overrides[event.leagueId] : undefined) ?? event.topWeight ?? 0;
+	const resettable = $derived(
+		Boolean(
+			payoutEvents.some(
+				(event) =>
+					event.leagueId === chartEvent?.leagueId &&
+					((event.topWeight ?? 0) !== 0 ||
+						(event.lowerWeight ?? 0) !== 0 ||
+						event.perTournament ||
+						event.eventCurve)
+			)
+		)
+	);
+
+	function perTournamentFor(event: PayoutEvent) {
+		return (event.leagueId ? modeDrafts[event.leagueId] : undefined) ?? event.perTournament ?? false;
 	}
 
-	function lowerWeightFor(event: PayoutEvent, overrides: Record<string, number>) {
-		return (event.leagueId ? overrides[event.leagueId] : undefined) ?? event.lowerWeight ?? 0;
+	function savedCurve(event: PayoutEvent) {
+		const own = event.perTournament ? event.eventCurve : undefined;
+		return { top: own?.top ?? event.topWeight ?? 0, lower: own?.lower ?? event.lowerWeight ?? 0 };
+	}
+
+	function curveFor(event: PayoutEvent) {
+		if (perTournamentFor(event)) {
+			const draft = eventDrafts[event.event];
+			const own = event.eventCurve;
+			return {
+				top: draft?.top ?? own?.top ?? event.topWeight ?? 0,
+				lower: draft?.lower ?? own?.lower ?? event.lowerWeight ?? 0
+			};
+		}
+		const league = event.leagueId;
+		return {
+			top: (league ? drafts[league] : undefined) ?? event.topWeight ?? 0,
+			lower: (league ? lowerDrafts[league] : undefined) ?? event.lowerWeight ?? 0
+		};
 	}
 
 	function previewLower(weight: number) {
-		if (chartEvent?.leagueId) lowerDrafts[chartEvent.leagueId] = weight;
+		if (chartEvent?.leagueId) {
+			if (perTournament) eventDrafts[chartEvent.event] = { ...eventDrafts[chartEvent.event], lower: weight };
+			else lowerDrafts[chartEvent.leagueId] = weight;
+		}
+		saveStatus = null;
+	}
+
+	function setPerTournament(on: boolean) {
+		if (chartEvent?.leagueId) modeDrafts[chartEvent.leagueId] = on;
 		saveStatus = null;
 	}
 
 	function previewCurve(weight: number) {
-		if (chartEvent?.leagueId) drafts[chartEvent.leagueId] = weight;
+		if (chartEvent?.leagueId) {
+			if (perTournament) eventDrafts[chartEvent.event] = { ...eventDrafts[chartEvent.event], top: weight };
+			else drafts[chartEvent.leagueId] = weight;
+		}
 		saveStatus = null;
 	}
 
@@ -57,7 +107,7 @@
 	);
 	const earningsByEvent = $derived(
 		new Map(
-			payoutEvents.map((event) => [event.event, tournamentAwards(event, weightFor(event, drafts), lowerWeightFor(event, lowerDrafts))])
+			payoutEvents.map((event) => [event.event, tournamentAwards(event, curveFor(event).top, curveFor(event).lower)])
 		)
 	);
 
@@ -151,6 +201,22 @@
 						{/each}
 					</select>
 				</label>
+				<label class="flex items-center gap-2 text-sm font-medium">
+					<input
+						type="checkbox"
+						checked={perTournament}
+						disabled={saving || !chartEvent.leagueId}
+						onchange={(event) => setPerTournament(event.currentTarget.checked)}
+						class="size-4 accent-emerald-700"
+					/>
+					Set the curve separately for each tournament
+				</label>
+				{#if perTournament}
+					<p class="text-sm">
+						Editing {chartEvent.eventName} only. Tournaments without their own saved curve use the league
+						curve. Unchecking keeps the saved tournament curves but ignores them.
+					</p>
+				{/if}
 				<div class="flex flex-wrap items-end gap-3">
 					<label class="grid w-full max-w-md gap-2 text-sm font-medium">
 						Top-place emphasis · {topWeight}%
@@ -204,6 +270,8 @@
 										await update({ reset: false });
 										delete drafts[league];
 										delete lowerDrafts[league];
+										delete modeDrafts[league];
+										delete eventDrafts[chartEvent?.event ?? ''];
 										saveStatus = { ok: true, message: 'League payout curve saved.' };
 									} else {
 										saveStatus = {
@@ -225,14 +293,66 @@
 						<input type="hidden" name="league" value={chartEvent.leagueId} />
 						<input type="hidden" name="topWeight" value={topWeight} />
 						<input type="hidden" name="lowerWeight" value={lowerWeight} />
+						<input type="hidden" name="perTournament" value={perTournament ? '1' : '0'} />
+						<input type="hidden" name="event" value={chartEvent.event} />
 						<button
 							type="submit"
-							disabled={saving || (topWeight === chartEvent.topWeight && lowerWeight === (chartEvent.lowerWeight ?? 0))}
+							disabled={saving || !dirty}
 							class="rounded-md bg-emerald-800 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-50"
 						>
 							{saving ? 'Saving…' : 'Save league payout curve'}
 						</button>
-						<p class="text-sm">{chartEvent.leagueName} · Saved emphasis: {chartEvent.topWeight}% · Places 7–12 boost: {chartEvent.lowerWeight ?? 0}%</p>
+						<p class="text-sm">{chartEvent.leagueName} · Saved: top-place {savedCurve(chartEvent).top}% · places 7–12 {savedCurve(chartEvent).lower}%{chartEvent.perTournament ? ' · per tournament' : ''}</p>
+					</form>
+					<form
+						method="POST"
+						action="?/resetLeaguePayoutCurve"
+						use:enhance={({ cancel }) => {
+							if (
+								saving ||
+								!confirm(
+									"Reset this league's payout curves to the standard settings? This clears the league curve and every saved tournament curve."
+								)
+							) {
+								cancel();
+								return;
+							}
+							saving = true;
+							saveStatus = null;
+							return async ({ result, update }) => {
+								try {
+									if (result.type === 'success') {
+										await update({ reset: false });
+										drafts = {};
+										lowerDrafts = {};
+										modeDrafts = {};
+										eventDrafts = {};
+										saveStatus = { ok: true, message: 'Payout curves reset to the standard settings.' };
+									} else {
+										saveStatus = {
+											ok: false,
+											message:
+												result.type === 'failure' && typeof result.data?.message === 'string'
+													? result.data.message
+													: 'Reset could not be confirmed. Refresh to check the saved curve.'
+										};
+									}
+								} catch {
+									saveStatus = { ok: false, message: 'Refresh to check the saved curve.' };
+								} finally {
+									saving = false;
+								}
+							};
+						}}
+					>
+						<input type="hidden" name="league" value={chartEvent.leagueId} />
+						<button
+							type="submit"
+							disabled={saving || !resettable}
+							class="rounded-md border bg-white px-3 py-2 text-sm font-medium disabled:opacity-50"
+						>
+							Reset all to standard
+						</button>
 					</form>
 				{:else}
 					<p class="text-sm">

@@ -768,7 +768,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				const [seasons, events, leagues] = await Promise.all([
 					pb.collection('seasons').getFullList({ filter, fields: 'id,league,purseAmountCents,purseCurrency' }),
 					pb.collection('events').getFullList({ filter: `${filter} && status != "archived"`, fields: 'id,season,startsAt' }),
-					pb.collection('leagues').getFullList({ filter, fields: 'id,name,payoutTopWeight,payoutLowerWeight' })
+					pb.collection('leagues').getFullList({ filter, fields: 'id,name,payoutTopWeight,payoutLowerWeight,payoutPerTournament,payoutEventCurves' })
 				]);
 				const purses = new Map(seasons.filter((season) => season.purseCurrency === 'USD').map((season) => [
 					season.id,
@@ -786,6 +786,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 							event.leagueName = String(league.name);
 							event.topWeight = league.payoutTopWeight;
 							event.lowerWeight = Number(league.payoutLowerWeight ?? 0);
+							event.perTournament = league.payoutPerTournament === true;
+							const eventCurve = parseEventCurves(league.payoutEventCurves)[event.event];
+							if (eventCurve) event.eventCurve = eventCurve;
 						}
 					}
 				}
@@ -860,6 +863,8 @@ export const actions: Actions = {
 		const leagueId = String(form.get('league') ?? '');
 		const weight = String(form.get('topWeight') ?? '');
 		const lowerWeight = String(form.get('lowerWeight') ?? '0');
+		const perTournament = form.get('perTournament') === '1';
+		const eventId = String(form.get('event') ?? '');
 		if (params.capability !== 'standings' || !ID_PATTERN.test(params.id) || !ID_PATTERN.test(leagueId))
 			return fail(404, { message: 'League not found.' });
 		if (!/^\d{1,3}$/.test(weight) || Number(weight) > 100 || !/^\d{1,3}$/.test(lowerWeight) || Number(lowerWeight) > 100)
@@ -871,10 +876,52 @@ export const actions: Actions = {
 			if (!owner) return fail(403, { message: 'Only the organization Owner can save a payout curve.' });
 			const league = await pb.collection('leagues').getOne(leagueId);
 			if (league.organization !== params.id) return fail(404, { message: 'League not found.' });
-			await pb.collection('leagues').update(leagueId, { payoutTopWeight: Number(weight), payoutLowerWeight: Number(lowerWeight) });
+			if (perTournament) {
+				if (!ID_PATTERN.test(eventId)) return fail(400, { message: 'Choose a tournament.' });
+				const tournament = await pb.collection('events').getOne(eventId, { fields: 'id,season' });
+				const season = await pb.collection('seasons').getOne(String(tournament.season), { fields: 'id,league' });
+				if (season.league !== leagueId) return fail(404, { message: 'Tournament not found.' });
+				const curves = parseEventCurves(league.payoutEventCurves);
+				curves[eventId] = { top: Number(weight), lower: Number(lowerWeight) };
+				await pb.collection('leagues').update(leagueId, {
+					payoutPerTournament: true,
+					payoutEventCurves: JSON.stringify(curves)
+				});
+			} else {
+				await pb.collection('leagues').update(leagueId, {
+					payoutTopWeight: Number(weight),
+					payoutLowerWeight: Number(lowerWeight),
+					payoutPerTournament: false
+				});
+			}
 			return { payoutCurveSaved: true };
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err, 'Unable to save the payout curve.') });
+		}
+	},
+
+	resetLeaguePayoutCurve: async ({ locals: { pb, user }, params, request }) => {
+		if (!pb || !user) return fail(401, { message: 'Sign in to reset the payout curve.' });
+		const form = await request.formData();
+		const leagueId = String(form.get('league') ?? '');
+		if (params.capability !== 'standings' || !ID_PATTERN.test(params.id) || !ID_PATTERN.test(leagueId))
+			return fail(404, { message: 'League not found.' });
+		try {
+			const owner = await pb.collection('memberships').getFirstListItem(
+				pb.filter('organization = {:org} && user = {:user} && role = "owner"', { org: params.id, user: user.id })
+			).catch(() => null);
+			if (!owner) return fail(403, { message: 'Only the organization Owner can reset a payout curve.' });
+			const league = await pb.collection('leagues').getOne(leagueId);
+			if (league.organization !== params.id) return fail(404, { message: 'League not found.' });
+			await pb.collection('leagues').update(leagueId, {
+				payoutTopWeight: 0,
+				payoutLowerWeight: 0,
+				payoutPerTournament: false,
+				payoutEventCurves: ''
+			});
+			return { payoutCurveReset: true };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err, 'Unable to reset the payout curve.') });
 		}
 	},
 
@@ -2620,3 +2667,20 @@ export const actions: Actions = {
 		return { archived: true };
 	}
 };
+
+function parseEventCurves(raw: unknown): Record<string, { top: number; lower: number }> {
+	const curves: Record<string, { top: number; lower: number }> = {};
+	try {
+		const parsed = JSON.parse(String(raw ?? '') || '{}');
+		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return curves;
+		for (const [id, value] of Object.entries(parsed as Record<string, { top?: unknown; lower?: unknown }>)) {
+			const top = Number(value?.top);
+			const lower = Number(value?.lower);
+			if (ID_PATTERN.test(id) && Number.isInteger(top) && Number.isInteger(lower) && top >= 0 && top <= 100 && lower >= 0 && lower <= 100)
+				curves[id] = { top, lower };
+		}
+	} catch {
+		// Ignore malformed saved curves; the league curve applies instead.
+	}
+	return curves;
+}

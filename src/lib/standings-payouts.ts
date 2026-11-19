@@ -6,6 +6,8 @@ export interface PayoutEvent {
 	leagueName?: string;
 	topWeight?: number;
 	lowerWeight?: number;
+	perTournament?: boolean;
+	eventCurve?: { top: number; lower: number };
 	teams: { entry: string; total: number }[];
 	athletes: { athlete: string; entry: string }[];
 }

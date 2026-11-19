@@ -89,6 +89,8 @@ onRecordCreateRequest((e) => {
 	}
 	e.record.set('payoutTopWeight', 0);
 	e.record.set('payoutLowerWeight', 0);
+	e.record.set('payoutPerTournament', false);
+	e.record.set('payoutEventCurves', '');
 	e.next();
 }, 'leagues');
 
@@ -116,7 +118,9 @@ onRecordUpdateRequest((e) => {
 		);
 	}
 	if (originalLeague && (originalLeague.getInt('payoutTopWeight') !== e.record.getInt('payoutTopWeight') ||
-		originalLeague.getInt('payoutLowerWeight') !== e.record.getInt('payoutLowerWeight'))) {
+		originalLeague.getInt('payoutLowerWeight') !== e.record.getInt('payoutLowerWeight') ||
+		originalLeague.getBool('payoutPerTournament') !== e.record.getBool('payoutPerTournament') ||
+		originalLeague.getString('payoutEventCurves') !== e.record.getString('payoutEventCurves'))) {
 		const [owner] = e.app.findRecordsByFilter(
 			'memberships',
 			'organization = {:org} && user = {:user} && role = "owner"',
