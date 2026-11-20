@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ChevronDown as OperationsChevron, SlidersHorizontal as OperationsIcon } from 'lucide-svelte';
 	import { resolve } from '$app/paths';
 	import { Clock, Layers, Lock, Minus, Plus, ToggleRight } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -272,20 +273,29 @@
 					myRole={data.myRole}
 					{form}
 				/>
-				<EventOpsManager
-					events={visibleEvents}
-					rounds={data.eventsData.rounds}
-					groups={data.eventsData.groups}
-					groupTeams={data.eventsData.groupTeams}
-					groupAthletes={data.eventsData.groupAthletes}
-					entries={data.eventsData.entries}
-					rosterMemberships={data.eventsData.rosterMemberships}
-					substitutions={data.eventsData.substitutions}
-					members={data.eventsData.members}
-					courses={data.eventsData.courses}
-					canManage={data.canManage}
-					{form}
-				/>
+				<details id="event-operations-panel" class="group/operations rounded-xl border bg-card" open={Boolean(form)}>
+					<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+						<OperationsIcon class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+						<span>{data.canManage ? 'Manage event setup' : 'View event setup'}</span>
+						<OperationsChevron class="ml-auto size-4 shrink-0 transition-transform group-open/operations:rotate-180" aria-hidden="true" />
+					</summary>
+					<div class="border-t p-4">
+						<EventOpsManager
+							events={visibleEvents}
+							rounds={data.eventsData.rounds}
+							groups={data.eventsData.groups}
+							groupTeams={data.eventsData.groupTeams}
+							groupAthletes={data.eventsData.groupAthletes}
+							entries={data.eventsData.entries}
+							rosterMemberships={data.eventsData.rosterMemberships}
+							substitutions={data.eventsData.substitutions}
+							members={data.eventsData.members}
+							courses={data.eventsData.courses}
+							canManage={data.canManage}
+							{form}
+						/>
+					</div>
+				</details>
 			{/key}
 		{/if}
 	{:else if data.capability.id === 'venues-courses' && data.capability.availability === 'available' && data.coursesData}

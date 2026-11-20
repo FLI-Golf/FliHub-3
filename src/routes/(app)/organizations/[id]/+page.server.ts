@@ -138,6 +138,19 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 		myRole,
 		canManage,
 		setupChecklist,
+		setupLeagues: setupChecklist?.steps.some(
+			(step) => step.id === 'structure' && step.state !== 'disabled'
+		)
+			? await pb.collection('leagues').getFullList({
+					filter: pb.filter('organization = {:org} && status = "active"', { org: params.id }),
+					sort: 'name',
+					fields: 'id,name'
+				}).then((rows) => rows.map((row) => ({
+					id: row.id,
+					name: String(row.name ?? ''),
+					status: 'active' as const
+				}))).catch(() => null)
+			: null,
 		members,
 		invitations,
 		events

@@ -7,13 +7,13 @@
 		Plus,
 		Trophy,
 		CalendarRange,
+		ChevronDown,
 		Archive,
 		ArchiveRestore
 	} from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -125,17 +125,14 @@
 	{/if}
 
 	<!-- Leagues -->
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<Trophy class="size-5" />
-				Leagues ({leagues.length})
-			</Card.Title>
-			<Card.Description>
-				Leagues contain seasons; seasons contain divisions and team entries.
-			</Card.Description>
-		</Card.Header>
-		<Card.Content class="flex flex-col gap-2">
+	<details class="group/panel rounded-xl border bg-card text-card-foreground">
+		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+			<Trophy class="size-5 shrink-0" aria-hidden="true" />
+			Leagues ({leagues.length})
+			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/panel:rotate-180" aria-hidden="true" />
+		</summary>
+		<div class="flex flex-col gap-2 px-4 pb-4">
+			<p class="text-sm text-muted-foreground">Leagues contain seasons; seasons contain divisions and team entries.</p>
 			{#if leagues.length === 0}
 				<p class="text-sm text-muted-foreground">No leagues yet.</p>
 			{/if}
@@ -209,22 +206,18 @@
 					{/if}
 				</div>
 			{/each}
-		</Card.Content>
-	</Card.Root>
+		</div>
+	</details>
 
 	<!-- Seasons (with divisions and team entries) -->
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<CalendarRange class="size-5" />
-				Seasons ({seasons.length})
-			</Card.Title>
-			<Card.Description>
-				Teams enter a season directly; a division can be assigned now or later. Seasons may run
-				without divisions.
-			</Card.Description>
-		</Card.Header>
-		<Card.Content class="flex flex-col gap-4">
+	<details class="group/panel rounded-xl border bg-card text-card-foreground" open>
+		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+			<CalendarRange class="size-5 shrink-0" aria-hidden="true" />
+			Seasons ({seasons.length})
+			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/panel:rotate-180" aria-hidden="true" />
+		</summary>
+		<div class="flex flex-col gap-4 px-4 pb-4">
+			<p class="text-sm text-muted-foreground">Teams enter a season directly; a division can be assigned now or later. Seasons may run without divisions.</p>
 			<div class="flex flex-wrap gap-2" role="group" aria-label="Season view">
 				<Button
 					type="button"
@@ -251,12 +244,20 @@
 				</p>
 			{/if}
 			{#each visibleSeasons as season (season.id)}
-				<section
-					class="flex flex-col gap-4 rounded-xl border border-blue-200 p-4 {season.status === 'archived'
-						? 'opacity-60'
-						: ''}"
+				<details
+					class="group/season rounded-xl border border-blue-200 bg-background {season.status === 'archived' ? 'opacity-75' : ''}"
 					data-season={season.id}
 				>
+					<summary class="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+						<CalendarRange class="size-5 shrink-0 text-blue-700" aria-hidden="true" />
+						<span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+							<span class="break-words font-semibold">{season.name}</span>
+							<Badge variant="outline">{season.status}</Badge>
+							<span class="text-sm text-muted-foreground">{scheduleOf(season)}</span>
+						</span>
+						<ChevronDown class="size-4 shrink-0 transition-transform group-open/season:rotate-180" aria-hidden="true" />
+					</summary>
+					<div class="flex flex-col gap-4 border-t p-4">
 					<div class="flex flex-wrap items-center justify-between gap-2">
 						<div class="flex min-w-0 flex-col gap-2">
 							<h3 class="text-lg font-bold text-blue-950">{season.name}</h3>
@@ -378,8 +379,6 @@
 									<span class="text-sm font-medium">{entry.teamName}</span>
 									{#if entry.divisionName}
 										<Badge variant="outline">{entry.divisionName}</Badge>
-									{:else}
-										<Badge variant="secondary">No division assigned</Badge>
 									{/if}
 									{#if entry.status === 'archived'}
 										<Badge variant="secondary">Withdrawn</Badge>
@@ -460,10 +459,11 @@
 							{/if}
 						{/if}
 					</div>
-				</section>
+					</div>
+				</details>
 			{/each}
-		</Card.Content>
-	</Card.Root>
+		</div>
+	</details>
 
 	{#if !canManage}
 		<p class="text-sm text-muted-foreground">

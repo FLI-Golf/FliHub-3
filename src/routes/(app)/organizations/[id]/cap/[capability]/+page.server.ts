@@ -1635,7 +1635,8 @@ export const actions: Actions = {
 				setupLeagueSeason: true,
 				setupLeagueSeasonCreated: true,
 				leagueName: created.leagueName,
-				seasonName: created.seasonName
+				seasonName: created.seasonName,
+				seasonId: created.seasonId
 			};
 		} catch (err) {
 			return denied(pbErrorStatus(err), pbErrorMessage(err));

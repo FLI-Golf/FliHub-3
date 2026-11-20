@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ChevronDown as EventChevron } from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import type { TeeSchedule } from '$lib/tee-times';
 	import {
@@ -211,14 +212,10 @@
 			{/if}
 			{#each events as event (event.id)}
 				{@const setup = eventSetup(event)}
-				<div
-					class="flex min-w-0 flex-col justify-between gap-4 rounded-xl border border-l-4 {event.status ===
-					'archived'
-						? 'border-slate-300 bg-slate-100'
-						: 'border-slate-200 border-l-blue-500 bg-white'} p-5 text-slate-950 shadow-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<h3 class="w-full text-lg font-bold tracking-tight">{event.name}</h3>
+				<details class="group/event rounded-xl border border-slate-200 bg-card">
+					<summary class="flex cursor-pointer list-none flex-wrap items-center gap-2 rounded-xl p-4 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+						<span class="min-w-0 flex-1 break-words font-bold">{event.name}</span>
+						<EventChevron class="size-4 shrink-0 transition-transform group-open/event:rotate-180" aria-hidden="true" />
 						{#if event.seasonName}
 							<Badge variant="outline" class="gap-1.5 border-slate-300 bg-slate-50 text-slate-700">
 								<Layers class="size-3.5" aria-hidden="true" />{event.seasonName}
@@ -241,6 +238,11 @@
 								/>{:else}<CalendarDays class="size-3.5" aria-hidden="true" />{/if}
 							{event.status}
 						</Badge>
+						<span class="text-sm text-muted-foreground">
+							{event.startsAt ? event.startsAt.slice(0, 10) : 'Date needed'}
+						</span>
+						</summary>
+						<div class="flex flex-col gap-3 border-t p-4">
 						{#if event.venueName || event.venueAddress}<div
 								class="w-full rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm"
 							>
@@ -275,7 +277,6 @@
 								<span>Start date needed — use Edit to schedule this event.</span>
 							{/if}
 						</div>
-					</div>
 					{#if event.status !== 'archived'}
 						<div class="grid gap-2 rounded-lg border border-slate-200 p-3 text-sm">
 							<h4 class="font-semibold">Event setup</h4>
@@ -329,7 +330,11 @@
 							<Button
 								type="button"
 								class="min-h-11 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
-								onclick={() => manageEvent(event.id)}
+								onclick={() => {
+		const panel = document.getElementById('event-operations-panel');
+		if (panel instanceof HTMLDetailsElement) panel.open = true;
+		manageEvent(event.id);
+	}}
 							>
 								<SlidersHorizontal class="mr-2 size-4" aria-hidden="true" />{canManage
 									? 'Manage event'
@@ -366,7 +371,8 @@
 							</div>
 						{/if}
 					</div>
-				</div>
+					</div>
+				</details>
 			{/each}
 		</Card.Content>
 	</Card.Root>

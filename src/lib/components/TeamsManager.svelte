@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CircleAlert, Pencil, Plus, Users, Archive, ArchiveRestore } from 'lucide-svelte';
+	import { Archive, ArchiveRestore, ChevronDown, CircleAlert, Pencil, Plus, Users, X } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -70,142 +70,156 @@
 		</Alert.Root>
 	{/if}
 
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<Users class="size-5" />
-				Teams ({teams.length})
-			</Card.Title>
-			<Card.Description>
-				Organization teams. Teams are entered into seasons from the Leagues &amp; seasons page;
-				their season rosters and reserve pools are managed below.
-			</Card.Description>
-		</Card.Header>
-		<Card.Content class="flex flex-col gap-2">
-			{#if teams.length === 0}
-				<p class="text-sm text-muted-foreground">No teams yet.</p>
-			{/if}
-			{#each teams as team (team.id)}
-				<div
-					class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 even:bg-slate-300 {team.status ===
-					'archived'
-						? 'opacity-60'
-						: ''}"
-				>
-					<div class="flex items-center gap-2">
-						<span class="font-medium">{team.name}</span>
-						{#if team.status === 'archived'}
-							<Badge variant="secondary">Archived</Badge>
-						{/if}
-					</div>
-					{#if canManage}
-						<div class="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								class="bg-blue-700 text-white hover:bg-blue-800 hover:text-white"
-								onclick={() => (renaming = team)}
-							>
-								<Pencil class="mr-1 size-3.5" /> Rename
-							</Button>
-							{#if team.status === 'active'}
-								<form method="POST" action="?/archiveTeam">
-									<input type="hidden" name="team" value={team.id} />
-									<Button
-										variant="ghost"
-										size="sm"
-										type="submit"
-										class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
-									>
-										<Archive class="mr-1 size-3.5" /> Archive
-									</Button>
-								</form>
-							{:else}
-								<form method="POST" action="?/unarchiveTeam">
-									<input type="hidden" name="team" value={team.id} />
-									<Button variant="outline" size="sm" type="submit">
-										<ArchiveRestore class="mr-1 size-3.5" /> Restore
-									</Button>
-								</form>
-							{/if}
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</Card.Content>
-	</Card.Root>
-
 	{#if canManage}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Add a team</Card.Title>
-				<Card.Description>Team names must be unique within the organization.</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<form method="POST" action="?/createTeam" class="flex flex-wrap items-end gap-3">
-					<div class="flex min-w-48 flex-1 flex-col gap-1.5">
-						<Label for="team-name">Team name</Label>
-						<Input id="team-name" name="name" required maxlength={120} />
-					</div>
-					<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
-						<Plus class="mr-1 size-4" /> Add team
-					</Button>
-				</form>
-			</Card.Content>
-		</Card.Root>
-
-		<details
-			class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm"
-		>
-			<summary
-				class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4"
-			>
-				Bulk add teams
+		<details class="group/add-team rounded-xl border bg-card p-4">
+			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+				<span class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-green-700 text-white group-open/add-team:bg-red-700">
+					<Plus class="size-4 group-open/add-team:hidden" aria-hidden="true" />
+					<X class="hidden size-4 group-open/add-team:block" aria-hidden="true" />
+				</span>
+				<span class="group-open/add-team:hidden">Add a team</span>
+				<span class="hidden group-open/add-team:inline">Close team form</span>
 			</summary>
-			<Card.Header class="pt-4">
-				<Card.Description>
-					Copy the example into chat, add your team list, then paste the reply below.
-				</Card.Description>
-			</Card.Header>
-			<Card.Content class="space-y-3">
-				<textarea
-					bind:this={teamPromptField}
-					aria-label="Team CSV chat prompt with three example teams"
-					readonly
-					rows="10"
-					value={teamCsvPrompt}
-					class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
-				<Button
-					type="button"
-					class="bg-black text-white hover:bg-slate-800"
-					onclick={copyTeamCsvPrompt}>Copy example for chat</Button
+			<div class="mt-4 flex flex-col gap-4">
+				<Card.Root>
+					<Card.Header>
+						<Card.Description>Team names must be unique within the organization.</Card.Description>
+					</Card.Header>
+					<Card.Content>
+						<form method="POST" action="?/createTeam" class="flex flex-wrap items-end gap-3">
+							<div class="flex min-w-48 flex-1 flex-col gap-1.5">
+								<Label for="team-name">Team name</Label>
+								<Input id="team-name" name="name" required maxlength={120} />
+							</div>
+							<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
+								<Plus class="mr-1 size-4" /> Add team
+							</Button>
+						</form>
+					</Card.Content>
+				</Card.Root>
+
+				<details
+					class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm"
 				>
-				<p role="status" class="text-sm">{teamCopyStatus}</p>
-				<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
-					<Label for="team-csv">Team names, one per line</Label>
-					<p id="team-csv-help" class="text-sm text-muted-foreground">
-						Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets, and
-						the “Team Name” heading.
-					</p>
-					<textarea
-						id="team-csv"
-						name="csv"
-						aria-describedby="team-csv-help"
-						placeholder="San Diego Breakers&#10;Pacific Aces&#10;Coastal Flyers"
-						required
-						rows="5"
-						class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
-					<Button type="submit" class="bg-green-700 text-white hover:bg-green-800"
-						>Import teams</Button
+					<summary
+						class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4"
 					>
-				</form>
-			</Card.Content>
+						Bulk add teams
+					</summary>
+					<Card.Header class="pt-4">
+						<Card.Description>
+							Copy the example into chat, add your team list, then paste the reply below.
+						</Card.Description>
+					</Card.Header>
+					<Card.Content class="space-y-3">
+						<textarea
+							bind:this={teamPromptField}
+							aria-label="Team CSV chat prompt with three example teams"
+							readonly
+							rows="10"
+							value={teamCsvPrompt}
+							class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
+						<Button
+							type="button"
+							class="bg-black text-white hover:bg-slate-800"
+							onclick={copyTeamCsvPrompt}>Copy example for chat</Button
+						>
+						<p role="status" class="text-sm">{teamCopyStatus}</p>
+						<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
+							<Label for="team-csv">Team names, one per line</Label>
+							<p id="team-csv-help" class="text-sm text-muted-foreground">
+								Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets, and
+								the “Team Name” heading.
+							</p>
+							<textarea
+								id="team-csv"
+								name="csv"
+								aria-describedby="team-csv-help"
+								placeholder="San Diego Breakers&#10;Pacific Aces&#10;Coastal Flyers"
+								required
+								rows="5"
+								class="w-full rounded-md border bg-background p-2 font-mono text-sm"></textarea>
+							<Button type="submit" class="bg-green-700 text-white hover:bg-green-800"
+								>Import teams</Button
+							>
+						</form>
+					</Card.Content>
+				</details>
+			</div>
 		</details>
 	{:else}
 		<p class="text-sm text-muted-foreground">
 			Your role ({myRole}) can view teams but not manage them.
 		</p>
 	{/if}
+
+	<details class="group/team-list rounded-xl border bg-card">
+		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+			<Users class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+			<span>Teams ({teams.length})</span>
+			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/team-list:rotate-180" aria-hidden="true" />
+		</summary>
+		<Card.Root class="gap-4 rounded-none border-0 border-t bg-transparent py-4 shadow-none">
+			<Card.Header>
+				<Card.Description>
+					Organization teams. Teams are entered into seasons from the Leagues &amp; seasons page;
+					their season rosters and reserve pools are managed below.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex flex-col gap-2">
+				{#if teams.length === 0}
+					<p class="text-sm text-muted-foreground">No teams yet.</p>
+				{/if}
+				{#each teams as team (team.id)}
+					<div
+						class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 even:bg-slate-300 {team.status ===
+						'archived'
+							? 'opacity-60'
+							: ''}"
+					>
+						<div class="flex items-center gap-2">
+							<span class="font-medium">{team.name}</span>
+							{#if team.status === 'archived'}
+								<Badge variant="secondary">Archived</Badge>
+							{/if}
+						</div>
+						{#if canManage}
+							<div class="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									class="bg-blue-700 text-white hover:bg-blue-800 hover:text-white"
+									onclick={() => (renaming = team)}
+								>
+									<Pencil class="mr-1 size-3.5" /> Rename
+								</Button>
+								{#if team.status === 'active'}
+									<form method="POST" action="?/archiveTeam">
+										<input type="hidden" name="team" value={team.id} />
+										<Button
+											variant="ghost"
+											size="sm"
+											type="submit"
+											class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+										>
+											<Archive class="mr-1 size-3.5" /> Archive
+										</Button>
+									</form>
+								{:else}
+									<form method="POST" action="?/unarchiveTeam">
+										<input type="hidden" name="team" value={team.id} />
+										<Button variant="outline" size="sm" type="submit">
+											<ArchiveRestore class="mr-1 size-3.5" /> Restore
+										</Button>
+									</form>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</Card.Content>
+		</Card.Root>
+	</details>
 </div>
 
 <Dialog.Root open={renaming !== null} onOpenChange={(open) => !open && (renaming = null)}>

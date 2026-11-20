@@ -9,17 +9,14 @@ export interface ChecklistStep {
 }
 const definitions: ChecklistStep[] = [
 	{
-		id: 'structure',
-		title: 'Create a league and season',
+		id: 'athletes',
+		title: 'Add athletes',
 		description:
-			'Create a league and its first season together, or add a season to an existing league.',
-		capability: 'leagues-seasons',
-		required: ['leagues-seasons'],
-		collections: [
-			{ name: 'leagues', label: 'Leagues' },
-			{ name: 'seasons', label: 'Seasons' }
-		],
-		color: 'border-blue-200 bg-blue-50 text-blue-950'
+			'Create or import human athlete identities. Private contact fields retain their existing access restrictions.',
+		capability: 'athletes',
+		required: ['athletes'],
+		collections: [{ name: 'athletes', label: 'Athletes' }],
+		color: 'border-cyan-200 bg-cyan-50 text-cyan-950'
 	},
 	{
 		id: 'teams',
@@ -31,14 +28,17 @@ const definitions: ChecklistStep[] = [
 		color: 'border-violet-200 bg-violet-50 text-violet-950'
 	},
 	{
-		id: 'athletes',
-		title: 'Add athletes',
+		id: 'structure',
+		title: 'Create a league and season',
 		description:
-			'Create or import human athlete identities. Private contact fields retain their existing access restrictions.',
-		capability: 'athletes',
-		required: ['athletes'],
-		collections: [{ name: 'athletes', label: 'Athletes' }],
-		color: 'border-cyan-200 bg-cyan-50 text-cyan-950'
+			'Create a league and its first season together, or add a season to an existing league.',
+		capability: 'leagues-seasons',
+		required: ['leagues-seasons'],
+		collections: [
+			{ name: 'leagues', label: 'Leagues' },
+			{ name: 'seasons', label: 'Seasons' }
+		],
+		color: 'border-blue-200 bg-blue-50 text-blue-950'
 	},
 	{
 		id: 'rosters',
