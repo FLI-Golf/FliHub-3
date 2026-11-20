@@ -167,6 +167,8 @@ routerAdd(
 		// trusted read so league owners need no organization membership.
 		let events = [];
 		if (isOwner) {
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS.
+			const { isEventRosterLocked } = require(`${__hooks}/fantasy_scoring_rules.js`);
 			events = e.app
 				.findRecordsByFilter(
 					'events',
@@ -180,6 +182,7 @@ routerAdd(
 					(ev) =>
 						!league.getString('season') || ev.getString('season') === league.getString('season')
 				)
+				.filter((ev) => !isEventRosterLocked(e.app, ev))
 				.map((ev) => ({ id: ev.id, name: ev.getString('name') }));
 		}
 		return e.json(200, {

@@ -403,7 +403,11 @@
 							</p>
 							{#if isOwner}
 								<form method="POST" action="?/start" use:enhance>
-									<Button type="submit" data-testid="start-draft">
+									<Button
+										type="submit"
+										data-testid="start-draft"
+										class="bg-green-700 text-white hover:bg-green-800"
+									>
 										<Megaphone class="mr-1 size-4" /> Start draft
 									</Button>
 								</form>
@@ -425,7 +429,7 @@
 							)} seconds remaining. Picks and timeout auto-picks are stopped.
 						</p>
 						{#if isOwner}
-							<form method="POST" action="?/draftClock" use:enhance>
+src/routes/(app)/organizations/[id]/fantasy/[league]							<form method="POST" action="?/draftClock" use:enhance>
 								<input type="hidden" name="operation" value="resume" /><Button
 									type="submit"
 									style="background-color: #166534; color: white;"

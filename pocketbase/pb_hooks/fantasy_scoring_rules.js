@@ -25,6 +25,10 @@ function resultFor(app, eventId) {
 function isRosterLocked(app, draft) {
 	if (draft.getString('scoringRosterLockedAt')) return true;
 	const event = app.findRecordById('events', draft.getString('event'));
+	return isEventRosterLocked(app, event);
+}
+
+function isEventRosterLocked(app, event) {
 	if (event.getString('fantasyCutoffAt') || event.getString('status') === 'active') return true;
 	const result = resultFor(app, event.id);
 	return !!result && Number(result.get('publishedVersion')) > 0;
@@ -373,6 +377,7 @@ module.exports = {
 	buildStandings,
 	assertRosterMutable,
 	isRosterLocked,
+	isEventRosterLocked,
 	captureRoster,
 	athleteScore,
 	validSnapshot

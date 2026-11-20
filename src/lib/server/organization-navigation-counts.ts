@@ -26,6 +26,14 @@ interface Definition {
 	condition?: string;
 	scope?: 'fantasy';
 }
+const liveSeason = 'status = "planned" || status = "active"';
+const liveSeasonRelation = (relation: string) =>
+	`(${relation}.status = "planned" || ${relation}.status = "active")`;
+const liveEvent = (prefix = '') => {
+	const season = `${prefix}season`;
+	return `${prefix}status != "archived" && (${season} = "" || ${liveSeasonRelation(season)})`;
+};
+
 const definitions: Record<string, Definition[]> = {
 	overview: [{ collection: 'memberships', label: 'Members', shortLabel: '' }],
 	athletes: [
@@ -45,9 +53,9 @@ const definitions: Record<string, Definition[]> = {
 		},
 		{
 			collection: 'roster_memberships',
-			label: 'Non-archived season roster spots',
+			label: 'Current and upcoming season roster spots',
 			shortLabel: 'Roster spots',
-			condition: 'status != "archived"'
+			condition: `status != "archived" && ${liveSeasonRelation('season')}`
 		}
 	],
 	'leagues-seasons': [
@@ -59,9 +67,9 @@ const definitions: Record<string, Definition[]> = {
 		},
 		{
 			collection: 'seasons',
-			label: 'Non-archived seasons',
+			label: 'Current and upcoming seasons',
 			shortLabel: 'Seasons',
-			condition: 'status != "archived"'
+			condition: liveSeason
 		}
 	],
 	'venues-courses': [
@@ -101,31 +109,31 @@ const definitions: Record<string, Definition[]> = {
 	events: [
 		{
 			collection: 'events',
-			label: 'Non-archived events',
+			label: 'Current and upcoming events',
 			shortLabel: '',
-			condition: 'status != "archived"'
+			condition: liveEvent()
 		}
 	],
 	'scoring-results': [
 		{
 			collection: 'scorecards',
-			label: 'Visible scorecards for non-archived events',
+			label: 'Visible scorecards for current and upcoming events',
 			shortLabel: 'Cards',
-			condition: 'event.status != "archived"'
+			condition: liveEvent('event.')
 		},
 		{
 			collection: 'event_results',
-			label: 'Visible published official results for non-archived events',
+			label: 'Visible published official results for current and upcoming events',
 			shortLabel: 'Published',
-			condition: 'publishedVersion > 0 && event.status != "archived"'
+			condition: `publishedVersion > 0 && ${liveEvent('event.')}`
 		}
 	],
 	standings: [
 		{
 			collection: 'event_results',
-			label: 'Visible published official results for non-archived events',
+			label: 'Visible published official results for current and upcoming events',
 			shortLabel: 'Results',
-			condition: 'publishedVersion > 0 && event.status != "archived"'
+			condition: `publishedVersion > 0 && ${liveEvent('event.')}`
 		}
 	],
 	reimbursements: [

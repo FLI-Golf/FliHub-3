@@ -71,6 +71,15 @@
 
 	let { leagues, seasons, divisions, entries, teams, canManage, myRole, form }: Props = $props();
 
+	let seasonView = $state<'current' | 'past'>('current');
+	const currentSeasons = $derived(
+		seasons.filter((season) => season.status === 'planned' || season.status === 'active')
+	);
+	const pastSeasons = $derived(
+		seasons.filter((season) => season.status === 'completed' || season.status === 'archived')
+	);
+	const visibleSeasons = $derived(seasonView === 'current' ? currentSeasons : pastSeasons);
+
 	let editingSeason = $state<Season | null>(null);
 	let renamingLeague = $state<League | null>(null);
 
@@ -216,10 +225,32 @@
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-4">
-			{#if seasons.length === 0}
-				<p class="text-sm text-muted-foreground">No seasons yet.</p>
+			<div class="flex flex-wrap gap-2" role="group" aria-label="Season view">
+				<Button
+					type="button"
+					size="sm"
+					variant={seasonView === 'current' ? 'default' : 'outline'}
+					aria-pressed={seasonView === 'current'}
+					onclick={() => (seasonView = 'current')}
+				>
+					Current &amp; upcoming ({currentSeasons.length})
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					variant={seasonView === 'past' ? 'default' : 'outline'}
+					aria-pressed={seasonView === 'past'}
+					onclick={() => (seasonView = 'past')}
+				>
+					Past seasons ({pastSeasons.length})
+				</Button>
+			</div>
+			{#if visibleSeasons.length === 0}
+				<p class="text-sm text-muted-foreground">
+					{seasonView === 'current' ? 'No current or upcoming seasons.' : 'No past seasons.'}
+				</p>
 			{/if}
-			{#each seasons as season (season.id)}
+			{#each visibleSeasons as season (season.id)}
 				<section
 					class="flex flex-col gap-4 rounded-xl border border-blue-200 p-4 {season.status === 'archived'
 						? 'opacity-60'
