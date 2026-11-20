@@ -4,7 +4,6 @@
 	import { firstUnsubmittedRound, blockingRounds } from '$lib/scoring/round-flow';
 	import ScoreStepper from '$lib/components/ScoreStepper.svelte';
 	import ScoreCompletionMark from '$lib/components/ScoreCompletionMark.svelte';
-	import { cardProgress } from '$lib/scoring/card-progress';
 	let pendingSaves = $state(0);
 	let fillingEvent = $state(false);
 	function trackSave(change: number) {
@@ -14,6 +13,7 @@
 	import { resolve } from '$app/paths';
 	import {
 		ArrowLeft,
+		ArrowRightLeft,
 		CircleAlert,
 		ClipboardCheck,
 		History,
@@ -65,9 +65,41 @@
 			? `Round ${item.number} · ${item.holes.length} holes${item.positionLabel ? ` · ${item.positionLabel} positions` : ''}`
 			: 'Round';
 	}
-	const groupAthletes = $derived(
-		group ? data.groupAthletes.filter((ga) => ga.group === group.id) : []
-	);
+	type Assignment = PageProps['data']['groupAthletes'][number];
+	const baseLineup = $derived(data.groupAthletes.filter((ga) => ga.group === group?.id));
+	function athleteForHole(athlete: string, groupId: string, roundNumber: number, holeNumber: number) {
+		const handoff = data.groups.find((item) => item.id === groupId)?.handoff;
+		if (handoff?.outgoing === athlete &&
+			(roundNumber > handoff.roundNumber ||
+				(roundNumber === handoff.roundNumber && holeNumber >= handoff.holeNumber))) {
+			return handoff.reserve;
+		}
+		return athlete;
+	}
+	const groupAthletes = $derived.by(() => {
+		const handoff = group?.handoff;
+		const outgoing = baseLineup.find((item) => item.athlete === handoff?.outgoing);
+		return handoff && outgoing
+			? [...baseLineup, {
+					...outgoing, athlete: handoff.reserve,
+					athleteName: data.athleteNames[handoff.reserve] || handoff.reserve
+				}]
+			: baseLineup;
+	});
+	function lineupForHole(holeId: string): Assignment[] {
+		const hole = round?.holes.find((item) => item.id === holeId);
+		if (!hole || !group || !round) return [];
+		const groupId = group.id;
+		const roundNumber = round.number;
+		const required = new Set(baseLineup.map((item) =>
+			athleteForHole(item.athlete, groupId, roundNumber, hole.number)));
+		return groupAthletes.filter((item) => required.has(item.athlete));
+	}
+	function playsHole(athlete: string, groupId: string, roundNumber: number, holeNumber: number) {
+		return baseLineup.some((item) =>
+			athleteForHole(item.athlete, groupId, roundNumber, holeNumber) === athlete);
+	}
+	const hasHandoffs = $derived(data.groups.some((item) => Boolean(item.handoff)));
 	const scorecard = $derived(
 		round && group
 			? (data.scorecards.find((c) => c.round === round.id && c.group === group.id) ?? null)
@@ -93,13 +125,22 @@
 			: null;
 
 	function progressFor(roundId: string, groupId: string) {
-		return cardProgress(
-			roundId,
-			groupId,
-			data.rounds.find((item) => item.id === roundId)?.holes ?? [],
-			data.groupAthletes.filter((athlete) => athlete.group === groupId),
-			data.scores
-		);
+		const selected = data.rounds.find((item) => item.id === roundId);
+		const lineup = data.groupAthletes.filter((athlete) => athlete.group === groupId);
+		if (!selected) return { required: 0, recorded: 0, complete: false };
+		const savedScores = new Set(data.scores
+			.filter((score) => score.round === roundId && score.group === groupId &&
+				Number.isInteger(score.strokes) && score.strokes > 0)
+			.map((score) => score.athlete + ':' + score.hole));
+		const expected = selected.holes.length * lineup.length;
+		let saved = 0;
+		for (const hole of selected.holes) {
+			for (const item of lineup) {
+				const athlete = athleteForHole(item.athlete, groupId, selected.number, hole.number);
+				if (savedScores.has(athlete + ':' + hole.id)) saved += 1;
+			}
+		}
+		return { required: expected, recorded: saved, complete: expected > 0 && saved === expected };
 	}
 	function isCardComplete(roundId: string, groupId: string) {
 		return (
@@ -115,8 +156,8 @@
 	function holeComplete(holeId: string) {
 		return (
 			!pendingSaves &&
-			groupAthletes.length > 0 &&
-			groupAthletes.every((athlete) => {
+			lineupForHole(holeId).length > 0 &&
+			lineupForHole(holeId).every((athlete) => {
 				const value = strokesFor(athlete.athlete, holeId);
 				return value !== null && Number.isInteger(value) && value > 0;
 			})
@@ -128,7 +169,7 @@
 	const currentHole = $derived(
 		round?.holes.find((hole) => hole.id === selectedHoles[cardKey]) ??
 			round?.holes.find((hole) =>
-				groupAthletes.some((athlete) => strokesFor(athlete.athlete, hole.id) === null)
+				lineupForHole(hole.id).some((athlete) => strokesFor(athlete.athlete, hole.id) === null)
 			) ??
 			round?.holes[0] ??
 			null
@@ -138,7 +179,7 @@
 	);
 	const holeMissing = $derived(
 		currentHole
-			? groupAthletes.filter((athlete) => strokesFor(athlete.athlete, currentHole.id) === null)
+			? lineupForHole(currentHole.id).filter((athlete) => strokesFor(athlete.athlete, currentHole.id) === null)
 					.length
 			: 0
 	);
@@ -158,8 +199,12 @@
 	}
 
 	const athleteTotal = (athleteId: string) => {
-		if (!round) return { total: 0, recorded: 0, missing: 0 };
-		const values = round.holes.map((hole) => strokesFor(athleteId, hole.id));
+		if (!round || !group) return { total: 0, recorded: 0, missing: 0 };
+		const groupId = group.id;
+		const roundNumber = round.number;
+		const values = round.holes
+			.filter((hole) => playsHole(athleteId, groupId, roundNumber, hole.number))
+			.map((hole) => strokesFor(athleteId, hole.id));
 		const recorded = values.filter((value): value is number => value !== null);
 		return {
 			total: recorded.reduce((sum, value) => sum + value, 0),
@@ -175,7 +220,7 @@
 			string,
 			{ teamName: string; total: number; missing: number; recorded: number }
 		> = {};
-		for (const ga of groupAthletes) {
+		for (const ga of baseLineup) {
 			const bucket = byEntry[ga.entry] ?? {
 				teamName: ga.teamName,
 				total: 0,
@@ -183,7 +228,8 @@
 				recorded: 0
 			};
 			for (const hole of round.holes) {
-				const strokes = strokesFor(ga.athlete, hole.id);
+				const athlete = athleteForHole(ga.athlete, group.id, round.number, hole.number);
+				const strokes = strokesFor(athlete, hole.id);
 				if (strokes === null) bucket.missing += 1;
 				else {
 					bucket.total += strokes;
@@ -213,6 +259,57 @@
 	const nextRoundId = $derived(
 		group ? firstUnsubmittedRound(orderedRounds, data.scorecards, group.id) : null
 	);
+
+	const allGroupTotals = $derived.by(() => {
+		const groupNames = new Map(data.groups.map((group) => [group.id, group.name]));
+		const scoreKey = (round: string, group: string, entry: string, athlete: string, hole: string) =>
+			`${round}:${group}:${entry}:${athlete}:${hole}`;
+		const scores = new Map(data.scores.map((score) => [
+			scoreKey(score.round, score.group, score.entry, score.athlete, score.hole),
+			score.strokes
+		]));
+		const lineups = new Map<string, {
+			group: string;
+			entry: string;
+			team: string;
+			athletes: Set<string>;
+		}>();
+
+		for (const assignment of data.groupAthletes) {
+			if (!groupNames.has(assignment.group) || !assignment.entry || !assignment.athlete) continue;
+			const key = `${assignment.group}:${assignment.entry}`;
+			const lineup = lineups.get(key) ?? {
+				group: assignment.group,
+				entry: assignment.entry,
+				team: assignment.teamName,
+				athletes: new Set<string>()
+			};
+			lineup.athletes.add(assignment.athlete);
+			lineups.set(key, lineup);
+		}
+
+		return [...lineups.entries()].map(([key, lineup]) => {
+			const roundTotals = data.rounds.map((round) => {
+				if (!round.holes.length) return null;
+				let total = 0;
+				for (const athlete of lineup.athletes) {
+					for (const hole of round.holes) {
+						const activeAthlete = athleteForHole(athlete, lineup.group, round.number, hole.number);
+						const strokes = scores.get(scoreKey(round.id, lineup.group, lineup.entry, activeAthlete, hole.id));
+						if (strokes === undefined || !Number.isInteger(strokes) || strokes < 1) return null;
+						total += strokes;
+					}
+				}
+				return total;
+			});
+			const total = roundTotals.length && roundTotals.every((value) => value !== null)
+				? roundTotals.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+				: null;
+			return { key, team: lineup.team, group: groupNames.get(lineup.group), roundTotals, total };
+		}).sort((a, b) =>
+			(a.total ?? Infinity) - (b.total ?? Infinity) || a.team.localeCompare(b.team)
+		);
+	});
 </script>
 
 <svelte:head>
@@ -335,7 +432,62 @@
 			</section>
 		{/if}
 
-		{#if data.canManage && editable}
+		<details class="group/all-groups rounded-xl border border-blue-200 bg-card">
+			<summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+				<span class="inline-flex items-center gap-2">
+					<ClipboardCheck class="size-5 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+					All groups summary
+				</span>
+				<span class="rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+					<span class="group-open/all-groups:hidden">Show totals</span>
+					<span class="hidden group-open/all-groups:inline">Hide totals</span>
+				</span>
+			</summary>
+			<div class="space-y-3 border-t p-4">
+				<p class="text-sm text-muted-foreground">Saved draft and submitted strokes. Lower total leads.</p>
+				{#if allGroupTotals.length === 0}
+					<p class="text-sm">No active team lineups yet.</p>
+				{:else}
+					<div class="overflow-x-auto rounded-md border">
+						<table class="w-full text-sm">
+							<caption class="sr-only">Saved scores for all groups</caption>
+							<thead class="bg-muted">
+								<tr>
+									<th scope="col" class="p-2 text-left">Team</th>
+									<th scope="col" class="p-2 text-left">Group</th>
+									{#each data.rounds as round (round.id)}
+										<th scope="col" class="whitespace-nowrap p-2 text-right">Round {round.number}</th>
+									{/each}
+									<th scope="col" class="whitespace-nowrap p-2 text-right">Combined total</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each allGroupTotals as row (row.key)}
+									<tr class="border-t odd:bg-background even:bg-slate-200 dark:even:bg-slate-800">
+										<th scope="row" class="p-2 text-left font-medium">{row.team}</th>
+										<td class="whitespace-nowrap p-2">{row.group}</td>
+										{#each data.rounds as round, index (round.id)}
+											<td class="p-2 text-right tabular-nums">{row.roundTotals[index] ?? '—'}</td>
+										{/each}
+										<td class="p-2 text-right font-semibold tabular-nums">{row.total ?? 'Incomplete'}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
+			</div>
+		</details>
+
+		{#if group?.handoff}
+			<p role="status" class="rounded-lg border p-3 text-sm">
+				{data.athleteNames[group.handoff.reserve]} replaced
+				{data.athleteNames[group.handoff.outgoing]} in Round {group.handoff.roundNumber},
+				starting at course hole {group.handoff.holeNumber}. You can submit both rounds. Official result approval for this event is unavailable during handoff testing.
+			</p>
+		{/if}
+
+		{#if data.canManage && editable && !group?.handoff}
 			<details class="space-y-3 rounded-md border border-amber-400 bg-amber-50 p-4 text-black">
 				<summary class="cursor-pointer rounded-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4">
 					<ClipboardCheck class="mr-1 inline-block size-5 align-middle" aria-hidden="true" />Demo testing — current scorecard
@@ -366,7 +518,7 @@
 			</details>
 		{/if}
 
-		{#if import.meta.env.DEV && data.canManage && !data.resultStatus}
+		{#if import.meta.env.DEV && data.canManage && !data.resultStatus && !hasHandoffs}
 			<details
 				class="space-y-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-950"
 				open={Boolean(formRecord?.eventDemoSummary)}
@@ -549,7 +701,7 @@
 							<th scope="row" class="p-2 text-left">Combined total</th>
 							{#each groupAthletes as athlete (athlete.athlete)}
 								{@const values = data.rounds.flatMap((item) =>
-									item.holes.map(
+									item.holes.filter((hole) => playsHole(athlete.athlete, group.id, item.number, hole.number)).map(
 										(hole) =>
 											data.scores.find(
 												(score) =>
@@ -726,7 +878,7 @@
 								Use − or + to record a score, or Confirm par. Each score saves immediately. Complete
 								all players before continuing.
 							</p>
-							{#each groupAthletes as athlete (athlete.athlete)}
+							{#each lineupForHole(currentHole.id) as athlete (athlete.athlete)}
 								<div
 									class={`flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 ${!pendingSaves && hasSavedScore(athlete.athlete, currentHole.id) ? 'border-green-300 bg-green-50' : ''}`}
 								>
@@ -752,6 +904,50 @@
 									{/key}
 								</div>
 							{/each}
+							{#if import.meta.env.DEV && data.canManage && scorecard && !group?.handoff &&
+								!data.resultStatus && data.reserves.length && currentIndex > 0 &&
+								!data.scores.some((score) => score.group === group?.id &&
+									score.round === round?.id && score.hole === currentHole?.id)}
+								<details class="rounded-lg border p-3">
+									<summary class="cursor-pointer font-semibold">
+										<ArrowRightLeft class="mr-1 inline size-4" aria-hidden="true" />
+										Replace injured player from hole {currentHole.number + round.displayOffset}
+									</summary>
+									<form class="mt-3 grid gap-3" method="POST" action="?/recordInjuryHandoff"
+										use:enhance={({ cancel }) => {
+											if (pendingSaves || submitting) cancel();
+										}}>
+										<input type="hidden" name="group" value={group.id} />
+										<input type="hidden" name="round" value={round.id} />
+										<input type="hidden" name="hole" value={currentHole.id} />
+										<label class="grid gap-1 text-sm">
+											Outgoing player
+											<select name="outgoing" required class="rounded border bg-background p-2">
+												<option value="">Select a player</option>
+												{#each baseLineup as player (player.athlete)}
+													<option value={player.athlete}>{player.athleteName} · {player.teamName}</option>
+												{/each}
+											</select>
+										</label>
+										<label class="grid gap-1 text-sm">
+											Reserve player
+											<select name="reserve" required class="rounded border bg-background p-2">
+												<option value="">Select a reserve</option>
+												{#each data.reserves as reserve (reserve.id)}
+													<option value={reserve.id}>{reserve.name}</option>
+												{/each}
+											</select>
+										</label>
+										<label class="grid gap-1 text-sm">
+											Reason (visible to organization members)
+											<input name="reason" required maxlength="500" class="rounded border bg-background p-2" />
+										</label>
+										<Button type="submit" disabled={pendingSaves > 0 || submitting}>
+											Record injury handoff
+										</Button>
+									</form>
+								</details>
+							{/if}
 							<p role="status" class="text-sm">
 								{pendingSaves
 									? 'Saving scores…'
@@ -946,13 +1142,13 @@
 									{submitting ? 'Submitting…' : `Submit Round ${round.number} scorecard`}
 								</Button>
 							</form>
-							<form method="POST" action="?/fillDemoScores">
+							{#if !group?.handoff}<form method="POST" action="?/fillDemoScores">
 								<input type="hidden" name="round" value={round.id} />
 								<input type="hidden" name="group" value={group.id} />
 								<Button variant="outline" type="submit">
 									Fill with demo scores (demo data — not real entry)
 								</Button>
-							</form>
+							</form>{/if}
 						</div>
 					{:else if scorecard?.status === 'submitted'}
 						<div class="flex flex-wrap items-center gap-2">

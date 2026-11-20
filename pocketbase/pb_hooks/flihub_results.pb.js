@@ -146,8 +146,6 @@ onRecordUpdateRequest((e) => {
 
 	if (prev === 'approved' && next === 'published') {
 		const currentVersion = Number(original.get('currentVersion'));
-		e.record.set('publishedVersion', currentVersion);
-		e.next();
 		const rows = e.app.findRecordsByFilter(
 			'result_versions',
 			'result = {:result} && version = {:version}',
@@ -156,6 +154,9 @@ onRecordUpdateRequest((e) => {
 			0,
 			{ result: e.record.id, version: currentVersion }
 		);
+		if (rows.length !== 1) throw new BadRequestError('The current result version could not be found.');
+		e.record.set('publishedVersion', currentVersion);
+		e.next();
 		if (rows.length === 1) {
 			rows[0].set('publishedBy', e.auth.id);
 			rows[0].set('publishedAt', new Date().toISOString());

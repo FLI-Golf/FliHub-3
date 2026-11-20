@@ -131,7 +131,9 @@ onRecordUpdateRequest((e) => {
 	let logAction = '';
 	let reopenReason = '';
 	if (prevStatus === 'draft' && nextStatus === 'submitted') {
-		// Submission requires every (group athlete × active course hole) cell.
+		const group = e.app.findRecordById('event_groups', e.record.getString('group'));
+		const handoff = JSON.parse(String(group.get('injuryHandoff') || 'null'));
+		// A handoff changes which athlete fills the same team slot per hole.
 		const round = e.app.findRecordById('rounds', e.record.getString('round'));
 		const holes = e.app.findRecordsByFilter(
 			'course_holes',
@@ -154,10 +156,18 @@ onRecordUpdateRequest((e) => {
 		});
 		const filled = new Set(existing.map((s) => s.getString('athlete') + '|' + s.getString('hole')));
 		const missing = [];
-		for (const athlete of athletes) {
-			for (const hole of holes) {
-				if (!filled.has(athlete.getString('athlete') + '|' + hole.id)) {
-					missing.push('hole ' + String(hole.get('number')));
+		const roundNumber = round.getInt('number');
+		for (const hole of holes) {
+			const holeNumber = hole.getInt('number');
+			const afterHandoff = handoff && (roundNumber > handoff.roundNumber ||
+				(roundNumber === handoff.roundNumber && holeNumber >= handoff.holeNumber));
+			for (const athlete of athletes) {
+				const originalAthlete = athlete.getString('athlete');
+				const required = afterHandoff && originalAthlete === handoff.outgoing
+					? handoff.reserve
+					: originalAthlete;
+				if (!filled.has(required + '|' + hole.id)) {
+					missing.push('hole ' + holeNumber);
 				}
 			}
 		}
@@ -281,15 +291,27 @@ onRecordCreateRequest((e) => {
 		0,
 		{ group: scorecard.getString('group'), athlete: e.record.getString('athlete') }
 	);
-	if (assignment.length === 0) {
-		throw new BadRequestError(
-			'athlete_not_in_group: Scores can only be entered for athletes assigned to this group.'
-		);
-	}
-	e.record.set('entry', assignment[0].getString('entry'));
-	// The hole must be an active hole of the round's course: scores stay
-	// keyed by the PHYSICAL hole regardless of displayed numbering.
 	const round = e.app.findRecordById('rounds', scorecard.getString('round'));
+	const group = e.app.findRecordById('event_groups', scorecard.getString('group'));
+	const handoff = JSON.parse(String(group.get('injuryHandoff') || 'null'));
+	const athlete = e.record.getString('athlete');
+	const afterHandoff = handoff && (round.getInt('number') > handoff.roundNumber ||
+		(round.getInt('number') === handoff.roundNumber && hole.getInt('number') >= handoff.holeNumber));
+	if (handoff && ((athlete === handoff.outgoing && afterHandoff) ||
+		(athlete === handoff.reserve && !afterHandoff))) {
+		throw new BadRequestError('This player is outside the lineup for this hole. Refresh the scorecard.');
+	}
+	if (afterHandoff && athlete === handoff.reserve) {
+		e.record.set('entry', handoff.entry);
+	} else {
+		if (!assignment.length) {
+			throw new BadRequestError(
+				'athlete_not_in_group: Scores can only be entered for athletes assigned to this hole.'
+			);
+		}
+		e.record.set('entry', assignment[0].getString('entry'));
+	}
+	// Scores stay keyed by the physical hole regardless of displayed numbering.
 	if (
 		hole.getString('course') !== round.getString('course') ||
 		hole.getString('status') !== 'active'

@@ -154,7 +154,35 @@ function validNumber(value) {
 function athleteScore(snapshot, athleteId) {
 	const matches = snapshot.athletes.filter((a) => a.athlete === athleteId);
 	if (matches.length !== 1) return null;
-	const a = matches[0];
+	let a = matches[0];
+	if (snapshot.hasInjuryHandoff && a.complete === true) {
+		const first = snapshot.rounds[0];
+		const firstHole = first?.holes?.[0]?.hole;
+		const cellCount = (row) => Object.values(row.roundScores ?? {})
+			.reduce((n, cells) => n + Object.keys(cells).length, 0);
+		const eventHoles = snapshot.rounds.reduce((n, round) => n + round.holes.length, 0);
+		if (cellCount(a) < eventHoles && firstHole && a.roundScores?.[first.round]?.[firstHole] !== undefined) {
+			const partners = snapshot.athletes.filter((row) => row.entry === a.entry &&
+				row.athlete !== a.athlete && row.complete === true &&
+				row.roundScores?.[first.round]?.[firstHole] === undefined &&
+				cellCount(row) + cellCount(a) === eventHoles);
+			if (partners.length !== 1) return null;
+			const reserve = partners[0];
+			const combined = { ...a, roundTotals: {}, roundPars: {}, roundScores: {}, roundToPar: {},
+				total: a.total + reserve.total, par: a.par + reserve.par,
+				scoreToPar: a.scoreToPar + reserve.scoreToPar };
+			for (const round of snapshot.rounds) {
+				const outgoingCells = a.roundScores?.[round.round] ?? {};
+				const reserveCells = reserve.roundScores?.[round.round] ?? {};
+				if (Object.keys(outgoingCells).some((hole) => hole in reserveCells)) return null;
+				combined.roundScores[round.round] = { ...outgoingCells, ...reserveCells };
+				combined.roundTotals[round.round] = (a.roundTotals?.[round.round] ?? 0) + (reserve.roundTotals?.[round.round] ?? 0);
+				combined.roundPars[round.round] = (a.roundPars?.[round.round] ?? 0) + (reserve.roundPars?.[round.round] ?? 0);
+				combined.roundToPar[round.round] = combined.roundTotals[round.round] - combined.roundPars[round.round];
+			}
+			a = combined;
+		}
+	}
 	let strokes = 0;
 	let par = 0;
 	const rounds = [];

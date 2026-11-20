@@ -120,7 +120,7 @@
 				for (const id of athletes ? award.athletes : [award.entry]) {
 					const previous = earnings.get(id) ?? { cents: 0, pending: false };
 					earnings.set(id, {
-						cents: previous.cents + award.perPro * (athletes ? 1 : 2),
+						cents: previous.cents + (athletes ? award.athleteCents[id] : award.perPro * 2),
 						pending: previous.pending || award.pending
 					});
 				}

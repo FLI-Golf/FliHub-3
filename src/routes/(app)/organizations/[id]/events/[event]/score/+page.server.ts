@@ -9,6 +9,16 @@ import type { Actions, PageServerLoad } from './$types';
 import type { OrgRole } from '$lib/server/auth';
 import { pbErrorMessage, pbErrorStatus } from '$lib/server/auth';
 
+interface InjuryHandoff {
+	round: string;
+	hole: string;
+	roundNumber: number;
+	holeNumber: number;
+	outgoing: string;
+	reserve: string;
+	entry: string;
+}
+
 const ID_PATTERN = /^[a-z0-9]{15}$/;
 
 /**
@@ -133,6 +143,16 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		return round;
 	});
 
+	const canManage = myRole === 'owner' || myRole === 'admin';
+	const season = String(event.season ?? '');
+	const reserveRows = canManage && ID_PATTERN.test(season)
+		? await pb.collection('reserve_members').getFullList({
+				filter: pb.filter('organization = {:org} && season = {:season} && status = "active"', {
+					org: params.id, season
+				})
+			})
+		: [];
+
 	const groups = groupRows
 		.filter((g) => String(g.status) === 'active')
 		.map((g) => {
@@ -140,6 +160,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			const keeperRole = memberRole.get(keeperId) ?? '';
 			return {
 				id: g.id,
+				handoff: g.injuryHandoff as InjuryHandoff | null,
 				name: String(g.name ?? ''),
 				scorekeeper: keeperId || null,
 				scorekeeperName: keeperId ? (memberName.get(keeperId) ?? keeperId) : null,
@@ -150,7 +171,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			};
 		});
 
-	const canManage = myRole === 'owner' || myRole === 'admin';
 	const canScore =
 		canManage || (myRole === 'scorekeeper' && groups.some((g) => g.scorekeeper === user.id));
 
@@ -168,6 +188,13 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		},
 		rounds,
 		groups,
+		reserves: [...new Set(reserveRows.map((row) => String(row.athlete)))]
+			.filter((id) => athleteRows.some((athlete) => athlete.id === id && athlete.status === 'active'))
+			.filter((id) => !groupAthleteRows.some((row) => row.athlete === id && row.status === 'active'))
+			.filter((id) => !groups.some((group) => group.handoff?.reserve === id))
+			.map((id) => ({ id, name: athleteName.get(id) || id }))
+			.sort((a, b) => a.name.localeCompare(b.name)),
+		athleteNames: Object.fromEntries(athleteName),
 		groupAthletes: groupAthleteRows
 			.filter((ga) => String(ga.status) === 'active')
 			.map((ga) => ({
@@ -241,6 +268,29 @@ async function ensureScorecard(
 }
 
 export const actions: Actions = {
+	recordInjuryHandoff: async ({ locals, request, params }) => {
+		if (!import.meta.env.DEV) return fail(404, { message: 'Not found.' });
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (![params.id, params.event].every((id) => ID_PATTERN.test(id))) {
+			return fail(404, { message: 'Event not found.' });
+		}
+		const form = await request.formData();
+		const body = Object.fromEntries(
+			['group', 'round', 'hole', 'outgoing', 'reserve', 'reason']
+				.map((key) => [key, String(form.get(key) ?? '')])
+		);
+		try {
+			await locals.pb.send(
+				`/api/flihub/organizations/${params.id}/events/${params.event}/injury-handoff`,
+				{ method: 'POST', body }
+			);
+			return { injuryHandoffSaved: true, activeGroup: body.group, activeRound: body.round };
+		} catch (err) {
+			return fail(pbErrorStatus(err), {
+				message: pbErrorMessage(err), activeGroup: body.group, activeRound: body.round
+			});
+		}
+	},
 	submitAllDemoScorecards: async ({ locals, params }) => {
 		if (!import.meta.env.DEV) return fail(404, { message: 'Not found.' });
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
@@ -381,6 +431,10 @@ export const actions: Actions = {
 		try {
 			const scorecard = await ensureScorecard(locals.pb, params.id, roundId, groupId);
 			const round = await locals.pb.collection('rounds').getOne(roundId);
+			const group = await locals.pb.collection('event_groups').getOne(groupId);
+			if (group.injuryHandoff) {
+				return fail(400, { message: 'Enter scores manually for a group with an injury handoff.' });
+			}
 			const [holes, groupAthletes, existing] = await Promise.all([
 				locals.pb.collection('course_holes').getFullList({
 					filter: `course = "${String(round.course)}" && status = "active"`

@@ -158,11 +158,15 @@ function publishedVersionFor(app, orgId, eventId) {
 	} catch (_) {
 		return null;
 	}
+	const attempts = readJson(version, 'playoffAttempts', []);
+	const decisive = attempts.find((attempt) => attempt.winner);
 	return {
 		version: publishedVersion,
 		corrected: publishedVersion > 1,
 		publishedAt: String(version.get('publishedAt') ?? ''),
-		totals: readJson(version, 'totals', null)
+		totals: readJson(version, 'totals', null),
+		playoffWinner: decisive?.winner ?? null,
+		playoffOrder: decisive?.bands?.flat() ?? null
 	};
 }
 
@@ -191,18 +195,36 @@ function publicEventResult(app, orgId, event, parCache) {
 		entry: String(a.entry ?? ''),
 		athlete: String(a.athlete ?? ''),
 		total: Number(a.total ?? 0),
-		par: parKnown ? eventPar : null
+		par: totals.hasInjuryHandoff ? a.par : parKnown ? eventPar : null,
+		...(totals.hasInjuryHandoff ? {
+			holesPlayed: Object.values(a.roundScores ?? {}).reduce((n, cells) => n + Object.keys(cells).length, 0),
+			eventHoles: totals.rounds.reduce((n, round) => n + round.holes.length, 0)
+		} : {})
 	}));
-	const athleteCountByEntry = new Map();
+	const parByEntry = new Map();
 	for (const a of athletes) {
-		athleteCountByEntry.set(a.entry, (athleteCountByEntry.get(a.entry) ?? 0) + 1);
+		parByEntry.set(a.entry, (parByEntry.get(a.entry) ?? 0) + (a.par ?? 0));
 	}
 	const teams = (Array.isArray(totals.teams) ? totals.teams : []).map((t) => ({
 		teamName: String(t.teamName ?? ''),
 		entry: String(t.entry ?? ''),
 		total: Number(t.total ?? 0),
-		par: parKnown ? eventPar * (athleteCountByEntry.get(String(t.entry ?? '')) ?? 0) : null
+		par: parKnown ? (parByEntry.get(String(t.entry ?? '')) ?? 0) : null
 	}));
+	const rankedTeams = rankRows(teams);
+	if (published.playoffWinner) {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM.
+		const tie = require(`${__hooks}/playoff_rules.js`).podiumTie(rankedTeams);
+		const entries = tie?.teams.map((team) => team.entry) ?? [];
+		const order = published.playoffOrder ?? (entries.length === 2 && entries.includes(published.playoffWinner)
+			? [published.playoffWinner, entries.find((entry) => entry !== published.playoffWinner)]
+			: []);
+		if (tie && order.length === entries.length && new Set(order).size === entries.length &&
+			order.every((entry) => entries.includes(entry))) {
+			for (const team of tie.teams) team.rank = tie.place + order.indexOf(team.entry);
+			rankedTeams.sort((a, b) => a.rank - b.rank);
+		}
+	}
 	return {
 		event: event.id,
 		eventName: event.getString('name'),
@@ -211,8 +233,13 @@ function publicEventResult(app, orgId, event, parCache) {
 		corrected: published.corrected,
 		correctedAt: published.corrected ? published.publishedAt : null,
 		publishedAt: published.publishedAt,
-		teams: rankRows(teams),
-		athletes: rankRows(athletes)
+		playoffWinner: published.playoffWinner,
+		playoffOrder: published.playoffOrder,
+		teams: rankedTeams,
+		athletes: [
+			...rankRows(athletes.filter((a) => a.holesPlayed === undefined || a.holesPlayed === a.eventHoles)),
+			...athletes.filter((a) => a.holesPlayed < a.eventHoles).map((a) => ({ ...a, rank: null }))
+		]
 	};
 }
 
@@ -268,7 +295,7 @@ function buildStandings(app, orgId, events, parCache, includePayoutInputs = fals
 				}
 				const bucket = rows.get(id);
 				if (key === 'athlete' && row.teamName) bucket.teamNames.add(row.teamName);
-				bucket.played += 1;
+				if (row.holesPlayed === undefined || row.holesPlayed === row.eventHoles) bucket.played += 1;
 				bucket.total += row.total;
 				if (row.par === null) bucket.parKnown = false;
 				else bucket.par += row.par;
@@ -309,8 +336,10 @@ function buildStandings(app, orgId, events, parCache, includePayoutInputs = fals
 				event: r.event,
 				eventName: r.eventName,
 				purseCents: null,
+				playoffWinner: r.playoffWinner,
+				playoffOrder: r.playoffOrder,
 				teams: r.teams.map(({ entry, total }) => ({ entry, total })),
-				athletes: r.athletes.map(({ athlete, entry }) => ({ athlete, entry }))
+				athletes: r.athletes.map(({ athlete, entry, holesPlayed, eventHoles }) => ({ athlete, entry, holesPlayed, eventHoles }))
 			})) } : {}),
 			teams: aggregate(results, 'entry', 'teamName'),
 			athletes: aggregate(results, 'athlete', 'athleteName')

@@ -134,6 +134,44 @@ function computeEventTotals(app, eventId) {
 	for (const members of athletesByGroup.values()) {
 		if (!members.size) blocked('An active group has no assigned athletes.');
 	}
+	const handoffsByAthlete = new Map();
+	const roundNumbers = new Map(roundSnapshots.map((round) => [round.round, round.number]));
+	for (const group of groups) {
+		const handoff = JSON.parse(String(group.get('injuryHandoff') || 'null'));
+		if (!handoff) continue;
+		const members = athletesByGroup.get(group.id);
+		const outgoing = members.get(handoff.outgoing);
+		const cutoff = holesByRound.get(handoff.round)?.get(handoff.hole);
+		if (!outgoing || outgoing.entry !== handoff.entry || !handoff.reserve ||
+			athleteById.has(handoff.reserve) || !cutoff || cutoff.number !== handoff.holeNumber ||
+			roundNumbers.get(handoff.round) !== handoff.roundNumber) {
+			blocked('A recorded injury handoff does not match the active lineup or course.');
+		}
+		const reserve = app.findRecordById('athletes', handoff.reserve);
+		same(reserve, 'organization', orgId, 'Reserve athlete');
+		const row = {
+			...outgoing,
+			athlete: reserve.id,
+			athleteName: (reserve.getString('firstName') + ' ' + reserve.getString('lastName')).trim(),
+			roundTotals: {},
+			roundPars: {},
+			roundScores: {},
+			roundToPar: {}
+		};
+		members.set(reserve.id, row);
+		athleteById.set(reserve.id, row);
+		handoffsByAthlete.set(handoff.outgoing, handoff);
+		handoffsByAthlete.set(reserve.id, handoff);
+	}
+
+	function isAssigned(athlete, roundNumber, holeNumber) {
+		const handoff = handoffsByAthlete.get(athlete);
+		if (!handoff) return true;
+		const afterCutoff = roundNumber > handoff.roundNumber ||
+			(roundNumber === handoff.roundNumber && holeNumber >= handoff.holeNumber);
+		return afterCutoff ? athlete === handoff.reserve : athlete === handoff.outgoing;
+	}
+
 	const cards = allRows(app, 'scorecards', 'event = {:event}', {
 		event: eventId
 	});
@@ -178,8 +216,11 @@ function computeEventTotals(app, eventId) {
 		if (!row) blocked('A score references an athlete outside the required group lineup.');
 		same(score, 'entry', row.entry, 'Score');
 		const holeId = score.getString('hole');
-		if (!holesByRound.get(roundId).has(holeId))
+		const hole = holesByRound.get(roundId).get(holeId);
+		if (!hole)
 			blocked('A score references a hole outside the active round course.');
+		if (!isAssigned(row.athlete, roundNumbers.get(roundId), hole.number))
+			blocked('A score references an athlete outside the required lineup for its hole.');
 		const key = roundId + '|' + row.athlete + '|' + holeId;
 		if (cells.has(key)) blocked('Duplicate athlete/round/hole scores.');
 		cells.set(key, positiveInteger(score.get('strokes'), 'Strokes'));
@@ -187,20 +228,24 @@ function computeEventTotals(app, eventId) {
 	for (const round of roundSnapshots) {
 		for (const row of athleteById.values()) {
 			let strokes = 0;
+			let par = 0;
 			const holeScores = {};
 			for (const hole of round.holes) {
+				if (!isAssigned(row.athlete, round.number, hole.number)) continue;
 				const value = cells.get(round.round + '|' + row.athlete + '|' + hole.hole);
 				if (value === undefined)
 					blocked('Missing required athlete/round/hole score. Missing scores never count as zero.');
 				holeScores[hole.hole] = value;
 				strokes += value;
+				par += hole.par;
 			}
+			if (par === 0) continue;
 			row.roundTotals[round.round] = strokes;
-			row.roundPars[round.round] = round.par;
+			row.roundPars[round.round] = par;
 			row.roundScores[round.round] = holeScores;
-			row.roundToPar[round.round] = strokes - round.par;
+			row.roundToPar[round.round] = strokes - par;
 			row.total += strokes;
-			row.par += round.par;
+			row.par += par;
 			row.scoreToPar = row.total - row.par;
 			if (!Number.isSafeInteger(row.total) || !Number.isSafeInteger(row.par))
 				blocked('Event totals exceed the supported numeric range.');
@@ -218,13 +263,14 @@ function computeEventTotals(app, eventId) {
 		const team = teamsByEntry.get(row.entry);
 		for (const round of roundSnapshots)
 			team.roundTotals[round.round] =
-				(team.roundTotals[round.round] ?? 0) + row.roundTotals[round.round];
+				(team.roundTotals[round.round] ?? 0) + (row.roundTotals[round.round] ?? 0);
 		team.total += row.total;
 		if (!Number.isSafeInteger(team.total))
 			blocked('Team totals exceed the supported numeric range.');
 	}
 	return {
 		schemaVersion: 2,
+		...(handoffsByAthlete.size ? { hasInjuryHandoff: true } : {}),
 		scoringConvention: 'strokes-minus-par',
 		complete: true,
 		rounds: roundSnapshots,
