@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ChevronDown as DisclosureChevron, History as ActivityIcon, Mail as InvitationsIcon } from 'lucide-svelte';
 	import { resolve } from '$app/paths';
 	import { AlertCircle, ArrowLeft, Link2, MailPlus, Users } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -76,6 +77,7 @@
 		<OrganizationSetupChecklist
 			organizationId={data.organization.id}
 			checklist={data.setupChecklist}
+			leagues={data.setupLeagues}
 		/>
 	{/if}
 
@@ -121,207 +123,217 @@
 	{/if}
 
 	{#if canManage}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="flex items-center gap-2">
-					<MailPlus class="size-5" />
-					Invite a member
-				</Card.Title>
-				<Card.Description>
-					The invitee must register with this exact email address and verify it before accepting.
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<form method="POST" action="?/invite" class="flex flex-col gap-4">
-					<div class="flex flex-col gap-2">
-						<Label for="invite-email">Invitee email</Label>
-						<Input id="invite-email" name="email" type="email" required />
-					</div>
-					<div class="flex flex-wrap items-center gap-2">
-						<span class="text-sm text-muted-foreground">Invite as:</span>
-						<Button type="submit" name="role" value="viewer" variant="outline" size="sm">
-							Viewer
-						</Button>
-						<Button type="submit" name="role" value="scorekeeper" variant="outline" size="sm">
-							Scorekeeper
-						</Button>
-						{#if isOwner}
-							<Button type="submit" name="role" value="admin" variant="outline" size="sm">
-								Admin
+		<details class="group/membership rounded-xl border bg-card text-card-foreground" open={Boolean(invite?.inviteLink)}>
+			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+				<MailPlus class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+				<span>Invite a member</span>
+				<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+			</summary>
+			<div class="border-t py-4">
+				<p class="px-6 pb-3 text-sm text-muted-foreground">The invitee must register with this exact email address and verify it before accepting.</p>
+				<Card.Content>
+					<form method="POST" action="?/invite" class="flex flex-col gap-4">
+						<div class="flex flex-col gap-2">
+							<Label for="invite-email">Invitee email</Label>
+							<Input id="invite-email" name="email" type="email" required />
+						</div>
+						<div class="flex flex-wrap items-center gap-2">
+							<span class="text-sm text-muted-foreground">Invite as:</span>
+							<Button type="submit" name="role" value="viewer" variant="outline" size="sm">
+								Viewer
 							</Button>
-						{/if}
-					</div>
-				</form>
-			</Card.Content>
-		</Card.Root>
+							<Button type="submit" name="role" value="scorekeeper" variant="outline" size="sm">
+								Scorekeeper
+							</Button>
+							{#if isOwner}
+								<Button type="submit" name="role" value="admin" variant="outline" size="sm">
+									Admin
+								</Button>
+							{/if}
+						</div>
+					</form>
+				</Card.Content>
+			</div>
+		</details>
 	{/if}
 
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="flex items-center gap-2">
-				<Users class="size-5" />
-				Members ({data.members.length})
-			</Card.Title>
-		</Card.Header>
-		<Card.Content class="flex flex-col">
-			{#each data.members as member, index (member.id)}
-				{#if index > 0}
-					<Separator class="my-3" />
-				{/if}
-				<div class="flex flex-wrap items-center gap-2">
-					<div class="flex min-w-0 flex-1 flex-col">
-						<span class="truncate font-medium">
-							{member.name}
-							{#if member.isYou}
-								<span class="text-muted-foreground">(you)</span>
+	<details class="group/membership rounded-xl border bg-card text-card-foreground">
+		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+			<Users class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+			<span>Members ({data.members.length})</span>
+			<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+		</summary>
+		<div class="border-t py-4">
+			<Card.Content class="flex flex-col">
+				{#each data.members as member, index (member.id)}
+					{#if index > 0}
+						<Separator class="my-3" />
+					{/if}
+					<div
+						class="flex flex-wrap items-center gap-2 rounded-md px-3 py-2 {index % 2 === 1
+							? 'bg-slate-200 dark:bg-slate-800'
+							: 'bg-background'}"
+					>
+						<div class="flex min-w-0 flex-1 flex-col">
+							<span class="truncate font-medium">
+								{member.name}
+								{#if member.isYou}
+									<span class="text-muted-foreground">(you)</span>
+								{/if}
+							</span>
+							{#if member.email}
+								<span class="truncate text-sm text-muted-foreground">{member.email}</span>
 							{/if}
-						</span>
-						{#if member.email}
-							<span class="truncate text-sm text-muted-foreground">{member.email}</span>
+						</div>
+						<Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
+							{roleLabel(member.role)}
+						</Badge>
+
+						{#if isOwner && member.role !== 'owner'}
+							<div class="flex flex-wrap gap-1">
+								{#each ['admin', 'scorekeeper', 'viewer'] as role (role)}
+									{#if role !== member.role}
+										<form method="POST" action="?/changeRole">
+											<input type="hidden" name="membership" value={member.id} />
+											<input type="hidden" name="role" value={role} />
+											<Button type="submit" variant="ghost" size="xs">
+												Make {role}
+											</Button>
+										</form>
+									{/if}
+								{/each}
+								<form method="POST" action="?/transfer">
+									<input type="hidden" name="membership" value={member.id} />
+									<Button
+										type="submit"
+										variant="ghost"
+										size="xs"
+										onclick={(e) => {
+											if (!confirm(`Transfer ownership to ${member.name}? You become Admin.`))
+												e.preventDefault();
+										}}
+									>
+										Transfer ownership
+									</Button>
+								</form>
+								<form method="POST" action="?/removeMember">
+									<input type="hidden" name="membership" value={member.id} />
+									<Button
+										type="submit"
+										variant="destructive"
+										size="xs"
+										onclick={(e) => {
+											if (!confirm(`Remove ${member.name} from the organization?`))
+												e.preventDefault();
+										}}
+									>
+										Remove
+									</Button>
+								</form>
+							</div>
 						{/if}
 					</div>
-					<Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
-						{roleLabel(member.role)}
-					</Badge>
-
-					{#if isOwner && member.role !== 'owner'}
-						<div class="flex flex-wrap gap-1">
-							{#each ['admin', 'scorekeeper', 'viewer'] as role (role)}
-								{#if role !== member.role}
-									<form method="POST" action="?/changeRole">
-										<input type="hidden" name="membership" value={member.id} />
-										<input type="hidden" name="role" value={role} />
-										<Button type="submit" variant="ghost" size="xs">
-											Make {role}
-										</Button>
-									</form>
-								{/if}
-							{/each}
-							<form method="POST" action="?/transfer">
-								<input type="hidden" name="membership" value={member.id} />
-								<Button
-									type="submit"
-									variant="ghost"
-									size="xs"
-									onclick={(e) => {
-										if (!confirm(`Transfer ownership to ${member.name}? You become Admin.`))
-											e.preventDefault();
-									}}
-								>
-									Transfer ownership
-								</Button>
-							</form>
-							<form method="POST" action="?/removeMember">
-								<input type="hidden" name="membership" value={member.id} />
-								<Button
-									type="submit"
-									variant="destructive"
-									size="xs"
-									onclick={(e) => {
-										if (!confirm(`Remove ${member.name} from the organization?`))
-											e.preventDefault();
-									}}
-								>
-									Remove
-								</Button>
-							</form>
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</Card.Content>
-		{#if myMembership && myMembership.role !== 'owner'}
-			<Card.Footer>
-				<form method="POST" action="?/leave">
-					<Button
-						type="submit"
-						variant="outline"
-						onclick={(e) => {
-							if (!confirm('Leave this organization?')) e.preventDefault();
-						}}
-					>
-						Leave organization
-					</Button>
-				</form>
-			</Card.Footer>
-		{/if}
-	</Card.Root>
+				{/each}
+			</Card.Content>
+			{#if myMembership && myMembership.role !== 'owner'}
+				<Card.Footer>
+					<form method="POST" action="?/leave">
+						<Button
+							type="submit"
+							variant="outline"
+							onclick={(e) => {
+								if (!confirm('Leave this organization?')) e.preventDefault();
+							}}
+						>
+							Leave organization
+						</Button>
+					</form>
+				</Card.Footer>
+			{/if}
+		</div>
+	</details>
 
 	{#if canManage && data.invitations}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Invitations</Card.Title>
-				<Card.Description>Only Owners and Admins can see this list.</Card.Description>
-			</Card.Header>
-			<Card.Content class="flex flex-col">
-				{#if data.invitations.length === 0}
-					<p class="text-sm text-muted-foreground">No invitations yet.</p>
-				{/if}
-				{#each data.invitations as invitation, index (invitation.id)}
-					{#if index > 0}
-						<Separator class="my-3" />
+		<details class="group/membership rounded-xl border bg-card text-card-foreground">
+			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+				<InvitationsIcon class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+				<span>Invitations</span>
+				<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+			</summary>
+			<div class="border-t py-4">
+				<p class="px-6 pb-3 text-sm text-muted-foreground">Only Owners and Admins can see this list.</p>
+				<Card.Content class="flex flex-col">
+					{#if data.invitations.length === 0}
+						<p class="text-sm text-muted-foreground">No invitations yet.</p>
 					{/if}
-					<div class="flex flex-wrap items-center gap-2">
-						<div class="flex min-w-0 flex-1 flex-col">
-							<span class="truncate font-medium">{invitation.email}</span>
+					{#each data.invitations as invitation, index (invitation.id)}
+						{#if index > 0}
+							<Separator class="my-3" />
+						{/if}
+						<div class="flex flex-wrap items-center gap-2">
+							<div class="flex min-w-0 flex-1 flex-col">
+								<span class="truncate font-medium">{invitation.email}</span>
+								<span class="text-sm text-muted-foreground">
+									{roleLabel(invitation.role)} · expires {formatDate(invitation.expiresAt)}
+								</span>
+							</div>
+							<Badge
+								variant={invitation.status === 'pending'
+									? 'default'
+									: invitation.status === 'accepted'
+										? 'secondary'
+										: 'outline'}
+							>
+								{invitation.status}
+							</Badge>
+							{#if invitation.status === 'pending'}
+								<form method="POST" action="?/revokeInvitation">
+									<input type="hidden" name="invitation" value={invitation.id} />
+									<Button type="submit" variant="destructive" size="xs">Revoke</Button>
+								</form>
+							{/if}
+						</div>
+					{/each}
+				</Card.Content>
+			</div>
+		</details>
+
+		<details class="group/membership rounded-xl border bg-card text-card-foreground">
+			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+				<ActivityIcon class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+				<span>Membership activity</span>
+				<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+			</summary>
+			<div class="border-t py-4">
+				<p class="px-6 pb-3 text-sm text-muted-foreground">Audit trail of membership changes. Only Owners and Admins can see this.</p>
+				<Card.Content class="flex flex-col">
+					{#if !data.events || data.events.length === 0}
+						<p class="text-sm text-muted-foreground">No activity yet.</p>
+					{/if}
+					{#each data.events ?? [] as event, index (event.id)}
+						{#if index > 0}
+							<Separator class="my-3" />
+						{/if}
+						<div class="flex flex-col gap-0.5">
+							<span class="text-sm font-medium">
+								{eventLabels[event.action] ?? event.action}
+							</span>
 							<span class="text-sm text-muted-foreground">
-								{roleLabel(invitation.role)} · expires {formatDate(invitation.expiresAt)}
+								{formatDate(event.created)} · by {event.actorName ?? 'unknown'}
+								{#if event.subjectName}
+									· member: {event.subjectName}
+								{/if}
+								{#if event.subjectEmail}
+									· email: {event.subjectEmail}
+								{/if}
+								{#if event.details}
+									· {event.details}
+								{/if}
 							</span>
 						</div>
-						<Badge
-							variant={invitation.status === 'pending'
-								? 'default'
-								: invitation.status === 'accepted'
-									? 'secondary'
-									: 'outline'}
-						>
-							{invitation.status}
-						</Badge>
-						{#if invitation.status === 'pending'}
-							<form method="POST" action="?/revokeInvitation">
-								<input type="hidden" name="invitation" value={invitation.id} />
-								<Button type="submit" variant="destructive" size="xs">Revoke</Button>
-							</form>
-						{/if}
-					</div>
-				{/each}
-			</Card.Content>
-		</Card.Root>
-
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Membership activity</Card.Title>
-				<Card.Description>
-					Audit trail of membership changes. Only Owners and Admins can see this.
-				</Card.Description>
-			</Card.Header>
-			<Card.Content class="flex flex-col">
-				{#if !data.events || data.events.length === 0}
-					<p class="text-sm text-muted-foreground">No activity yet.</p>
-				{/if}
-				{#each data.events ?? [] as event, index (event.id)}
-					{#if index > 0}
-						<Separator class="my-3" />
-					{/if}
-					<div class="flex flex-col gap-0.5">
-						<span class="text-sm font-medium">
-							{eventLabels[event.action] ?? event.action}
-						</span>
-						<span class="text-sm text-muted-foreground">
-							{formatDate(event.created)} · by {event.actorName ?? 'unknown'}
-							{#if event.subjectName}
-								· member: {event.subjectName}
-							{/if}
-							{#if event.subjectEmail}
-								· email: {event.subjectEmail}
-							{/if}
-							{#if event.details}
-								· {event.details}
-							{/if}
-						</span>
-					</div>
-				{/each}
-			</Card.Content>
-		</Card.Root>
+					{/each}
+				</Card.Content>
+			</div>
+		</details>
 	{/if}
 </section>

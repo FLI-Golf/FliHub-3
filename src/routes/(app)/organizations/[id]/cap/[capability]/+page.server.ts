@@ -703,6 +703,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 						id: ev.id,
 						name: String(ev.name ?? ''),
 						seasonId: String(ev.season ?? '') || null,
+						isPast: ev.status === 'archived' || seasonRows.some((season) => season.id === ev.season && ['completed', 'archived'].includes(String(season.status))),
 						seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
 						tournamentPurseCents: tournamentPurses.get(ev.id) ?? null,
 						roundCount,
@@ -1106,6 +1107,36 @@ export const actions: Actions = {
 				teeScheduleEvent: eventId,
 				message: pbErrorMessage(error)
 			});
+		}
+	},
+
+	seedDemoSeasonEvents: async ({ locals, request, params }) => {
+		const denied = (status: number, message: string) =>
+			fail(status, { demoSeasonEventsError: message });
+		if (!locals.pb || !locals.user) return denied(503, 'PocketBase is not configured.');
+		if (params.capability !== 'events' || !ID_PATTERN.test(params.id))
+			return denied(400, 'Use the Events setup page.');
+		const form = await request.formData();
+		const source = String(form.get('sourceSeason') ?? '');
+		const destination = String(form.get('destinationSeason') ?? '');
+		try {
+			const result = await locals.pb.send<{
+				created: number;
+				skipped: number;
+				scheduledRounds: number;
+				copiedTeams: number;
+			}>(`/api/flihub/demo/organizations/${params.id}/season-events`, {
+				method: 'POST',
+				body: {
+					source,
+					destination,
+					teeTime: String(form.get('demoTeeTime') ?? ''),
+					secondTeeTime: String(form.get('demoSecondTeeTime') ?? '')
+				}
+			});
+			return { demoSeasonEvents: result };
+		} catch (err) {
+			return denied(pbErrorStatus(err), pbErrorMessage(err));
 		}
 	},
 
@@ -1604,7 +1635,8 @@ export const actions: Actions = {
 				setupLeagueSeason: true,
 				setupLeagueSeasonCreated: true,
 				leagueName: created.leagueName,
-				seasonName: created.seasonName
+				seasonName: created.seasonName,
+				seasonId: created.seasonId
 			};
 		} catch (err) {
 			return denied(pbErrorStatus(err), pbErrorMessage(err));

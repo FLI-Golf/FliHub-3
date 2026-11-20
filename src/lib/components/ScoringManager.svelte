@@ -15,6 +15,7 @@
 		seasonName: string | null;
 		seasonId: string | null;
 		tournamentPurseCents: number | null;
+		isPast: boolean;
 		roundCount: number;
 		groupCount: number;
 		submittedCount: number;
@@ -44,6 +45,7 @@
 	}
 
 	interface DemoScoringResult {
+		skipped?: boolean;
 		id: string;
 		message: string;
 		ok: boolean;
@@ -66,6 +68,11 @@
 				})
 			: null
 	);
+
+	let scoringView = $state<'current' | 'past'>('current');
+	const currentEvents = $derived(events.filter((event) => !event.isPast));
+	const pastEvents = $derived(events.filter((event) => event.isPast));
+	const visibleEvents = $derived(scoringView === 'current' ? currentEvents : pastEvents);
 
 	let demoSeason = $state('');
 	let demoPanelOpen = $state(false);
@@ -94,6 +101,16 @@
 		try {
 			for (const event of selected) {
 				progress.currentEvent = event.name;
+				if (operation === 'undo' && event.resultStatus) {
+					results.push({
+						id: event.id,
+						ok: true,
+						skipped: true,
+						message: 'Skipped · official result exists'
+					});
+					batchResults = [...results];
+					continue;
+				}
 				formData.set('event', event.id);
 				const response = await fetch(action, {
 					method: 'POST',
@@ -383,9 +400,9 @@
 							{@const result = demoResults.get(event.id)}
 							{@const resultsUrl = resolve('/(app)/organizations/[id]/events/[event]/results', { id: organizationId, event: event.id })}
 							{@const expectedCards = event.roundCount * event.groupCount}
-							<li class="grid gap-1 rounded-md border bg-white p-3 text-sm">
+							<li class="grid min-w-0 gap-2 rounded-md border bg-white p-3 text-sm">
 								<input type="hidden" name="event" value={event.id} />
-								<a class="font-semibold text-blue-800 underline" href={resolve('/(app)/organizations/[id]/events/[event]/score', { id: organizationId, event: event.id })}>{event.name}</a>
+								<a class="break-words font-semibold text-blue-800 underline" href={resolve('/(app)/organizations/[id]/events/[event]/score', { id: organizationId, event: event.id })}>{event.name}</a>
 								<span>{event.submittedCount}/{expectedCards} scorecards submitted</span>
 								<div class="mt-1 flex flex-wrap items-center gap-2">
 									<Button href={resultsUrl} variant="outline" size="sm">Review results</Button>
@@ -424,7 +441,7 @@
 								{#if resultActionError?.id === event.id}
 									<p role="alert" class="text-red-800">{resultActionError.message}</p>
 								{/if}
-								{#if result}<span class={result.ok ? 'text-green-800' : 'text-red-800'}>{result.message}</span>{/if}
+								{#if result}<span class={result.skipped ? 'text-muted-foreground' : result.ok ? 'text-green-800' : 'text-red-800'}>{result.message}</span>{/if}
 							</li>
 						{/each}
 					</ul>
@@ -435,6 +452,7 @@
 					</div>
 					{#if invitationForm?.demoScoringError}<p role="alert" class="text-sm text-red-800">{invitationForm.demoScoringError}</p>{/if}
 					{#if progress}
+						{@const skipped = batchResults?.filter((result) => result.skipped).length ?? 0}
 						{@const finished = batchResults?.length ?? 0}
 						<div class="space-y-2 rounded-lg border border-amber-300 bg-white p-3 text-sm">
 							<label for="demo-scoring-progress" class="font-semibold">{progress.label}</label>
@@ -446,7 +464,11 @@
 								{:else if demoPending}
 									Refreshing scorecard counts…
 								{:else if finished === progress.total}
-									{batchResults?.filter((result) => !result.ok).length ?? 0} need attention.
+									{#if skipped === finished && skipped > 0}
+										{skipped} skipped · 0 changed.
+									{:else}
+										{skipped} skipped · {batchResults?.filter((result) => !result.ok).length ?? 0} need attention.
+									{/if}
 								{/if}
 							</p>
 						</div>
@@ -471,17 +493,27 @@
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-2">
-			{#if events.length === 0}
+			<div class="flex flex-wrap gap-2" role="group" aria-label="Scoring event view">
+				<Button type="button" size="sm" variant={scoringView === 'current' ? 'default' : 'outline'}
+					aria-pressed={scoringView === 'current'} onclick={() => (scoringView = 'current')}>
+					Current &amp; upcoming ({currentEvents.length})
+				</Button>
+				<Button type="button" size="sm" variant={scoringView === 'past' ? 'default' : 'outline'}
+					aria-pressed={scoringView === 'past'} onclick={() => (scoringView = 'past')}>
+					Past events ({pastEvents.length})
+				</Button>
+			</div>
+			{#if visibleEvents.length === 0}
 				<p class="text-sm text-muted-foreground">
-					No event is ready for scoring yet — an event needs at least one round (with a course) and
-					one group, set up on the Events page.
+					{scoringView === 'current' ? 'No current or upcoming events are ready for scoring.' : 'No past events are available.'}
 				</p>
 			{/if}
-			{#each events as event (event.id)}
-				<div class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 even:bg-slate-300">
-					<div class="flex flex-col">
-						<span class="flex items-center gap-2 font-medium">
-							{event.name}
+			{#each visibleEvents as event (event.id)}
+				<div class="grid min-w-0 gap-3 rounded-md border bg-white p-3 even:bg-slate-50">
+					<div class="grid min-w-0 gap-2">
+						<span class="grid min-w-0 gap-1">
+							<span class="break-words font-medium">{event.name}</span>
+							<span class="flex flex-wrap items-center gap-2">
 							{#if event.seasonName}
 								<Badge variant="outline">{event.seasonName}</Badge>
 							{/if}
@@ -493,7 +525,8 @@
 								</Badge>
 							{/if}
 						</span>
-						<span class="text-sm text-muted-foreground">
+							</span>
+						<span class="text-sm leading-relaxed text-muted-foreground">
 							{event.roundCount} round{event.roundCount === 1 ? '' : 's'} ·
 							{event.groupCount} group{event.groupCount === 1 ? '' : 's'} ·
 							{event.submittedCount}/{event.scorecardCount || event.roundCount * event.groupCount}
@@ -527,9 +560,62 @@
 							Official results
 						</Button>
 					</div>
+					{#if (myRole === 'owner' || myRole === 'admin') && event.resultStatus === 'published' && event.resultId}
+						<details>
+							<summary class="w-fit cursor-pointer rounded-md border px-3 py-2 text-sm font-medium">
+								Reopen for correction
+							</summary>
+							<form
+								method="POST"
+								action={resolve('/(app)/organizations/[id]/events/[event]/results', {
+									id: organizationId,
+									event: event.id
+								}) + '?/reopenResult'}
+								class="mt-2 grid gap-2"
+								use:enhance={({ cancel }) => {
+									if (scoringBusy) {
+										cancel();
+										return;
+									}
+									pendingResultEvent = event.id;
+									resultActionError = null;
+									return async ({ result }) => {
+										try {
+											if (result.type === 'success') {
+												await invalidateAll();
+											} else {
+												resultActionError = {
+													id: event.id,
+													message: result.type === 'failure' && typeof result.data?.message === 'string'
+														? result.data.message
+														: 'Check Official results for the current status.'
+												};
+											}
+										} catch {
+											resultActionError = { id: event.id, message: 'Refresh to check the current result status.' };
+										} finally {
+											pendingResultEvent = '';
+										}
+									};
+								}}
+							>
+								<input type="hidden" name="result" value={event.resultId} />
+								<label class="grid gap-1 text-sm">
+									Correction reason
+									<textarea name="reason" rows="2" required class="w-full rounded-md border px-3 py-2"></textarea>
+								</label>
+								<Button type="submit" size="sm" variant="outline" class="w-fit" disabled={scoringBusy}>
+									{pendingResultEvent === event.id ? 'Reopening…' : 'Confirm reopen'}
+								</Button>
+							</form>
+						</details>
+					{/if}
+					{#if resultActionError?.id === event.id}
+						<p role="alert" class="text-sm text-red-800">{resultActionError.message}</p>
+					{/if}
 				</div>
 			{/each}
-			{#if !canScore && events.length > 0}
+			{#if !canScore && visibleEvents.length > 0}
 				<p class="text-sm text-muted-foreground">
 					Your role ({myRole}) can view scoring but not enter scores.
 				</p>

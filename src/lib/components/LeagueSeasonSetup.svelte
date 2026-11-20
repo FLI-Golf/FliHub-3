@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { Check, ChevronRight } from 'lucide-svelte';
 	import { parseSeasonPurse } from '$lib/season-purse';
 
 	interface League {
@@ -17,20 +18,39 @@
 		endsOn: string;
 		purseAmount: string;
 	}
-	let { leagues, form }: { leagues: League[]; form: unknown } = $props();
+	let {
+		leagues,
+		form,
+		action = '?/setupLeagueSeason',
+		onSaved
+	}: {
+		leagues: League[];
+		form: unknown;
+		action?: string;
+		onSaved?: (season: { id: string; name: string; leagueName: string }) => void;
+	} = $props();
+	let inlineFeedback = $state<Record<string, unknown> | null>(null);
 	const feedback = $derived(
-		form && typeof form === 'object' && 'setupLeagueSeason' in form
+		inlineFeedback ?? (form && typeof form === 'object' && 'setupLeagueSeason' in form
 			? (form as Record<string, unknown>)
-			: null
+			: null)
 	);
 	const initial = untrack(() => {
 		const input = feedback?.input;
 		return input && typeof input === 'object' ? (input as InputValues) : null;
 	});
+	function leagueDefaults(available: League[]) {
+		const active = available.filter((league) => league.status === 'active');
+		return {
+			mode: active.length ? 'existing' : 'new',
+			leagueId: active.length === 1 ? active[0].id : ''
+		};
+	}
+	const defaults = untrack(() => leagueDefaults(leagues));
 	let step = $state(initial ? 2 : 0);
-	let mode = $state(initial?.mode ?? 'new');
+	let mode = $state(initial?.mode ?? defaults.mode);
 	let leagueName = $state(initial?.leagueName ?? '');
-	let leagueId = $state(initial?.leagueId ?? '');
+	let leagueId = $state(initial?.leagueId ?? defaults.leagueId);
 	let seasonName = $state(initial?.seasonName ?? '');
 	let startsOn = $state(initial?.startsOn ?? '');
 	let endsOn = $state(initial?.endsOn ?? '');
@@ -77,9 +97,10 @@
 	}
 	function clearAfterSuccess() {
 		step = 0;
-		mode = 'new';
+		const next = leagueDefaults(leagues);
+		mode = next.mode;
 		leagueName = '';
-		leagueId = '';
+		leagueId = next.leagueId;
 		seasonName = '';
 		startsOn = '';
 		endsOn = '';
@@ -119,13 +140,30 @@
 		>
 			{String(feedback.message)}
 		</p>{/if}
-	<ol class="grid list-none grid-cols-3 gap-2 p-0" aria-label="Setup progress">
-		{#each steps as label, index (label)}<li
+	<ol class="grid list-none grid-cols-3 gap-1 p-0 sm:gap-2" aria-label="Setup progress">
+		{#each steps as label, index (label)}
+			<li
 				aria-current={step === index ? 'step' : undefined}
-				class={`rounded-md border px-3 py-2 text-sm ${step === index ? 'border-blue-600 bg-blue-100 font-semibold text-blue-950' : 'bg-white'}`}
+				class="flex min-w-0 items-center justify-between gap-1 rounded-lg border px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm {step === index
+					? 'border-blue-700 bg-linear-to-r from-blue-800 to-indigo-700 text-white shadow-sm'
+					: step > index
+						? 'border-blue-200 bg-blue-100 text-blue-950'
+						: 'border-slate-200 bg-slate-50 text-slate-600'}"
 			>
-				{index + 1}. {label}
-			</li>{/each}
+				<span class="inline-flex items-center gap-1">
+					{#if step > index}
+						<Check class="size-3.5 shrink-0" aria-hidden="true" />
+						<span class="sr-only">Completed:</span>
+					{:else}
+						<span class="tabular-nums">{index + 1}.</span>
+					{/if}
+					{label}
+				</span>
+				{#if index < steps.length - 1}
+					<ChevronRight class="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
+				{/if}
+			</li>
+		{/each}
 	</ol>
 	<h3 bind:this={heading} tabindex="-1" class="text-lg font-semibold focus:outline-none">
 		{step === 0 ? 'Which league?' : step === 1 ? 'Set up the season' : 'Review before saving'}
@@ -139,62 +177,54 @@
 			{validation}
 		</p>{/if}
 	{#if step === 0}
-		<fieldset class="grid gap-3 sm:grid-cols-2">
-			<legend class="sr-only">New or existing league</legend>
-			<label
-				class={`flex cursor-pointer items-start gap-3 rounded-lg border bg-blue-50 p-4 ${mode === 'new' ? 'ring-2 ring-blue-600' : ''}`}
-				><input
-					class="mt-1"
-					type="radio"
-					name="league-setup-mode"
-					value="new"
-					bind:group={mode}
-				/><span
-					><strong class="block">Create a league and its first season</strong><span class="text-sm"
-						>Both will be saved together after review.</span
-					></span
-				></label
-			>
-			<label
-				class={`flex cursor-pointer items-start gap-3 rounded-lg border bg-violet-50 p-4 ${mode === 'existing' ? 'ring-2 ring-blue-600' : ''}`}
-				><input
-					class="mt-1"
-					type="radio"
-					name="league-setup-mode"
-					value="existing"
-					bind:group={mode}
-				/><span
-					><strong class="block">Add a season to an existing league</strong><span class="text-sm"
-						>Keeps the league and adds one new season.</span
-					></span
-				></label
-			>
-		</fieldset>
+		{#if activeLeagues.length > 0}
+			<fieldset class="grid gap-3">
+				<legend class="mb-2 text-sm font-medium">New or existing league</legend>
+				<div class="grid gap-3 rounded-lg border bg-violet-50 p-4 {mode === 'existing' ? 'ring-2 ring-blue-600' : ''}">
+					<label class="flex cursor-pointer items-start gap-3">
+						<input class="mt-1" type="radio" name="league-setup-mode" value="existing" bind:group={mode} />
+						<strong>Add a season to an existing league</strong>
+					</label>
+					{#if mode === 'existing'}
+						<label for="setup-existing-league" class="text-sm font-medium">Existing league</label>
+						<select
+							id="setup-existing-league"
+							bind:value={leagueId}
+							class="min-h-11 w-full rounded-md border bg-background px-3 py-2"
+						>
+							<option value="">Select an active league</option>
+							{#each activeLeagues as league (league.id)}
+								<option value={league.id}>{league.name}</option>
+							{/each}
+						</select>
+					{/if}
+				</div>
+				<label class="flex cursor-pointer items-start gap-3 rounded-lg border bg-white p-4 {mode === 'new' ? 'ring-2 ring-blue-600' : ''}">
+					<input class="mt-1" type="radio" name="league-setup-mode" value="new" bind:group={mode} />
+					<span>
+						<strong class="block">Create a new league and its first season</strong>
+						<span class="text-sm">Both will be saved together after review.</span>
+					</span>
+				</label>
+			</fieldset>
+		{:else}
+			<div>
+				<p class="font-medium">Create a league and its first season</p>
+				<p class="text-sm text-muted-foreground">Both will be saved together after review.</p>
+			</div>
+		{/if}
 		{#if mode === 'new'}
 			<label for="setup-league-name" class="font-medium">League name</label>
 			<input
 				id="setup-league-name"
 				bind:value={leagueName}
 				minlength="3"
-				aria-describedby="setup-league-name-help"
 				maxlength="120"
+				aria-describedby="setup-league-name-help"
 				class="min-h-11 w-full rounded-md border bg-background px-3 py-2"
 				placeholder="Coastal Disc Golf League"
 			/>
 			<p id="setup-league-name-help" class="text-sm text-muted-foreground">Use 3–120 characters.</p>
-		{:else}
-			<label for="setup-existing-league" class="font-medium">Existing league</label>
-			<select
-				id="setup-existing-league"
-				bind:value={leagueId}
-				class="min-h-11 w-full rounded-md border bg-background px-3 py-2"
-				><option value="">Select an active league</option
-				>{#each activeLeagues as league (league.id)}<option value={league.id}>{league.name}</option
-					>{/each}</select
-			>
-			{#if activeLeagues.length === 0}<p class="text-sm">
-					No active leagues yet. Choose Create a league and its first season.
-				</p>{/if}
 		{/if}
 	{:else if step === 1}
 		<p class="text-sm">
@@ -291,7 +321,7 @@
 		{:else}
 			<form
 				method="POST"
-				action="?/setupLeagueSeason"
+				{action}
 				use:enhance={({ cancel }) => {
 					if (pending) {
 						cancel();
@@ -300,7 +330,24 @@
 					pending = true;
 					return async ({ result, update }) => {
 						try {
-							await update({ reset: false });
+							if (onSaved) {
+										const payload = result.type === 'success' || result.type === 'failure'
+											? result.data : null;
+										if (result.type === 'success' && payload?.setupLeagueSeasonCreated &&
+											typeof payload.seasonId === 'string') {
+											onSaved({
+												id: payload.seasonId,
+												name: String(payload.seasonName),
+												leagueName: String(payload.leagueName)
+											});
+										} else {
+											inlineFeedback = {
+												message: payload?.message ?? 'Could not confirm the season was saved.'
+											};
+										}
+										return;
+									}
+									await update({ reset: false });
 							if (result.type === 'success' && result.data?.setupLeagueSeasonCreated) {
 								clearAfterSuccess();
 								await tick();

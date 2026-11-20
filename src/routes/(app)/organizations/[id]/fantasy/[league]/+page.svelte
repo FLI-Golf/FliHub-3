@@ -29,7 +29,12 @@
 		role === 'owner' ? 'commissioner' : role === 'manager' ? 'participant' : role;
 
 	const nextStep = $derived.by(() => {
-		if (lobby.seatsFilled) return 'All seats approved. Drafts are open.';
+		if (lobby.seatsFilled) {
+			if (!lobby.isOwner) return 'All seats approved.';
+			return lobby.events.length > 0
+				? 'All seats approved. Drafts are open.'
+				: 'All seats approved. No events are open for drafting yet.';
+		}
 		if (!lobby.isOwner) {
 			return `Waiting on the commissioner. ${openSeats} ${openSeats === 1 ? 'seat is' : 'seats are'} still open.`;
 		}
@@ -198,7 +203,13 @@
 						<Label for="inv-email">Fantasy participant email</Label>
 						<Input id="inv-email" name="email" type="email" required class="w-72" />
 					</div>
-					<Button type="submit" data-testid="invite-manager">Invite</Button>
+					<Button
+						type="submit"
+						data-testid="invite-manager"
+						class="bg-green-700 text-white hover:bg-green-800"
+					>
+						Invite
+					</Button>
 				</form>
 			</Card.Content>
 		</Card.Root>
@@ -215,7 +226,25 @@
 		</Card.Header>
 		<Card.Content class="flex flex-col gap-3">
 			{#if lobby.drafts.length === 0}
-				<p class="text-sm text-muted-foreground">No drafts yet.</p>
+				<div class="flex flex-wrap items-center gap-2">
+					<p class="text-sm text-muted-foreground">No drafts yet.</p>
+					{#if lobby.isOwner}
+						{#if lobby.events.length > 0}
+							<Button href="#new-event-draft" size="sm" variant="outline">+ Add draft</Button>
+						{:else}
+							<Button
+								href={resolve('/(app)/organizations/[id]/cap/[capability]', {
+									id: data.organizationId,
+									capability: 'events'
+								})}
+								size="sm"
+								class="bg-green-700 text-white hover:bg-green-800"
+							>
+								+ Set up an event
+							</Button>
+						{/if}
+					{/if}
+				</div>
 			{/if}
 			{#each lobby.drafts as draft (draft.id)}
 				<div
@@ -268,9 +297,10 @@
 					{/if}
 				</div>
 			{/each}
-			{#if lobby.isOwner}
+			{#if lobby.isOwner && lobby.events.length > 0}
 				<form
 					method="POST"
+					id="new-event-draft"
 					action="?/createDraft"
 					use:enhance
 					class="flex flex-wrap items-end gap-3 border-t pt-3"

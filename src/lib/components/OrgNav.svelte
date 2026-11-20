@@ -50,10 +50,10 @@
 			><Users aria-hidden="true" class="mt-0.5 size-4 shrink-0" /><span
 				class="min-w-0 leading-snug font-semibold break-words">Overview &amp; members</span
 			>
-			<NavigationCountBadges useYellow items={counts.overview?.filter((item) => !item.shortLabel)} /></span
+			<NavigationCountBadges items={counts.overview?.filter((item) => !item.shortLabel)} /></span
 		>
 		<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6"
-			><NavigationCountBadges useYellow items={counts.overview?.filter((item) => item.shortLabel)} /></span
+			><NavigationCountBadges items={counts.overview?.filter((item) => item.shortLabel)} /></span
 		>
 		<span class="sr-only">Organization and membership</span>
 	</a>
@@ -76,24 +76,24 @@
 				><Icon aria-hidden="true" class="mt-0.5 size-4 shrink-0" /><span
 					class="min-w-0 leading-snug font-semibold break-words">{capability.label}</span
 				>
-			<NavigationCountBadges useYellow items={capabilityCounts.filter((item) => !item.shortLabel)} /></span
+			<NavigationCountBadges items={capabilityCounts.filter((item) => !item.shortLabel)} /></span
 			>
 			{#if capabilityCounts.some((item) => item.shortLabel)}
 				{#if capability.id === 'venues-courses'}
 					<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6">
-						<NavigationCountBadges useYellow
+						<NavigationCountBadges
 							items={capabilityCounts.filter((item) => item.shortLabel && item.group !== 'positions')}
 						/>
 					</span>
 					<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6">
 						<span class="sr-only">Basket positions or tee sets</span>
-						<NavigationCountBadges useYellow
+						<NavigationCountBadges
 							items={capabilityCounts.filter((item) => item.shortLabel && item.group === 'positions')}
 						/>
 					</span>
 				{:else}
 					<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6">
-						<NavigationCountBadges useYellow items={capabilityCounts.filter((item) => item.shortLabel)} />
+						<NavigationCountBadges items={capabilityCounts.filter((item) => item.shortLabel)} />
 					</span>
 				{/if}
 			{/if}
