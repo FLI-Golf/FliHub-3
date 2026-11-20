@@ -209,21 +209,21 @@
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<h2 id="current-focus-heading" class="text-lg font-bold">Current focus</h2>
 		<p class="text-xs text-blue-800">
-			Last reviewed <time datetime="2026-11-18">Nov 18, 2026</time>
+			Last reviewed <time datetime="2026-11-20">Nov 20, 2026</time>
 		</p>
 	</div>
 	<dl class="mt-3 grid gap-3 text-sm sm:grid-cols-3">
 		<div>
 			<dt class="font-semibold">Last completed</dt>
-			<dd>Reimbursements &amp; expenses merged in PR #43, following Sponsorships in PR #42.</dd>
+			<dd>Playoff tiebreakers and mid-round injury substitutions merged in PR #47.</dd>
 		</div>
 		<div>
 			<dt class="font-semibold">Working on</dt>
-			<dd>Adding this homepage checkpoint.</dd>
+			<dd>Verifying that published results credit the original fantasy pick for the holes played by both players.</dd>
 		</div>
 		<div>
 			<dt class="font-semibold">Next step</dt>
-			<dd>Verify the card on desktop and mobile.</dd>
+			<dd>Check the combined score and hole breakdown for a substituted pick in live fantasy standings.</dd>
 		</div>
 	</dl>
 </section>
