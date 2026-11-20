@@ -5,12 +5,21 @@ import { pbErrorMessage, pbErrorStatus } from '$lib/server/auth';
 
 const ID_PATTERN = /^[a-z0-9]{15}$/;
 
+interface PlayoffAttempt {
+	place: number;
+	winner: string | null;
+	bands?: string[][];
+	teams: { entry: string; nanometers: number; throws: { athlete: string; distance: string; unit: string }[] }[];
+}
+
 interface VersionTotals {
-	rounds: { round: string; number: number; name: string; positionLabel: string }[];
+	hasInjuryHandoff?: boolean;
+	rounds: { round: string; number: number; name: string; positionLabel: string; holes?: { hole: string }[] }[];
 	teams: { entry: string; teamName: string; roundTotals: Record<string, number>; total: number }[];
 	athletes: {
 		athlete: string;
 		athleteName: string;
+		roundScores?: Record<string, Record<string, number>>;
 		entry: string;
 		teamName: string;
 		roundTotals: Record<string, number>;
@@ -121,6 +130,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		versions: versionRows.map((v) => ({
 			version: Number(v.version),
 			totals: v.totals as VersionTotals,
+			playoffAttempts: (v.playoffAttempts ?? []) as PlayoffAttempt[],
 			reason: String(v.reason ?? ''),
 			approvedByName: memberName.get(String(v.approvedBy)) ?? String(v.approvedBy),
 			approvedAt: String(v.approvedAt ?? ''),
@@ -140,6 +150,32 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 };
 
 export const actions: Actions = {
+	recordPlayoff: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (!ID_PATTERN.test(params.id) || !ID_PATTERN.test(params.event)) return fail(404, { message: 'Event not found.' });
+		const form = await request.formData();
+		const entries = form.getAll('entry').map((entry, index) => ({
+			entry: String(entry),
+			throws: [0, 1].map((athleteIndex) => {
+				const key = `${index}-${athleteIndex}`;
+				return {
+					athlete: String(form.get(`athlete-${key}`) ?? ''),
+					distance: String(form.get(`distance-${key}`) ?? '').trim(),
+					unit: String(form.get(`unit-${key}`) ?? '')
+				};
+			})
+		}));
+		try {
+			await locals.pb.send(`/api/flihub/organizations/${params.id}/events/${params.event}/playoff`, {
+				method: 'POST',
+				body: { version: Number(form.get('version')), attemptCount: Number(form.get('attemptCount')), entries }
+			});
+			return { playoffSaved: true };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+	},
+
 	// Approval (first or re-approval). The hook validates completeness and
 	// snapshots totals; the rules restrict callers to Owners/Admins.
 	approveResult: async ({ locals, request, params }) => {

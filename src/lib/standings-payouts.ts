@@ -2,6 +2,8 @@ export interface PayoutEvent {
 	event: string;
 	eventName: string;
 	purseCents: number | null;
+	playoffWinner?: string | null;
+	playoffOrder?: string[] | null;
 	leagueId?: string;
 	leagueName?: string;
 	topWeight?: number;
@@ -9,7 +11,7 @@ export interface PayoutEvent {
 	perTournament?: boolean;
 	eventCurve?: { top: number; lower: number };
 	teams: { entry: string; total: number }[];
-	athletes: { athlete: string; entry: string }[];
+	athletes: { athlete: string; entry: string; holesPlayed?: number | null; eventHoles?: number | null }[];
 }
 
 export const minimumPerProCents = 800_000;
@@ -56,26 +58,69 @@ export function tournamentAwards(event: PayoutEvent, topWeight: number, lowerWei
 	const teams = [...event.teams].sort((a, b) => a.total - b.total);
 	const shares =
 		event.purseCents === null ? null : placeShares(event.purseCents, teams.length, topWeight, lowerWeight);
-	const lineups = new Map<string, Set<string>>();
+	const lineups = new Map<string, PayoutEvent['athletes']>();
 	for (const athlete of event.athletes) {
-		const lineup = lineups.get(athlete.entry) ?? new Set<string>();
-		lineup.add(athlete.athlete);
+		const lineup = lineups.get(athlete.entry) ?? [];
+		lineup.push(athlete);
 		lineups.set(athlete.entry, lineup);
 	}
-	if (!shares || teams.some((team) => lineups.get(team.entry)?.size !== 2)) return null;
-	const awards: { entry: string; athletes: string[]; perPro: number; pending: boolean }[] = [];
+	if (!shares || teams.some((team) => {
+		const lineup = lineups.get(team.entry) ?? [];
+		if (new Set(lineup.map((row) => row.athlete)).size !== lineup.length) return true;
+		if (lineup.every((row) => row.eventHoles == null && row.holesPlayed == null)) return lineup.length !== 2;
+		const holes = lineup[0]?.eventHoles ?? 0;
+		return !Number.isSafeInteger(holes) || holes < 1 ||
+			lineup.some((row) => row.eventHoles !== holes || !Number.isSafeInteger(row.holesPlayed) ||
+				(row.holesPlayed ?? 0) < 1 || (row.holesPlayed ?? 0) > holes) ||
+			lineup.reduce((n, row) => n + (row.holesPlayed ?? 0), 0) !== 2 * holes ||
+			(lineup.length !== 2 && !(lineup.length === 3 &&
+				lineup.filter((row) => row.holesPlayed === holes).length === 1));
+	})) return null;
+	const awards: { entry: string; athletes: string[]; perPro: number; pending: boolean; athleteCents: Record<string, number> }[] = [];
+	function addAward(entry: string, perPro: number, pending: boolean) {
+		const lineup = lineups.get(entry) ?? [];
+		const athleteCents: Record<string, number> = {};
+		let splitAllocated = 0;
+		const split = lineup.filter((row) => row.eventHoles != null && row.holesPlayed !== row.eventHoles);
+		for (const row of lineup) {
+			if (row.eventHoles == null || row.holesPlayed === row.eventHoles) athleteCents[row.athlete] = perPro;
+			else {
+				const cents = splitAllocated === 0 && row === split[0]
+					? Number((BigInt(perPro) * BigInt(row.holesPlayed!) + BigInt(row.eventHoles!) / 2n) / BigInt(row.eventHoles!))
+					: perPro - splitAllocated;
+				athleteCents[row.athlete] = cents;
+				splitAllocated += cents;
+			}
+		}
+		awards.push({ entry, athletes: lineup.map((row) => row.athlete), perPro, pending, athleteCents });
+	}
 	let unallocated = event.purseCents! % 2;
 	let held = 0;
 	for (let start = 0; start < teams.length;) {
 		let end = start + 1;
 		while (end < teams.length && teams[end].total === teams[start].total) end++;
 		const pot = shares.slice(start, end).reduce((sum, cents) => sum + cents, 0);
-		const pending = start === 0 && end > 1;
+		const tied = teams.slice(start, end);
+		const playoff = start <= 1 && tied.length > 1;
+		const entries = tied.map((team) => team.entry);
+		const legacyWinner = event.playoffWinner;
+		const order = event.playoffOrder ?? (entries.length === 2 && legacyWinner && entries.includes(legacyWinner)
+			? [legacyWinner, ...entries.filter((entry) => entry !== legacyWinner)]
+			: []);
+		if (playoff && order.length === tied.length && new Set(order).size === tied.length &&
+			order.every((entry) => entries.includes(entry))) {
+			for (const [offset, entry] of order.entries()) {
+				addAward(entry, shares[start + offset], false);
+			}
+			start = end;
+			continue;
+		}
+		const pending = playoff;
 		const perPro = pending ? 0 : Math.floor(pot / (end - start));
 		if (pending) held += pot * 2;
 		else unallocated += (pot - perPro * (end - start)) * 2;
 		for (const team of teams.slice(start, end)) {
-			awards.push({ entry: team.entry, athletes: [...lineups.get(team.entry)!], perPro, pending });
+			addAward(team.entry, perPro, pending);
 		}
 		start = end;
 	}

@@ -59,6 +59,8 @@ async function loadDemoEvent(
 			400,
 			'This event already has an official result. Scoring test tools are unavailable; use the existing correction workflow.'
 		);
+	if (groups.some((group) => Boolean(group.injuryHandoff)))
+		throw new DemoFillError(400, 'An injury handoff requires manual scoring during draft testing.');
 	if (!rounds.length || !groups.length)
 		throw new DemoFillError(400, 'Set up active rounds and groups first.');
 	// Validate all required layouts and lineups before creating any scorecards.

@@ -25,10 +25,35 @@
 	const reviewTeams = $derived(
 		(!data.result || data.result.status === 'correcting') ? data.previewTeams : pendingVersion?.totals.teams ?? officialVersion?.totals.teams ?? []
 	);
-	const lowestTeamTotal = $derived(reviewTeams.reduce((lowest, team) => Math.min(lowest, team.total), Infinity));
-	const firstPlaceTeams = $derived(
-		reviewTeams.filter((team) => team.total === lowestTeamTotal)
-	);
+	const playoffTeams = $derived.by(() => {
+		const teams = [...reviewTeams].sort((a, b) => a.total - b.total);
+		if (teams.length < 2) return [];
+		const start = teams[0].total === teams[1].total ? 0 : 1;
+		return teams.slice(start).filter((team) => team.total === teams[start].total);
+	});
+	const playoffPlace = $derived(playoffTeams[0]?.total === Math.min(...reviewTeams.map((team) => team.total)) ? 1 : 2);
+	const attempts = $derived(data.result?.status === 'published' ? (officialVersion?.playoffAttempts ?? []) : []);
+	const playoffWinner = $derived(attempts.find((attempt) => attempt.winner)?.winner);
+	const latestBands = $derived(attempts[attempts.length - 1]?.bands);
+	const pendingEntries = $derived(latestBands?.filter((band) => band.length > 1).flat());
+	const finalOrder = $derived.by(() => {
+		if (!playoffWinner) return [];
+		return latestBands?.flat() ?? [
+			playoffWinner, ...playoffTeams.filter((team) => team.entry !== playoffWinner).map((team) => team.entry)
+		];
+	});
+	const playoffAthletes = $derived.by(() => {
+		const totals = officialVersion?.totals;
+		if (!totals?.hasInjuryHandoff) return totals?.athletes ?? [];
+		const round = totals.rounds[totals.rounds.length - 1];
+		const hole = round?.holes?.[round.holes.length - 1]?.hole;
+		return totals.athletes.filter((row) => round && hole && row.roundScores?.[round.round]?.[hole] !== undefined);
+	});
+	const playoffLineups = $derived(playoffTeams.filter((team) => !pendingEntries || pendingEntries.includes(team.entry)).map((team) => ({
+		...team,
+		athletes: playoffAthletes.filter((athlete) => athlete.entry === team.entry)
+	})));
+
 	const reviewTies = $derived(tiedTotals(reviewTeams));
 	const officialVersionTies = $derived(tiedTotals(officialVersion?.totals.teams ?? []));
 	const pendingVersionTies = $derived(tiedTotals(pendingVersion?.totals.teams ?? []));
@@ -112,20 +137,72 @@
 		{/if}
 	</div>
 
-	{#if firstPlaceTeams.length > 1}
-		<div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-			<p class="flex items-center gap-2 font-bold">
+	{#if playoffTeams.length > 1}
+		<section class="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" aria-label="Event playoff">
+			<h2 class="flex items-center gap-2 font-bold">
 				<Flag class="size-4" aria-hidden="true" />
-				Tie for first · {firstPlaceTeams.length} teams at {firstPlaceTeams[0].total} strokes
-			</p>
-			<p class="mt-1">{firstPlaceTeams.map((team) => team.teamName).join(' · ')}</p>
-			<p class="mt-1">Playoff pending.</p>
-		</div>
+				Tie for {playoffPlace === 1 ? 'first' : 'second'} · {playoffTeams[0].total} strokes
+			</h2>
+			<p>{playoffTeams.map((team) => team.teamName).join(' · ')}</p>
+			{#if playoffWinner}
+				<p class="font-semibold">Shootout winner: {playoffTeams.find((team) => team.entry === playoffWinner)?.teamName}.</p>
+				<ul class="grid gap-1" aria-label="Resolved playoff positions">
+					{#each finalOrder as entry, index (entry)}
+						<li>Place {playoffPlace + index} · {playoffTeams.find((team) => team.entry === entry)?.teamName}</li>
+					{/each}
+				</ul>
+			{:else}
+				<p>Playoff pending.</p>
+			{/if}
+			{#each attempts as attempt, index (index)}
+				<p>
+					Attempt {index + 1} · {attempt.winner ? 'Decisive' : 'Tie remains'} ·
+					{attempt.teams.map((team) =>
+						`${playoffTeams.find((row) => row.entry === team.entry)?.teamName}: ${(team.nanometers / 1e9).toFixed(6)} m`
+					).join(' · ')}
+				</p>
+			{/each}
+			{#if data.canManage && !playoffWinner}
+				{#if data.result?.status !== 'published' || !officialVersion}
+					<p>Publish the regulation result before recording the shootout.</p>
+				{:else if playoffLineups.some((team) => team.athletes.length !== 2)}
+					<p>Each tied team needs exactly two athletes in the published lineup.</p>
+				{:else}
+					<form method="POST" action="?/recordPlayoff" class="grid gap-4">
+						<input type="hidden" name="version" value={officialVersion.version} />
+						<input type="hidden" name="attemptCount" value={attempts.length} />
+						{#each playoffLineups as team, index (team.entry)}
+							<fieldset class="grid gap-2 rounded-md border border-amber-300 p-3">
+								<legend class="px-1 font-semibold">{team.teamName}</legend>
+								<input type="hidden" name="entry" value={team.entry} />
+								{#each team.athletes as athlete, athleteIndex (athlete.athlete)}
+									{@const key = `${index}-${athleteIndex}`}
+									<input type="hidden" name={`athlete-${key}`} value={athlete.athlete} />
+									<div class="flex flex-wrap gap-2">
+										<label class="grid flex-1 gap-1">
+											{athlete.athleteName} · distance
+											<input type="number" name={`distance-${key}`} min="0" max="9999.999" step="0.001" required class="min-h-10 rounded-md border bg-white px-2" />
+										</label>
+										<label class="grid gap-1">
+											Unit
+											<select name={`unit-${key}`} class="min-h-10 rounded-md border bg-white px-2">
+												<option value="feet">Feet</option><option value="meters">Meters</option><option value="yards">Yards</option>
+											</select>
+										</label>
+									</div>
+								{/each}
+							</fieldset>
+						{/each}
+						<Button type="submit" class="w-fit bg-green-700 text-white hover:bg-green-800">Record shootout</Button>
+					</form>
+				{/if}
+			{/if}
+		</section>
 	{/if}
 
-	{#if data.previewTeams.some((team) => reviewTies.has(team.total) && !firstPlaceTeams.includes(team))}
+	{#if data.previewTeams.some((team) => reviewTies.has(team.total) && !playoffTeams.includes(team))}
 		<ul class="grid gap-1 text-sm">
-			{#each data.previewTeams.filter((team) => reviewTies.has(team.total) && !firstPlaceTeams.includes(team)) as team (team.entry)}
+			{#each data.previewTeams.filter((team) => reviewTies.has(team.total) && !playoffTeams.includes(team)) as team (team.entry)}
 				<li>{team.teamName} · {team.total} strokes <Badge variant="outline" class={amberBadge}>Tied</Badge></li>
 			{/each}
 		</ul>
