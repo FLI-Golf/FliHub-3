@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { Sponsor, SponsorshipAgreement, SponsorshipFundingEntry } from '$lib/sponsorships/model';
 
+	import { summarizeAgreementFunding } from '$lib/sponsorships/funding-summary';
 	import type { SponsorshipFundingCondition } from '$lib/sponsorships/funding-threshold';
 
 	let { sponsor, agreement, entries, form, condition, asOf, canRelease }: {
@@ -28,23 +29,11 @@
 		fundingValues?: Record<string, string>;
 	} | null);
 	const result = $derived(feedback?.fundingAgreement === agreement.id ? feedback : null);
-	const scheduled = $derived(entries.filter((entry) => entry.kind === 'installment')
-		.sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.id.localeCompare(b.id)));
-	const payments = $derived(entries.filter((entry) => entry.kind === 'payment'));
-	const sum = (rows: SponsorshipFundingEntry[]) => rows.reduce((amount, entry) => amount + entry.amountCents, 0);
-	const received = $derived(sum(payments.filter((payment) => !payment.reversal)));
-	const overdue = $derived.by(() => {
-		const ids = new Set<string>();
-		if (!condition?.releasedAt) return ids;
-		let available = received;
-		for (const installment of scheduled) {
-			if (installment.entryDate >= asOf) break;
-			available -= installment.amountCents;
-			if (available < 0) ids.add(installment.id);
-		}
-		return ids;
-	});
-	const unscheduled = $derived(agreement.amountCents - sum(scheduled));
+	const balance = $derived(summarizeAgreementFunding(entries, condition, asOf));
+	const scheduled = $derived(balance.installments);
+	const payments = $derived(balance.payments);
+	const received = $derived(balance.received);
+	const unscheduled = $derived(agreement.amountCents - balance.scheduled);
 	const outstanding = $derived(Math.max(agreement.amountCents - received, 0));
 	const money = (cents: number) => new Intl.NumberFormat('en-US', {
 		style: 'currency', currency: agreement.currency
@@ -61,7 +50,7 @@
 
 <p class="text-sm"><strong>Sponsor</strong> · {sponsor.name}</p>
 <dl class="grid gap-2 rounded-lg border bg-blue-50 p-3 text-blue-950 sm:grid-cols-2 dark:bg-blue-950 dark:text-blue-100">
-	<div><dt>Scheduled</dt><dd class="font-semibold tabular-nums">{money(sum(scheduled))}</dd></div>
+	<div><dt>Scheduled</dt><dd class="font-semibold tabular-nums">{money(balance.scheduled)}</dd></div>
 	<div><dt>Unscheduled</dt><dd class="font-semibold tabular-nums">{money(unscheduled)}</dd></div>
 	<div><dt>Received</dt><dd class="font-semibold tabular-nums">{money(received)}</dd></div>
 	<div>
@@ -112,12 +101,13 @@
 			<ul class="mt-2 overflow-hidden rounded border">
 				{#each section.rows as entry (entry.id)}
 					{@const reversalError = result?.reversalPayment === entry.id ? result?.reversalError : null}
+					{@const due = balance.due.get(entry.id)}
 					<li class="grid gap-2 p-2 odd:bg-muted even:bg-background">
 						<div class="flex flex-wrap justify-between gap-2">
 							<span>{entry.entryDate}{entry.method ? ' · ' + (methods.find((method) => method.value === entry.method)?.label ?? entry.method) : ''}{entry.reference ? ' · ' + entry.reference : ''}</span>
 							<div class="flex items-center gap-2">
-								{#if overdue.has(entry.id)}
-									<span class="rounded bg-amber-100 px-2 py-0.5 font-medium text-amber-950 dark:bg-amber-950 dark:text-amber-100">Overdue</span>
+								{#if due}
+									<span class="rounded bg-amber-100 px-2 py-0.5 font-medium text-amber-950 dark:bg-amber-950 dark:text-amber-100">{due.status}{#if due.amount < entry.amountCents} · {money(due.amount)} unpaid{/if}</span>
 								{/if}
 								<strong class="tabular-nums">{money(entry.amountCents)}</strong>
 							</div>

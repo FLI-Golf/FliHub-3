@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		Banknote,
+		ChartNoAxesCombined,
 		CalendarCheck,
 		CalendarDays,
 		ClipboardList,
@@ -27,6 +28,8 @@
 
 	import { previewFundingThreshold, type SponsorshipFundingCondition as FundingCondition } from '$lib/sponsorships/funding-threshold';
 
+	import { summarizeSponsorshipFunding } from '$lib/sponsorships/funding-summary';
+
 	type SponsorFields = Omit<Sponsor, 'id' | 'archived'>;
 	interface SponsorForm {
 		message?: string;
@@ -52,6 +55,7 @@
 	} = $props();
 
 	const conditionsByAgreement = $derived(new Map(conditions.map((row) => [row.agreement, row])));
+	const fundingSummary = $derived(summarizeSponsorshipFunding(agreements, funding, conditionsByAgreement, asOf));
 	const result = $derived(form as SponsorForm | null);
 	const active = $derived(sponsors.filter((sponsor) => !sponsor.archived));
 	const archived = $derived(sponsors.filter((sponsor) => sponsor.archived));
@@ -378,6 +382,44 @@
 
 	{@render editor('create', empty)}
 </details>
+
+<section aria-labelledby="funding-summary" class="grid gap-3 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-800 dark:bg-blue-950/35">
+	<h2 id="funding-summary" class="flex items-center gap-2 text-lg font-semibold">
+		<ChartNoAxesCombined class="size-5 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+		Organization funding summary
+	</h2>
+	{#if fundingSummary.length}
+		<p class="text-sm text-muted-foreground">Due now covers installments due on {asOf} (UTC). Overdue covers earlier dates.</p>
+		<div class="overflow-x-auto rounded-lg border bg-background">
+			<table class="w-full text-sm" aria-labelledby="funding-summary">
+				<thead class="bg-muted text-left">
+					<tr>
+						<th scope="col" class="p-3">Currency</th>
+						<th scope="col" class="p-3 text-right">Signed commitments</th>
+						<th scope="col" class="p-3 text-right">Scheduled installments</th>
+						<th scope="col" class="p-3 text-right">Payments received</th>
+						<th scope="col" class="p-3 text-right">Outstanding balance</th>
+						<th scope="col" class="p-3 text-right">Due now</th>
+						<th scope="col" class="p-3 text-right">Overdue</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each fundingSummary as total (total.currency)}
+						{@const format = new Intl.NumberFormat('en-US', { style: 'currency', currency: total.currency })}
+						<tr class="border-t even:bg-muted/50">
+							<th scope="row" class="p-3 text-left font-semibold">{total.currency}</th>
+							{#each [total.committed, total.scheduled, total.received, total.outstanding, total.dueNow, total.overdue] as amount}
+								<td class="whitespace-nowrap p-3 text-right tabular-nums">{format.format(amount / 100)}</td>
+							{/each}
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	{:else}
+		<p class="text-sm text-muted-foreground">No signed sponsorship agreements yet.</p>
+	{/if}
+</section>
 
 <section aria-labelledby="active-sponsors" class="grid gap-3">
 	<h2 id="active-sponsors" class="text-lg font-semibold">Active sponsors</h2>
