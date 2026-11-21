@@ -8,25 +8,37 @@ Give each organization a way to see who is funding its activities, what the fund
 
 **Sponsorships** is an organization-level sales tracker for owners and admins. It stores sponsor contact details, sales stage, follow-up date, next action, and notes. The stages are Prospect, In discussion, Proposal sent, Signed, and Closed. A sponsor record can be archived and restored.
 
-A **Signed** stage describes the relationship with the sponsor. The current form has no agreement amount, payment history, or assignment to a hole, team, event, league, or season.
+Owners and admins can now add paid agreements from an existing sponsor, record the agreed amount and benefits, and link the agreement to the organization, a league, season, team, event, or a hole in a specific event round. The development seed and clear workflow was verified in Codespaces. Package quoting, installments, and funding thresholds are upcoming.
 
 ## Phase 1 — Paid sponsorships for FLI Golf
 
-**Goal.** Track a paid sponsorship from the signed agreement through the final payment.
+### 1A — Agreements and coverage
 
-1. **Add an agreement from the sponsor record.** Reuse the existing contact. Record the agreement title, agreed amount, currency, signing date, payment due date, and a short description of the benefits promised. A sponsor can have multiple agreements.
-2. **Choose what the agreement covers.** Support organization, league, season, team, event, and a hole at a specific event. Resolve the hole against the selected event layout. If the event plays the same physical hole more than once, allow the admin to specify the round or cover every applicable round. Show the scope in the agreement list.
-3. **Record payments as they arrive.** Start with manual entry for payments received outside FliHub. Capture amount, date, method, and reference. Preserve who recorded each payment and its correction history. Store monetary values in minor currency units and calculate received and outstanding amounts from the payment history.
-4. **Show funding progress.** On the sponsor page, show every agreement with its agreed, received, and outstanding amounts. Give owners and admins an organization view they can filter by sponsor, season, event, or payment status. Report totals per currency.
+Build on the existing sponsor record. A sponsor can have multiple agreements with independent terms. A title agreement for the full tour year can use one season-level record covering all 12 tournaments. Keep the contract start and end dates and the actual benefits agreed to. For hole placements, resolve the hole against the event layout and distinguish repeated holes by round.
 
-**Pilot example.** A company signs a $1,000 agreement for Hole 7 at one FLI Golf event and a separate $2,500 agreement for a team’s season. A $400 payment against the hole agreement leaves $600 outstanding there. The team agreement still shows $2,500 outstanding.
+### 1B — Sponsorship tiers and quotes
+
+1. **Configure packages.** Allow authorized staff to set up Title Sponsor and other packages across six tiers. Each package has a name, currency, and checklist of benefits. Price each benefit and let staff configure which items are required and which can be removed.
+2. **Build a quote from a package.** Start with the package benefits selected. Recalculate the total immediately when a salesperson removes or restores a removable benefit. Keep the sponsor, proposed coverage, selected benefits, prices, and quote total together in a saved draft.
+3. **Convert an accepted quote to an agreement.** Copy the final selected benefits and negotiated terms into the agreement. Store the agreed amount and currency in minor units and retain the exact terms if package defaults change later. Keep direct agreement entry for deals negotiated outside the quote workflow.
+
+**Demo example.** A Title Sponsor package starts at $625,000 with $500,000 for required tour naming rights, $75,000 for on-site activation, and $50,000 for digital promotion. Removing on-site activation reduces the quote to $550,000. These figures and the discussed $500,000–$1 million range are illustrative. The example is a test fixture, and the remaining packages need real names, prices, and benefits.
+
+### 1C — Installments, funding conditions, and receipts
+
+1. **Track the installment schedule.** Record each scheduled amount and due date. Reconcile the schedule to the agreed total and retain the actual receipts separately, including amount, date, method, reference, recorder, and correction history.
+2. **Support conditional commitments.** The title contract sample uses a 50% threshold of qualifying sponsor commitments against the tour's sponsorship target. Capture the target, condition, and cutoff date and track whether the condition is pending, met, or expired. Meeting it releases payment according to the agreement's schedule. Keep the example contract rule configurable by agreement and confirm the qualifying commitments and timing rules before automating it.
+3. **Show funding progress.** Display signed commitments, amounts due, receipts, and outstanding balances as distinct figures. Give owners and admins an organization view filterable by sponsor, season, event, or payment status. Report totals by currency and keep financial terms, payment schedules, and receipts within authorized views.
+
+**Pilot example.** A sponsor signs a $1,000 agreement for Hole 7 and a separate $2,500 team agreement. A $400 receipt against the hole agreement leaves $600 outstanding there and $2,500 outstanding on the team agreement.
 
 ### Phase 1 acceptance checks
 
-- One sponsor can have both agreements without duplicating its contact record. Existing sponsor records still work through the sales tracker.
-- The hole agreement appears under the correct event and hole. The team agreement appears under the intended season. Cross-organization targets and invalid hole selections are rejected.
-- Partial payments, final payments, and corrections reconcile to the agreement balance and organization totals. The sponsor’s sales stage alone never changes the received total.
-- Owners and admins can manage agreements and payments. Private contact details, terms, and payment records stay within the organization’s authorized views.
+- One sponsor can have several deals, including a season-level title deal and a specific event-hole placement. Existing sponsor and agreement records remain usable.
+- The quote checklist recalculates on removal and restoration, protects required items, and carries the accepted total and selected benefits into the agreement. Later package edits leave accepted terms intact.
+- A signed conditional commitment can count toward the configured threshold without creating a receipt. The threshold release and missed-deadline cases are covered by tests.
+- A partial payment updates the correct agreement and organization totals. Corrections are traceable and receipts are counted once.
+- Sponsor contact details and confidential financial terms are restricted to authorized roles. Guide access for sales staff through an explicit permission decision.
 
 ## Phase 2 — Donations, pledges, and other funding
 
@@ -51,5 +63,8 @@ A **Signed** stage describes the relationship with the sponsor. The current form
 
 ## Decisions to confirm as we build
 
-- Whether a Phase 1 agreement may cover several placements or should use one agreement per placement for the pilot.
+- The names, prices, benefits, and required items for each of the six tiers. Confirm whether Title Sponsor maps to a numbered tier and whether discounts or manual line-price overrides are allowed.
+- Whether an agreement can bundle several individually tracked placements beyond a single season-level coverage record.
+- Which commitments count toward the 50% threshold, which agreements use it, and how due dates are handled when the threshold is reached after a scheduled installment date.
+- Whether sales staff need a distinct quoting role and what deal terms that role may see.
 - Whether Phase 2 needs online checkout, receipts, exports, or public sponsor recognition. Each is a separate product decision after the manual workflow is proven.

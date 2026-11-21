@@ -1,7 +1,8 @@
+import { createHash } from 'node:crypto';
 import { DemoFillError, fillEventDemoScores, submitEventDemoScorecards } from '$lib/server/fill-event-demo-scores';
 import type { Expense } from '$lib/expenses/model';
 import { submitExpense, reviewExpense, replaceExpenseReceipt } from '$lib/server/expenses';
-import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
+import { sponsorStages, type Sponsor, type SponsorshipAgreement, type SponsorshipQuote, type SponsorshipFundingEntry } from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
 import { allocateTournamentPurses, parseSeasonPurse } from '$lib/season-purse';
@@ -14,6 +15,11 @@ import { getCapability } from '$lib/capabilities/catalog';
 import type { StandingsTable } from '$lib/public-page';
 
 const ID_PATTERN = /^[a-z0-9]{15}$/;
+
+function sponsorshipSeedId(organization: string, key: string): string {
+	return createHash('sha256').update('flihub-sponsorship-demo:' + organization + ':' + key)
+		.digest('hex').slice(0, 15);
+}
 
 function eventDateMessage(
 	startsAt: string,
@@ -107,12 +113,65 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	}
 
 	let sponsors: Sponsor[] | null = null;
+	let sponsorshipFunding: SponsorshipFundingEntry[] = [];
+	let sponsorshipQuotes: SponsorshipQuote[] = [];
+	let sponsorshipAgreements: SponsorshipAgreement[] = [];
+	const sponsorshipTargets: { value: string; label: string }[] = [
+		{ value: 'organization', label: 'Organization' }
+	];
 	if (capability.id === 'sponsorships' && enabled && (myRole === 'owner' || myRole === 'admin')) {
 		sponsors = await pb.collection('sponsors').getFullList<Sponsor>({
 			filter: pb.filter('organization = {:organization}', { organization: params.id }),
 			sort: 'name,id',
 			fields: 'id,name,contactName,contactEmail,stage,followUpOn,nextAction,notes,archived'
 		});
+		const activeFilter = pb.filter('organization = {:org} && status != "archived"', { org: params.id });
+		const [agreements, leagues, seasons, teams, events, rounds, holes] = await Promise.all([
+			pb.collection('sponsorship_agreements').getFullList<SponsorshipAgreement>({
+				filter: pb.filter('organization = {:org}', { org: params.id }), sort: '-signedOn,id'
+			}),
+			pb.collection('leagues').getFullList({ filter: activeFilter, sort: 'name' }),
+			pb.collection('seasons').getFullList({ filter: activeFilter, sort: 'name' }),
+			pb.collection('teams').getFullList({ filter: activeFilter, sort: 'name' }),
+			pb.collection('events').getFullList({ filter: activeFilter, sort: 'name' }),
+			pb.collection('rounds').getFullList({ filter: activeFilter, sort: 'number' }),
+			pb.collection('course_holes').getFullList({ filter: activeFilter, sort: 'number' })
+		]);
+		sponsorshipAgreements = agreements;
+		const fundingFilter = pb.filter('organization = {:org}', { org: params.id });
+		const [funding, reversals] = await Promise.all([
+			pb.collection('sponsorship_funding_entries').getFullList<SponsorshipFundingEntry>({
+				filter: fundingFilter, sort: 'entryDate,id', fields: 'id,agreement,kind,amountCents,entryDate,method,reference'
+			}),
+			pb.collection('sponsorship_payment_reversals').getFullList<
+				NonNullable<SponsorshipFundingEntry['reversal']> & { payment: string }
+			>({ filter: fundingFilter, fields: 'payment,reason,recordedByName,recordedBy,created' })
+		]);
+		const reversalsByPayment = new Map(reversals.map((reversal) => [reversal.payment, reversal]));
+		sponsorshipFunding = funding.map((entry) => ({ ...entry, reversal: reversalsByPayment.get(entry.id) }));
+		sponsorshipQuotes = await pb.collection('sponsorship_quotes').getFullList<SponsorshipQuote>({
+			filter: pb.filter('organization = {:org}', { org: params.id }), sort: '-created,id',
+			fields: 'id,sponsor,packageName,currency,amountCents,benefits'
+		});
+		for (const [kind, label, rows] of [
+			['league', 'League', leagues], ['season', 'Season', seasons],
+			['team', 'Team', teams], ['event', 'Event', events]
+		] as const) {
+			for (const row of rows) sponsorshipTargets.push({
+				value: kind + ':' + row.id, label: label + ' · ' + String(row.name)
+			});
+		}
+		const eventsById = new Map(events.map((event) => [event.id, event]));
+		for (const round of rounds) {
+			const event = eventsById.get(String(round.event));
+			if (!event) continue;
+			for (const hole of holes.filter((hole) => hole.course === round.course)) {
+				sponsorshipTargets.push({
+					value: ['hole', event.id, round.id, hole.id].join(':'),
+					label: String(event.name) + ' · Round ' + String(round.number) + ' · Hole ' + String(hole.number)
+				});
+			}
+		}
 	}
 
 	// Phase 1C: the athletes capability is implemented software — load its records.
@@ -812,6 +871,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		expenses,
 		expenseUserId: expenses ? user.id : null,
 		sponsors,
+		sponsorshipAgreements,
+		sponsorshipQuotes,
+		sponsorshipFunding,
+		sponsorshipTargets,
+		seedAgreementCount: sponsorshipAgreements.filter((agreement) =>
+			agreement.sponsor === sponsorshipSeedId(params.id, 'sponsor') &&
+			agreement.id === sponsorshipSeedId(params.id, 'agreement:' + agreement.coverage)
+		).length,
+		canSeedSponsorships: import.meta.env.DEV && ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname),
 		athletes,
 		teams,
 		rosters,
@@ -998,9 +1066,15 @@ export const actions: Actions = {
 		const read = (key: string) => String(form.get(key) ?? '').trim();
 		const id = read('sponsor');
 		const intent = read('intent');
+		const seeding = intent === 'seed-agreement';
+		const clearing = intent === 'clear-seed-agreements';
+		if ((seeding || clearing) && (!import.meta.env.DEV ||
+			!['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname))) {
+			return fail(404, { message: 'Sponsorship seed tools are available only in local development.' });
+		}
 		if (
-			!['create', 'edit', 'archive', 'restore'].includes(intent) ||
-			(intent !== 'create' && !ID_PATTERN.test(id))
+			!['create', 'edit', 'archive', 'restore', 'agreement', 'seed-agreement', 'clear-seed-agreements', 'quote', 'convert-quote', 'funding-entry', 'reverse-payment'].includes(intent) ||
+			(intent !== 'create' && !seeding && !clearing && !ID_PATTERN.test(id))
 		) {
 			return fail(400, { message: 'Choose a valid sponsor action.' });
 		}
@@ -1018,6 +1092,214 @@ export const actions: Actions = {
 				!toOrganizationDTO(organization).capabilities.includes('sponsorships')
 			) {
 				return fail(403, { message: 'Sponsorships must be enabled and managed by an Owner or Admin.' });
+			}
+
+			if (intent === 'reverse-payment') {
+				const paymentId = read('payment');
+				const agreementId = read('agreement');
+				const reason = read('reason');
+				const invalid = (message: string, status = 400) => fail(status, {
+					reversalError: message, fundingAgreement: agreementId, reversalPayment: paymentId, reversalReason: reason
+				});
+				if (!ID_PATTERN.test(paymentId) || !ID_PATTERN.test(agreementId))
+					return invalid('Choose a payment to reverse.');
+				if (!reason || reason.length > 500)
+					return invalid('Enter a reversal reason of 1–500 characters.');
+				try {
+					const payment = await pb.collection('sponsorship_funding_entries').getOne(paymentId);
+					const agreement = await pb.collection('sponsorship_agreements').getOne(agreementId);
+					if (payment.organization !== params.id || payment.agreement !== agreementId ||
+						payment.kind !== 'payment' || agreement.organization !== params.id || agreement.sponsor !== id)
+						return invalid('Payment not found for this sponsor.', 404);
+					await pb.collection('sponsorship_payment_reversals').create({
+						organization: params.id, payment: paymentId, reason
+					});
+					return { fundingMessage: 'Payment reversed.', fundingAgreement: agreementId, reversalPayment: paymentId };
+				} catch (err) {
+					return invalid(pbErrorMessage(err), pbErrorStatus(err));
+				}
+			}
+
+			if (intent === 'funding-entry') {
+				const agreementId = read('agreement');
+				const kind = read('kind');
+				const values = { amount: read('amount'), entryDate: read('entryDate'), method: read('method'), reference: read('reference') };
+				const invalid = (message: string, status = 400) => fail(status, {
+					fundingError: message, fundingAgreement: agreementId, fundingKind: kind, fundingValues: values
+				});
+				if (!ID_PATTERN.test(agreementId) || !['installment', 'payment'].includes(kind))
+					return invalid('Choose an agreement and funding entry type.');
+				const amount = /^(\d{1,9}|\d{1,3}(?:,\d{3}){1,2})(?:\.(\d{1,2}))?$/.exec(values.amount);
+				if (!amount) return invalid('Enter an amount with at most two decimal places.');
+				const amountCents = Number(amount[1].replaceAll(',', '')) * 100 + Number((amount[2] ?? '').padEnd(2, '0'));
+				if (amountCents < 1) return invalid('Enter an amount greater than zero.');
+				try {
+					const agreement = await pb.collection('sponsorship_agreements').getOne(agreementId);
+					if (agreement.organization !== params.id || agreement.sponsor !== id)
+						return invalid('Agreement not found for this sponsor.', 404);
+					await pb.collection('sponsorship_funding_entries').create({
+						organization: params.id, agreement: agreementId, kind, amountCents,
+						entryDate: values.entryDate, method: values.method, reference: values.reference
+					});
+					return {
+						fundingMessage: kind === 'payment' ? 'Payment recorded.' : 'Installment added.',
+						fundingAgreement: agreementId
+					};
+				} catch (err) {
+					return invalid(pbErrorMessage(err), pbErrorStatus(err));
+				}
+			}
+
+			if (intent === 'convert-quote') {
+				const quoteId = read('quote');
+				const coverage = read('coverage');
+				const signedOn = read('signedOn');
+				const dueOn = read('dueOn');
+				const invalid = (message: string, status = 400) => fail(status, {
+					conversionError: message, conversionQuote: quoteId, coverage, signedOn, dueOn
+				});
+				if (!ID_PATTERN.test(quoteId) || read('confirm') !== 'signed')
+					return invalid('Confirm the sponsorship agreement has been signed.');
+				try {
+					const quote = await pb.collection('sponsorship_quotes').getOne<SponsorshipQuote>(quoteId);
+					const reviewTerms = JSON.stringify([
+						quote.packageName, quote.currency, quote.amountCents,
+						quote.benefits.map((benefit) => [benefit.id, benefit.name, benefit.amountCents])
+					]);
+					if (quote.sponsor !== id) return invalid('Quote not found for this sponsor.', 404);
+					if (read('reviewTerms') !== reviewTerms)
+						return invalid('The quote changed. Review the latest draft and try again.');
+					await pb.collection('sponsorship_agreements').create({
+						organization: params.id, sponsor: id, quote: quoteId, title: quote.packageName,
+						amountCents: quote.amountCents, currency: quote.currency, coverage, signedOn, dueOn,
+						benefits: quote.benefits.map((benefit) => benefit.name).join('\n')
+					});
+					return { conversionMessage: 'Sponsorship agreement created.', conversionQuote: quoteId };
+				} catch (err) {
+					return invalid(pbErrorMessage(err), pbErrorStatus(err));
+				}
+			}
+
+			if (intent === 'quote') {
+				const selected = form.getAll('benefit').map(String);
+				const quotePackage = read('package');
+				const quoteId = read('quote');
+				const quotes = pb.collection('sponsorship_quotes');
+				const selection = { packageName: quotePackage, selectedBenefits: selected };
+				try {
+					if (quoteId) {
+						if (!ID_PATTERN.test(quoteId))
+							return fail(400, { quoteError: 'Invalid draft quote.', quoteSponsor: id });
+						const existing = await quotes.getOne(quoteId);
+						if (existing.organization !== params.id || existing.sponsor !== id)
+							return fail(404, { quoteError: 'Draft quote not found for this sponsor.', quoteSponsor: id });
+						await quotes.update(quoteId, selection);
+					} else {
+						await quotes.create({ organization: params.id, sponsor: id, ...selection });
+					}
+					return { quoteMessage: quoteId ? 'Draft quote updated.' : 'Draft quote saved.', quoteSponsor: id };
+				} catch (err) {
+					return fail(pbErrorStatus(err), {
+						quoteError: pbErrorMessage(err), quoteSponsor: id, quoteId, quotePackage, quoteSelected: selected
+					});
+				}
+			}
+
+			if (clearing) {
+				const expectedCount = Number(read('expectedCount'));
+				if (read('confirm') !== 'CLEAR' || !Number.isSafeInteger(expectedCount) || expectedCount < 1)
+					return fail(400, { seedError: 'Confirm which demo agreements to clear.' });
+				try {
+					const { cleared } = await pb.send<{ cleared: number }>(
+						'/api/flihub/demo/sponsorships/' + params.id + '/clear',
+						{ method: 'POST', body: { confirm: 'CLEAR', expectedCount } }
+					);
+					return { seedMessage: 'Cleared ' + cleared + ' seeded agreement(s).' };
+				} catch (err) {
+					return fail(pbErrorStatus(err), { seedError: pbErrorMessage(err) });
+				}
+			}
+
+			if (seeding) {
+				const coverage = read('coverage');
+				const targetId = '[a-z0-9]{15}';
+				const targetPattern = new RegExp(
+					'^(?:(?:league|season|team|event):' + targetId + '|hole:' +
+					targetId + ':' + targetId + ':' + targetId + ')$'
+				);
+				if (coverage !== 'organization' && !targetPattern.test(coverage)) {
+					return fail(400, { seedError: 'Choose a sponsorship target.', seedCoverage: coverage });
+				}
+
+				const sponsorId = sponsorshipSeedId(params.id, 'sponsor');
+				const agreementId = sponsorshipSeedId(params.id, 'agreement:' + coverage);
+				const sponsors = pb.collection('sponsors');
+				const agreements = pb.collection('sponsorship_agreements');
+				try {
+					const prior = await agreements.getOne(agreementId).catch((err) => {
+						if (pbErrorStatus(err) === 404) return null;
+						throw err;
+					});
+					if (prior) {
+						if (prior.organization !== params.id || prior.sponsor !== sponsorId || prior.coverage !== coverage)
+							throw new Error('The demo agreement ID is already in use.');
+						return { seedMessage: 'A demo agreement already exists for this target.', seedCoverage: coverage };
+					}
+
+					const sponsor = await sponsors.getOne(sponsorId).catch((err) => {
+						if (pbErrorStatus(err) === 404) return null;
+						throw err;
+					});
+					if (sponsor?.archived) {
+						return fail(400, { seedError: 'Restore the demo sponsor before adding more deals.', seedCoverage: coverage });
+					}
+					if (sponsor && (sponsor.organization !== params.id || sponsor.name !== 'Demo Sponsor')) {
+						return fail(400, { seedError: 'The demo sponsor was renamed or its ID is in use.', seedCoverage: coverage });
+					}
+					if (!sponsor) {
+						await sponsors.create({
+							id: sponsorId, organization: params.id, name: 'Demo Sponsor',
+							stage: 'signed', notes: 'Sample data created by Quick seed deal.'
+						});
+					}
+
+					await agreements.create({
+						id: agreementId, organization: params.id, sponsor: sponsorId,
+						title: 'Demo sponsorship agreement', coverage, amountCents: 100000, currency: 'USD',
+						signedOn: new Date().toISOString().slice(0, 10),
+						benefits: 'Sample sponsorship placement for development testing.'
+					});
+					return { seedMessage: 'Demo agreement added under Demo Sponsor.', seedCoverage: coverage };
+				} catch (err) {
+					return fail(pbErrorStatus(err), { seedError: pbErrorMessage(err), seedCoverage: coverage });
+				}
+			}
+
+			if (intent === 'agreement') {
+				const values = {
+					title: read('title'), coverage: read('coverage'), amount: read('amount'),
+					currency: read('currency'), signedOn: read('signedOn'), dueOn: read('dueOn'),
+					benefits: read('benefits')
+				};
+				const invalid = (message: string) => fail(400, {
+					agreementError: message, agreementSponsor: id, agreementValues: values
+				});
+				const amount = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(values.amount);
+				if (!amount) return invalid('Enter an amount with at most two decimal places.');
+				const amountCents = Number(amount[1]) * 100 + Number((amount[2] ?? '').padEnd(2, '0'));
+				if (amountCents < 1) return invalid('Enter an amount greater than zero.');
+				try {
+					await pb.collection('sponsorship_agreements').create({
+						organization: params.id, sponsor: id, title: values.title, coverage: values.coverage,
+						amountCents, currency: values.currency, signedOn: values.signedOn,
+						dueOn: values.dueOn, benefits: values.benefits
+					});
+					return { agreementMessage: 'Sponsorship agreement added.', agreementSponsor: id };
+				} catch (err) {
+					return fail(pbErrorStatus(err), {
+						agreementError: pbErrorMessage(err), agreementSponsor: id, agreementValues: values
+					});
+				}
 			}
 
 			const collection = pb.collection('sponsors');

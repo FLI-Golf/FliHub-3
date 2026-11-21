@@ -9,9 +9,12 @@
 		Search,
 		Send
 	} from 'lucide-svelte';
+	import SponsorshipThresholdPreview from '$lib/components/SponsorshipThresholdPreview.svelte';
+	import SponsorshipFunding from '$lib/components/SponsorshipFunding.svelte';
+	import SponsorshipQuoteBuilder from '$lib/components/SponsorshipQuoteBuilder.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { sponsorStages, type Sponsor } from '$lib/sponsorships/model';
+	import { sponsorStages, type Sponsor, type SponsorshipAgreement, type SponsorshipQuote, type SponsorshipFundingEntry } from '$lib/sponsorships/model';
 
 	type SponsorFields = Omit<Sponsor, 'id' | 'archived'>;
 	interface SponsorForm {
@@ -20,8 +23,19 @@
 		sponsorError?: string;
 		sponsorId?: string;
 		sponsorValues?: SponsorFields;
+		agreementSponsor?: string;
+		agreementMessage?: string;
+		agreementError?: string;
+		agreementValues?: Record<string, string>;
 	}
-	let { sponsors, form }: { sponsors: Sponsor[]; form: unknown } = $props();
+	let { sponsors, agreements, quotes, funding, targets, form }: {
+		sponsors: Sponsor[];
+		agreements: SponsorshipAgreement[];
+		quotes: SponsorshipQuote[];
+		funding: SponsorshipFundingEntry[];
+		targets: { value: string; label: string }[];
+		form: unknown;
+	} = $props();
 
 	const result = $derived(form as SponsorForm | null);
 	const active = $derived(sponsors.filter((sponsor) => !sponsor.archived));
@@ -121,17 +135,95 @@
 					<Plus class="size-4" /> Add sponsor
 				</Button>
 			{:else}
-				<Button type="submit">Save changes</Button>
+				<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">Save changes</Button>
 			{/if}
 		</div>
 	</form>
+{/snippet}
+
+{#snippet sponsorAgreements(sponsor: Sponsor)}
+	{@const rows = agreements.filter((agreement) => agreement.sponsor === sponsor.id)}
+	{@const ownResult = result?.agreementSponsor === sponsor.id ? result : null}
+	{@const values = ownResult?.agreementValues}
+	{#if ownResult?.agreementMessage}
+		<p role="status" class="text-sm">{ownResult.agreementMessage}</p>
+	{/if}
+	{#if rows.length}
+		<div class="grid gap-2">
+			<h4 class="text-sm font-semibold">Sponsorship agreements</h4>
+			<ul class="divide-y rounded-lg border">
+				{#each rows as agreement (agreement.id)}
+					<li id={`sponsorship-agreement-${agreement.id}`} class="space-y-1 p-3 text-sm target:bg-emerald-100 dark:target:bg-emerald-950">
+						<div class="flex flex-wrap justify-between gap-2">
+							<strong>{agreement.title}</strong>
+							<span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: agreement.currency }).format(agreement.amountCents / 100)} {agreement.currency} agreed</span>
+						</div>
+						<p>{agreement.coverageLabel}</p>
+						<p class="text-muted-foreground">
+							Signed {agreement.signedOn}{#if agreement.dueOn} · Due {agreement.dueOn}{/if}
+						</p>
+						{#if agreement.benefits}<p class="whitespace-pre-wrap">{agreement.benefits}</p>{/if}
+						<SponsorshipFunding {sponsor} {agreement} entries={funding.filter((entry) => entry.agreement === agreement.id)} {form} />
+					</li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
+	{#if !sponsor.archived}
+		<details open={Boolean(ownResult?.agreementError)} class="rounded-lg border p-3">
+			<summary class="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold dark:bg-slate-900">Record a signed agreement</summary>
+			{#if ownResult?.agreementError}<p role="alert" class="mt-3 text-sm text-destructive">{ownResult.agreementError}</p>{/if}
+			<form method="POST" action="?/saveSponsor" class="mt-3 grid gap-3 sm:grid-cols-2">
+				<input type="hidden" name="intent" value="agreement" />
+				<input type="hidden" name="sponsor" value={sponsor.id} />
+				<label class="grid gap-1 text-sm">
+					Agreement title
+					<input name="title" value={values?.title ?? ''} required maxlength="120" class="rounded border bg-background p-2" />
+				</label>
+				<label class="grid gap-1 text-sm">
+					Covers
+					<select name="coverage" value={values?.coverage ?? ''} required class="min-w-0 rounded border bg-background p-2">
+						<option value="">Select coverage</option>
+						{#each targets as target (target.value)}
+							<option value={target.value}>{target.label}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="grid gap-1 text-sm">
+					Agreed amount
+					<input name="amount" inputmode="decimal" value={values?.amount ?? ''} required maxlength="12" class="rounded border bg-background p-2" />
+				</label>
+				<label class="grid gap-1 text-sm">
+					Currency
+					<select name="currency" value={values?.currency ?? 'USD'} class="rounded border bg-background p-2">
+						{#each ['USD', 'CAD', 'EUR', 'GBP'] as currency (currency)}
+							<option value={currency}>{currency}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="grid gap-1 text-sm">
+					Signed on
+					<input type="date" name="signedOn" value={values?.signedOn ?? ''} required class="rounded border bg-background p-2" />
+				</label>
+				<label class="grid gap-1 text-sm">
+					Payment due (optional)
+					<input type="date" name="dueOn" value={values?.dueOn ?? ''} class="rounded border bg-background p-2" />
+				</label>
+				<label class="grid gap-1 text-sm sm:col-span-2">
+					Promised benefits (optional)
+					<textarea name="benefits" maxlength="2000" value={values?.benefits ?? ''} class="rounded border bg-background p-2"></textarea>
+				</label>
+				<div><Button type="submit" class="bg-green-700 text-white hover:bg-green-800">Save agreement</Button></div>
+			</form>
+		</details>
+	{/if}
 {/snippet}
 
 {#snippet archiveForm(sponsor: Sponsor)}
 	<form method="POST" action="?/saveSponsor">
 		<input type="hidden" name="sponsor" value={sponsor.id} />
 		<input type="hidden" name="intent" value={sponsor.archived ? 'restore' : 'archive'} />
-		<Button type="submit" variant="outline" size="sm">
+		<Button type="submit" size="sm" class="bg-green-700 text-white hover:bg-green-800">
 			{sponsor.archived ? 'Restore' : 'Archive'}
 		</Button>
 	</form>
@@ -264,14 +356,16 @@
 	{@render editor('create', empty)}
 </details>
 
+<SponsorshipThresholdPreview {sponsors} {agreements} />
+
 <section aria-labelledby="active-sponsors" class="grid gap-3">
 	<h2 id="active-sponsors" class="text-lg font-semibold">Active sponsors</h2>
 	{#each active as sponsor (sponsor.id)}
 		{@const stage = sponsorStages.find(({ value }) => value === sponsor.stage)}
-		<article class="grid gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground">
+		<article class="grid gap-3 rounded-xl border border-blue-200 bg-blue-50/60 p-4 text-card-foreground dark:border-blue-800 dark:bg-blue-950/35">
 			<div class="flex flex-wrap items-center gap-2">
 				<h3 class="font-semibold">{sponsor.name}</h3>
-				{#if stage}<Badge variant="secondary">{stage.label}</Badge>{/if}
+				{#if stage}<Badge variant="secondary" class={sponsor.stage === 'signed' ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100' : ''}>{stage.label}</Badge>{/if}
 			</div>
 			{#if sponsor.followUpOn || sponsor.nextAction}
 				<p class="text-sm">
@@ -292,8 +386,10 @@
 					<span class="group-open/sponsor:hidden">Show details</span>
 					<span class="hidden group-open/sponsor:inline">Hide details</span>
 				</summary>
-				{@render editor('edit', sponsor, sponsor.id)}
+				<div>{@render editor('edit', sponsor, sponsor.id)}</div>
 			</details>
+			<div class="grid gap-3">{@render sponsorAgreements(sponsor)}</div>
+			<div class="grid gap-3"><SponsorshipQuoteBuilder {sponsor} quotes={quotes.filter((quote) => quote.sponsor === sponsor.id)} {agreements} {targets} {form} /></div>
 			{@render archiveForm(sponsor)}
 		</article>
 	{:else}
@@ -314,7 +410,9 @@
 			{#each archived as sponsor (sponsor.id)}
 				<li class="flex flex-wrap items-center justify-between gap-2">
 					{sponsor.name}
-					{@render archiveForm(sponsor)}
+					<div class="grid gap-3">{@render sponsorAgreements(sponsor)}</div>
+			<div class="grid gap-3"><SponsorshipQuoteBuilder {sponsor} quotes={quotes.filter((quote) => quote.sponsor === sponsor.id)} {agreements} {targets} {form} /></div>
+			{@render archiveForm(sponsor)}
 				</li>
 			{/each}
 		</ul>

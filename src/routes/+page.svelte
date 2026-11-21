@@ -5,6 +5,7 @@
 		Flag,
 		ClipboardCheck,
 		Trophy,
+		Wallet,
 		Eye,
 		EyeOff,
 		ArrowRight,
@@ -57,11 +58,18 @@
 			icon: Trophy,
 			color: 'border-orange-200 bg-orange-50 text-orange-950',
 			summary: 'Private leagues, participant invitations, snake drafts, and event scoring.'
+		},
+		{
+			id: 'funding',
+			title: 'Funding',
+			icon: Wallet,
+			color: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+			summary: 'Record sponsorship agreements. Tier quotes, installments, donations, and pledges are planned.'
 		}
 	] as const;
 	const inCategory = (category: CapabilityCategory) =>
-		capabilities.filter((item) => item.category === category && item.status !== 'planned');
-	const planned = capabilities.filter((item) => item.status === 'planned');
+		capabilities.filter((item) => item.category === category && (category === 'funding' || item.status !== 'planned'));
+	const planned = capabilities.filter((item) => item.status === 'planned' && item.category !== 'funding');
 	const completeCount = capabilities.filter((item) => item.status === 'complete').length;
 	const reviewCount = capabilities.filter(
 		(item) => item.status === 'ready-to-verify' || item.status === 'in-progress'

@@ -14,7 +14,7 @@ export type CapabilityStatus = 'planned' | 'in-progress' | 'ready-to-verify' | '
  * from feature completion. */
 export type NarrationStatus = 'not-started' | 'scripted' | 'recorded';
 
-export type CapabilityCategory = 'organization' | 'competition' | 'results' | 'fantasy';
+export type CapabilityCategory = 'organization' | 'competition' | 'results' | 'fantasy' | 'funding';
 
 export interface Capability {
 	category: CapabilityCategory;
@@ -41,6 +41,40 @@ export interface Capability {
 }
 
 export const capabilities: Capability[] = [
+	{
+		category: 'funding',
+		title: 'Sponsors & paid agreements',
+		description: 'Manage sponsor contacts and record what each signed deal covers.',
+		milestone: 'Funding · Phase 1A',
+		status: 'complete',
+		progress: 'Owners and admins can record agreed amounts, dates, and benefits for agreements covering an organization, league, season, team, event, or hole.',
+		featureHref: '/organizations'
+	},
+	{
+		category: 'funding',
+		title: 'Sponsorship tiers & quotes',
+		description: 'Build quotes from packages with required and removable benefits.',
+		milestone: 'Funding · Phase 1B',
+		status: 'planned',
+		progress: 'The roadmap calls for six configurable tiers and a benefits checklist that updates the quote total.',
+		next: 'Pilot the Title Sponsor package with illustrative pricing.'
+	},
+	{
+		category: 'funding',
+		title: 'Installments & payments',
+		description: 'Track signed commitments, amounts due, and payments received.',
+		milestone: 'Funding · Phase 1C',
+		status: 'planned',
+		progress: 'The roadmap covers installment schedules, receipts, and configurable thresholds for conditional agreements.'
+	},
+	{
+		category: 'funding',
+		title: 'Donations & pledges',
+		description: 'Track contributions and promises to give.',
+		milestone: 'Funding · Phase 2',
+		status: 'planned',
+		progress: 'The proposed running-event pilot covers direct donations, partial pledge payments, and remaining balances.'
+	},
 	{
 		category: 'competition',
 		title: 'Guided disc-golf organization setup',
