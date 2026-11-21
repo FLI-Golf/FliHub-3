@@ -1,0 +1,108 @@
+[
+  {
+    "id": "title-pilot",
+    "name": "Title Sponsor",
+    "currency": "USD",
+    "benefits": [
+      {
+        "id": "naming",
+        "name": "Tour naming rights across all 12 tournaments",
+        "amountCents": 50000000,
+        "required": true
+      },
+      {
+        "id": "activation",
+        "name": "On-site activation at each tournament",
+        "amountCents": 7500000,
+        "required": false
+      },
+      {
+        "id": "digital",
+        "name": "Digital promotion package",
+        "amountCents": 5000000,
+        "required": false
+      }
+    ],
+    "tier": "Title Sponsor"
+  },
+  {
+    "id": "basket",
+    "name": "Basket Partner",
+    "tier": "Tier 2",
+    "currency": "USD",
+    "benefits": [
+      {
+        "id": "partnership",
+        "name": "Basket showcases at tour tournaments",
+        "amountCents": 10000000,
+        "required": true
+      },
+      {
+        "id": "promotion",
+        "name": "On-site basket demonstrations",
+        "amountCents": 2500000,
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "disc",
+    "name": "Disc Partner",
+    "tier": "Tier 2",
+    "currency": "USD",
+    "benefits": [
+      {
+        "id": "partnership",
+        "name": "FLI Golf\u2013branded disc collaboration",
+        "amountCents": 10000000,
+        "required": true
+      },
+      {
+        "id": "promotion",
+        "name": "Digital promotion for the disc launch",
+        "amountCents": 2500000,
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "us-apparel",
+    "name": "U.S. Apparel Partner",
+    "tier": "Tier 2",
+    "currency": "USD",
+    "benefits": [
+      {
+        "id": "partnership",
+        "name": "U.S. apparel collaboration",
+        "amountCents": 10000000,
+        "required": true
+      },
+      {
+        "id": "promotion",
+        "name": "On-site apparel showcase",
+        "amountCents": 2500000,
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "international-apparel",
+    "name": "International Apparel Partner",
+    "tier": "Tier 2",
+    "currency": "USD",
+    "benefits": [
+      {
+        "id": "partnership",
+        "name": "International apparel collaboration",
+        "amountCents": 10000000,
+        "required": true
+      },
+      {
+        "id": "promotion",
+        "name": "Digital promotion for the apparel launch",
+        "amountCents": 2500000,
+        "required": false
+      }
+    ]
+  }
+]

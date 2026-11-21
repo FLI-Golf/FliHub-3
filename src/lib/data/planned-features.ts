@@ -14,7 +14,7 @@ export type CapabilityStatus = 'planned' | 'in-progress' | 'ready-to-verify' | '
  * from feature completion. */
 export type NarrationStatus = 'not-started' | 'scripted' | 'recorded';
 
-export type CapabilityCategory = 'organization' | 'competition' | 'results' | 'fantasy';
+export type CapabilityCategory = 'organization' | 'competition' | 'results' | 'fantasy' | 'funding';
 
 export interface Capability {
 	category: CapabilityCategory;
@@ -41,6 +41,40 @@ export interface Capability {
 }
 
 export const capabilities: Capability[] = [
+	{
+		category: 'funding',
+		title: 'Sponsors & paid agreements',
+		description: 'Manage sponsor contacts and record what each signed deal covers.',
+		milestone: 'Funding · Phase 1A',
+		status: 'complete',
+		progress: 'Owners and admins can record agreed amounts, dates, and benefits for agreements covering an organization, league, season, team, event, or hole.',
+		featureHref: '/organizations'
+	},
+	{
+		category: 'funding',
+		title: 'Sponsorship tiers & quotes',
+		description: 'Build quotes from packages with required and removable benefits.',
+		milestone: 'Funding · Phase 1B',
+		status: 'planned',
+		progress: 'The roadmap calls for six configurable tiers and a benefits checklist that updates the quote total.',
+		next: 'Pilot the Title Sponsor package with illustrative pricing.'
+	},
+	{
+		category: 'funding',
+		title: 'Installments & payments',
+		description: 'Track signed commitments, amounts due, and payments received.',
+		milestone: 'Funding · Phase 1C',
+		status: 'planned',
+		progress: 'The roadmap covers installment schedules, receipts, and configurable thresholds for conditional agreements.'
+	},
+	{
+		category: 'funding',
+		title: 'Donations & pledges',
+		description: 'Track contributions and promises to give.',
+		milestone: 'Funding · Phase 2',
+		status: 'planned',
+		progress: 'The proposed running-event pilot covers direct donations, partial pledge payments, and remaining balances.'
+	},
 	{
 		category: 'competition',
 		title: 'Guided disc-golf organization setup',
@@ -246,36 +280,53 @@ export const capabilities: Capability[] = [
 	},
 	{
 		category: 'fantasy',
-		title: 'Fantasy league & snake draft',
+		title: 'Private leagues & invitations',
 		description:
-			'Private fantasy leagues with configurable participant limits and per-event four-round snake drafts. The six-person demo drafts 24 athletes.',
-		milestone: 'Phases 2A–2B',
+			'Create a private league for an eligible season, set its participant limit, and invite players.',
+		milestone: 'Phase 2A',
 		status: 'complete',
 		progress:
-			'Fantasy membership and draft work is merged through PR #27. Invitations follow accept/approve permissions independently of organization staff roles. Each event has a saved randomized first-round order and a four-round snake draft, with server-owned turns, 7/15/30-second clocks, manual picks, and eligible timeout auto-picks. The mobile draft includes compact rosters, tappable athlete selections, separate Quick find results, and commissioner Pause/Resume. Jim’s six-participant draft completed with 24 unique athletes and two MPO plus two FPO per roster. The merged scoring implementation enforces activation/publication roster locks, preserves designated-substitute history, and blocks destructive demo resets after the lock. Existing narrated league/draft walkthroughs cover their recorded scope.',
-		next: 'Production auto-pick rankings and equal-rank ordering remain open. Post-lock roster corrections require a separate audited workflow.',
+			'Start from Play fantasy and choose a published organization, league, and eligible season. Organization owners and admins control which seasons accept new fantasy leagues. Invited players accept their invitations and commissioners approve membership. Approved players can access their fantasy league through their account without an organization staff role.',
 		featureHref: '/account',
-		walkthroughs: [
-			{
-				href: '/walkthroughs/phase2ab-setup',
-				label: 'Watch League Setup & Draft Prep'
-			},
-			{
-				href: '/walkthroughs/phase2ab-live',
-				label: 'Watch Live Draft & Roster Rules'
-			}
-		]
+		walkthroughHref: '/walkthroughs/phase2ab-setup',
+		walkthroughLabel: 'Watch League Setup & Draft Prep'
 	},
 	{
 		category: 'fantasy',
-		title: 'Event fantasy scoring & explanations',
+		title: 'Live snake draft',
 		description:
-			'Golf fantasy scores from published results: strokes minus saved par, with four-athlete explanations. Lowest complete score wins.',
+			'Run a four-round draft for each event. Each participant picks two MPO and two FPO athletes.',
+		milestone: 'Phase 2B',
+		status: 'complete',
+		progress:
+			'The draft saves a randomized first-round order and reverses it in alternating rounds. Pick manually or let an eligible auto-pick fill the slot when the 7-, 15-, or 30-second clock expires. Commissioners can pause and resume. On mobile, tap athletes, use Quick find, and review roster slots as they fill. The six-player demo finished with 24 unique picks.',
+		next: 'Production auto-pick rankings and the order of equally ranked athletes remain open.',
+		featureHref: '/account',
+		walkthroughHref: '/walkthroughs/phase2ab-live',
+		walkthroughLabel: 'Watch Live Draft & Roster Rules'
+	},
+	{
+		category: 'fantasy',
+		title: 'Roster locks & designated substitutes',
+		description:
+			'Record eligible designated substitutes before the roster locks and preserve the history of the original pick.',
+		milestone: 'Phase 2C',
+		status: 'complete',
+		progress:
+			'Fantasy scoring uses the effective athlete in each roster slot. The app retains the original pick when a designated substitute is used. The activation and publication locks protect the roster and block late substitutions and demo resets.',
+		next: 'Audited post-lock roster corrections remain planned.',
+		featureHref: '/account'
+	},
+	{
+		category: 'fantasy',
+		title: 'Event standings & score breakdowns',
+		description:
+			'See how four picks contributed to the event total. The lowest complete score wins.',
 		milestone: 'Phase 2C · event scoring',
 		status: 'complete',
 		progress:
-			'Merged in PR #28 and available in the deployed application. Published result snapshots preserve strokes and corresponding pars. Event standings sum four effective roster athletes across every required round, retain negative/positive golf signs, display even par as E, share equal ranks, and leave incomplete rosters unranked. An approved but unpublished correction does not replace the official result; republication replaces the contribution without duplicating scores. Approved fantasy participants can read their league without staff access. Roster locks preserve participant and athlete mappings, and block late substitutions and demo resets. The 90-test integration suite passed, including real publication, permissions, course edits, and correction replacement. Jim’s live six-participant standings were verified against published demo v2; all roster totals reconcile to the official athlete scores.',
-		next: 'Season-wide fantasy aggregation, live provisional scores, audited post-lock roster corrections, and a narrated scoring walkthrough remain pending.',
+			'Fantasy standings use strokes minus the saved hole pars from the published official result. Expand a roster to see each pick’s contribution and round totals. Scores display even par as E, tied totals share a rank, and incomplete rosters remain unranked. When a correction is published, it replaces the previous contribution once. The six-participant demo standings reconciled to the published athlete scores.',
+		next: 'Season-wide fantasy scoring, live provisional scores, and a narrated scoring walkthrough remain planned.',
 		featureHref: '/account'
 	},
 	{

@@ -17,3 +17,37 @@ export interface Sponsor {
 	notes: string;
 	archived: boolean;
 }
+
+export interface SponsorshipAgreement {
+	quote?: string;
+	id: string;
+	sponsor: string;
+	title: string;
+	coverage: string;
+	coverageLabel: string;
+	amountCents: number;
+	currency: string;
+	signedOn: string;
+	dueOn: string;
+	benefits: string;
+}
+
+export interface SponsorshipQuote {
+	id: string;
+	sponsor: string;
+	packageName: string;
+	currency: string;
+	amountCents: number;
+	benefits: { id: string; name: string; amountCents: number; required: boolean }[];
+}
+
+export interface SponsorshipFundingEntry {
+	reversal?: { reason: string; recordedByName: string; recordedBy: string; created: string };
+	id: string;
+	agreement: string;
+	kind: 'installment' | 'payment';
+	amountCents: number;
+	entryDate: string;
+	method: string;
+	reference: string;
+}

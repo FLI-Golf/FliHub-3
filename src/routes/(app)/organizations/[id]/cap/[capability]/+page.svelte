@@ -8,6 +8,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import ExpensesManager from '$lib/components/ExpensesManager.svelte';
 	import SponsorsManager from '$lib/components/SponsorsManager.svelte';
+	import SponsorshipDemoTools from '$lib/components/SponsorshipDemoTools.svelte';
 	import AthletesManager from '$lib/components/AthletesManager.svelte';
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
 	import RostersManager from '$lib/components/RostersManager.svelte';
@@ -52,6 +53,13 @@
 </svelte:head>
 
 <section class="flex flex-col gap-6 py-4">
+	{#if data.enabled && data.capability.id === 'sponsorships' && data.sponsors && data.canSeedSponsorships}
+		<SponsorshipDemoTools
+			targets={data.sponsorshipTargets}
+			seedAgreementCount={data.seedAgreementCount}
+			{form}
+		/>
+	{/if}
 	<div class="flex flex-col gap-2">
 		<h1 class="text-2xl font-semibold tracking-tight">
 			{data.organization.name} — {data.capability.label}
@@ -92,7 +100,7 @@
 		/>
 	{:else if data.capability.id === 'sponsorships'}
 		{#if data.sponsors}
-			<SponsorsManager sponsors={data.sponsors} {form} />
+			<SponsorsManager sponsors={data.sponsors} agreements={data.sponsorshipAgreements} quotes={data.sponsorshipQuotes} funding={data.sponsorshipFunding} conditions={data.sponsorshipConditions} asOf={data.sponsorshipAsOf} targets={data.sponsorshipTargets} {form} />
 		{:else}
 			<Alert.Root>
 				<Lock class="size-4" />
