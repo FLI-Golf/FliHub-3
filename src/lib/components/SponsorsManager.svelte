@@ -1,5 +1,14 @@
 <script lang="ts">
 	import {
+		Banknote,
+		CalendarCheck,
+		CalendarDays,
+		ClipboardList,
+		Coins,
+		FileSignature,
+		FileText,
+		Save,
+		Target,
 		CircleCheck,
 		CircleX,
 		Eye,
@@ -9,12 +18,14 @@
 		Search,
 		Send
 	} from 'lucide-svelte';
-	import SponsorshipThresholdPreview from '$lib/components/SponsorshipThresholdPreview.svelte';
+	import SponsorshipFundingCondition from '$lib/components/SponsorshipFundingCondition.svelte';
 	import SponsorshipFunding from '$lib/components/SponsorshipFunding.svelte';
 	import SponsorshipQuoteBuilder from '$lib/components/SponsorshipQuoteBuilder.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { sponsorStages, type Sponsor, type SponsorshipAgreement, type SponsorshipQuote, type SponsorshipFundingEntry } from '$lib/sponsorships/model';
+
+	import { previewFundingThreshold, type SponsorshipFundingCondition as FundingCondition } from '$lib/sponsorships/funding-threshold';
 
 	type SponsorFields = Omit<Sponsor, 'id' | 'archived'>;
 	interface SponsorForm {
@@ -27,16 +38,20 @@
 		agreementMessage?: string;
 		agreementError?: string;
 		agreementValues?: Record<string, string>;
+		conditionAgreement?: string;
 	}
-	let { sponsors, agreements, quotes, funding, targets, form }: {
+	let { sponsors, agreements, quotes, funding, conditions, asOf, targets, form }: {
 		sponsors: Sponsor[];
 		agreements: SponsorshipAgreement[];
 		quotes: SponsorshipQuote[];
 		funding: SponsorshipFundingEntry[];
+		conditions: FundingCondition[];
+		asOf: string;
 		targets: { value: string; label: string }[];
 		form: unknown;
 	} = $props();
 
+	const conditionsByAgreement = $derived(new Map(conditions.map((row) => [row.agreement, row])));
 	const result = $derived(form as SponsorForm | null);
 	const active = $derived(sponsors.filter((sponsor) => !sponsor.archived));
 	const archived = $derived(sponsors.filter((sponsor) => sponsor.archived));
@@ -49,6 +64,9 @@
 		nextAction: '',
 		notes: ''
 	};
+	const agreementRequiredHighlight = 'invalid:border-amber-400 invalid:bg-amber-50 invalid:ring-2 invalid:ring-amber-200 dark:invalid:bg-amber-950 dark:invalid:ring-amber-800';
+	const agreementRequiredField = 'rounded border bg-background p-2 ' + agreementRequiredHighlight;
+	const agreementSelect = 'rounded border border-blue-400 bg-blue-50 p-2 text-blue-950 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-100';
 	const inputClass = 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
 	const stageGuide = {
 		prospect: {
@@ -153,6 +171,7 @@
 			<h4 class="text-sm font-semibold">Sponsorship agreements</h4>
 			<ul class="divide-y rounded-lg border">
 				{#each rows as agreement (agreement.id)}
+					{@const condition = conditionsByAgreement.get(agreement.id)}
 					<li id={`sponsorship-agreement-${agreement.id}`} class="space-y-1 p-3 text-sm target:bg-emerald-100 dark:target:bg-emerald-950">
 						<div class="flex flex-wrap justify-between gap-2">
 							<strong>{agreement.title}</strong>
@@ -163,7 +182,8 @@
 							Signed {agreement.signedOn}{#if agreement.dueOn} · Due {agreement.dueOn}{/if}
 						</p>
 						{#if agreement.benefits}<p class="whitespace-pre-wrap">{agreement.benefits}</p>{/if}
-						<SponsorshipFunding {sponsor} {agreement} entries={funding.filter((entry) => entry.agreement === agreement.id)} {form} />
+						<SponsorshipFundingCondition {sponsor} {agreement} {sponsors} {agreements} {asOf} {condition} {form} />
+						<SponsorshipFunding {sponsor} {agreement} {asOf} {condition} canRelease={Boolean(condition && previewFundingThreshold({ ...condition, asOf, agreements }).status === 'Met')} entries={funding.filter((entry) => entry.agreement === agreement.id)} {form} />
 					</li>
 				{/each}
 			</ul>
@@ -171,18 +191,21 @@
 	{/if}
 	{#if !sponsor.archived}
 		<details open={Boolean(ownResult?.agreementError)} class="rounded-lg border p-3">
-			<summary class="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold dark:bg-slate-900">Record a signed agreement</summary>
+			<summary class="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold dark:bg-slate-900">
+				<FileSignature class="mr-1 inline-block size-4 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+				Record a signed agreement
+			</summary>
 			{#if ownResult?.agreementError}<p role="alert" class="mt-3 text-sm text-destructive">{ownResult.agreementError}</p>{/if}
 			<form method="POST" action="?/saveSponsor" class="mt-3 grid gap-3 sm:grid-cols-2">
 				<input type="hidden" name="intent" value="agreement" />
 				<input type="hidden" name="sponsor" value={sponsor.id} />
 				<label class="grid gap-1 text-sm">
-					Agreement title
-					<input name="title" value={values?.title ?? ''} required maxlength="120" class="rounded border bg-background p-2" />
+					<span><FileText class="mr-1 inline-block size-4" aria-hidden="true" /> Agreement title</span>
+					<input name="title" value={values?.title ?? ''} required maxlength="120" pattern={/.*\S.*/.source} class={agreementRequiredField} />
 				</label>
 				<label class="grid gap-1 text-sm">
-					Covers
-					<select name="coverage" value={values?.coverage ?? ''} required class="min-w-0 rounded border bg-background p-2">
+					<span><Target class="mr-1 inline-block size-4" aria-hidden="true" /> Covers</span>
+					<select name="coverage" value={values?.coverage ?? ''} required class={agreementSelect + ' min-w-0 ' + agreementRequiredHighlight}>
 						<option value="">Select coverage</option>
 						{#each targets as target (target.value)}
 							<option value={target.value}>{target.label}</option>
@@ -190,30 +213,30 @@
 					</select>
 				</label>
 				<label class="grid gap-1 text-sm">
-					Agreed amount
-					<input name="amount" inputmode="decimal" value={values?.amount ?? ''} required maxlength="12" class="rounded border bg-background p-2" />
+					<span><Banknote class="mr-1 inline-block size-4" aria-hidden="true" /> Agreed amount</span>
+					<input name="amount" inputmode="decimal" value={values?.amount ?? ''} required maxlength="12" class={agreementRequiredField} />
 				</label>
 				<label class="grid gap-1 text-sm">
-					Currency
-					<select name="currency" value={values?.currency ?? 'USD'} class="rounded border bg-background p-2">
+					<span><Coins class="mr-1 inline-block size-4" aria-hidden="true" /> Currency</span>
+					<select name="currency" value={values?.currency ?? 'USD'} class={agreementSelect}>
 						{#each ['USD', 'CAD', 'EUR', 'GBP'] as currency (currency)}
 							<option value={currency}>{currency}</option>
 						{/each}
 					</select>
 				</label>
 				<label class="grid gap-1 text-sm">
-					Signed on
-					<input type="date" name="signedOn" value={values?.signedOn ?? ''} required class="rounded border bg-background p-2" />
+					<span><CalendarCheck class="mr-1 inline-block size-4" aria-hidden="true" /> Signed on</span>
+					<input type="date" name="signedOn" value={values?.signedOn ?? ''} required class={agreementRequiredField} />
 				</label>
 				<label class="grid gap-1 text-sm">
-					Payment due (optional)
+					<span><CalendarDays class="mr-1 inline-block size-4" aria-hidden="true" /> Payment due (optional)</span>
 					<input type="date" name="dueOn" value={values?.dueOn ?? ''} class="rounded border bg-background p-2" />
 				</label>
 				<label class="grid gap-1 text-sm sm:col-span-2">
-					Promised benefits (optional)
+					<span><ClipboardList class="mr-1 inline-block size-4" aria-hidden="true" /> Promised benefits (optional)</span>
 					<textarea name="benefits" maxlength="2000" value={values?.benefits ?? ''} class="rounded border bg-background p-2"></textarea>
 				</label>
-				<div><Button type="submit" class="bg-green-700 text-white hover:bg-green-800">Save agreement</Button></div>
+				<div><Button type="submit" class="bg-green-700 text-white hover:bg-green-800"><Save aria-hidden="true" /> Save agreement</Button></div>
 			</form>
 		</details>
 	{/if}
@@ -356,8 +379,6 @@
 	{@render editor('create', empty)}
 </details>
 
-<SponsorshipThresholdPreview {sponsors} {agreements} />
-
 <section aria-labelledby="active-sponsors" class="grid gap-3">
 	<h2 id="active-sponsors" class="text-lg font-semibold">Active sponsors</h2>
 	{#each active as sponsor (sponsor.id)}
@@ -398,7 +419,7 @@
 </section>
 
 {#if archived.length}
-	<details class="group/archived rounded-xl border border-border bg-muted p-4">
+	<details class="group/archived rounded-xl border border-border bg-muted p-4" open={archived.some((sponsor) => agreements.some((agreement) => agreement.sponsor === sponsor.id && agreement.id === result?.conditionAgreement))}>
 		<summary
 			class="flex cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden"
 		>

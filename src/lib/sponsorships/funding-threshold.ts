@@ -1,5 +1,21 @@
 import type { SponsorshipAgreement } from './model';
 
+export interface FundingConditionTerms {
+	targetCents: number;
+	percentage: number;
+	currency: string;
+	deadline: string;
+	selectedIds: string[];
+}
+
+export interface SponsorshipFundingCondition extends FundingConditionTerms {
+	agreement: string;
+	releasedAt: string;
+	releasedBy: string;
+	releasedByName: string;
+	releasedCommittedCents: number;
+}
+
 export function parseFundingTarget(value: string): number | null {
 	const amount = /^(\d{1,9}|\d{1,3}(?:,\d{3}){1,2})(?:\.(\d{1,2}))?$/.exec(value.trim());
 	if (!amount) return null;
@@ -7,13 +23,8 @@ export function parseFundingTarget(value: string): number | null {
 	return cents > 0 ? cents : null;
 }
 
-export function previewFundingThreshold(input: {
-	targetCents: number;
-	percentage: number;
-	currency: string;
-	deadline: string;
+export function previewFundingThreshold(input: FundingConditionTerms & {
 	asOf: string;
-	selectedIds: string[];
 	agreements: SponsorshipAgreement[];
 }) {
 	const cutoff = input.asOf < input.deadline ? input.asOf : input.deadline;

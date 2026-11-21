@@ -1,16 +1,23 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { CalendarDays, RotateCcw, Wallet } from 'lucide-svelte';
+	import { CalendarDays, RotateCcw, Unlock, Wallet } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { Sponsor, SponsorshipAgreement, SponsorshipFundingEntry } from '$lib/sponsorships/model';
 
-	let { sponsor, agreement, entries, form }: {
+	import type { SponsorshipFundingCondition } from '$lib/sponsorships/funding-threshold';
+
+	let { sponsor, agreement, entries, form, condition, asOf, canRelease }: {
 		sponsor: Sponsor;
 		agreement: SponsorshipAgreement;
 		entries: SponsorshipFundingEntry[];
 		form: unknown;
+		condition?: SponsorshipFundingCondition;
+		asOf: string;
+		canRelease: boolean;
 	} = $props();
 	const feedback = $derived(form as {
+		conditionAgreement?: string;
+		releaseError?: string;
 		fundingAgreement?: string;
 		fundingKind?: string;
 		fundingMessage?: string;
@@ -21,10 +28,22 @@
 		fundingValues?: Record<string, string>;
 	} | null);
 	const result = $derived(feedback?.fundingAgreement === agreement.id ? feedback : null);
-	const scheduled = $derived(entries.filter((entry) => entry.kind === 'installment'));
+	const scheduled = $derived(entries.filter((entry) => entry.kind === 'installment')
+		.sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.id.localeCompare(b.id)));
 	const payments = $derived(entries.filter((entry) => entry.kind === 'payment'));
 	const sum = (rows: SponsorshipFundingEntry[]) => rows.reduce((amount, entry) => amount + entry.amountCents, 0);
 	const received = $derived(sum(payments.filter((payment) => !payment.reversal)));
+	const overdue = $derived.by(() => {
+		const ids = new Set<string>();
+		if (!condition?.releasedAt) return ids;
+		let available = received;
+		for (const installment of scheduled) {
+			if (installment.entryDate >= asOf) break;
+			available -= installment.amountCents;
+			if (available < 0) ids.add(installment.id);
+		}
+		return ids;
+	});
 	const unscheduled = $derived(agreement.amountCents - sum(scheduled));
 	const outstanding = $derived(Math.max(agreement.amountCents - received, 0));
 	const money = (cents: number) => new Intl.NumberFormat('en-US', {
@@ -52,6 +71,32 @@
 </dl>
 {#if result?.fundingMessage}<p role="status" class="rounded bg-emerald-50 p-2 text-emerald-950">{result.fundingMessage}</p>{/if}
 
+{#if condition?.releasedAt}
+	<p class="rounded bg-emerald-50 p-2 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100">
+		<Unlock class="inline-block size-4" aria-hidden="true" />
+		Installments released by {condition.releasedByName || condition.releasedBy}
+		on {condition.releasedAt.slice(0, 16).replace('T', ' ')} UTC
+		· {new Intl.NumberFormat('en-US', { style: 'currency', currency: condition.currency }).format(condition.releasedCommittedCents / 100)} {condition.currency} committed at release
+	</p>
+{:else if condition}
+	<p class="rounded bg-amber-50 p-2 text-amber-950 dark:bg-amber-950 dark:text-amber-100">
+		Installments are held until released.
+	</p>
+	{#if feedback?.conditionAgreement === agreement.id && feedback.releaseError}
+		<p role="alert" class="text-destructive">{feedback.releaseError}</p>
+	{/if}
+	{#if canRelease && scheduled.length && !sponsor.archived}
+		<form method="POST" action="?/saveSponsor">
+			<input type="hidden" name="intent" value="release-installments" />
+			<input type="hidden" name="sponsor" value={sponsor.id} />
+			<input type="hidden" name="agreement" value={agreement.id} />
+			<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
+				<Unlock aria-hidden="true" /> Release installments
+			</Button>
+		</form>
+	{/if}
+{/if}
+
 {#each [
 	{ kind: 'installment', title: 'Installments', rows: scheduled, action: 'Add installment', date: 'Due date', icon: CalendarDays },
 	{ kind: 'payment', title: 'Payments received', rows: payments, action: 'Record payment', date: 'Received on', icon: Wallet }
@@ -70,7 +115,12 @@
 					<li class="grid gap-2 p-2 odd:bg-muted even:bg-background">
 						<div class="flex flex-wrap justify-between gap-2">
 							<span>{entry.entryDate}{entry.method ? ' · ' + (methods.find((method) => method.value === entry.method)?.label ?? entry.method) : ''}{entry.reference ? ' · ' + entry.reference : ''}</span>
-							<strong class="tabular-nums">{money(entry.amountCents)}</strong>
+							<div class="flex items-center gap-2">
+								{#if overdue.has(entry.id)}
+									<span class="rounded bg-amber-100 px-2 py-0.5 font-medium text-amber-950 dark:bg-amber-950 dark:text-amber-100">Overdue</span>
+								{/if}
+								<strong class="tabular-nums">{money(entry.amountCents)}</strong>
+							</div>
 						</div>
 						{#if entry.reversal}
 							<div class="rounded border border-amber-300 bg-amber-50 p-2 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">

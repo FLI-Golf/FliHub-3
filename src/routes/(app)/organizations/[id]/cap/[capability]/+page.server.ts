@@ -1,3 +1,4 @@
+import { parseFundingTarget, type SponsorshipFundingCondition } from '$lib/sponsorships/funding-threshold';
 import { createHash } from 'node:crypto';
 import { DemoFillError, fillEventDemoScores, submitEventDemoScorecards } from '$lib/server/fill-event-demo-scores';
 import type { Expense } from '$lib/expenses/model';
@@ -114,6 +115,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 	let sponsors: Sponsor[] | null = null;
 	let sponsorshipFunding: SponsorshipFundingEntry[] = [];
+	let sponsorshipConditions: SponsorshipFundingCondition[] = [];
 	let sponsorshipQuotes: SponsorshipQuote[] = [];
 	let sponsorshipAgreements: SponsorshipAgreement[] = [];
 	const sponsorshipTargets: { value: string; label: string }[] = [
@@ -139,14 +141,18 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		]);
 		sponsorshipAgreements = agreements;
 		const fundingFilter = pb.filter('organization = {:org}', { org: params.id });
-		const [funding, reversals] = await Promise.all([
+		const [funding, reversals, conditions] = await Promise.all([
 			pb.collection('sponsorship_funding_entries').getFullList<SponsorshipFundingEntry>({
 				filter: fundingFilter, sort: 'entryDate,id', fields: 'id,agreement,kind,amountCents,entryDate,method,reference'
 			}),
 			pb.collection('sponsorship_payment_reversals').getFullList<
 				NonNullable<SponsorshipFundingEntry['reversal']> & { payment: string }
-			>({ filter: fundingFilter, fields: 'payment,reason,recordedByName,recordedBy,created' })
+			>({ filter: fundingFilter, fields: 'payment,reason,recordedByName,recordedBy,created' }),
+			pb.collection('sponsorship_funding_conditions').getFullList<SponsorshipFundingCondition>({
+				filter: fundingFilter, fields: 'agreement,targetCents,percentage,currency,deadline,selectedIds,releasedAt,releasedBy,releasedByName,releasedCommittedCents'
+			})
 		]);
+		sponsorshipConditions = conditions;
 		const reversalsByPayment = new Map(reversals.map((reversal) => [reversal.payment, reversal]));
 		sponsorshipFunding = funding.map((entry) => ({ ...entry, reversal: reversalsByPayment.get(entry.id) }));
 		sponsorshipQuotes = await pb.collection('sponsorship_quotes').getFullList<SponsorshipQuote>({
@@ -874,6 +880,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		sponsorshipAgreements,
 		sponsorshipQuotes,
 		sponsorshipFunding,
+		sponsorshipConditions,
+		sponsorshipAsOf: new Date().toISOString().slice(0, 10),
 		sponsorshipTargets,
 		seedAgreementCount: sponsorshipAgreements.filter((agreement) =>
 			agreement.sponsor === sponsorshipSeedId(params.id, 'sponsor') &&
@@ -1073,7 +1081,7 @@ export const actions: Actions = {
 			return fail(404, { message: 'Sponsorship seed tools are available only in local development.' });
 		}
 		if (
-			!['create', 'edit', 'archive', 'restore', 'agreement', 'seed-agreement', 'clear-seed-agreements', 'quote', 'convert-quote', 'funding-entry', 'reverse-payment'].includes(intent) ||
+			!['create', 'edit', 'archive', 'restore', 'agreement', 'seed-agreement', 'clear-seed-agreements', 'quote', 'convert-quote', 'funding-entry', 'reverse-payment', 'funding-condition', 'release-installments'].includes(intent) ||
 			(intent !== 'create' && !seeding && !clearing && !ID_PATTERN.test(id))
 		) {
 			return fail(400, { message: 'Choose a valid sponsor action.' });
@@ -1092,6 +1100,41 @@ export const actions: Actions = {
 				!toOrganizationDTO(organization).capabilities.includes('sponsorships')
 			) {
 				return fail(403, { message: 'Sponsorships must be enabled and managed by an Owner or Admin.' });
+			}
+
+			if (intent === 'release-installments') {
+				const agreement = read('agreement');
+				if (!ID_PATTERN.test(agreement)) return fail(400, { message: 'Choose an agreement.' });
+				try {
+					await pb.send('/api/flihub/sponsorships/' + params.id + '/release-installments', {
+						method: 'POST', body: { sponsor: id, agreement }
+					});
+				} catch (err) {
+					return fail(pbErrorStatus(err), { conditionAgreement: agreement, releaseError: pbErrorMessage(err) });
+				}
+				redirect(303, '/organizations/' + params.id + '/cap/sponsorships#sponsorship-agreement-' + agreement);
+			}
+
+			if (intent === 'funding-condition') {
+				const agreement = read('agreement');
+				const conditionValues = {
+					target: read('target'), percentage: read('percentage'), currency: read('currency'),
+					deadline: read('deadline'), selectedIds: form.getAll('selectedIds').map(String)
+				};
+				const targetCents = parseFundingTarget(conditionValues.target);
+				const invalid = (conditionError: string, status = 400) =>
+					fail(status, { conditionAgreement: agreement, conditionError, conditionValues });
+				if (!ID_PATTERN.test(agreement)) return invalid('Choose a dependent agreement.');
+				if (!targetCents) return invalid('Enter a valid funding target.');
+				try {
+					await pb.send('/api/flihub/sponsorships/' + params.id + '/funding-condition', {
+						method: 'POST',
+						body: { ...conditionValues, sponsor: id, agreement, targetCents, percentage: Number(conditionValues.percentage) }
+					});
+				} catch (err) {
+					return invalid(pbErrorMessage(err), pbErrorStatus(err));
+				}
+				redirect(303, '/organizations/' + params.id + '/cap/sponsorships#sponsorship-agreement-' + agreement);
 			}
 
 			if (intent === 'reverse-payment') {
@@ -1357,6 +1400,7 @@ export const actions: Actions = {
 			}
 			return { sponsorMessage: intent === 'create' ? 'Sponsor added.' : 'Sponsor updated.' };
 		} catch (err) {
+			if (isRedirect(err)) throw err;
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
 	},

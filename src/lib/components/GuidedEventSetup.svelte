@@ -1,4 +1,14 @@
 <script lang="ts">
+	import {
+		ArrowLeft as RoundBack,
+		ArrowRight as RoundNext,
+		Check as RoundCheck,
+		ChevronDown as RoundChevron,
+		Flag as RoundCourseIcon,
+		ListChecks as RoundReviewIcon,
+		Pencil as RoundNameIcon,
+		Target as RoundPositionIcon
+	} from 'lucide-svelte';
 	import { shuffled } from '$lib/event-setup/shuffle';
 	import { tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
@@ -131,6 +141,7 @@
 		})) ?? []
 	);
 	let teamsPerGroup = $state(2);
+	let groupsInitialized = initial !== null;
 	let validation = $state('');
 	let pending = $state(false);
 	let consumedSuccess = $state('');
@@ -226,7 +237,9 @@
 		return member ? `${member.name} · ${member.role}` : 'Unavailable scorekeeper';
 	}
 	function changeSeason(value: string) {
+		if (value === seasonId) return;
 		seasonId = value;
+		groupsInitialized = false;
 		selectedEntries = [];
 		groups = [];
 		validation = '';
@@ -278,20 +291,29 @@
 	async function move(next: number) {
 		step = next;
 		validation = '';
+		if (next === 2 && !groupsInitialized) {
+			groupsInitialized = true;
+			selectedEntries = seasonEntries
+				.filter((entry) => usableRoster(entry.id))
+				.map((entry) => entry.id);
+			if (selectedEntries.length) generateGroups();
+		}
 		await tick();
 		heading?.focus();
 	}
+	const eventNameReady = $derived((name.match(/\p{L}/gu)?.length ?? 0) >= 3);
+
 	function validateStage(index: number): string {
 		if (index === 0) {
 			if (venueName.trim().length > 120 || venueAddress.trim().length > 500)
 				return 'Use at most 120 characters for the venue name and 500 for its address.';
 			if (
-				!name.trim() ||
+				!eventNameReady ||
 				name.trim().length > 120 ||
 				!season ||
 				!['planned', 'active'].includes(season.status)
 			)
-				return 'Enter an event name and choose a planned or active season.';
+				return 'Enter an event name with at least three letters and choose a planned or active season.';
 			const parsed = new Date(date + 'T00:00:00.000Z');
 			if (
 				!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
@@ -384,6 +406,13 @@
 	const groupsReady = $derived(validateStage(2) === '');
 	const teesReady = $derived(validateStage(3) === '');
 	const firstUnsetRound = $derived(rounds.findIndex((round) => !round.teeStartLocal));
+	const nextFieldGlow = 'border-amber-500 ring-2 ring-amber-400/40 shadow-[0_0_12px_rgba(251,191,36,0.35)]';
+	const firstUnnamedGroup = $derived(groups.findIndex((group) => !group.name.trim()));
+	const firstMissingKeeper = $derived(
+		groups.findIndex((group) => !keepers.some((member) => member.userId === group.scorekeeper))
+	);
+	const missingTeeZone = $derived(!teeTimeZone.trim());
+	const missingTeeInterval = $derived(teeIntervalMinutes == null);
 	async function advance() {
 		validation = validateStage(step);
 		if (validation) {
@@ -406,8 +435,29 @@
 		rounds = rounds.map((round) => ({ ...round, teeStartLocal: '', teeStartsAt: undefined }));
 		selectedEntries = [];
 		groups = [];
+		groupsInitialized = false;
 		step = 0;
 		validation = '';
+	}
+	let openRoundIndex = $state<number | null>(0);
+	let roundStage = $state<'course' | 'position' | 'review'>('course');
+
+	function toggleRound(index: number) {
+		if (openRoundIndex === index) {
+			openRoundIndex = null;
+			return;
+		}
+		const round = rounds[index];
+		roundStage = !round.course ? 'course' : round.position ? 'review' : 'position';
+		openRoundIndex = index;
+	}
+
+	function finishRound(index: number) {
+		const needsSetup = (round: (typeof rounds)[number]) => !round.course || !round.position;
+		const next = rounds.findIndex((round, i) => i > index && needsSetup(round));
+		const remaining = next === -1 ? rounds.findIndex(needsSetup) : next;
+		openRoundIndex = remaining === -1 ? null : remaining;
+		roundStage = remaining !== -1 && rounds[remaining].course ? 'position' : 'course';
 	}
 </script>
 
@@ -456,17 +506,44 @@
 			>
 				{String(feedback.message)}
 			</p>{/if}
-		<ol
-			class="grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-3 lg:grid-cols-6"
-			aria-label="Event setup progress"
-		>
-			{#each steps as label, index (label)}<li
-					aria-current={step === index ? 'step' : undefined}
-					class={`rounded-md border px-3 py-2 text-sm ${step === index ? 'border-blue-600 bg-blue-100 font-semibold text-blue-950' : 'bg-white'}`}
-				>
-					{index + 1}. {label}
-				</li>{/each}
-		</ol>
+		<div class="grid gap-2">
+			<div class="flex justify-between gap-2 text-sm font-medium">
+				<span>Event setup</span>
+				<span class="text-muted-foreground">Step {step + 1} of {steps.length}</span>
+			</div>
+			<div
+				class="h-2 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950"
+				role="progressbar"
+				aria-label="Event setup progress"
+				aria-valuemin={0}
+				aria-valuemax={steps.length}
+				aria-valuenow={step}
+				aria-valuetext={`Step ${step + 1} of ${steps.length}: ${steps[step]}`}
+			>
+				<div
+					class="h-full rounded-full bg-linear-to-r from-blue-600 to-blue-800 transition-[width] motion-reduce:transition-none"
+					style:width={`${(step / steps.length) * 100}%`}
+				></div>
+			</div>
+			<ol class="grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-3 lg:grid-cols-6" aria-label="Event setup steps">
+				{#each steps as label, index (label)}
+					<li
+						aria-current={step === index ? 'step' : undefined}
+						class="flex items-center gap-1.5 rounded-md border px-2 py-2 text-sm {step === index
+							? 'border-blue-700 bg-blue-700 font-semibold text-white'
+							: index < step
+								? 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200'
+								: 'border-border bg-muted text-muted-foreground'}"
+					>
+						{#if index < step}
+							<RoundCheck class="size-4 shrink-0" aria-hidden="true" />
+							<span class="sr-only">Completed: </span>
+						{/if}
+						<span>{index + 1}. {label}</span>
+					</li>
+				{/each}
+			</ol>
+		</div>
 		<h3 bind:this={heading} tabindex="-1" class="text-lg font-semibold focus:outline-none">
 			{steps[step]}
 		</h3>
@@ -485,7 +562,7 @@
 						id="guided-name"
 						bind:value={name}
 						maxlength="120"
-						class="min-h-11 rounded-md border bg-background px-3 py-2"
+						class="min-h-11 rounded-md border bg-background px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {!eventNameReady ? nextFieldGlow : ''}"
 						placeholder="Coastal Spring Open"
 					/>
 				</div>
@@ -494,7 +571,7 @@
 						id="guided-season"
 						value={seasonId}
 						onchange={(event) => changeSeason(event.currentTarget.value)}
-						class="min-h-11 rounded-md border bg-background px-3 py-2"
+						class="min-h-11 rounded-md border bg-background px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {eventNameReady && !season ? nextFieldGlow : ''}"
 						><option value="">Choose a season</option
 						>{#each activeSeasons as option (option.id)}<option value={option.id}
 								>{option.name}</option
@@ -510,7 +587,7 @@
 						bind:value={date}
 						min={season?.startsOn?.slice(0, 10)}
 						max={season?.endsOn?.slice(0, 10)}
-						class="min-h-11 rounded-md border bg-background px-3 py-2"
+						class="min-h-11 rounded-md border bg-background px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {eventNameReady && season && !date ? nextFieldGlow : ''}"
 					/>
 				</div>
 			</div>
@@ -531,7 +608,7 @@
 							min={date || season?.startsOn?.slice(0, 10)}
 							max={season?.endsOn?.slice(0, 10)}
 							aria-describedby="guided-end-date-help"
-							class="min-h-11 rounded-md border bg-background px-3 py-2"
+							class="min-h-11 rounded-md border bg-background px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {eventNameReady && season && date && !endDate ? nextFieldGlow : ''}"
 						/>
 						<p id="guided-end-date-help" class="text-sm text-muted-foreground">
 							Choose a later day within the season. Schedule each round's local tee times separately
@@ -577,54 +654,146 @@
 				produces 18 playing holes.
 			</p>
 			{#each rounds as round, index (index)}
-				<div class="grid gap-3 rounded-lg border bg-white p-4 sm:grid-cols-2">
-					<div class="flex flex-col gap-2 sm:col-span-2">
-						<label for={`guided-round-name-${index}`}>Round {index + 1} name</label><input
-							id={`guided-round-name-${index}`}
-							bind:value={rounds[index].name}
-							maxlength="120"
-							class="min-h-11 rounded-md border px-3 py-2"
-						/>
+				{@const selectedCourse = courses.find((course) => course.id === round.course)}
+				<details class="rounded-lg border bg-card" open={openRoundIndex === index}>
+					<summary
+						class="flex cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+						onclick={(event) => {
+							event.preventDefault();
+							toggleRound(index);
+						}}
+					>
+						<span class="flex min-w-0 flex-1 flex-col gap-0.5">
+							<span class="break-words font-semibold">{round.name.trim() || `Round ${index + 1}`}</span>
+							<span class="text-sm text-muted-foreground">
+								{selectedCourse && round.position
+									? `${selectedCourse.name} · ${round.position}`
+									: 'Setup needed'}
+							</span>
+						</span>
+						<RoundChevron class="size-4 shrink-0 transition-transform {openRoundIndex === index ? 'rotate-180' : ''}" aria-hidden="true" />
+					</summary>
+					<div class="grid gap-4 border-t p-4">
+						<ol class="grid grid-cols-3 gap-1 text-xs sm:gap-2 sm:text-sm" aria-label="Round setup progress">
+							{#each ['course', 'position', 'review'] as stage, stageIndex (stage)}
+								{@const completed = stageIndex < ['course', 'position', 'review'].indexOf(roundStage)}
+								{@const positionColor = round.position.trim().toLowerCase()}
+								{@const activeColor = positionColor === 'red'
+									? 'border-red-700 bg-red-700 text-white'
+									: positionColor === 'blue'
+										? 'border-blue-800 bg-blue-800 text-white'
+										: 'border-slate-700 bg-slate-700 text-white'}
+								<li
+									aria-current={roundStage === stage ? 'step' : undefined}
+									class="flex flex-wrap items-center gap-1 rounded-md border px-2 py-2 {roundStage === stage
+										? activeColor
+					: completed
+						? 'border-green-300 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
+						: 'bg-muted text-muted-foreground'}"
+								>
+									{#if completed}<RoundCheck class="size-4 shrink-0" aria-hidden="true" /><span class="sr-only">Completed: </span>{:else if stage === 'course'}<RoundCourseIcon class="size-4" aria-hidden="true" />
+									{:else if stage === 'position'}<RoundPositionIcon class="size-4" aria-hidden="true" />
+									{:else}<RoundReviewIcon class="size-4" aria-hidden="true" />{/if}
+									<span class="capitalize">{stageIndex + 1}. {stage}</span>
+								</li>
+							{/each}
+						</ol>
+						<h4 class="flex items-center gap-2 text-base font-semibold">
+							<RoundCourseIcon class="size-4 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+							{round.name.trim() || `Round ${index + 1}`}
+						</h4>
+
+						{#if roundStage === 'course'}
+							<div class="flex flex-col gap-2">
+								<label for={`guided-course-${index}`} class="flex items-center gap-2 font-medium"><RoundCourseIcon class="size-4 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />Course</label><select
+									id={`guided-course-${index}`}
+									value={round.course}
+									onchange={(event) => changeCourse(index, event.currentTarget.value)}
+									class="min-h-11 rounded-md border px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {!selectedCourse ? nextFieldGlow : ''}"
+									><option value="">Choose a course</option>{#each courses as course (course.id)}<option
+											value={course.id}>{course.name} · {course.holeIds.length} holes</option
+										>{/each}</select
+								>
+							</div>
+							<div class="flex flex-wrap gap-2">
+								<button type="button" disabled class="inline-flex min-h-11 items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium opacity-50">
+									<RoundBack class="size-4" aria-hidden="true" /> Back
+								</button>
+							<button type="button" class="inline-flex min-h-11 w-fit items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50" disabled={!selectedCourse} onclick={() => (roundStage = 'position')}>
+								Continue to position <RoundNext class="size-4" aria-hidden="true" />
+							</button>
+							</div>
+						{:else if roundStage === 'position'}
+							<p class="text-sm font-medium">{selectedCourse?.name}</p>
+							<div class="flex flex-col gap-2">
+								<label for={`guided-position-${index}`} class="flex items-center gap-2 font-medium"><RoundPositionIcon class="size-4 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />Basket position / tee set</label><select
+									id={`guided-position-${index}`}
+									bind:value={rounds[index].position}
+									class="min-h-11 rounded-md border px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {selectedCourse && !round.position ? nextFieldGlow : ''}"
+									><option value="">Choose a complete position</option
+									>{#each courses.find((course) => course.id === round.course)?.labels ?? [] as label (label.label)}<option
+											value={label.label}
+											disabled={label.missing.length > 0}
+											>{label.label} · {label.total} holes{label.missing.length
+												? ` · missing ${label.missing.join(', ')}`
+												: ''}</option
+										>{/each}</select
+								>
+							</div>
+							<div class="flex flex-wrap gap-2">
+								<button type="button" class="inline-flex min-h-11 w-fit items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium" onclick={() => (roundStage = 'course')}>
+									<RoundBack class="size-4" aria-hidden="true" /> Back
+								</button>
+								<button type="button" class="inline-flex min-h-11 w-fit items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50" disabled={!round.position} onclick={() => (roundStage = 'review')}>
+									Review round <RoundNext class="size-4" aria-hidden="true" />
+								</button>
+							</div>
+						{:else}
+							<div class="flex flex-col gap-2 sm:col-span-2">
+								<label for={`guided-round-name-${index}`} class="flex items-center gap-2 font-medium"><RoundNameIcon class="size-4 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />Round {index + 1} name</label><input
+									id={`guided-round-name-${index}`}
+									bind:value={rounds[index].name}
+									maxlength="120"
+									class="min-h-11 rounded-md border px-3 py-2"
+								/>
+							</div>
+							<p class="flex flex-wrap items-center gap-2 rounded-md bg-muted p-3 text-sm">
+								<RoundCourseIcon class="size-4" aria-hidden="true" /> {selectedCourse?.name}
+								<RoundPositionIcon class="size-4" aria-hidden="true" /> {round.position} · {selectedCourse?.holeIds.length ?? 0} holes
+							</p>
+							<div class="flex flex-wrap gap-2">
+								<button type="button" class="inline-flex min-h-11 w-fit items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium" onclick={() => (roundStage = 'position')}>
+									<RoundBack class="size-4" aria-hidden="true" /> Back
+								</button>
+								<button type="button" class="inline-flex min-h-11 w-fit items-center gap-2 rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-50" onclick={() => finishRound(index)}>
+									<RoundCheck class="size-4" aria-hidden="true" /> Done with Round {index + 1}
+								</button>
+							</div>
+						{/if}
+						{#if rounds.length > 1}<button
+													type="button"
+													onclick={() => {
+						rounds = rounds.filter((_, i) => i !== index);
+						roundStage = 'course';
+						if (openRoundIndex === index) {
+							openRoundIndex = Math.min(index, rounds.length - 1);
+						} else if (openRoundIndex !== null && openRoundIndex > index) {
+							openRoundIndex -= 1;
+						}
+					}}
+													class="min-h-11 w-fit rounded-md border px-3 py-2 text-sm text-red-900"
+													>Remove round</button
+												>{/if}
 					</div>
-					<div class="flex flex-col gap-2">
-						<label for={`guided-course-${index}`}>Course</label><select
-							id={`guided-course-${index}`}
-							value={round.course}
-							onchange={(event) => changeCourse(index, event.currentTarget.value)}
-							class="min-h-11 rounded-md border px-3 py-2"
-							><option value="">Choose a course</option>{#each courses as course (course.id)}<option
-									value={course.id}>{course.name} · {course.holeIds.length} holes</option
-								>{/each}</select
-						>
-					</div>
-					<div class="flex flex-col gap-2">
-						<label for={`guided-position-${index}`}>Basket position / tee set</label><select
-							id={`guided-position-${index}`}
-							bind:value={rounds[index].position}
-							class="min-h-11 rounded-md border px-3 py-2"
-							><option value="">Choose a complete position</option
-							>{#each courses.find((course) => course.id === round.course)?.labels ?? [] as label (label.label)}<option
-									value={label.label}
-									disabled={label.missing.length > 0}
-									>{label.label} · {label.total} holes{label.missing.length
-										? ` · missing ${label.missing.join(', ')}`
-										: ''}</option
-								>{/each}</select
-						>
-					</div>
-					{#if rounds.length > 1}<button
-							type="button"
-							onclick={() => (rounds = rounds.filter((_, i) => i !== index))}
-							class="min-h-11 w-fit rounded-md border px-3 py-2 text-sm text-red-900"
-							>Remove round</button
-						>{/if}
-				</div>
+				</details>
 			{/each}
 			<button
 				type="button"
 				disabled={rounds.length >= 12}
-				onclick={() =>
-					(rounds = [
+				onclick={() => {
+	openRoundIndex = rounds.length;
+	roundStage = 'course';
+	rounds = [
 						...rounds,
 						{
 							name: `Round ${rounds.length + 1}`,
@@ -632,14 +801,15 @@
 							position: '',
 							holeIds: []
 						}
-					])}
+					];
+}}
 				class="min-h-11 w-fit rounded-md border bg-white px-4 py-2">Add round</button
 			>
 			<p class="text-sm font-medium">Total playing holes: {playingHoles}</p>
 		{:else if step === 2}
 			<p class="text-sm">
-				Choose existing season teams, then generate an editable grouping. Regenerating resets group
-				names and scorekeeper selections.
+				Teams with valid season rosters are grouped automatically. Review the groups or adjust the team
+				selection and generate new groups. Regenerating resets group names and scorekeeper selections.
 			</p>
 			<div class="flex flex-wrap gap-3">
 				<button
@@ -718,7 +888,7 @@
 						id={`guided-group-${group.key}`}
 						bind:value={groups[index].name}
 						maxlength="80"
-						class="min-h-11 rounded-md border px-3 py-2"
+						class="min-h-11 rounded-md border px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {index === firstUnnamedGroup ? nextFieldGlow : ''}"
 					/>{#each group.entries as entry (entry)}<div
 							class="flex flex-wrap items-center justify-between gap-2"
 						>
@@ -755,7 +925,7 @@
 							id="guided-tee-zone"
 							list="guided-tee-zones"
 							bind:value={teeTimeZone}
-							class="min-h-11 rounded-md border bg-background px-3 py-2"
+							class="min-h-11 rounded-md border bg-background px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {missingTeeZone ? nextFieldGlow : ''}"
 						/><datalist id="guided-tee-zones"
 							>{#each timeZones as zone (zone)}<option value={zone}></option>{/each}</datalist
 						>
@@ -768,7 +938,7 @@
 							max="240"
 							step="1"
 							bind:value={teeIntervalMinutes}
-							class="min-h-11 rounded-md border bg-background px-3 py-2"
+							class="min-h-11 rounded-md border bg-background px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {!missingTeeZone && missingTeeInterval ? nextFieldGlow : ''}"
 						/>
 					</div>
 				</div>
@@ -783,7 +953,7 @@
 							max={(multiDay ? endDate : date) ? (multiDay ? endDate : date) + 'T23:59' : undefined}
 							class={`min-h-11 rounded-md border-2 bg-background px-3 py-2 ${
 								!round.teeStartLocal
-									? 'border-red-500 ring-2 ring-red-200'
+									? (!missingTeeZone && !missingTeeInterval && index === firstUnsetRound ? nextFieldGlow : 'border-border')
 									: teePreview.error
 										? 'border-amber-500'
 										: 'border-green-600'
@@ -839,7 +1009,7 @@
 					><select
 						id={`guided-keeper-${group.key}`}
 						bind:value={groups[index].scorekeeper}
-						class="min-h-11 rounded-md border px-3 py-2"
+						class="min-h-11 rounded-md border px-3 py-2 transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 {index === firstMissingKeeper ? nextFieldGlow : ''}"
 						><option value="">Choose a scorekeeper</option
 						>{#each keepers as member (member.userId)}<option value={member.userId}
 								>{member.name} · {member.role}</option
@@ -928,9 +1098,9 @@
 			{#if step < 5}<button
 					type="button"
 					onclick={advance}
-					disabled={(step === 2 && !groupsReady) || (step === 3 && !teesReady)}
+					disabled={(step === 0 && Boolean(validateStage(0))) || (step === 1 && Boolean(validateStage(1))) || (step === 2 && !groupsReady) || (step === 3 && !teesReady)}
 					class="min-h-11 rounded-md bg-blue-700 px-5 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-					>{step === 4 ? 'Review setup' : 'Next'}</button
+					>{step === 1 ? 'Continue to groups' : step === 4 ? 'Review setup' : 'Next'}</button
 				>
 			{:else}<form
 					method="POST"

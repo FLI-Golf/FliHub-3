@@ -169,6 +169,30 @@
 	function display(iso: string | null): string {
 		return iso ? iso.slice(0, 16) : 'Not scheduled';
 	}
+	let eventSearch = $state('');
+	let eventStatus = $state('');
+	let eventSort = $state('date-asc');
+
+	const eventStatuses = $derived([...new Set(events.map((event) => event.status))].sort());
+	const filteredEvents = $derived.by(() => {
+		const query = eventSearch.trim().toLowerCase();
+		return events
+			.filter((event) =>
+				(!eventStatus || event.status === eventStatus) &&
+				(!query || [event.name, event.seasonName, event.venueName].some(
+					(value) => value?.toLowerCase().includes(query)
+				))
+			)
+			.sort((a, b) => {
+				const byName = a.name.localeCompare(b.name);
+				if (eventSort === 'name') return byName;
+				if (!a.startsAt || !b.startsAt) {
+					return Number(!a.startsAt) - Number(!b.startsAt) || byName;
+				}
+				const byDate = a.startsAt.localeCompare(b.startsAt);
+				return (eventSort === 'date-desc' ? -byDate : byDate) || byName;
+			});
+	});
 </script>
 
 {#snippet setupItem(complete: boolean, label: string)}
@@ -207,15 +231,46 @@
 			<Card.Description>Review each event’s setup and open it to make changes.</Card.Description>
 		</Card.Header>
 		<Card.Content class="grid gap-4 pt-5 xl:grid-cols-2">
-			{#if events.length === 0}
-				<p class="text-sm text-muted-foreground">No events yet.</p>
+		<div class="grid gap-3 sm:grid-cols-3 xl:col-span-2">
+			<label class="grid gap-1 text-sm font-medium">
+				Search events
+				<input type="search" bind:value={eventSearch} placeholder="Name, season, or venue"
+					class="min-h-11 min-w-0 rounded-md border bg-background px-3 py-2" />
+			</label>
+			<label class="grid gap-1 text-sm font-medium">
+				Status
+				<select bind:value={eventStatus} class="min-h-11 rounded-md border bg-background px-3 py-2">
+					<option value="">All statuses</option>
+					{#each eventStatuses as status (status)}
+						<option value={status}>{status[0].toUpperCase() + status.slice(1)}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="grid gap-1 text-sm font-medium">
+				Sort by
+				<select bind:value={eventSort} class="min-h-11 rounded-md border bg-background px-3 py-2">
+					<option value="date-asc">Date: earliest first</option>
+					<option value="date-desc">Date: latest first</option>
+					<option value="name">Name: A–Z</option>
+				</select>
+			</label>
+			<p class="text-sm text-muted-foreground sm:col-span-3" aria-live="polite">
+				Showing {filteredEvents.length} of {events.length} events
+			</p>
+		</div>
+			{#if filteredEvents.length === 0}
+				<p class="text-sm text-muted-foreground">{events.length ? 'No events match those filters.' : 'No events yet.'}</p>
 			{/if}
-			{#each events as event (event.id)}
+			{#each filteredEvents as event (event.id)}
 				{@const setup = eventSetup(event)}
 				<details class="group/event rounded-xl border border-slate-200 bg-card">
 					<summary class="flex cursor-pointer list-none flex-wrap items-center gap-2 rounded-xl p-4 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
 						<span class="min-w-0 flex-1 break-words font-bold">{event.name}</span>
-						<EventChevron class="size-4 shrink-0 transition-transform group-open/event:rotate-180" aria-hidden="true" />
+						<span class="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+		<span class="group-open/event:hidden">Show setup</span>
+		<span class="hidden group-open/event:inline">Hide setup</span>
+		<EventChevron class="size-4 shrink-0 transition-transform group-open/event:rotate-180" aria-hidden="true" />
+	</span>
 						{#if event.seasonName}
 							<Badge variant="outline" class="gap-1.5 border-slate-300 bg-slate-50 text-slate-700">
 								<Layers class="size-3.5" aria-hidden="true" />{event.seasonName}
