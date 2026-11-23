@@ -44,11 +44,11 @@ Build on the existing sponsor record. A sponsor can have multiple agreements wit
 
 **Goal.** Extend the funding workflow to organizations that raise money beyond paid sponsorships. Pilot it with a running event that supports a charity.
 
-| Funding type | What the organization tracks |
-| --- | --- |
-| Sponsorship | A paid agreement tied to a sponsor and the benefits or placement it covers. |
-| Donation | A contribution received for an organization, event, or designated beneficiary. |
-| Pledge | A promise to contribute, with a promised amount, optional due date, and receipt history. |
+| Funding type | What the organization tracks                                                             |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| Sponsorship  | A paid agreement tied to a sponsor and the benefits or placement it covers.              |
+| Donation     | A contribution received for an organization, event, or designated beneficiary.           |
+| Pledge       | A promise to contribute, with a promised amount, optional due date, and receipt history. |
 
 1. **Add donations and pledges.** Capture contributor details, the amount and currency, and the event or purpose. Allow an optional beneficiary where the organization is raising funds for a charity.
 2. **Apply receipts to pledges.** Link each payment to its pledge and show the remaining commitment. A $100 pledge with $40 received contributes $40 to received funding and shows $60 still pledged.

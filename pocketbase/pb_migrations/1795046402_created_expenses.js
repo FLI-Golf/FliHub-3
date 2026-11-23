@@ -79,9 +79,7 @@ migrate(
 					{ name: 'reviewedAt', type: 'date' },
 					{ name: 'created', type: 'autodate', onCreate: true }
 				],
-				indexes: [
-					'CREATE INDEX idx_expenses_org_submitter ON expenses (organization, submitter)'
-				]
+				indexes: ['CREATE INDEX idx_expenses_org_submitter ON expenses (organization, submitter)']
 			})
 		);
 	},

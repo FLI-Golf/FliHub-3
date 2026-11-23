@@ -12,16 +12,10 @@ onRecordCreateRequest((e) => {
 
 	for (const field of ['vendor', 'category', 'purpose']) {
 		const value = e.record.getString(field).trim();
-		if (!value)
-			throw new BadRequestError(
-				'Enter a vendor, category, and business purpose.'
-			);
+		if (!value) throw new BadRequestError('Enter a vendor, category, and business purpose.');
 		e.record.set(field, value);
 	}
-	e.record.set(
-		'submitterName',
-		e.auth?.getString('name').trim().slice(0, 255) ?? ''
-	);
+	e.record.set('submitterName', e.auth?.getString('name').trim().slice(0, 255) ?? '');
 	e.record.set('status', 'submitted');
 	e.record.set('reviewNote', '');
 	e.record.set('returnHistory', null);
@@ -53,22 +47,15 @@ routerAdd(
 				0,
 				{ org, user: e.auth.id }
 			)[0];
-			if (!membership)
-				throw new ForbiddenError('Owner or Admin access required.');
+			if (!membership) throw new ForbiddenError('Owner or Admin access required.');
 
 			const organization = app.findRecordById('organizations', org);
-			const capabilities = JSON.parse(
-				String(organization.get('capabilities') ?? '[]')
-			);
-			if (
-				!Array.isArray(capabilities) ||
-				!capabilities.includes('reimbursements')
-			)
+			const capabilities = JSON.parse(String(organization.get('capabilities') ?? '[]'));
+			if (!Array.isArray(capabilities) || !capabilities.includes('reimbursements'))
 				throw new ForbiddenError('Reimbursements & expenses is disabled.');
 
 			const expense = app.findRecordById('expenses', id);
-			if (expense.getString('organization') !== org)
-				throw new NotFoundError('Expense not found.');
+			if (expense.getString('organization') !== org) throw new NotFoundError('Expense not found.');
 			if (expense.getString('status') !== 'submitted')
 				throw new BadRequestError('This expense has already been reviewed.');
 
@@ -91,8 +78,7 @@ routerAdd(
 		const org = e.request.pathValue('org');
 		const id = e.request.pathValue('id');
 		const receipts = e.findUploadedFiles('receipt') ?? [];
-		if (receipts.length !== 1)
-			throw new BadRequestError('Choose one replacement receipt.');
+		if (receipts.length !== 1) throw new BadRequestError('Choose one replacement receipt.');
 
 		e.app.runInTransaction((app) => {
 			const membership = app.findRecordsByFilter(
@@ -103,13 +89,10 @@ routerAdd(
 				0,
 				{ org, user: e.auth.id }
 			)[0];
-			if (!membership)
-				throw new ForbiddenError('Organization membership required.');
+			if (!membership) throw new ForbiddenError('Organization membership required.');
 
 			const organization = app.findRecordById('organizations', org);
-			const capabilities = JSON.parse(
-				String(organization.get('capabilities') ?? '[]')
-			);
+			const capabilities = JSON.parse(String(organization.get('capabilities') ?? '[]'));
 			if (!Array.isArray(capabilities) || !capabilities.includes('reimbursements'))
 				throw new ForbiddenError('Reimbursements & expenses is disabled.');
 

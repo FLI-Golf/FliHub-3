@@ -24,18 +24,18 @@ same file — there is no forked list:
 
 ## Catalog
 
-| Capability        | Label                      | Availability | Depends on      | Milestone                    |
-| ----------------- | -------------------------- | ------------ | --------------- | ---------------------------- |
-| `athletes`        | Athletes                   | available    | —               | Phase 1C                     |
-| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E                 |
-| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D                     |
-| `venues-courses`  | Courses           | available    | —               | Phases 1D–1F                 |
-| `events`          | Events                     | available    | —               | Phases 1D–1F                 |
-| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H                 |
-| `standings`       | Competition standings      | available    | scoring-results | Phase 1I                     |
-| `fantasy`         | Fantasy leagues            | available    | standings       | Phases 2A–2C (event scoring) |
-| `sponsorships`    | Sponsorships               | available     | —               | Phase 3: Sponsor tracker          |
-| `reimbursements`  | Reimbursements & expenses  | available     | —               | Phase 3: Expense submission and review          |
+| Capability        | Label                      | Availability | Depends on      | Milestone                              |
+| ----------------- | -------------------------- | ------------ | --------------- | -------------------------------------- |
+| `athletes`        | Athletes                   | available    | —               | Phase 1C                               |
+| `teams`           | Teams & rosters            | available    | athletes        | Phases 1D–1E                           |
+| `leagues-seasons` | Leagues & seasons          | available    | —               | Phase 1D                               |
+| `venues-courses`  | Courses                    | available    | —               | Phases 1D–1F                           |
+| `events`          | Events                     | available    | —               | Phases 1D–1F                           |
+| `scoring-results` | Scoring & official results | available    | events          | Phases 1G–1H                           |
+| `standings`       | Competition standings      | available    | scoring-results | Phase 1I                               |
+| `fantasy`         | Fantasy leagues            | available    | standings       | Phases 2A–2C (event scoring)           |
+| `sponsorships`    | Sponsorships               | available    | —               | Phase 3: Sponsor tracker               |
+| `reimbursements`  | Reimbursements & expenses  | available    | —               | Phase 3: Expense submission and review |
 
 Three layers are kept separate:
 

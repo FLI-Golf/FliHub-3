@@ -8,8 +8,11 @@ function podiumTie(teams) {
 
 function measure(distance, unit) {
 	const factors = { feet: 304800, meters: 1000000, yards: 914400 };
-	if (!Object.prototype.hasOwnProperty.call(factors, unit) ||
-		typeof distance !== 'string' || !/^\d{1,4}(?:\.\d{1,3})?$/.test(distance)) {
+	if (
+		!Object.prototype.hasOwnProperty.call(factors, unit) ||
+		typeof distance !== 'string' ||
+		!/^\d{1,4}(?:\.\d{1,3})?$/.test(distance)
+	) {
 		throw new Error('Enter a distance with up to three decimal places and select a unit.');
 	}
 	const [whole, fraction = ''] = distance.split('.');
@@ -32,19 +35,29 @@ function measureAttempt(tie, athletes, entries, attempts = []) {
 	if (!pending.length) throw new Error('The shootout is already resolved.');
 	if (!Array.isArray(entries) || entries.length !== pending.length)
 		throw new Error('Enter throws for every team that is still tied.');
-	const teams = tie.teams.filter((team) => pending.includes(team.entry)).map((team) => {
-		const roster = athletes.filter((athlete) => athlete.entry === team.entry);
-		const input = entries.find((row) => row?.entry === team.entry);
-		if (roster.length !== 2 || new Set(roster.map((row) => row.athlete)).size !== 2 ||
-			!Array.isArray(input?.throws) || input.throws.length !== 2)
-			throw new Error('Each tied team must have two published athletes and two throws.');
-		const throws = roster.map((athlete) => {
-			const row = input.throws.find((item) => item?.athlete === athlete.athlete);
-			return { athlete: athlete.athlete, distance: row?.distance, unit: row?.unit,
-				nanometers: measure(row?.distance, row?.unit) };
+	const teams = tie.teams
+		.filter((team) => pending.includes(team.entry))
+		.map((team) => {
+			const roster = athletes.filter((athlete) => athlete.entry === team.entry);
+			const input = entries.find((row) => row?.entry === team.entry);
+			if (
+				roster.length !== 2 ||
+				new Set(roster.map((row) => row.athlete)).size !== 2 ||
+				!Array.isArray(input?.throws) ||
+				input.throws.length !== 2
+			)
+				throw new Error('Each tied team must have two published athletes and two throws.');
+			const throws = roster.map((athlete) => {
+				const row = input.throws.find((item) => item?.athlete === athlete.athlete);
+				return {
+					athlete: athlete.athlete,
+					distance: row?.distance,
+					unit: row?.unit,
+					nanometers: measure(row?.distance, row?.unit)
+				};
+			});
+			return { entry: team.entry, throws, nanometers: throws[0].nanometers + throws[1].nanometers };
 		});
-		return { entry: team.entry, throws, nanometers: throws[0].nanometers + throws[1].nanometers };
-	});
 	const distance = new Map(teams.map((team) => [team.entry, team.nanometers]));
 	const bands = previousBands.flatMap((band) => {
 		if (band.length === 1) return [band];

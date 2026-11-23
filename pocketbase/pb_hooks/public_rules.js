@@ -196,10 +196,15 @@ function publicEventResult(app, orgId, event, parCache) {
 		athlete: String(a.athlete ?? ''),
 		total: Number(a.total ?? 0),
 		par: totals.hasInjuryHandoff ? a.par : parKnown ? eventPar : null,
-		...(totals.hasInjuryHandoff ? {
-			holesPlayed: Object.values(a.roundScores ?? {}).reduce((n, cells) => n + Object.keys(cells).length, 0),
-			eventHoles: totals.rounds.reduce((n, round) => n + round.holes.length, 0)
-		} : {})
+		...(totals.hasInjuryHandoff
+			? {
+					holesPlayed: Object.values(a.roundScores ?? {}).reduce(
+						(n, cells) => n + Object.keys(cells).length,
+						0
+					),
+					eventHoles: totals.rounds.reduce((n, round) => n + round.holes.length, 0)
+				}
+			: {})
 	}));
 	const parByEntry = new Map();
 	for (const a of athletes) {
@@ -216,11 +221,17 @@ function publicEventResult(app, orgId, event, parCache) {
 		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM.
 		const tie = require(`${__hooks}/playoff_rules.js`).podiumTie(rankedTeams);
 		const entries = tie?.teams.map((team) => team.entry) ?? [];
-		const order = published.playoffOrder ?? (entries.length === 2 && entries.includes(published.playoffWinner)
-			? [published.playoffWinner, entries.find((entry) => entry !== published.playoffWinner)]
-			: []);
-		if (tie && order.length === entries.length && new Set(order).size === entries.length &&
-			order.every((entry) => entries.includes(entry))) {
+		const order =
+			published.playoffOrder ??
+			(entries.length === 2 && entries.includes(published.playoffWinner)
+				? [published.playoffWinner, entries.find((entry) => entry !== published.playoffWinner)]
+				: []);
+		if (
+			tie &&
+			order.length === entries.length &&
+			new Set(order).size === entries.length &&
+			order.every((entry) => entries.includes(entry))
+		) {
 			for (const team of tie.teams) team.rank = tie.place + order.indexOf(team.entry);
 			rankedTeams.sort((a, b) => a.rank - b.rank);
 		}
@@ -237,7 +248,9 @@ function publicEventResult(app, orgId, event, parCache) {
 		playoffOrder: published.playoffOrder,
 		teams: rankedTeams,
 		athletes: [
-			...rankRows(athletes.filter((a) => a.holesPlayed === undefined || a.holesPlayed === a.eventHoles)),
+			...rankRows(
+				athletes.filter((a) => a.holesPlayed === undefined || a.holesPlayed === a.eventHoles)
+			),
 			...athletes.filter((a) => a.holesPlayed < a.eventHoles).map((a) => ({ ...a, rank: null }))
 		]
 	};
@@ -332,15 +345,24 @@ function buildStandings(app, orgId, events, parCache, includePayoutInputs = fals
 			season: seasonId,
 			seasonName: resolveSeasonName(seasonId),
 			events: results.map((r) => ({ event: r.event, eventName: r.eventName })),
-			...(includePayoutInputs ? { payoutEvents: results.map((r) => ({
-				event: r.event,
-				eventName: r.eventName,
-				purseCents: null,
-				playoffWinner: r.playoffWinner,
-				playoffOrder: r.playoffOrder,
-				teams: r.teams.map(({ entry, total }) => ({ entry, total })),
-				athletes: r.athletes.map(({ athlete, entry, holesPlayed, eventHoles }) => ({ athlete, entry, holesPlayed, eventHoles }))
-			})) } : {}),
+			...(includePayoutInputs
+				? {
+						payoutEvents: results.map((r) => ({
+							event: r.event,
+							eventName: r.eventName,
+							purseCents: null,
+							playoffWinner: r.playoffWinner,
+							playoffOrder: r.playoffOrder,
+							teams: r.teams.map(({ entry, total }) => ({ entry, total })),
+							athletes: r.athletes.map(({ athlete, entry, holesPlayed, eventHoles }) => ({
+								athlete,
+								entry,
+								holesPlayed,
+								eventHoles
+							}))
+						}))
+					}
+				: {}),
 			teams: aggregate(results, 'entry', 'teamName'),
 			athletes: aggregate(results, 'athlete', 'athleteName')
 		});

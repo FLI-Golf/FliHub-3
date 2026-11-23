@@ -133,7 +133,6 @@
 		</Alert.Root>
 	{/if}
 
-
 	{#if canManage}
 		<details class="group/add-athlete rounded-xl border bg-card p-4">
 			<summary class="cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
@@ -253,88 +252,95 @@
 	{/if}
 
 	<details class="group/athlete-list rounded-xl border bg-card">
-		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<summary
+			class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
 			<UserRound class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 			<span>Athletes ({athletes.length})</span>
-			<AthleteListChevron class="ml-auto size-4 shrink-0 transition-transform group-open/athlete-list:rotate-180" aria-hidden="true" />
+			<AthleteListChevron
+				class="ml-auto size-4 shrink-0 transition-transform group-open/athlete-list:rotate-180"
+				aria-hidden="true"
+			/>
 		</summary>
 		<Card.Root class="gap-4 rounded-none border-0 border-t bg-transparent py-4 shadow-none">
 			<Card.Header>
-			<Card.Description>
-				Sport-neutral identity records scoped to this organization. Fields marked
-				<Badge variant="outline" class="mx-1 text-xs">private</Badge> are contact/eligibility data visible
-				only to Owners and Admins; the rest are approved display fields readable by all organization members.
-			</Card.Description>
-		</Card.Header>
-		<Card.Content class="flex flex-col">
-			{#if athletes.length === 0}
-				<p class="text-sm text-muted-foreground">
-					No athletes yet.{#if canManage} Use Add an athlete above to create one or import a CSV list.{/if}
-				</p>
-			{/if}
-			{#each athletes as athlete (athlete.id)}
-				<div
-					class="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-3 even:bg-slate-300"
-				>
-					<div class="flex min-w-0 flex-1 flex-col">
-						<span class="truncate font-medium">{nameOf(athlete)}</span>
-						<span class="truncate text-sm text-muted-foreground">
-							{[athlete.gender, athlete.nationality].filter(Boolean).join(' · ') || '—'}
-						</span>
-						{#if canManage && (athlete.email || athlete.phone || athlete.eligibilityNotes)}
+				<Card.Description>
+					Sport-neutral identity records scoped to this organization. Fields marked
+					<Badge variant="outline" class="mx-1 text-xs">private</Badge> are contact/eligibility data visible
+					only to Owners and Admins; the rest are approved display fields readable by all organization
+					members.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex flex-col">
+				{#if athletes.length === 0}
+					<p class="text-sm text-muted-foreground">
+						No athletes yet.{#if canManage}
+							Use Add an athlete above to create one or import a CSV list.{/if}
+					</p>
+				{/if}
+				{#each athletes as athlete (athlete.id)}
+					<div
+						class="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-3 even:bg-slate-300"
+					>
+						<div class="flex min-w-0 flex-1 flex-col">
+							<span class="truncate font-medium">{nameOf(athlete)}</span>
 							<span class="truncate text-sm text-muted-foreground">
-								{[athlete.email, athlete.phone].filter(Boolean).join(' · ')}
-								<Badge variant="outline" class="ml-1 text-[10px]">private</Badge>
+								{[athlete.gender, athlete.nationality].filter(Boolean).join(' · ') || '—'}
 							</span>
-						{/if}
-					</div>
-					{#if athlete.status === 'archived'}
-						<Badge variant="outline">Archived</Badge>
-					{:else}
-						<Badge variant="secondary" class="bg-blue-700 text-white">Active</Badge>
-					{/if}
-					{#if canManage}
-						<div class="flex flex-wrap gap-1">
-							<Button
-								variant="ghost"
-								size="xs"
-								class="bg-red-700 text-white hover:bg-red-800 hover:text-white"
-								onclick={() => {
-									editing = athlete;
-								}}
-							>
-								<Pencil class="size-3.5" />
-								Edit
-							</Button>
-							{#if athlete.status === 'active'}
-								<form method="POST" action="?/archiveAthlete">
-									<input type="hidden" name="athlete" value={athlete.id} />
-									<Button
-										type="submit"
-										variant="ghost"
-										size="xs"
-										class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
-										onclick={(e) => {
-											if (!confirm(`Archive ${nameOf(athlete)}? Records are preserved.`))
-												e.preventDefault();
-										}}
-									>
-										<Archive class="size-3.5" />
-										Archive
-									</Button>
-								</form>
-							{:else}
-								<form method="POST" action="?/unarchiveAthlete">
-									<input type="hidden" name="athlete" value={athlete.id} />
-									<Button type="submit" variant="ghost" size="xs">Restore</Button>
-								</form>
+							{#if canManage && (athlete.email || athlete.phone || athlete.eligibilityNotes)}
+								<span class="truncate text-sm text-muted-foreground">
+									{[athlete.email, athlete.phone].filter(Boolean).join(' · ')}
+									<Badge variant="outline" class="ml-1 text-[10px]">private</Badge>
+								</span>
 							{/if}
 						</div>
-					{/if}
-				</div>
-			{/each}
-		</Card.Content>
-	</Card.Root>
+						{#if athlete.status === 'archived'}
+							<Badge variant="outline">Archived</Badge>
+						{:else}
+							<Badge variant="secondary" class="bg-blue-700 text-white">Active</Badge>
+						{/if}
+						{#if canManage}
+							<div class="flex flex-wrap gap-1">
+								<Button
+									variant="ghost"
+									size="xs"
+									class="bg-red-700 text-white hover:bg-red-800 hover:text-white"
+									onclick={() => {
+										editing = athlete;
+									}}
+								>
+									<Pencil class="size-3.5" />
+									Edit
+								</Button>
+								{#if athlete.status === 'active'}
+									<form method="POST" action="?/archiveAthlete">
+										<input type="hidden" name="athlete" value={athlete.id} />
+										<Button
+											type="submit"
+											variant="ghost"
+											size="xs"
+											class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+											onclick={(e) => {
+												if (!confirm(`Archive ${nameOf(athlete)}? Records are preserved.`))
+													e.preventDefault();
+											}}
+										>
+											<Archive class="size-3.5" />
+											Archive
+										</Button>
+									</form>
+								{:else}
+									<form method="POST" action="?/unarchiveAthlete">
+										<input type="hidden" name="athlete" value={athlete.id} />
+										<Button type="submit" variant="ghost" size="xs">Restore</Button>
+									</form>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</Card.Content>
+		</Card.Root>
 	</details>
 </div>
 

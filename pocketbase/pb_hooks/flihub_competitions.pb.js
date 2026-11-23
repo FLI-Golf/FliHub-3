@@ -117,14 +117,20 @@ onRecordUpdateRequest((e) => {
 			'immutable_relation: A record cannot be moved to another organization.'
 		);
 	}
-	if (originalLeague && (originalLeague.getInt('payoutTopWeight') !== e.record.getInt('payoutTopWeight') ||
-		originalLeague.getInt('payoutLowerWeight') !== e.record.getInt('payoutLowerWeight') ||
-		originalLeague.getBool('payoutPerTournament') !== e.record.getBool('payoutPerTournament') ||
-		originalLeague.getString('payoutEventCurves') !== e.record.getString('payoutEventCurves'))) {
+	if (
+		originalLeague &&
+		(originalLeague.getInt('payoutTopWeight') !== e.record.getInt('payoutTopWeight') ||
+			originalLeague.getInt('payoutLowerWeight') !== e.record.getInt('payoutLowerWeight') ||
+			originalLeague.getBool('payoutPerTournament') !== e.record.getBool('payoutPerTournament') ||
+			originalLeague.getString('payoutEventCurves') !== e.record.getString('payoutEventCurves'))
+	) {
 		const [owner] = e.app.findRecordsByFilter(
 			'memberships',
 			'organization = {:org} && user = {:user} && role = "owner"',
-			'', 1, 0, { org: org.id, user: e.auth?.id ?? '' }
+			'',
+			1,
+			0,
+			{ org: org.id, user: e.auth?.id ?? '' }
 		);
 		if (!owner) throw new ForbiddenError('Only the organization Owner can save a payout curve.');
 	}

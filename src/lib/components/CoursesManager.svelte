@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { Archive, ArchiveRestore, ChevronDown, CircleAlert, Flag, MapPin, Plus, Trash2, X } from 'lucide-svelte';
+	import {
+		Archive,
+		ArchiveRestore,
+		ChevronDown,
+		CircleAlert,
+		Flag,
+		MapPin,
+		Plus,
+		Trash2,
+		X
+	} from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -102,8 +112,12 @@
 
 	{#if canManage}
 		<details class="group/add-course rounded-xl border bg-card">
-			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-				<span class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-green-700 text-white group-open/add-course:bg-red-700">
+			<summary
+				class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+			>
+				<span
+					class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-green-700 text-white group-open/add-course:bg-red-700"
+				>
 					<Plus class="size-4 group-open/add-course:hidden" aria-hidden="true" />
 					<X class="hidden size-4 group-open/add-course:block" aria-hidden="true" />
 				</span>
@@ -111,41 +125,45 @@
 				<span class="hidden group-open/add-course:inline">Close course form</span>
 			</summary>
 			<div class="border-t p-4">
-				<form
-									method="POST"
-									action="?/createCourse"
-									class="flex flex-wrap items-end gap-3"
-								>
-									<div class="flex min-w-48 flex-1 flex-col gap-1.5">
-										<Label for="course-name">New course</Label>
-										<Input
-											id="course-name"
-											name="name"
-											required
-											maxlength={120}
-											placeholder="Course name"
-										/>
-									</div>
-									<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
-										<Plus class="mr-1 size-4" /> Create course
-									</Button>
-								</form>
+				<form method="POST" action="?/createCourse" class="flex flex-wrap items-end gap-3">
+					<div class="flex min-w-48 flex-1 flex-col gap-1.5">
+						<Label for="course-name">New course</Label>
+						<Input
+							id="course-name"
+							name="name"
+							required
+							maxlength={120}
+							placeholder="Course name"
+						/>
+					</div>
+					<Button type="submit" class="bg-green-700 text-white hover:bg-green-800">
+						<Plus class="mr-1 size-4" /> Create course
+					</Button>
+				</form>
 			</div>
 		</details>
 	{/if}
 
 	{#if canManage && courses.some((course) => course.status === 'active')}
-		<details class="group/bulk-holes rounded-xl border bg-card" open={typeof formRecord?.holesImported === "number"}>
-			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<details
+			class="group/bulk-holes rounded-xl border bg-card"
+			open={typeof formRecord?.holesImported === 'number'}
+		>
+			<summary
+				class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+			>
 				<Flag class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 				<span>Bulk add course holes</span>
-				<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/bulk-holes:rotate-180" aria-hidden="true" />
+				<ChevronDown
+					class="ml-auto size-4 shrink-0 transition-transform group-open/bulk-holes:rotate-180"
+					aria-hidden="true"
+				/>
 			</summary>
 			<div class="border-t p-4">
 				<div>
 					<div>
-						Copy the example into chat and add your hole list. Select the course below, then paste the
-						CSV reply as-is.
+						Copy the example into chat and add your hole list. Select the course below, then paste
+						the CSV reply as-is.
 					</div>
 				</div>
 				<div class="space-y-3">
@@ -178,8 +196,8 @@
 							One playing hole per line. Column order is playing hole, physical course hole, name,
 							par, basket position or tee set, distance, unit. For an 18-hole course, both hole
 							numbers run from 1–18. For nine holes played twice, playing numbers run from 1–18 and
-							physical hole numbers repeat 1–9. Use feet, meters, or yards. Skip the header and paste
-							the chat reply directly.
+							physical hole numbers repeat 1–9. Use feet, meters, or yards. Skip the header and
+							paste the chat reply directly.
 						</p>
 						<textarea
 							id="hole-csv"
@@ -203,17 +221,23 @@
 	{/if}
 
 	<details class="group/course-list rounded-xl border bg-card">
-		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<summary
+			class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
 			<MapPin class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 			<span>Courses ({courses.length})</span>
-			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/course-list:rotate-180" aria-hidden="true" />
+			<ChevronDown
+				class="ml-auto size-4 shrink-0 transition-transform group-open/course-list:rotate-180"
+				aria-hidden="true"
+			/>
 		</summary>
 		<div class="border-t p-4">
 			<div>
 				<div>
 					Course layouts with numbered, named holes and labeled positions (distance with an explicit
-					unit). Venue records (physical locations) are planned, not implemented. Demo numbers — nine
-					holes, par 3, the 220–425 ft range — are pilot configuration, not limits imposed here.
+					unit). Venue records (physical locations) are planned, not implemented. Demo numbers —
+					nine holes, par 3, the 220–425 ft range — are pilot configuration, not limits imposed
+					here.
 				</div>
 			</div>
 			<div class="flex flex-col gap-3">
@@ -222,187 +246,203 @@
 				{/if}
 				{#each courses as course (course.id)}
 					<details class="group/course rounded-lg border bg-background">
-						<summary class="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-2 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+						<summary
+							class="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-2 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+						>
 							<Flag class="size-4 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 							<span>{course.name}</span>
-							<span class="text-sm font-normal text-muted-foreground">{holesOf(course.id).length} holes</span>
+							<span class="text-sm font-normal text-muted-foreground"
+								>{holesOf(course.id).length} holes</span
+							>
 							{#if course.status === 'archived'}<Badge variant="secondary">Archived</Badge>{/if}
-							<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/course:rotate-180" aria-hidden="true" />
+							<ChevronDown
+								class="ml-auto size-4 shrink-0 transition-transform group-open/course:rotate-180"
+								aria-hidden="true"
+							/>
 						</summary>
 						<div class="flex flex-col gap-2 border-t p-3">
-						<div class="flex flex-wrap items-center justify-between gap-2">
-							{#if canManage}
-								{#if course.status === 'active'}
-									<form method="POST" action="?/archiveCourse">
+							<div class="flex flex-wrap items-center justify-between gap-2">
+								{#if canManage}
+									{#if course.status === 'active'}
+										<form method="POST" action="?/archiveCourse">
+											<input type="hidden" name="course" value={course.id} />
+											<Button variant="ghost" size="sm" type="submit">
+												<Archive class="mr-1 size-3.5" /> Archive course
+											</Button>
+										</form>
+									{:else}
+										<form method="POST" action="?/unarchiveCourse">
+											<input type="hidden" name="course" value={course.id} />
+											<Button variant="ghost" size="sm" type="submit">
+												<ArchiveRestore class="mr-1 size-3.5" /> Restore course
+											</Button>
+										</form>
+									{/if}
+								{/if}
+							</div>
+
+							{#if course.status === 'active'}
+								{#if holesOf(course.id).length === 0}
+									<p class="text-sm text-muted-foreground">No holes on this course yet.</p>
+								{/if}
+								{#each holesOf(course.id) as hole, holeIndex (hole.id)}
+									<div
+										class="flex flex-col gap-1.5 rounded-md border p-2 pl-3 {holeIndex % 2 === 0
+											? 'bg-white'
+											: 'bg-slate-300'}"
+									>
+										<div class="flex flex-wrap items-center justify-between gap-2">
+											<div class="flex items-center gap-2 text-sm">
+												<Flag class="size-3.5" />
+												<span class="font-bold text-blue-900">Hole {hole.number} — {hole.name}</span
+												>
+												<Badge variant="outline" class="font-bold text-blue-900"
+													>Par {hole.par}</Badge
+												>
+											</div>
+											{#if canManage}
+												<form method="POST" action="?/archiveHole">
+													<input type="hidden" name="hole" value={hole.id} />
+													<Button
+														size="sm"
+														type="submit"
+														class="bg-red-700 text-white hover:bg-red-800"
+													>
+														<Trash2 class="size-4" aria-hidden="true" />
+														Remove
+													</Button>
+												</form>
+											{/if}
+										</div>
+										<div class="flex flex-wrap items-center gap-2 pl-6 text-sm">
+											{#each positionsOf(hole.id) as position (position.id)}
+												<span class="flex items-center gap-1 rounded-md border px-2 py-0.5">
+													<Badge variant="secondary">{position.label}</Badge>
+													{position.distance}
+													{position.unit}
+													{#if canManage}
+														<form method="POST" action="?/archivePosition" class="inline">
+															<input type="hidden" name="position" value={position.id} />
+															<button
+																type="submit"
+																class="ml-1 inline-flex size-6 items-center justify-center rounded bg-red-700 text-white hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2"
+																aria-label="Remove {position.label} position"
+															>
+																<X class="size-3.5" aria-hidden="true" />
+															</button>
+														</form>
+													{/if}
+												</span>
+											{/each}
+											{#if positionsOf(hole.id).length === 0}
+												<span class="text-muted-foreground">No positions yet.</span>
+											{/if}
+										</div>
+										{#if canManage}
+											<form
+												method="POST"
+												action="?/addPosition"
+												class="flex flex-wrap items-end gap-2 pl-6"
+											>
+												<input type="hidden" name="hole" value={hole.id} />
+												<div class="flex w-28 flex-col gap-1">
+													<Label for="pos-label-{hole.id}" class="text-xs">Position</Label>
+													<Input
+														id="pos-label-{hole.id}"
+														name="label"
+														required
+														maxlength={40}
+														placeholder="red"
+														class="h-8"
+													/>
+												</div>
+												<div class="flex w-28 flex-col gap-1">
+													<Label for="pos-distance-{hole.id}" class="text-xs">Distance</Label>
+													<Input
+														id="pos-distance-{hole.id}"
+														name="distance"
+														type="number"
+														min="1"
+														step="any"
+														required
+														class="h-8"
+													/>
+												</div>
+												<div class="flex w-28 flex-col gap-1">
+													<Label for="pos-unit-{hole.id}" class="text-xs">Unit</Label>
+													<select
+														id="pos-unit-{hole.id}"
+														name="unit"
+														required
+														class="h-8 rounded-md border bg-background px-2 text-sm"
+													>
+														<option value="feet" selected>feet</option>
+														<option value="meters">meters</option>
+														<option value="yards">yards</option>
+													</select>
+												</div>
+												<Button variant="outline" size="sm" type="submit">
+													<Plus class="mr-1 size-3.5" /> Add position
+												</Button>
+											</form>
+										{/if}
+									</div>
+								{/each}
+
+								{#if canManage}
+									<form
+										method="POST"
+										action="?/addHole"
+										class="flex flex-wrap items-end gap-2 border-t pt-3"
+									>
 										<input type="hidden" name="course" value={course.id} />
-										<Button variant="ghost" size="sm" type="submit">
-											<Archive class="mr-1 size-3.5" /> Archive course
-										</Button>
-									</form>
-								{:else}
-									<form method="POST" action="?/unarchiveCourse">
-										<input type="hidden" name="course" value={course.id} />
-										<Button variant="ghost" size="sm" type="submit">
-											<ArchiveRestore class="mr-1 size-3.5" /> Restore course
+										<div class="flex w-24 flex-col gap-1">
+											<Label for="hole-number-{course.id}" class="text-xs">Hole #</Label>
+											<Input
+												id="hole-number-{course.id}"
+												name="number"
+												type="number"
+												min="1"
+												step="1"
+												required
+												class="h-8"
+											/>
+										</div>
+										<div class="flex min-w-40 flex-1 flex-col gap-1">
+											<Label for="hole-name-{course.id}" class="text-xs">Hole name</Label>
+											<Input
+												id="hole-name-{course.id}"
+												name="name"
+												required
+												maxlength={120}
+												class="h-8"
+											/>
+										</div>
+										<div class="flex w-24 flex-col gap-1">
+											<Label for="hole-par-{course.id}" class="text-xs">Par</Label>
+											<Input
+												id="hole-par-{course.id}"
+												name="par"
+												type="number"
+												min="1"
+												step="1"
+												value="3"
+												required
+												class="h-8"
+											/>
+										</div>
+										<Button variant="outline" size="sm" type="submit">
+											<Plus class="mr-1 size-3.5" /> Add hole
 										</Button>
 									</form>
 								{/if}
 							{/if}
 						</div>
-
-						{#if course.status === 'active'}
-							{#if holesOf(course.id).length === 0}
-								<p class="text-sm text-muted-foreground">No holes on this course yet.</p>
-							{/if}
-							{#each holesOf(course.id) as hole, holeIndex (hole.id)}
-								<div
-									class="flex flex-col gap-1.5 rounded-md border p-2 pl-3 {holeIndex % 2 === 0 ? 'bg-white' : 'bg-slate-300'}"
-								>
-									<div class="flex flex-wrap items-center justify-between gap-2">
-										<div class="flex items-center gap-2 text-sm">
-											<Flag class="size-3.5" />
-											<span class="font-bold text-blue-900">Hole {hole.number} — {hole.name}</span>
-											<Badge variant="outline" class="font-bold text-blue-900">Par {hole.par}</Badge>
-										</div>
-										{#if canManage}
-											<form method="POST" action="?/archiveHole">
-												<input type="hidden" name="hole" value={hole.id} />
-												<Button size="sm" type="submit" class="bg-red-700 text-white hover:bg-red-800">
-													<Trash2 class="size-4" aria-hidden="true" />
-													Remove
-												</Button>
-											</form>
-										{/if}
-									</div>
-									<div class="flex flex-wrap items-center gap-2 pl-6 text-sm">
-										{#each positionsOf(hole.id) as position (position.id)}
-											<span class="flex items-center gap-1 rounded-md border px-2 py-0.5">
-												<Badge variant="secondary">{position.label}</Badge>
-												{position.distance}
-												{position.unit}
-												{#if canManage}
-													<form method="POST" action="?/archivePosition" class="inline">
-														<input type="hidden" name="position" value={position.id} />
-														<button
-															type="submit"
-															class="ml-1 inline-flex size-6 items-center justify-center rounded bg-red-700 text-white hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2"
-															aria-label="Remove {position.label} position"
-														>
-															<X class="size-3.5" aria-hidden="true" />
-														</button>
-													</form>
-												{/if}
-											</span>
-										{/each}
-										{#if positionsOf(hole.id).length === 0}
-											<span class="text-muted-foreground">No positions yet.</span>
-										{/if}
-									</div>
-									{#if canManage}
-										<form
-											method="POST"
-											action="?/addPosition"
-											class="flex flex-wrap items-end gap-2 pl-6"
-										>
-											<input type="hidden" name="hole" value={hole.id} />
-											<div class="flex w-28 flex-col gap-1">
-												<Label for="pos-label-{hole.id}" class="text-xs">Position</Label>
-												<Input
-													id="pos-label-{hole.id}"
-													name="label"
-													required
-													maxlength={40}
-													placeholder="red"
-													class="h-8"
-												/>
-											</div>
-											<div class="flex w-28 flex-col gap-1">
-												<Label for="pos-distance-{hole.id}" class="text-xs">Distance</Label>
-												<Input
-													id="pos-distance-{hole.id}"
-													name="distance"
-													type="number"
-													min="1"
-													step="any"
-													required
-													class="h-8"
-												/>
-											</div>
-											<div class="flex w-28 flex-col gap-1">
-												<Label for="pos-unit-{hole.id}" class="text-xs">Unit</Label>
-												<select
-													id="pos-unit-{hole.id}"
-													name="unit"
-													required
-													class="h-8 rounded-md border bg-background px-2 text-sm"
-												>
-													<option value="feet" selected>feet</option>
-													<option value="meters">meters</option>
-													<option value="yards">yards</option>
-												</select>
-											</div>
-											<Button variant="outline" size="sm" type="submit">
-												<Plus class="mr-1 size-3.5" /> Add position
-											</Button>
-										</form>
-									{/if}
-								</div>
-							{/each}
-
-							{#if canManage}
-								<form
-									method="POST"
-									action="?/addHole"
-									class="flex flex-wrap items-end gap-2 border-t pt-3"
-								>
-									<input type="hidden" name="course" value={course.id} />
-									<div class="flex w-24 flex-col gap-1">
-										<Label for="hole-number-{course.id}" class="text-xs">Hole #</Label>
-										<Input
-											id="hole-number-{course.id}"
-											name="number"
-											type="number"
-											min="1"
-											step="1"
-											required
-											class="h-8"
-										/>
-									</div>
-									<div class="flex min-w-40 flex-1 flex-col gap-1">
-										<Label for="hole-name-{course.id}" class="text-xs">Hole name</Label>
-										<Input
-											id="hole-name-{course.id}"
-											name="name"
-											required
-											maxlength={120}
-											class="h-8"
-										/>
-									</div>
-									<div class="flex w-24 flex-col gap-1">
-										<Label for="hole-par-{course.id}" class="text-xs">Par</Label>
-										<Input
-											id="hole-par-{course.id}"
-											name="par"
-											type="number"
-											min="1"
-											step="1"
-											value="3"
-											required
-											class="h-8"
-										/>
-									</div>
-									<Button variant="outline" size="sm" type="submit">
-										<Plus class="mr-1 size-3.5" /> Add hole
-									</Button>
-								</form>
-							{/if}
-						{/if}
-					</div>
 					</details>
 				{/each}
 
 				{#if !canManage}
-								<p class="text-sm text-muted-foreground">
+					<p class="text-sm text-muted-foreground">
 						Your role ({myRole}) can view course layouts but not manage them.
 					</p>
 				{/if}

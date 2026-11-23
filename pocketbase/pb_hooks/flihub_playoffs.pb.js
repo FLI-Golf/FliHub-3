@@ -15,18 +15,36 @@ routerAdd(
 					rejection = { status, message };
 					throw new Error(message);
 				};
-				const members = app.findRecordsByFilter('memberships',
+				const members = app.findRecordsByFilter(
+					'memberships',
 					'organization = {:org} && user = {:user} && (role = "owner" || role = "admin")',
-					'', 1, 0, { org, user: e.auth.id });
+					'',
+					1,
+					0,
+					{ org, user: e.auth.id }
+				);
 				if (!members.length) reject(403, 'Only Owners and Admins can record playoffs.');
 				const scope = { org, event };
-				const [result] = app.findRecordsByFilter('event_results',
-					'organization = {:org} && event = {:event}', '', 1, 0, scope);
-				if (!result || result.getString('status') !== 'published' ||
-					result.getInt('publishedVersion') !== body.version || body.version < 1)
+				const [result] = app.findRecordsByFilter(
+					'event_results',
+					'organization = {:org} && event = {:event}',
+					'',
+					1,
+					0,
+					scope
+				);
+				if (
+					!result ||
+					result.getString('status') !== 'published' ||
+					result.getInt('publishedVersion') !== body.version ||
+					body.version < 1
+				)
 					reject(409, 'Refresh and use the current published result.');
-				const version = app.findFirstRecordByFilter('result_versions',
-					'result = {:id} && version = {:version}', { id: result.id, version: body.version });
+				const version = app.findFirstRecordByFilter(
+					'result_versions',
+					'result = {:id} && version = {:version}',
+					{ id: result.id, version: body.version }
+				);
 				const saved = String(version.get('playoffAttempts') ?? '');
 				const attempts = saved && saved !== 'null' ? JSON.parse(saved) : [];
 				if (attempts.length >= 100) reject(400, 'The shootout has reached the attempt limit.');
@@ -39,7 +57,9 @@ routerAdd(
 					const lastRound = totals.rounds?.[totals.rounds.length - 1];
 					const lastHole = lastRound?.holes?.[lastRound.holes.length - 1]?.hole;
 					const lineup = totals.hasInjuryHandoff
-						? totals.athletes.filter((row) => lastHole && row.roundScores?.[lastRound.round]?.[lastHole] !== undefined)
+						? totals.athletes.filter(
+								(row) => lastHole && row.roundScores?.[lastRound.round]?.[lastHole] !== undefined
+							)
 						: totals.athletes;
 					outcome = measureAttempt(tie, lineup, body.entries, attempts);
 				} catch (error) {

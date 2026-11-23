@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
-const { FLIHUB_E2E_APP_URL: app, FLIHUB_E2E_PB_URL: pb, FLIHUB_E2E_MAILPIT_URL: mailpit } = process.env;
+const {
+	FLIHUB_E2E_APP_URL: app,
+	FLIHUB_E2E_PB_URL: pb,
+	FLIHUB_E2E_MAILPIT_URL: mailpit
+} = process.env;
 if (!app || !pb || !mailpit) throw new Error('Run npm run test:e2e -- funding-condition.');
 
 const email = `funding-owner-${Date.now()}@example.com`;
@@ -22,11 +26,19 @@ async function post(path, body, token) {
 
 async function verificationToken() {
 	for (let attempt = 0; attempt < 40; attempt++) {
-		const { messages } = await fetch(mailpit + '/api/v1/messages?limit=50').then((res) => res.json());
-		const message = messages?.find((row) => row.To.some((recipient) => recipient.Address === email));
+		const { messages } = await fetch(mailpit + '/api/v1/messages?limit=50').then((res) =>
+			res.json()
+		);
+		const message = messages?.find((row) =>
+			row.To.some((recipient) => recipient.Address === email)
+		);
 		if (message) {
-			const detail = await fetch(mailpit + '/api/v1/message/' + message.ID).then((res) => res.json());
-			const match = `${detail.HTML ?? ''}\n${detail.Text ?? ''}`.match(/verify-email\/([A-Za-z0-9_.-]+)/);
+			const detail = await fetch(mailpit + '/api/v1/message/' + message.ID).then((res) =>
+				res.json()
+			);
+			const match = `${detail.HTML ?? ''}\n${detail.Text ?? ''}`.match(
+				/verify-email\/([A-Za-z0-9_.-]+)/
+			);
 			if (match) return match[1];
 		}
 		await new Promise((resolve) => setTimeout(resolve, 250));
@@ -35,26 +47,45 @@ async function verificationToken() {
 }
 
 const users = '/api/collections/users/';
-await post(users + 'records', { email, password, passwordConfirm: password, name: 'Funding Owner' });
+await post(users + 'records', {
+	email,
+	password,
+	passwordConfirm: password,
+	name: 'Funding Owner'
+});
 await post(users + 'request-verification', { email });
 await post(users + 'confirm-verification', { token: await verificationToken() });
 const { token } = await post(users + 'auth-with-password', { identity: email, password });
-const org = await post('/api/flihub/organizations', {
-	name: 'Funding Condition Test', template: 'custom', capabilities: ['sponsorships']
-}, token);
+const org = await post(
+	'/api/flihub/organizations',
+	{
+		name: 'Funding Condition Test',
+		template: 'custom',
+		capabilities: ['sponsorships']
+	},
+	token
+);
 
 const create = (collection, fields) =>
 	post(`/api/collections/${collection}/records`, { organization: org.id, ...fields }, token);
 const sponsor = await create('sponsors', { name: 'Demo Sponsor', stage: 'signed' });
 const agreement = await create('sponsorship_agreements', {
-	sponsor: sponsor.id, title: 'Basket Partner', coverage: 'organization',
-	amountCents: 12_500_000, currency: 'USD', signedOn
+	sponsor: sponsor.id,
+	title: 'Basket Partner',
+	coverage: 'organization',
+	amountCents: 12_500_000,
+	currency: 'USD',
+	signedOn
 });
 for (const entry of [
 	{ kind: 'installment', amountCents: 12_500_000 },
 	{ kind: 'payment', amountCents: 2_000_000, method: 'bank-transfer' }
 ]) {
-	await create('sponsorship_funding_entries', { agreement: agreement.id, entryDate: signedOn, ...entry });
+	await create('sponsorship_funding_entries', {
+		agreement: agreement.id,
+		entryDate: signedOn,
+		...entry
+	});
 }
 
 const browser = await chromium.launch();
@@ -98,7 +129,9 @@ try {
 		const row = basket.locator('dl div').filter({ has: page.getByText(label, { exact: true }) });
 		assert.equal(await row.locator('dd').textContent(), amount);
 	}
-	console.log('✓ Saved Basket Partner condition is Met after refresh, with commitments and receipts shown separately.');
+	console.log(
+		'✓ Saved Basket Partner condition is Met after refresh, with commitments and receipts shown separately.'
+	);
 } finally {
 	await browser.close();
 }

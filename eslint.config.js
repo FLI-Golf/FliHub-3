@@ -54,6 +54,16 @@ export default defineConfig(
 		}
 	},
 	{
+		// PocketBase loads these shared hook modules with require().
+		files: [
+			'pocketbase/pb_hooks/flihub_injury_handoff.pb.js',
+			'pocketbase/pb_hooks/flihub_result_preview.pb.js',
+			'pocketbase/pb_hooks/flihub_sponsorship_quotes.pb.js',
+			'pocketbase/pb_hooks/sponsorship_quote_pricing.js'
+		],
+		rules: { '@typescript-eslint/no-require-imports': 'off' }
+	},
+	{
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
 		rules: {}

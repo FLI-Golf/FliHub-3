@@ -44,14 +44,12 @@ test('verified recipient discovers only their invitations without getting organi
 	await assert.rejects(acceptId(outsider, invitation.id), (err) => err.status === 404);
 	const result = await acceptId(recipient, invitation.id);
 	assert.equal(result.organization, org.id);
-	const memberships = await recipient
-		.collection('memberships')
-		.getFullList({
-			filter: recipient.filter('organization = {:org} && user = {:user}', {
-				org: org.id,
-				user: recipient.authStore.record.id
-			})
-		});
+	const memberships = await recipient.collection('memberships').getFullList({
+		filter: recipient.filter('organization = {:org} && user = {:user}', {
+			org: org.id,
+			user: recipient.authStore.record.id
+		})
+	});
 	assert.equal(memberships.length, 1);
 	assert.equal(memberships[0].role, 'scorekeeper');
 	assert.equal((await pending(recipient)).items.length, 0);
@@ -98,13 +96,11 @@ test('concurrent ID acceptance remains single-use', async () => {
 	]);
 	assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
 	assert.equal(results.filter((result) => result.status === 'rejected').length, 1);
-	const memberships = await recipient
-		.collection('memberships')
-		.getFullList({
-			filter: recipient.filter('organization = {:org} && user = {:user}', {
-				org: org.id,
-				user: recipient.authStore.record.id
-			})
-		});
+	const memberships = await recipient.collection('memberships').getFullList({
+		filter: recipient.filter('organization = {:org} && user = {:user}', {
+			org: org.id,
+			user: recipient.authStore.record.id
+		})
+	});
 	assert.equal(memberships.length, 1);
 });
