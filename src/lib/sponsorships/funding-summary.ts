@@ -50,18 +50,51 @@ export function summarizeAgreementFunding(
 	return { installments, payments, scheduled, received, due, dueNow, overdue };
 }
 
+export const paymentStatuses = [
+	['', 'All payment statuses'],
+	['unpaid', 'Unpaid'],
+	['partial', 'Partially paid'],
+	['paid', 'Paid in full'],
+	['overpaid', 'Overpaid'],
+	['held', 'Installments held'],
+	['due', 'Due now'],
+	['overdue', 'Overdue']
+] as const;
+
+export type FundingPaymentStatus = (typeof paymentStatuses)[number][0];
+
+function matchesPaymentStatus(
+	status: FundingPaymentStatus,
+	committed: number,
+	balance: ReturnType<typeof summarizeAgreementFunding>,
+	held: boolean
+) {
+	switch (status) {
+		case 'unpaid': return balance.received === 0 && committed > 0;
+		case 'partial': return balance.received > 0 && balance.received < committed;
+		case 'paid': return balance.received === committed;
+		case 'overpaid': return balance.received > committed;
+		case 'held': return held && balance.scheduled > balance.received;
+		case 'due': return balance.dueNow > 0;
+		case 'overdue': return balance.overdue > 0;
+		default: return true;
+	}
+}
+
 export function summarizeSponsorshipFunding(
 	agreements: SponsorshipAgreement[],
 	entries: SponsorshipFundingEntry[],
 	conditions: ReadonlyMap<string, SponsorshipFundingCondition>,
-	asOf: string
+	asOf: string,
+	status: FundingPaymentStatus = ''
 ) {
 	const entriesByAgreement = Map.groupBy(entries, (entry) => entry.agreement);
 	const currencies = new Map<string, FundingTotals>();
 	for (const agreement of agreements) {
-		const balance = summarizeAgreementFunding(
-			entriesByAgreement.get(agreement.id) ?? [], conditions.get(agreement.id), asOf
-		);
+		const condition = conditions.get(agreement.id);
+		const balance = summarizeAgreementFunding(entriesByAgreement.get(agreement.id) ?? [], condition, asOf);
+		if (!matchesPaymentStatus(status, agreement.amountCents, balance, Boolean(condition && !condition.releasedAt)))
+			continue;
 		const total = currencies.get(agreement.currency) ?? emptyTotals();
 		total.committed += agreement.amountCents;
 		total.scheduled += balance.scheduled;
