@@ -136,9 +136,7 @@ const definitions: Record<string, Definition[]> = {
 			condition: `publishedVersion > 0 && ${liveEvent('event.')}`
 		}
 	],
-	reimbursements: [
-		{ collection: 'expenses', label: 'Organization expenses', shortLabel: '' }
-	],
+	reimbursements: [{ collection: 'expenses', label: 'Organization expenses', shortLabel: '' }],
 	sponsorships: [
 		{
 			collection: 'sponsors',

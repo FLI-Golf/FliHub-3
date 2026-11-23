@@ -85,27 +85,36 @@
 				>
 				<tbody
 					>{#each standings.rows as row (row.user)}
-						<tr class="border-t {row.rank === 1
-	? 'bg-amber-100 dark:bg-amber-950/60'
-	: row.rank === 2
-		? 'bg-zinc-200 dark:bg-zinc-700'
-		: row.rank === 3
-			? 'bg-orange-100 dark:bg-orange-950/60'
-			: 'odd:bg-background even:bg-slate-200 dark:even:bg-slate-800'}" data-testid="fantasy-standing-row"
+						<tr
+							class="border-t {row.rank === 1
+								? 'bg-amber-100 dark:bg-amber-950/60'
+								: row.rank === 2
+									? 'bg-zinc-200 dark:bg-zinc-700'
+									: row.rank === 3
+										? 'bg-orange-100 dark:bg-orange-950/60'
+										: 'odd:bg-background even:bg-slate-200 dark:even:bg-slate-800'}"
+							data-testid="fantasy-standing-row"
 							><td class="p-2">
 								<span class="inline-flex items-center gap-1.5 font-semibold tabular-nums">
 									{#if row.rank === 1}
-										<Crown class="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+										<Crown
+											class="size-4 shrink-0 text-amber-700 dark:text-amber-400"
+											aria-hidden="true"
+										/>
 									{:else if row.rank === 2}
-										<Trophy class="size-4 shrink-0 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+										<Trophy
+											class="size-4 shrink-0 text-slate-600 dark:text-slate-300"
+											aria-hidden="true"
+										/>
 									{:else if row.rank === 3}
-										<Medal class="size-4 shrink-0 text-orange-800 dark:text-orange-400" aria-hidden="true" />
+										<Medal
+											class="size-4 shrink-0 text-orange-800 dark:text-orange-400"
+											aria-hidden="true"
+										/>
 									{/if}
 									{row.rank ?? '—'}
 								</span>
-							</td><th
-								scope="row"
-								class="p-2 text-left font-medium"
+							</td><th scope="row" class="p-2 text-left font-medium"
 								>{row.name}{#if !row.complete}<span class="block text-xs font-normal"
 										>{row.scoredAthletes}/4 athletes scored</span
 									>{/if}</th

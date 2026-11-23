@@ -1,7 +1,16 @@
 <script lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
 	import { resolve } from '$app/paths';
 	import ScoreCompletionMark from '$lib/components/ScoreCompletionMark.svelte';
-	import { ArrowLeft, BadgeCheck, CircleAlert, Flag, History, Lock, Megaphone } from 'lucide-svelte';
+	import {
+		ArrowLeft,
+		BadgeCheck,
+		CircleAlert,
+		Flag,
+		History,
+		Lock,
+		Megaphone
+	} from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -23,7 +32,9 @@
 			: null
 	);
 	const reviewTeams = $derived(
-		(!data.result || data.result.status === 'correcting') ? data.previewTeams : pendingVersion?.totals.teams ?? officialVersion?.totals.teams ?? []
+		!data.result || data.result.status === 'correcting'
+			? data.previewTeams
+			: (pendingVersion?.totals.teams ?? officialVersion?.totals.teams ?? [])
 	);
 	const playoffTeams = $derived.by(() => {
 		const teams = [...reviewTeams].sort((a, b) => a.total - b.total);
@@ -31,36 +42,49 @@
 		const start = teams[0].total === teams[1].total ? 0 : 1;
 		return teams.slice(start).filter((team) => team.total === teams[start].total);
 	});
-	const playoffPlace = $derived(playoffTeams[0]?.total === Math.min(...reviewTeams.map((team) => team.total)) ? 1 : 2);
-	const attempts = $derived(data.result?.status === 'published' ? (officialVersion?.playoffAttempts ?? []) : []);
+	const playoffPlace = $derived(
+		playoffTeams[0]?.total === Math.min(...reviewTeams.map((team) => team.total)) ? 1 : 2
+	);
+	const attempts = $derived(
+		data.result?.status === 'published' ? (officialVersion?.playoffAttempts ?? []) : []
+	);
 	const playoffWinner = $derived(attempts.find((attempt) => attempt.winner)?.winner);
 	const latestBands = $derived(attempts[attempts.length - 1]?.bands);
 	const pendingEntries = $derived(latestBands?.filter((band) => band.length > 1).flat());
 	const finalOrder = $derived.by(() => {
 		if (!playoffWinner) return [];
-		return latestBands?.flat() ?? [
-			playoffWinner, ...playoffTeams.filter((team) => team.entry !== playoffWinner).map((team) => team.entry)
-		];
+		return (
+			latestBands?.flat() ?? [
+				playoffWinner,
+				...playoffTeams.filter((team) => team.entry !== playoffWinner).map((team) => team.entry)
+			]
+		);
 	});
 	const playoffAthletes = $derived.by(() => {
 		const totals = officialVersion?.totals;
 		if (!totals?.hasInjuryHandoff) return totals?.athletes ?? [];
 		const round = totals.rounds[totals.rounds.length - 1];
 		const hole = round?.holes?.[round.holes.length - 1]?.hole;
-		return totals.athletes.filter((row) => round && hole && row.roundScores?.[round.round]?.[hole] !== undefined);
+		return totals.athletes.filter(
+			(row) => round && hole && row.roundScores?.[round.round]?.[hole] !== undefined
+		);
 	});
-	const playoffLineups = $derived(playoffTeams.filter((team) => !pendingEntries || pendingEntries.includes(team.entry)).map((team) => ({
-		...team,
-		athletes: playoffAthletes.filter((athlete) => athlete.entry === team.entry)
-	})));
+	const playoffLineups = $derived(
+		playoffTeams
+			.filter((team) => !pendingEntries || pendingEntries.includes(team.entry))
+			.map((team) => ({
+				...team,
+				athletes: playoffAthletes.filter((athlete) => athlete.entry === team.entry)
+			}))
+	);
 
 	const reviewTies = $derived(tiedTotals(reviewTeams));
 	const officialVersionTies = $derived(tiedTotals(officialVersion?.totals.teams ?? []));
 	const pendingVersionTies = $derived(tiedTotals(pendingVersion?.totals.teams ?? []));
 
 	function tiedTotals(teams: { total: number }[]) {
-		const seen = new Set<number>();
-		const ties = new Set<number>();
+		const seen = new SvelteSet<number>();
+		const ties = new SvelteSet<number>();
 		for (const { total } of teams) {
 			if (seen.has(total)) ties.add(total);
 			seen.add(total);
@@ -138,17 +162,25 @@
 	</div>
 
 	{#if playoffTeams.length > 1}
-		<section class="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" aria-label="Event playoff">
+		<section
+			class="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+			aria-label="Event playoff"
+		>
 			<h2 class="flex items-center gap-2 font-bold">
 				<Flag class="size-4" aria-hidden="true" />
 				Tie for {playoffPlace === 1 ? 'first' : 'second'} · {playoffTeams[0].total} strokes
 			</h2>
 			<p>{playoffTeams.map((team) => team.teamName).join(' · ')}</p>
 			{#if playoffWinner}
-				<p class="font-semibold">Shootout winner: {playoffTeams.find((team) => team.entry === playoffWinner)?.teamName}.</p>
+				<p class="font-semibold">
+					Shootout winner: {playoffTeams.find((team) => team.entry === playoffWinner)?.teamName}.
+				</p>
 				<ul class="grid gap-1" aria-label="Resolved playoff positions">
 					{#each finalOrder as entry, index (entry)}
-						<li>Place {playoffPlace + index} · {playoffTeams.find((team) => team.entry === entry)?.teamName}</li>
+						<li>
+							Place {playoffPlace + index} · {playoffTeams.find((team) => team.entry === entry)
+								?.teamName}
+						</li>
 					{/each}
 				</ul>
 			{:else}
@@ -157,9 +189,12 @@
 			{#each attempts as attempt, index (index)}
 				<p>
 					Attempt {index + 1} · {attempt.winner ? 'Decisive' : 'Tie remains'} ·
-					{attempt.teams.map((team) =>
-						`${playoffTeams.find((row) => row.entry === team.entry)?.teamName}: ${(team.nanometers / 1e9).toFixed(6)} m`
-					).join(' · ')}
+					{attempt.teams
+						.map(
+							(team) =>
+								`${playoffTeams.find((row) => row.entry === team.entry)?.teamName}: ${(team.nanometers / 1e9).toFixed(6)} m`
+						)
+						.join(' · ')}
 				</p>
 			{/each}
 			{#if data.canManage && !playoffWinner}
@@ -181,19 +216,30 @@
 									<div class="flex flex-wrap gap-2">
 										<label class="grid flex-1 gap-1">
 											{athlete.athleteName} · distance
-											<input type="number" name={`distance-${key}`} min="0" max="9999.999" step="0.001" required class="min-h-10 rounded-md border bg-white px-2" />
+											<input
+												type="number"
+												name={`distance-${key}`}
+												min="0"
+												max="9999.999"
+												step="0.001"
+												required
+												class="min-h-10 rounded-md border bg-white px-2"
+											/>
 										</label>
 										<label class="grid gap-1">
 											Unit
 											<select name={`unit-${key}`} class="min-h-10 rounded-md border bg-white px-2">
-												<option value="feet">Feet</option><option value="meters">Meters</option><option value="yards">Yards</option>
+												<option value="feet">Feet</option><option value="meters">Meters</option
+												><option value="yards">Yards</option>
 											</select>
 										</label>
 									</div>
 								{/each}
 							</fieldset>
 						{/each}
-						<Button type="submit" class="w-fit bg-green-700 text-white hover:bg-green-800">Record shootout</Button>
+						<Button type="submit" class="w-fit bg-green-700 text-white hover:bg-green-800"
+							>Record shootout</Button
+						>
 					</form>
 				{/if}
 			{/if}
@@ -203,7 +249,11 @@
 	{#if data.previewTeams.some((team) => reviewTies.has(team.total) && !playoffTeams.includes(team))}
 		<ul class="grid gap-1 text-sm">
 			{#each data.previewTeams.filter((team) => reviewTies.has(team.total) && !playoffTeams.includes(team)) as team (team.entry)}
-				<li>{team.teamName} · {team.total} strokes <Badge variant="outline" class={amberBadge}>Tied</Badge></li>
+				<li>
+					{team.teamName} · {team.total} strokes <Badge variant="outline" class={amberBadge}
+						>Tied</Badge
+					>
+				</li>
 			{/each}
 		</ul>
 	{/if}
@@ -427,7 +477,10 @@
 									<tr class="border-b">
 										<td class="py-1.5 pr-2">
 											{team.teamName}
-											{#if officialVersionTies.has(team.total)}<Badge variant="outline" class={amberBadge}>Tied</Badge>{/if}
+											{#if officialVersionTies.has(team.total)}<Badge
+													variant="outline"
+													class={amberBadge}>Tied</Badge
+												>{/if}
 										</td>
 										{#each officialVersion.totals.rounds as round (round.round)}
 											<td class="px-1 py-1.5 text-center">{team.roundTotals[round.round] ?? 0}</td>
@@ -470,7 +523,10 @@
 									<tr class="border-b">
 										<td class="py-1.5 pr-2">
 											{team.teamName}
-											{#if pendingVersionTies.has(team.total)}<Badge variant="outline" class={amberBadge}>Tied</Badge>{/if}
+											{#if pendingVersionTies.has(team.total)}<Badge
+													variant="outline"
+													class={amberBadge}>Tied</Badge
+												>{/if}
 										</td>
 										{#each pendingVersion.totals.rounds as round (round.round)}
 											<td class="px-1 py-1.5 text-center">{team.roundTotals[round.round] ?? 0}</td>

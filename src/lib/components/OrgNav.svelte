@@ -62,7 +62,7 @@
 		{@const Icon = icons[capability.id] ?? Shapes}
 		{@const capabilityCounts =
 			canManage || (capability.id !== 'sponsorships' && capability.id !== 'reimbursements')
-				? counts[capability.id] ?? []
+				? (counts[capability.id] ?? [])
 				: []}
 		<a
 			href={resolve('/(app)/organizations/[id]/cap/[capability]', {
@@ -76,19 +76,23 @@
 				><Icon aria-hidden="true" class="mt-0.5 size-4 shrink-0" /><span
 					class="min-w-0 leading-snug font-semibold break-words">{capability.label}</span
 				>
-			<NavigationCountBadges items={capabilityCounts.filter((item) => !item.shortLabel)} /></span
+				<NavigationCountBadges items={capabilityCounts.filter((item) => !item.shortLabel)} /></span
 			>
 			{#if capabilityCounts.some((item) => item.shortLabel)}
 				{#if capability.id === 'venues-courses'}
 					<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6">
 						<NavigationCountBadges
-							items={capabilityCounts.filter((item) => item.shortLabel && item.group !== 'positions')}
+							items={capabilityCounts.filter(
+								(item) => item.shortLabel && item.group !== 'positions'
+							)}
 						/>
 					</span>
 					<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6">
 						<span class="sr-only">Basket positions or tee sets</span>
 						<NavigationCountBadges
-							items={capabilityCounts.filter((item) => item.shortLabel && item.group === 'positions')}
+							items={capabilityCounts.filter(
+								(item) => item.shortLabel && item.group === 'positions'
+							)}
 						/>
 					</span>
 				{:else}
@@ -99,10 +103,10 @@
 			{/if}
 			{#if meta.label !== 'Available'}
 				<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-6"
-				><Badge variant="secondary" class={`w-fit text-[10px] ${meta.badgeClass}`}
-					>{meta.label}</Badge
-				></span
-			>
+					><Badge variant="secondary" class={`w-fit text-[10px] ${meta.badgeClass}`}
+						>{meta.label}</Badge
+					></span
+				>
 			{/if}
 		</a>
 	{/each}

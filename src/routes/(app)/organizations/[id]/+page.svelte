@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { ChevronDown as DisclosureChevron, History as ActivityIcon, Mail as InvitationsIcon } from 'lucide-svelte';
+	import {
+		ChevronDown as DisclosureChevron,
+		History as ActivityIcon,
+		Mail as InvitationsIcon
+	} from 'lucide-svelte';
 	import { resolve } from '$app/paths';
 	import { AlertCircle, ArrowLeft, Link2, MailPlus, Users } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -123,14 +127,24 @@
 	{/if}
 
 	{#if canManage}
-		<details class="group/membership rounded-xl border bg-card text-card-foreground" open={Boolean(invite?.inviteLink)}>
-			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<details
+			class="group/membership rounded-xl border bg-card text-card-foreground"
+			open={Boolean(invite?.inviteLink)}
+		>
+			<summary
+				class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+			>
 				<MailPlus class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 				<span>Invite a member</span>
-				<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+				<DisclosureChevron
+					class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180"
+					aria-hidden="true"
+				/>
 			</summary>
 			<div class="border-t py-4">
-				<p class="px-6 pb-3 text-sm text-muted-foreground">The invitee must register with this exact email address and verify it before accepting.</p>
+				<p class="px-6 pb-3 text-sm text-muted-foreground">
+					The invitee must register with this exact email address and verify it before accepting.
+				</p>
 				<Card.Content>
 					<form method="POST" action="?/invite" class="flex flex-col gap-4">
 						<div class="flex flex-col gap-2">
@@ -158,10 +172,15 @@
 	{/if}
 
 	<details class="group/membership rounded-xl border bg-card text-card-foreground">
-		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<summary
+			class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
 			<Users class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 			<span>Members ({data.members.length})</span>
-			<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+			<DisclosureChevron
+				class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180"
+				aria-hidden="true"
+			/>
 		</summary>
 		<div class="border-t py-4">
 			<Card.Content class="flex flex-col">
@@ -255,13 +274,23 @@
 
 	{#if canManage && data.invitations}
 		<details class="group/membership rounded-xl border bg-card text-card-foreground">
-			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-				<InvitationsIcon class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+			<summary
+				class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+			>
+				<InvitationsIcon
+					class="size-5 shrink-0 text-blue-700 dark:text-blue-300"
+					aria-hidden="true"
+				/>
 				<span>Invitations</span>
-				<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+				<DisclosureChevron
+					class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180"
+					aria-hidden="true"
+				/>
 			</summary>
 			<div class="border-t py-4">
-				<p class="px-6 pb-3 text-sm text-muted-foreground">Only Owners and Admins can see this list.</p>
+				<p class="px-6 pb-3 text-sm text-muted-foreground">
+					Only Owners and Admins can see this list.
+				</p>
 				<Card.Content class="flex flex-col">
 					{#if data.invitations.length === 0}
 						<p class="text-sm text-muted-foreground">No invitations yet.</p>
@@ -299,13 +328,20 @@
 		</details>
 
 		<details class="group/membership rounded-xl border bg-card text-card-foreground">
-			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+			<summary
+				class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+			>
 				<ActivityIcon class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 				<span>Membership activity</span>
-				<DisclosureChevron class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180" aria-hidden="true" />
+				<DisclosureChevron
+					class="ml-auto size-4 shrink-0 transition-transform group-open/membership:rotate-180"
+					aria-hidden="true"
+				/>
 			</summary>
 			<div class="border-t py-4">
-				<p class="px-6 pb-3 text-sm text-muted-foreground">Audit trail of membership changes. Only Owners and Admins can see this.</p>
+				<p class="px-6 pb-3 text-sm text-muted-foreground">
+					Audit trail of membership changes. Only Owners and Admins can see this.
+				</p>
 				<Card.Content class="flex flex-col">
 					{#if !data.events || data.events.length === 0}
 						<p class="text-sm text-muted-foreground">No activity yet.</p>

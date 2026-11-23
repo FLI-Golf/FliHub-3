@@ -21,9 +21,14 @@ function splitScoringSlot(holes, startedHoles, firstReserveHole, outgoing, reser
 }
 
 function splitSlotAward(awardCents, outgoingHoles, reserveHoles) {
-	if (!Number.isSafeInteger(awardCents) || awardCents < 0 ||
-		!Number.isSafeInteger(outgoingHoles) || outgoingHoles < 1 ||
-		!Number.isSafeInteger(reserveHoles) || reserveHoles < 1)
+	if (
+		!Number.isSafeInteger(awardCents) ||
+		awardCents < 0 ||
+		!Number.isSafeInteger(outgoingHoles) ||
+		outgoingHoles < 1 ||
+		!Number.isSafeInteger(reserveHoles) ||
+		reserveHoles < 1
+	)
 		throw new Error('Use a whole-cent award and positive hole counts.');
 
 	const total = outgoingHoles + reserveHoles;
@@ -51,8 +56,13 @@ function planInjuryHandoff(holes, lineup, scores, firstReserveHole, outgoing, re
 	const saved = new Map(holes.map((hole) => [hole, new Set()]));
 	for (const score of scores) {
 		const players = saved.get(score.hole);
-		if (!players || !athletes.has(score.athlete) || players.has(score.athlete) ||
-			!Number.isSafeInteger(score.strokes) || score.strokes < 1) {
+		if (
+			!players ||
+			!athletes.has(score.athlete) ||
+			players.has(score.athlete) ||
+			!Number.isSafeInteger(score.strokes) ||
+			score.strokes < 1
+		) {
 			throw new Error('The saved score matrix contains an unexpected score.');
 		}
 		players.add(score.athlete);
@@ -70,7 +80,7 @@ function planInjuryHandoff(holes, lineup, scores, firstReserveHole, outgoing, re
 	return {
 		lineups: slot.map(({ hole, athlete }) => ({
 			hole,
-			athletes: lineup.map((player) => player === outgoing ? athlete : player)
+			athletes: lineup.map((player) => (player === outgoing ? athlete : player))
 		})),
 		outgoingHoles: cutoff,
 		reserveHoles: holes.length - cutoff

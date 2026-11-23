@@ -154,7 +154,8 @@ onRecordUpdateRequest((e) => {
 			0,
 			{ result: e.record.id, version: currentVersion }
 		);
-		if (rows.length !== 1) throw new BadRequestError('The current result version could not be found.');
+		if (rows.length !== 1)
+			throw new BadRequestError('The current result version could not be found.');
 		e.record.set('publishedVersion', currentVersion);
 		e.next();
 		if (rows.length === 1) {

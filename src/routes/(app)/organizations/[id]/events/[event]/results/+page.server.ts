@@ -9,12 +9,22 @@ interface PlayoffAttempt {
 	place: number;
 	winner: string | null;
 	bands?: string[][];
-	teams: { entry: string; nanometers: number; throws: { athlete: string; distance: string; unit: string }[] }[];
+	teams: {
+		entry: string;
+		nanometers: number;
+		throws: { athlete: string; distance: string; unit: string }[];
+	}[];
 }
 
 interface VersionTotals {
 	hasInjuryHandoff?: boolean;
-	rounds: { round: string; number: number; name: string; positionLabel: string; holes?: { hole: string }[] }[];
+	rounds: {
+		round: string;
+		number: number;
+		name: string;
+		positionLabel: string;
+		holes?: { hole: string }[];
+	}[];
 	teams: { entry: string; teamName: string; roundTotals: Record<string, number>; total: number }[];
 	athletes: {
 		athlete: string;
@@ -101,11 +111,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const result = resultRows[0] ?? null;
 	const canManage = myRole === 'owner' || myRole === 'admin';
 	const preview =
-		canManage && totalCards > 0 && submittedCount === totalCards &&
+		canManage &&
+		totalCards > 0 &&
+		submittedCount === totalCards &&
 		(!result || result.status === 'correcting')
 			? await pb
 					.send<{ teams: Pick<VersionTotals['teams'][number], 'entry' | 'teamName' | 'total'>[] }>(
-						`/api/flihub/organizations/${params.id}/events/${params.event}/result-preview`, { method: 'GET' }
+						`/api/flihub/organizations/${params.id}/events/${params.event}/result-preview`,
+						{ method: 'GET' }
 					)
 					.catch(() => null)
 			: null;
@@ -152,7 +165,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 export const actions: Actions = {
 	recordPlayoff: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-		if (!ID_PATTERN.test(params.id) || !ID_PATTERN.test(params.event)) return fail(404, { message: 'Event not found.' });
+		if (!ID_PATTERN.test(params.id) || !ID_PATTERN.test(params.event))
+			return fail(404, { message: 'Event not found.' });
 		const form = await request.formData();
 		const entries = form.getAll('entry').map((entry, index) => ({
 			entry: String(entry),
@@ -166,10 +180,17 @@ export const actions: Actions = {
 			})
 		}));
 		try {
-			await locals.pb.send(`/api/flihub/organizations/${params.id}/events/${params.event}/playoff`, {
-				method: 'POST',
-				body: { version: Number(form.get('version')), attemptCount: Number(form.get('attemptCount')), entries }
-			});
+			await locals.pb.send(
+				`/api/flihub/organizations/${params.id}/events/${params.event}/playoff`,
+				{
+					method: 'POST',
+					body: {
+						version: Number(form.get('version')),
+						attemptCount: Number(form.get('attemptCount')),
+						entries
+					}
+				}
+			);
 			return { playoffSaved: true };
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });

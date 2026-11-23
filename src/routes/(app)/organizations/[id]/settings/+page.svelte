@@ -67,7 +67,6 @@
 	function removeCustomDistance(index: number) {
 		distances = distances.filter((_, i) => i !== index);
 	}
-
 </script>
 
 <svelte:head>

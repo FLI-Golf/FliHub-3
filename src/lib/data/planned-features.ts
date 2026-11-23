@@ -47,7 +47,8 @@ export const capabilities: Capability[] = [
 		description: 'Manage sponsor contacts and record what each signed deal covers.',
 		milestone: 'Funding · Phase 1A',
 		status: 'complete',
-		progress: 'Owners and admins can record agreed amounts, dates, and benefits for agreements covering an organization, league, season, team, event, or hole.',
+		progress:
+			'Owners and admins can record agreed amounts, dates, and benefits for agreements covering an organization, league, season, team, event, or hole.',
 		featureHref: '/organizations'
 	},
 	{
@@ -56,7 +57,8 @@ export const capabilities: Capability[] = [
 		description: 'Build quotes from packages with required and removable benefits.',
 		milestone: 'Funding · Phase 1B',
 		status: 'planned',
-		progress: 'The roadmap calls for six configurable tiers and a benefits checklist that updates the quote total.',
+		progress:
+			'The roadmap calls for six configurable tiers and a benefits checklist that updates the quote total.',
 		next: 'Pilot the Title Sponsor package with illustrative pricing.'
 	},
 	{
@@ -65,7 +67,8 @@ export const capabilities: Capability[] = [
 		description: 'Track signed commitments, amounts due, and payments received.',
 		milestone: 'Funding · Phase 1C',
 		status: 'planned',
-		progress: 'The roadmap covers installment schedules, receipts, and configurable thresholds for conditional agreements.'
+		progress:
+			'The roadmap covers installment schedules, receipts, and configurable thresholds for conditional agreements.'
 	},
 	{
 		category: 'funding',
@@ -73,7 +76,8 @@ export const capabilities: Capability[] = [
 		description: 'Track contributions and promises to give.',
 		milestone: 'Funding · Phase 2',
 		status: 'planned',
-		progress: 'The proposed running-event pilot covers direct donations, partial pledge payments, and remaining balances.'
+		progress:
+			'The proposed running-event pilot covers direct donations, partial pledge payments, and remaining balances.'
 	},
 	{
 		category: 'competition',

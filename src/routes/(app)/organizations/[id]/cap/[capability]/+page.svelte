@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { ChevronDown as OperationsChevron, SlidersHorizontal as OperationsIcon } from 'lucide-svelte';
+	import {
+		ChevronDown as OperationsChevron,
+		SlidersHorizontal as OperationsIcon
+	} from 'lucide-svelte';
 	import { resolve } from '$app/paths';
 	import { Clock, Layers, Lock, Minus, Plus, ToggleRight } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -35,9 +38,7 @@
 				.map((season) => season.id)
 		)
 	);
-	const pastEvents = $derived(
-		(data.eventsData?.events ?? []).filter(isPastEvent)
-	);
+	const pastEvents = $derived((data.eventsData?.events ?? []).filter(isPastEvent));
 	const currentEvents = $derived(
 		(data.eventsData?.events ?? []).filter((event) => !isPastEvent(event))
 	);
@@ -100,7 +101,18 @@
 		/>
 	{:else if data.capability.id === 'sponsorships'}
 		{#if data.sponsors}
-			<SponsorsManager sponsors={data.sponsors} agreements={data.sponsorshipAgreements} quotes={data.sponsorshipQuotes} funding={data.sponsorshipFunding} conditions={data.sponsorshipConditions} asOf={data.sponsorshipAsOf} seasons={data.sponsorshipSeasons} events={data.sponsorshipEvents} targets={data.sponsorshipTargets} {form} />
+			<SponsorsManager
+				sponsors={data.sponsors}
+				agreements={data.sponsorshipAgreements}
+				quotes={data.sponsorshipQuotes}
+				funding={data.sponsorshipFunding}
+				conditions={data.sponsorshipConditions}
+				asOf={data.sponsorshipAsOf}
+				seasons={data.sponsorshipSeasons}
+				events={data.sponsorshipEvents}
+				targets={data.sponsorshipTargets}
+				{form}
+			/>
 		{:else}
 			<Alert.Root>
 				<Lock class="size-4" />
@@ -141,7 +153,10 @@
 		/>
 	{:else if data.capability.id === 'events' && data.capability.availability === 'available' && data.eventsData}
 		{#if data.canManage}
-			<details class="group/create rounded-xl border-2 border-blue-200 bg-blue-50/50 p-4" open={Boolean(form?.demoSeasonEventsError || form?.demoSeasonEvents)}>
+			<details
+				class="group/create rounded-xl border-2 border-blue-200 bg-blue-50/50 p-4"
+				open={Boolean(form?.demoSeasonEventsError || form?.demoSeasonEvents)}
+			>
 				<summary
 					class="flex cursor-pointer list-none items-center gap-3 font-semibold text-blue-950 focus-visible:outline-2 focus-visible:outline-offset-4 [&::-webkit-details-marker]:hidden"
 				>
@@ -158,81 +173,96 @@
 					</span>
 				</summary>
 				<div class="pt-4">
-						{#if import.meta.env.DEV}
-							<details
-								class="mb-6 rounded-md border-2 border-amber-300 bg-amber-50 text-amber-950"
-								open={Boolean(form?.demoSeasonEventsError || form?.demoSeasonEvents)}
+					{#if import.meta.env.DEV}
+						<details
+							class="mb-6 rounded-md border-2 border-amber-300 bg-amber-50 text-amber-950"
+							open={Boolean(form?.demoSeasonEventsError || form?.demoSeasonEvents)}
+						>
+							<summary
+								class="cursor-pointer rounded-md p-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
 							>
-								<summary class="cursor-pointer rounded-md p-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">
-									<Layers class="mr-1 size-5 inline-block align-middle" aria-hidden="true" />
-									Demo testing — create season events
-								</summary>
-								<div class="space-y-4 px-4 pb-4">
-									{#if form?.demoSeasonEventsError}
-										<p role="alert" class="text-sm text-red-800">{form.demoSeasonEventsError}</p>
-									{/if}
-									{#if form?.demoSeasonEvents}
-										<p role="status" class="text-sm text-green-800">
-											{form.demoSeasonEvents.created} events created · {form.demoSeasonEvents.skipped} skipped ·
-											{form.demoSeasonEvents.copiedTeams} team entries copied ·
-									{form.demoSeasonEvents.scheduledRounds} round tee schedules saved
-										</p>
-									{/if}
-									<form method="POST" action="?/seedDemoSeasonEvents" class="grid gap-3">
-										<p class="text-sm text-muted-foreground">
-											Create planned events from a completed season. An empty destination also gets its active teams and rosters.
-										</p>
-										<div class="grid gap-3 sm:grid-cols-2">
-											<label class="grid gap-1 text-sm font-medium">
-												Template season
-												<select name="sourceSeason" required class="rounded-md border bg-background px-3 py-2">
-													{#each data.eventsData.seasons.filter((season) => season.status === 'completed') as season (season.id)}
-														<option value={season.id}>{season.name}</option>
-													{/each}
-												</select>
-											</label>
-											<label class="grid gap-1 text-sm font-medium">
-												Destination season
-												<select name="destinationSeason" required class="rounded-md border bg-background px-3 py-2">
-													{#each data.eventsData.seasons.filter((season) => season.status === 'planned') as season (season.id)}
-														<option value={season.id}>{season.name}</option>
-													{/each}
-												</select>
-											</label>
-										</div>
-										<label class="grid w-fit gap-1 text-sm font-medium">
-											First-round tee time (Arizona)
-											<input
-												type="time"
-												name="demoTeeTime"
-												value="15:00"
+								<Layers class="mr-1 inline-block size-5 align-middle" aria-hidden="true" />
+								Demo testing — create season events
+							</summary>
+							<div class="space-y-4 px-4 pb-4">
+								{#if form?.demoSeasonEventsError}
+									<p role="alert" class="text-sm text-red-800">{form.demoSeasonEventsError}</p>
+								{/if}
+								{#if form?.demoSeasonEvents}
+									<p role="status" class="text-sm text-green-800">
+										{form.demoSeasonEvents.created} events created · {form.demoSeasonEvents.skipped} skipped
+										·
+										{form.demoSeasonEvents.copiedTeams} team entries copied ·
+										{form.demoSeasonEvents.scheduledRounds} round tee schedules saved
+									</p>
+								{/if}
+								<form method="POST" action="?/seedDemoSeasonEvents" class="grid gap-3">
+									<p class="text-sm text-muted-foreground">
+										Create planned events from a completed season. An empty destination also gets
+										its active teams and rosters.
+									</p>
+									<div class="grid gap-3 sm:grid-cols-2">
+										<label class="grid gap-1 text-sm font-medium">
+											Template season
+											<select
+												name="sourceSeason"
 												required
 												class="rounded-md border bg-background px-3 py-2"
-											/>
+											>
+												{#each data.eventsData.seasons.filter((season) => season.status === 'completed') as season (season.id)}
+													<option value={season.id}>{season.name}</option>
+												{/each}
+											</select>
 										</label>
-										<label class="grid w-fit gap-1 text-sm font-medium">
-											Second-round tee time (Arizona)
-											<input
-												type="time"
-												name="demoSecondTeeTime"
-												value="17:00"
+										<label class="grid gap-1 text-sm font-medium">
+											Destination season
+											<select
+												name="destinationSeason"
 												required
 												class="rounded-md border bg-background px-3 py-2"
-											/>
+											>
+												{#each data.eventsData.seasons.filter((season) => season.status === 'planned') as season (season.id)}
+													<option value={season.id}>{season.name}</option>
+												{/each}
+											</select>
 										</label>
-										<p class="text-sm">Groups start 10 minutes apart. Round 3 and later start two hours apart after Round 2.</p>
-										<Button
-											type="submit"
-											class="w-fit bg-green-700 text-white hover:bg-green-800"
-											disabled={!data.eventsData.seasons.some((s) => s.status === 'completed') ||
-												!data.eventsData.seasons.some((s) => s.status === 'planned')}
-										>
-											Create demo events / fill tee times
-										</Button>
-									</form>
-								</div>
-							</details>
-						{/if}
+									</div>
+									<label class="grid w-fit gap-1 text-sm font-medium">
+										First-round tee time (Arizona)
+										<input
+											type="time"
+											name="demoTeeTime"
+											value="15:00"
+											required
+											class="rounded-md border bg-background px-3 py-2"
+										/>
+									</label>
+									<label class="grid w-fit gap-1 text-sm font-medium">
+										Second-round tee time (Arizona)
+										<input
+											type="time"
+											name="demoSecondTeeTime"
+											value="17:00"
+											required
+											class="rounded-md border bg-background px-3 py-2"
+										/>
+									</label>
+									<p class="text-sm">
+										Groups start 10 minutes apart. Round 3 and later start two hours apart after
+										Round 2.
+									</p>
+									<Button
+										type="submit"
+										class="w-fit bg-green-700 text-white hover:bg-green-800"
+										disabled={!data.eventsData.seasons.some((s) => s.status === 'completed') ||
+											!data.eventsData.seasons.some((s) => s.status === 'planned')}
+									>
+										Create demo events / fill tee times
+									</Button>
+								</form>
+							</div>
+						</details>
+					{/if}
 					<GuidedEventSetup
 						seasons={data.eventsData.seasons}
 						courses={data.eventsData.courses}
@@ -281,11 +311,23 @@
 					myRole={data.myRole}
 					{form}
 				/>
-				<details id="event-operations-panel" class="group/operations rounded-xl border bg-card" open={Boolean(form)}>
-					<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-						<OperationsIcon class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
+				<details
+					id="event-operations-panel"
+					class="group/operations rounded-xl border bg-card"
+					open={Boolean(form)}
+				>
+					<summary
+						class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+					>
+						<OperationsIcon
+							class="size-5 shrink-0 text-blue-700 dark:text-blue-300"
+							aria-hidden="true"
+						/>
 						<span>{data.canManage ? 'Manage event setup' : 'View event setup'}</span>
-						<OperationsChevron class="ml-auto size-4 shrink-0 transition-transform group-open/operations:rotate-180" aria-hidden="true" />
+						<OperationsChevron
+							class="ml-auto size-4 shrink-0 transition-transform group-open/operations:rotate-180"
+							aria-hidden="true"
+						/>
 					</summary>
 					<div class="border-t p-4">
 						<EventOpsManager
@@ -334,7 +376,11 @@
 				totals among ranked rows share a position. Pending corrections never count until
 				republished.
 			</p>
-			<StandingsTables standings={data.standingsData.standings} testid="member-standings" canAdjustPayouts={data.myRole === 'owner'} />
+			<StandingsTables
+				standings={data.standingsData.standings}
+				testid="member-standings"
+				canAdjustPayouts={data.myRole === 'owner'}
+			/>
 		</div>
 	{:else if data.capability.id === 'fantasy' && data.capability.availability === 'available' && data.fantasyData}
 		<FantasyManager
