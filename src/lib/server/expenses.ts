@@ -9,14 +9,9 @@ type ExpenseActionEvent = {
 
 const idPattern = /^[a-z0-9]{15}$/;
 
-export async function submitExpense({
-	locals,
-	params,
-	request
-}: ExpenseActionEvent) {
+export async function submitExpense({ locals, params, request }: ExpenseActionEvent) {
 	const { pb, user } = locals;
-	if (!pb || !user)
-		return fail(401, { expenseError: 'Sign in to submit an expense.' });
+	if (!pb || !user) return fail(401, { expenseError: 'Sign in to submit an expense.' });
 	if (params.capability !== 'reimbursements' || !idPattern.test(params.id))
 		return fail(404, { expenseError: 'Expenses page not found.' });
 
@@ -29,8 +24,7 @@ export async function submitExpense({
 		purpose: read('purpose'),
 		amount: read('amount')
 	};
-	const invalid = (expenseError: string) =>
-		fail(400, { expenseError, expenseValues: values });
+	const invalid = (expenseError: string) => fail(400, { expenseError, expenseValues: values });
 
 	const date = new Date(values.expenseOn + 'T00:00:00Z');
 	if (
@@ -51,8 +45,7 @@ export async function submitExpense({
 	const amountCents = dollars
 		? Number(dollars[1]) * 100 + Number((dollars[2] ?? '').padEnd(2, '0'))
 		: 0;
-	if (amountCents <= 0)
-		return invalid('Enter a USD amount from $0.01 to $9,999,999.99.');
+	if (amountCents <= 0) return invalid('Enter a USD amount from $0.01 to $9,999,999.99.');
 
 	const receipt = form.get('receipt');
 	const payload = new FormData();
@@ -86,21 +79,15 @@ export async function submitExpense({
 	}
 }
 
-export async function replaceExpenseReceipt({
-	locals,
-	params,
-	request
-}: ExpenseActionEvent) {
+export async function replaceExpenseReceipt({ locals, params, request }: ExpenseActionEvent) {
 	const { pb, user } = locals;
-	if (!pb || !user)
-		return fail(401, { expenseError: 'Sign in to replace a receipt.' });
+	if (!pb || !user) return fail(401, { expenseError: 'Sign in to replace a receipt.' });
 	if (params.capability !== 'reimbursements' || !idPattern.test(params.id))
 		return fail(404, { expenseError: 'Expenses page not found.' });
 
 	const form = await request.formData();
 	const expense = String(form.get('expense') ?? '');
-	if (!idPattern.test(expense))
-		return fail(400, { expenseError: 'Choose a valid expense.' });
+	if (!idPattern.test(expense)) return fail(400, { expenseError: 'Choose a valid expense.' });
 
 	const receipt = form.get('receipt');
 	if (
@@ -117,10 +104,10 @@ export async function replaceExpenseReceipt({
 	payload.set('receipt', receipt);
 
 	try {
-		await pb.send(
-			`/api/flihub/organizations/${params.id}/expenses/${expense}/replace-receipt`,
-			{ method: 'POST', body: payload }
-		);
+		await pb.send(`/api/flihub/organizations/${params.id}/expenses/${expense}/replace-receipt`, {
+			method: 'POST',
+			body: payload
+		});
 		return { expenseMessage: 'Receipt replaced and expense resubmitted.' };
 	} catch (err) {
 		return fail(pbErrorStatus(err), {
@@ -129,21 +116,15 @@ export async function replaceExpenseReceipt({
 	}
 }
 
-export async function reviewExpense({
-	locals,
-	params,
-	request
-}: ExpenseActionEvent) {
+export async function reviewExpense({ locals, params, request }: ExpenseActionEvent) {
 	const { pb, user } = locals;
-	if (!pb || !user)
-		return fail(401, { expenseError: 'Sign in to review an expense.' });
+	if (!pb || !user) return fail(401, { expenseError: 'Sign in to review an expense.' });
 	if (params.capability !== 'reimbursements' || !idPattern.test(params.id))
 		return fail(404, { expenseError: 'Expenses page not found.' });
 
 	const form = await request.formData();
 	const expense = String(form.get('expense') ?? '');
-	if (!idPattern.test(expense))
-		return fail(400, { expenseError: 'Choose a valid expense.' });
+	if (!idPattern.test(expense)) return fail(400, { expenseError: 'Choose a valid expense.' });
 
 	try {
 		const result = await pb.send<{ status: string }>(
@@ -154,8 +135,7 @@ export async function reviewExpense({
 			}
 		);
 		return {
-			expenseMessage:
-				result.status === 'approved' ? 'Expense approved.' : 'Expense returned.'
+			expenseMessage: result.status === 'approved' ? 'Expense approved.' : 'Expense returned.'
 		};
 	} catch (err) {
 		return fail(pbErrorStatus(err), {

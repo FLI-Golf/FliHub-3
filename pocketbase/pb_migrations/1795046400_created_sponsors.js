@@ -35,13 +35,7 @@ migrate(
 						type: 'select',
 						required: true,
 						maxSelect: 1,
-						values: [
-							'prospect',
-							'in-discussion',
-							'proposal-sent',
-							'signed',
-							'closed'
-						]
+						values: ['prospect', 'in-discussion', 'proposal-sent', 'signed', 'closed']
 					},
 					{
 						name: 'followUpOn',
@@ -53,9 +47,7 @@ migrate(
 					{ name: 'notes', type: 'text', max: 2000 },
 					{ name: 'archived', type: 'bool' }
 				],
-				indexes: [
-					'CREATE INDEX idx_sponsors_organization_name ON sponsors (organization, name)'
-				]
+				indexes: ['CREATE INDEX idx_sponsors_organization_name ON sponsors (organization, name)']
 			})
 		);
 	},

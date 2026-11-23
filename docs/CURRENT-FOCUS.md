@@ -20,5 +20,6 @@ record for review. Allow receipt replacement and preserve the prior review
 note and decision. Verify the flow with separate Viewer and Owner accounts.
 
 ## Saved test data
+
 Preserve Clean event, its completed draft, published result v1,
 and fantasy standings. No reset or recreation is needed.

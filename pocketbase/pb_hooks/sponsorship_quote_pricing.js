@@ -1,9 +1,14 @@
 function priceSponsorshipQuote(e) {
 	const record = e.record;
 	const org = record.getString('organization');
-	const [membership] = e.app.findRecordsByFilter('memberships',
+	const [membership] = e.app.findRecordsByFilter(
+		'memberships',
 		'organization = {:org} && user = {:user} && (role = "owner" || role = "admin")',
-		'', 1, 0, { org, user: e.auth?.id ?? '' });
+		'',
+		1,
+		0,
+		{ org, user: e.auth?.id ?? '' }
+	);
 	if (!membership) throw new ForbiddenError('Only Owners and Admins can save sponsorship quotes.');
 	const organization = e.app.findRecordById('organizations', org);
 	if (!JSON.parse(String(organization.get('capabilities') || '[]')).includes('sponsorships'))
@@ -17,15 +22,23 @@ function priceSponsorshipQuote(e) {
 	const pkg = packages.find((item) => item.name === name);
 	if (!pkg) throw new BadRequestError('Choose an available sponsorship package.');
 	const selected = JSON.parse(String(record.get('selectedBenefits') || '[]'));
-	if (!Array.isArray(selected) || new Set(selected).size !== selected.length ||
-		selected.some((id) => !pkg.benefits.some((benefit) => benefit.id === id))) {
+	if (
+		!Array.isArray(selected) ||
+		new Set(selected).size !== selected.length ||
+		selected.some((id) => !pkg.benefits.some((benefit) => benefit.id === id))
+	) {
 		throw new BadRequestError('Choose benefits from the selected sponsorship package.');
 	}
-	const benefits = pkg.benefits.filter((benefit) => benefit.required || selected.includes(benefit.id));
+	const benefits = pkg.benefits.filter(
+		(benefit) => benefit.required || selected.includes(benefit.id)
+	);
 	record.set('packageName', pkg.name);
 	record.set('currency', pkg.currency);
 	record.set('benefits', benefits);
-	record.set('amountCents', benefits.reduce((sum, benefit) => sum + benefit.amountCents, 0));
+	record.set(
+		'amountCents',
+		benefits.reduce((sum, benefit) => sum + benefit.amountCents, 0)
+	);
 	e.next();
 }
 

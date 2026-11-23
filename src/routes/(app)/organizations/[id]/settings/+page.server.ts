@@ -28,7 +28,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 	const organization = await pb.collection('organizations').getOne(params.id);
 
-
 	return {
 		organization: toOrganizationDTO(organization),
 		myRole,

@@ -145,13 +145,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 	const canManage = myRole === 'owner' || myRole === 'admin';
 	const season = String(event.season ?? '');
-	const reserveRows = canManage && ID_PATTERN.test(season)
-		? await pb.collection('reserve_members').getFullList({
-				filter: pb.filter('organization = {:org} && season = {:season} && status = "active"', {
-					org: params.id, season
+	const reserveRows =
+		canManage && ID_PATTERN.test(season)
+			? await pb.collection('reserve_members').getFullList({
+					filter: pb.filter('organization = {:org} && season = {:season} && status = "active"', {
+						org: params.id,
+						season
+					})
 				})
-			})
-		: [];
+			: [];
 
 	const groups = groupRows
 		.filter((g) => String(g.status) === 'active')
@@ -189,8 +191,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		rounds,
 		groups,
 		reserves: [...new Set(reserveRows.map((row) => String(row.athlete)))]
-			.filter((id) => athleteRows.some((athlete) => athlete.id === id && athlete.status === 'active'))
-			.filter((id) => !groupAthleteRows.some((row) => row.athlete === id && row.status === 'active'))
+			.filter((id) =>
+				athleteRows.some((athlete) => athlete.id === id && athlete.status === 'active')
+			)
+			.filter(
+				(id) => !groupAthleteRows.some((row) => row.athlete === id && row.status === 'active')
+			)
 			.filter((id) => !groups.some((group) => group.handoff?.reserve === id))
 			.map((id) => ({ id, name: athleteName.get(id) || id }))
 			.sort((a, b) => a.name.localeCompare(b.name)),
@@ -276,8 +282,10 @@ export const actions: Actions = {
 		}
 		const form = await request.formData();
 		const body = Object.fromEntries(
-			['group', 'round', 'hole', 'outgoing', 'reserve', 'reason']
-				.map((key) => [key, String(form.get(key) ?? '')])
+			['group', 'round', 'hole', 'outgoing', 'reserve', 'reason'].map((key) => [
+				key,
+				String(form.get(key) ?? '')
+			])
 		);
 		try {
 			await locals.pb.send(
@@ -287,7 +295,9 @@ export const actions: Actions = {
 			return { injuryHandoffSaved: true, activeGroup: body.group, activeRound: body.round };
 		} catch (err) {
 			return fail(pbErrorStatus(err), {
-				message: pbErrorMessage(err), activeGroup: body.group, activeRound: body.round
+				message: pbErrorMessage(err),
+				activeGroup: body.group,
+				activeRound: body.round
 			});
 		}
 	},

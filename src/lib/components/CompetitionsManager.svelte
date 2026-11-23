@@ -126,13 +126,20 @@
 
 	<!-- Leagues -->
 	<details class="group/panel rounded-xl border bg-card text-card-foreground">
-		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<summary
+			class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
 			<Trophy class="size-5 shrink-0" aria-hidden="true" />
 			Leagues ({leagues.length})
-			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/panel:rotate-180" aria-hidden="true" />
+			<ChevronDown
+				class="ml-auto size-4 shrink-0 transition-transform group-open/panel:rotate-180"
+				aria-hidden="true"
+			/>
 		</summary>
 		<div class="flex flex-col gap-2 px-4 pb-4">
-			<p class="text-sm text-muted-foreground">Leagues contain seasons; seasons contain divisions and team entries.</p>
+			<p class="text-sm text-muted-foreground">
+				Leagues contain seasons; seasons contain divisions and team entries.
+			</p>
 			{#if leagues.length === 0}
 				<p class="text-sm text-muted-foreground">No leagues yet.</p>
 			{/if}
@@ -211,13 +218,21 @@
 
 	<!-- Seasons (with divisions and team entries) -->
 	<details class="group/panel rounded-xl border bg-card text-card-foreground" open>
-		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<summary
+			class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
 			<CalendarRange class="size-5 shrink-0" aria-hidden="true" />
 			Seasons ({seasons.length})
-			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/panel:rotate-180" aria-hidden="true" />
+			<ChevronDown
+				class="ml-auto size-4 shrink-0 transition-transform group-open/panel:rotate-180"
+				aria-hidden="true"
+			/>
 		</summary>
 		<div class="flex flex-col gap-4 px-4 pb-4">
-			<p class="text-sm text-muted-foreground">Teams enter a season directly; a division can be assigned now or later. Seasons may run without divisions.</p>
+			<p class="text-sm text-muted-foreground">
+				Teams enter a season directly; a division can be assigned now or later. Seasons may run
+				without divisions.
+			</p>
 			<div class="flex flex-wrap gap-2" role="group" aria-label="Season view">
 				<Button
 					type="button"
@@ -245,220 +260,247 @@
 			{/if}
 			{#each visibleSeasons as season (season.id)}
 				<details
-					class="group/season rounded-xl border border-blue-200 bg-background {season.status === 'archived' ? 'opacity-75' : ''}"
+					class="group/season rounded-xl border border-blue-200 bg-background {season.status ===
+					'archived'
+						? 'opacity-75'
+						: ''}"
 					data-season={season.id}
 				>
-					<summary class="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+					<summary
+						class="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+					>
 						<CalendarRange class="size-5 shrink-0 text-blue-700" aria-hidden="true" />
 						<span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-							<span class="break-words font-semibold">{season.name}</span>
+							<span class="font-semibold break-words">{season.name}</span>
 							<Badge variant="outline">{season.status}</Badge>
 							<span class="text-sm text-muted-foreground">{scheduleOf(season)}</span>
 						</span>
-						<ChevronDown class="size-4 shrink-0 transition-transform group-open/season:rotate-180" aria-hidden="true" />
+						<ChevronDown
+							class="size-4 shrink-0 transition-transform group-open/season:rotate-180"
+							aria-hidden="true"
+						/>
 					</summary>
 					<div class="flex flex-col gap-4 border-t p-4">
-					<div class="flex flex-wrap items-center justify-between gap-2">
-						<div class="flex min-w-0 flex-col gap-2">
-							<h3 class="text-lg font-bold text-blue-950">{season.name}</h3>
-							<div class="flex flex-wrap items-center gap-2">
-								<Badge variant="outline">Fantasy {season.fantasyEnabled ? 'open' : 'closed'}</Badge>
-								<Badge variant="outline">{season.leagueName}</Badge>
-								<Badge variant={season.status === 'archived' ? 'secondary' : 'default'}>
-									{season.status}
-								</Badge>
-							</div>
-						</div>
-						{#if canManage}
-							<div class="flex items-center gap-2">
-								<Button
-									size="sm"
-									class="bg-red-700 text-white hover:bg-red-800"
-									onclick={() => (editingSeason = season)}
-								>
-									<Pencil class="mr-1 size-3.5" /> Edit
-								</Button>
-								{#if season.status === 'archived'}
-									<form method="POST" action="?/unarchiveSeason">
-										<input type="hidden" name="season" value={season.id} />
-										<Button variant="outline" size="sm" type="submit">
-											<ArchiveRestore class="mr-1 size-3.5" /> Restore
-										</Button>
-									</form>
-								{:else}
-									<form method="POST" action="?/archiveSeason">
-										<input type="hidden" name="season" value={season.id} />
-										<Button
-											variant="ghost"
-											size="sm"
-											type="submit"
-											class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
-										>
-											<Archive class="mr-1 size-3.5" /> Archive
-										</Button>
-									</form>
-								{/if}
-							</div>
-						{/if}
-					</div>
-
-					<div class="grid gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950 sm:grid-cols-2">
-						<div class="flex items-center gap-2">
-							<CalendarRange class="size-4 shrink-0" aria-hidden="true" />
-							<span>{scheduleOf(season)}</span>
-						</div>
-						<div class="flex items-center gap-2 font-semibold">
-							<Trophy class="size-4 shrink-0" aria-hidden="true" />
-							<span>{formatSeasonPurse(season)}</span>
-						</div>
-					</div>
-
-					<Separator />
-
-					<!-- Divisions of this season -->
-					<div class="flex flex-col gap-2">
-						<h4 class="text-sm font-medium">Divisions ({divisionsOf(season.id).length})</h4>
-						{#if divisionsOf(season.id).length === 0}
-							<p class="text-sm text-muted-foreground">
-								No divisions — this season runs division-less.
-							</p>
-						{/if}
-						<div class="flex flex-wrap gap-2">
-							{#each divisionsOf(season.id) as division (division.id)}
-								<div class="flex items-center gap-1 rounded-md border px-2 py-1">
-									<span class="text-sm">{division.name}</span>
-									{#if division.status === 'archived'}
-										<Badge variant="secondary">Archived</Badge>
-									{/if}
-									{#if canManage}
-										{#if division.status === 'active'}
-											<form method="POST" action="?/archiveDivision">
-												<input type="hidden" name="division" value={division.id} />
-												<Button variant="ghost" size="sm" type="submit">Archive</Button>
-											</form>
-										{:else}
-											<form method="POST" action="?/unarchiveDivision">
-												<input type="hidden" name="division" value={division.id} />
-												<Button variant="ghost" size="sm" type="submit">Restore</Button>
-											</form>
-										{/if}
-									{/if}
-								</div>
-							{/each}
-						</div>
-						{#if canManage && season.status !== 'archived'}
-							<form method="POST" action="?/createDivision" class="flex flex-wrap items-end gap-2">
-								<input type="hidden" name="season" value={season.id} />
-								<div class="flex min-w-40 flex-col gap-1.5">
-									<Label for="division-name-{season.id}">Add division</Label>
-									<Input id="division-name-{season.id}" name="name" required maxlength={80} />
-								</div>
-								<Button variant="outline" size="sm" type="submit">
-									<Plus class="mr-1 size-3.5" /> Add division
-								</Button>
-							</form>
-						{/if}
-					</div>
-
-					<Separator />
-
-					<!-- Team entries of this season -->
-					<div class="flex flex-col gap-2">
-						<h4 class="text-sm font-medium">Team entries ({entriesOf(season.id).length})</h4>
-						{#if entriesOf(season.id).length === 0}
-							<p class="text-sm text-muted-foreground">No teams entered yet.</p>
-						{/if}
-						{#each entriesOf(season.id) as entry (entry.id)}
-							<div
-								class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-2 even:bg-slate-300 {entry.status ===
-								'archived'
-									? 'opacity-60'
-									: ''}"
-							>
+						<div class="flex flex-wrap items-center justify-between gap-2">
+							<div class="flex min-w-0 flex-col gap-2">
+								<h3 class="text-lg font-bold text-blue-950">{season.name}</h3>
 								<div class="flex flex-wrap items-center gap-2">
-									<span class="text-sm font-medium">{entry.teamName}</span>
-									{#if entry.divisionName}
-										<Badge variant="outline">{entry.divisionName}</Badge>
-									{/if}
-									{#if entry.status === 'archived'}
-										<Badge variant="secondary">Withdrawn</Badge>
+									<Badge variant="outline"
+										>Fantasy {season.fantasyEnabled ? 'open' : 'closed'}</Badge
+									>
+									<Badge variant="outline">{season.leagueName}</Badge>
+									<Badge variant={season.status === 'archived' ? 'secondary' : 'default'}>
+										{season.status}
+									</Badge>
+								</div>
+							</div>
+							{#if canManage}
+								<div class="flex items-center gap-2">
+									<Button
+										size="sm"
+										class="bg-red-700 text-white hover:bg-red-800"
+										onclick={() => (editingSeason = season)}
+									>
+										<Pencil class="mr-1 size-3.5" /> Edit
+									</Button>
+									{#if season.status === 'archived'}
+										<form method="POST" action="?/unarchiveSeason">
+											<input type="hidden" name="season" value={season.id} />
+											<Button variant="outline" size="sm" type="submit">
+												<ArchiveRestore class="mr-1 size-3.5" /> Restore
+											</Button>
+										</form>
+									{:else}
+										<form method="POST" action="?/archiveSeason">
+											<input type="hidden" name="season" value={season.id} />
+											<Button
+												variant="ghost"
+												size="sm"
+												type="submit"
+												class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+											>
+												<Archive class="mr-1 size-3.5" /> Archive
+											</Button>
+										</form>
 									{/if}
 								</div>
-								{#if canManage && entry.status === 'active'}
-									<div class="flex items-center gap-2">
-										<form
-											method="POST"
-											action="?/assignEntryDivision"
-											class="flex items-center gap-2"
-										>
-											<input type="hidden" name="entry" value={entry.id} />
-											<select
-												name="division"
-												class="h-8 rounded-md border border-blue-300 bg-blue-50 px-2 text-sm text-blue-950 focus-visible:outline-2 focus-visible:outline-blue-600"
-												aria-label="Assign division"
-											>
-												<option value="" selected={!entry.division}>No division</option>
-												{#each divisionsOf(season.id).filter((d) => d.status === 'active') as d (d.id)}
-													<option value={d.id} selected={entry.division === d.id}>{d.name}</option>
-												{/each}
-											</select>
-											<Button size="sm" type="submit" class="bg-green-700 text-white hover:bg-green-800">Assign</Button>
-										</form>
-										<form method="POST" action="?/withdrawEntry">
-											<input type="hidden" name="entry" value={entry.id} />
-											<Button variant="ghost" size="sm" type="submit" class="text-orange-800 hover:bg-orange-100 hover:text-orange-900">Withdraw</Button>
-										</form>
-									</div>
-								{:else if canManage}
-									<form method="POST" action="?/restoreEntry">
-										<input type="hidden" name="entry" value={entry.id} />
-										<Button variant="ghost" size="sm" type="submit">Restore</Button>
-									</form>
-								{/if}
+							{/if}
+						</div>
+
+						<div
+							class="grid gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950 sm:grid-cols-2"
+						>
+							<div class="flex items-center gap-2">
+								<CalendarRange class="size-4 shrink-0" aria-hidden="true" />
+								<span>{scheduleOf(season)}</span>
 							</div>
-						{/each}
-						{#if canManage && season.status !== 'archived'}
-							{#if activeTeams.length === 0}
+							<div class="flex items-center gap-2 font-semibold">
+								<Trophy class="size-4 shrink-0" aria-hidden="true" />
+								<span>{formatSeasonPurse(season)}</span>
+							</div>
+						</div>
+
+						<Separator />
+
+						<!-- Divisions of this season -->
+						<div class="flex flex-col gap-2">
+							<h4 class="text-sm font-medium">Divisions ({divisionsOf(season.id).length})</h4>
+							{#if divisionsOf(season.id).length === 0}
 								<p class="text-sm text-muted-foreground">
-									Create a team on the Teams &amp; rosters page first.
+									No divisions — this season runs division-less.
 								</p>
-							{:else}
-								<form method="POST" action="?/addEntry" class="flex flex-wrap items-end gap-2">
+							{/if}
+							<div class="flex flex-wrap gap-2">
+								{#each divisionsOf(season.id) as division (division.id)}
+									<div class="flex items-center gap-1 rounded-md border px-2 py-1">
+										<span class="text-sm">{division.name}</span>
+										{#if division.status === 'archived'}
+											<Badge variant="secondary">Archived</Badge>
+										{/if}
+										{#if canManage}
+											{#if division.status === 'active'}
+												<form method="POST" action="?/archiveDivision">
+													<input type="hidden" name="division" value={division.id} />
+													<Button variant="ghost" size="sm" type="submit">Archive</Button>
+												</form>
+											{:else}
+												<form method="POST" action="?/unarchiveDivision">
+													<input type="hidden" name="division" value={division.id} />
+													<Button variant="ghost" size="sm" type="submit">Restore</Button>
+												</form>
+											{/if}
+										{/if}
+									</div>
+								{/each}
+							</div>
+							{#if canManage && season.status !== 'archived'}
+								<form
+									method="POST"
+									action="?/createDivision"
+									class="flex flex-wrap items-end gap-2"
+								>
 									<input type="hidden" name="season" value={season.id} />
 									<div class="flex min-w-40 flex-col gap-1.5">
-										<Label for="entry-team-{season.id}">Enter a team</Label>
-										<select
-											id="entry-team-{season.id}"
-											name="team"
-											required
-											class="h-9 rounded-md border bg-background px-2 text-sm"
-										>
-											<option value="" disabled selected>Select a team</option>
-											{#each activeTeams as team (team.id)}
-												<option value={team.id}>{team.name}</option>
-											{/each}
-										</select>
-									</div>
-									<div class="flex min-w-40 flex-col gap-1.5">
-										<Label for="entry-division-{season.id}">Division (optional)</Label>
-										<select
-											id="entry-division-{season.id}"
-											name="division"
-											class="h-9 rounded-md border bg-background px-2 text-sm"
-										>
-											<option value="" selected>No division yet</option>
-											{#each divisionsOf(season.id).filter((d) => d.status === 'active') as d (d.id)}
-												<option value={d.id}>{d.name}</option>
-											{/each}
-										</select>
+										<Label for="division-name-{season.id}">Add division</Label>
+										<Input id="division-name-{season.id}" name="name" required maxlength={80} />
 									</div>
 									<Button variant="outline" size="sm" type="submit">
-										<Plus class="mr-1 size-3.5" /> Enter team
+										<Plus class="mr-1 size-3.5" /> Add division
 									</Button>
 								</form>
 							{/if}
-						{/if}
-					</div>
+						</div>
+
+						<Separator />
+
+						<!-- Team entries of this season -->
+						<div class="flex flex-col gap-2">
+							<h4 class="text-sm font-medium">Team entries ({entriesOf(season.id).length})</h4>
+							{#if entriesOf(season.id).length === 0}
+								<p class="text-sm text-muted-foreground">No teams entered yet.</p>
+							{/if}
+							{#each entriesOf(season.id) as entry (entry.id)}
+								<div
+									class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-2 even:bg-slate-300 {entry.status ===
+									'archived'
+										? 'opacity-60'
+										: ''}"
+								>
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="text-sm font-medium">{entry.teamName}</span>
+										{#if entry.divisionName}
+											<Badge variant="outline">{entry.divisionName}</Badge>
+										{/if}
+										{#if entry.status === 'archived'}
+											<Badge variant="secondary">Withdrawn</Badge>
+										{/if}
+									</div>
+									{#if canManage && entry.status === 'active'}
+										<div class="flex items-center gap-2">
+											<form
+												method="POST"
+												action="?/assignEntryDivision"
+												class="flex items-center gap-2"
+											>
+												<input type="hidden" name="entry" value={entry.id} />
+												<select
+													name="division"
+													class="h-8 rounded-md border border-blue-300 bg-blue-50 px-2 text-sm text-blue-950 focus-visible:outline-2 focus-visible:outline-blue-600"
+													aria-label="Assign division"
+												>
+													<option value="" selected={!entry.division}>No division</option>
+													{#each divisionsOf(season.id).filter((d) => d.status === 'active') as d (d.id)}
+														<option value={d.id} selected={entry.division === d.id}>{d.name}</option
+														>
+													{/each}
+												</select>
+												<Button
+													size="sm"
+													type="submit"
+													class="bg-green-700 text-white hover:bg-green-800">Assign</Button
+												>
+											</form>
+											<form method="POST" action="?/withdrawEntry">
+												<input type="hidden" name="entry" value={entry.id} />
+												<Button
+													variant="ghost"
+													size="sm"
+													type="submit"
+													class="text-orange-800 hover:bg-orange-100 hover:text-orange-900"
+													>Withdraw</Button
+												>
+											</form>
+										</div>
+									{:else if canManage}
+										<form method="POST" action="?/restoreEntry">
+											<input type="hidden" name="entry" value={entry.id} />
+											<Button variant="ghost" size="sm" type="submit">Restore</Button>
+										</form>
+									{/if}
+								</div>
+							{/each}
+							{#if canManage && season.status !== 'archived'}
+								{#if activeTeams.length === 0}
+									<p class="text-sm text-muted-foreground">
+										Create a team on the Teams &amp; rosters page first.
+									</p>
+								{:else}
+									<form method="POST" action="?/addEntry" class="flex flex-wrap items-end gap-2">
+										<input type="hidden" name="season" value={season.id} />
+										<div class="flex min-w-40 flex-col gap-1.5">
+											<Label for="entry-team-{season.id}">Enter a team</Label>
+											<select
+												id="entry-team-{season.id}"
+												name="team"
+												required
+												class="h-9 rounded-md border bg-background px-2 text-sm"
+											>
+												<option value="" disabled selected>Select a team</option>
+												{#each activeTeams as team (team.id)}
+													<option value={team.id}>{team.name}</option>
+												{/each}
+											</select>
+										</div>
+										<div class="flex min-w-40 flex-col gap-1.5">
+											<Label for="entry-division-{season.id}">Division (optional)</Label>
+											<select
+												id="entry-division-{season.id}"
+												name="division"
+												class="h-9 rounded-md border bg-background px-2 text-sm"
+											>
+												<option value="" selected>No division yet</option>
+												{#each divisionsOf(season.id).filter((d) => d.status === 'active') as d (d.id)}
+													<option value={d.id}>{d.name}</option>
+												{/each}
+											</select>
+										</div>
+										<Button variant="outline" size="sm" type="submit">
+											<Plus class="mr-1 size-3.5" /> Enter team
+										</Button>
+									</form>
+								{/if}
+							{/if}
+						</div>
 					</div>
 				</details>
 			{/each}

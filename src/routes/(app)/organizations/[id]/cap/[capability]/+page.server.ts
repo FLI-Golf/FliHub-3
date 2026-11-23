@@ -1,9 +1,22 @@
-import { parseFundingTarget, type SponsorshipFundingCondition } from '$lib/sponsorships/funding-threshold';
+import {
+	parseFundingTarget,
+	type SponsorshipFundingCondition
+} from '$lib/sponsorships/funding-threshold';
 import { createHash } from 'node:crypto';
-import { DemoFillError, fillEventDemoScores, submitEventDemoScorecards } from '$lib/server/fill-event-demo-scores';
+import {
+	DemoFillError,
+	fillEventDemoScores,
+	submitEventDemoScorecards
+} from '$lib/server/fill-event-demo-scores';
 import type { Expense } from '$lib/expenses/model';
 import { submitExpense, reviewExpense, replaceExpenseReceipt } from '$lib/server/expenses';
-import { sponsorStages, type Sponsor, type SponsorshipAgreement, type SponsorshipQuote, type SponsorshipFundingEntry } from '$lib/sponsorships/model';
+import {
+	sponsorStages,
+	type Sponsor,
+	type SponsorshipAgreement,
+	type SponsorshipQuote,
+	type SponsorshipFundingEntry
+} from '$lib/sponsorships/model';
 import { prepareGuidedTeeTimes } from '$lib/event-setup/schedule';
 import type { GuidedEventInput } from '$lib/event-setup/types';
 import { allocateTournamentPurses, parseSeasonPurse } from '$lib/season-purse';
@@ -18,8 +31,10 @@ import type { StandingsTable } from '$lib/public-page';
 const ID_PATTERN = /^[a-z0-9]{15}$/;
 
 function sponsorshipSeedId(organization: string, key: string): string {
-	return createHash('sha256').update('flihub-sponsorship-demo:' + organization + ':' + key)
-		.digest('hex').slice(0, 15);
+	return createHash('sha256')
+		.update('flihub-sponsorship-demo:' + organization + ':' + key)
+		.digest('hex')
+		.slice(0, 15);
 }
 
 function eventDateMessage(
@@ -95,7 +110,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 							submitter: user.id
 						}),
 			sort: '-created,id',
-			fields: 'id,expenseOn,vendor,category,purpose,amountCents,receipt,status,reviewNote,returnHistory,submitter,submitterName'
+			fields:
+				'id,expenseOn,vendor,category,purpose,amountCents,receipt,status,reviewNote,returnHistory,submitter,submitterName'
 		});
 		expenses = records.map((record) => ({
 			id: record.id,
@@ -130,10 +146,13 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			fields: 'id,name,contactName,contactEmail,stage,followUpOn,nextAction,notes,archived'
 		});
 		const orgFilter = pb.filter('organization = {:org}', { org: params.id });
-		const activeFilter = pb.filter('organization = {:org} && status != "archived"', { org: params.id });
+		const activeFilter = pb.filter('organization = {:org} && status != "archived"', {
+			org: params.id
+		});
 		const [agreements, leagues, seasons, teams, events, rounds, holes] = await Promise.all([
 			pb.collection('sponsorship_agreements').getFullList<SponsorshipAgreement>({
-				filter: pb.filter('organization = {:org}', { org: params.id }), sort: '-signedOn,id'
+				filter: pb.filter('organization = {:org}', { org: params.id }),
+				sort: '-signedOn,id'
 			}),
 			pb.collection('leagues').getFullList({ filter: activeFilter, sort: 'name' }),
 			pb.collection('seasons').getFullList({ filter: orgFilter, sort: 'name' }),
@@ -146,33 +165,52 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		for (const season of seasons)
 			sponsorshipSeasons.push({ id: season.id, label: String(season.name) });
 		for (const event of events)
-			sponsorshipEvents.push({ id: event.id, label: String(event.name), season: String(event.season ?? '') });
+			sponsorshipEvents.push({
+				id: event.id,
+				label: String(event.name),
+				season: String(event.season ?? '')
+			});
 		const fundingFilter = pb.filter('organization = {:org}', { org: params.id });
 		const [funding, reversals, conditions] = await Promise.all([
 			pb.collection('sponsorship_funding_entries').getFullList<SponsorshipFundingEntry>({
-				filter: fundingFilter, sort: 'entryDate,id', fields: 'id,agreement,kind,amountCents,entryDate,method,reference'
+				filter: fundingFilter,
+				sort: 'entryDate,id',
+				fields: 'id,agreement,kind,amountCents,entryDate,method,reference'
 			}),
-			pb.collection('sponsorship_payment_reversals').getFullList<
-				NonNullable<SponsorshipFundingEntry['reversal']> & { payment: string }
-			>({ filter: fundingFilter, fields: 'payment,reason,recordedByName,recordedBy,created' }),
+			pb
+				.collection('sponsorship_payment_reversals')
+				.getFullList<NonNullable<SponsorshipFundingEntry['reversal']> & { payment: string }>({
+					filter: fundingFilter,
+					fields: 'payment,reason,recordedByName,recordedBy,created'
+				}),
 			pb.collection('sponsorship_funding_conditions').getFullList<SponsorshipFundingCondition>({
-				filter: fundingFilter, fields: 'agreement,targetCents,percentage,currency,deadline,selectedIds,releasedAt,releasedBy,releasedByName,releasedCommittedCents'
+				filter: fundingFilter,
+				fields:
+					'agreement,targetCents,percentage,currency,deadline,selectedIds,releasedAt,releasedBy,releasedByName,releasedCommittedCents'
 			})
 		]);
 		sponsorshipConditions = conditions;
 		const reversalsByPayment = new Map(reversals.map((reversal) => [reversal.payment, reversal]));
-		sponsorshipFunding = funding.map((entry) => ({ ...entry, reversal: reversalsByPayment.get(entry.id) }));
+		sponsorshipFunding = funding.map((entry) => ({
+			...entry,
+			reversal: reversalsByPayment.get(entry.id)
+		}));
 		sponsorshipQuotes = await pb.collection('sponsorship_quotes').getFullList<SponsorshipQuote>({
-			filter: pb.filter('organization = {:org}', { org: params.id }), sort: '-created,id',
+			filter: pb.filter('organization = {:org}', { org: params.id }),
+			sort: '-created,id',
 			fields: 'id,sponsor,packageName,currency,amountCents,benefits'
 		});
 		for (const [kind, label, rows] of [
-			['league', 'League', leagues], ['season', 'Season', seasons.filter((row) => row.status !== 'archived')],
-			['team', 'Team', teams], ['event', 'Event', events.filter((row) => row.status !== 'archived')]
+			['league', 'League', leagues],
+			['season', 'Season', seasons.filter((row) => row.status !== 'archived')],
+			['team', 'Team', teams],
+			['event', 'Event', events.filter((row) => row.status !== 'archived')]
 		] as const) {
-			for (const row of rows) sponsorshipTargets.push({
-				value: kind + ':' + row.id, label: label + ' · ' + String(row.name)
-			});
+			for (const row of rows)
+				sponsorshipTargets.push({
+					value: kind + ':' + row.id,
+					label: label + ' · ' + String(row.name)
+				});
 		}
 		const eventsById = new Map(events.map((event) => [event.id, event]));
 		for (const round of rounds) {
@@ -181,7 +219,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			for (const hole of holes.filter((hole) => hole.course === round.course)) {
 				sponsorshipTargets.push({
 					value: ['hole', event.id, round.id, hole.id].join(':'),
-					label: String(event.name) + ' · Round ' + String(round.number) + ' · Hole ' + String(hole.number)
+					label:
+						String(event.name) +
+						' · Round ' +
+						String(round.number) +
+						' · Hole ' +
+						String(hole.number)
 				});
 			}
 		}
@@ -775,7 +818,13 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 						id: ev.id,
 						name: String(ev.name ?? ''),
 						seasonId: String(ev.season ?? '') || null,
-						isPast: ev.status === 'archived' || seasonRows.some((season) => season.id === ev.season && ['completed', 'archived'].includes(String(season.status))),
+						isPast:
+							ev.status === 'archived' ||
+							seasonRows.some(
+								(season) =>
+									season.id === ev.season &&
+									['completed', 'archived'].includes(String(season.status))
+							),
 						seasonName: seasonName.get(String(ev.season ?? '')) ?? null,
 						tournamentPurseCents: tournamentPurses.get(ev.id) ?? null,
 						roundCount,
@@ -840,19 +889,41 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			try {
 				const filter = pb.filter('organization = {:org}', { org: params.id });
 				const [seasons, events, leagues] = await Promise.all([
-					pb.collection('seasons').getFullList({ filter, fields: 'id,league,purseAmountCents,purseCurrency' }),
-					pb.collection('events').getFullList({ filter: `${filter} && status != "archived"`, fields: 'id,season,startsAt' }),
-					pb.collection('leagues').getFullList({ filter, fields: 'id,name,payoutTopWeight,payoutLowerWeight,payoutPerTournament,payoutEventCurves' })
+					pb
+						.collection('seasons')
+						.getFullList({ filter, fields: 'id,league,purseAmountCents,purseCurrency' }),
+					pb.collection('events').getFullList({
+						filter: `${filter} && status != "archived"`,
+						fields: 'id,season,startsAt'
+					}),
+					pb.collection('leagues').getFullList({
+						filter,
+						fields:
+							'id,name,payoutTopWeight,payoutLowerWeight,payoutPerTournament,payoutEventCurves'
+					})
 				]);
-				const purses = new Map(seasons.filter((season) => season.purseCurrency === 'USD').map((season) => [
-					season.id,
-					allocateTournamentPurses(Number(season.purseAmountCents), events.filter((event) => event.season === season.id).map((event) => ({ id: event.id, startsAt: String(event.startsAt ?? '') })))
-				]));
-				const seasonLeague = new Map(seasons.map((season) => [season.id, String(season.league ?? '')]));
+				const purses = new Map(
+					seasons
+						.filter((season) => season.purseCurrency === 'USD')
+						.map((season) => [
+							season.id,
+							allocateTournamentPurses(
+								Number(season.purseAmountCents),
+								events
+									.filter((event) => event.season === season.id)
+									.map((event) => ({ id: event.id, startsAt: String(event.startsAt ?? '') }))
+							)
+						])
+				);
+				const seasonLeague = new Map(
+					seasons.map((season) => [season.id, String(season.league ?? '')])
+				);
 				const leagueById = new Map(leagues.map((league) => [league.id, league]));
 				for (const table of standingsData.standings) {
 					const seasonPurses = table.season ? purses.get(table.season) : undefined;
-					const league = table.season ? leagueById.get(seasonLeague.get(table.season) ?? '') : undefined;
+					const league = table.season
+						? leagueById.get(seasonLeague.get(table.season) ?? '')
+						: undefined;
 					for (const event of table.payoutEvents ?? []) {
 						event.purseCents = seasonPurses?.get(event.event) ?? null;
 						if (league && typeof league.payoutTopWeight === 'number') {
@@ -874,7 +945,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		}
 	}
 
-
 	return {
 		organization: dto,
 		myRole,
@@ -892,11 +962,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		sponsorshipTargets,
 		sponsorshipSeasons,
 		sponsorshipEvents,
-		seedAgreementCount: sponsorshipAgreements.filter((agreement) =>
-			agreement.sponsor === sponsorshipSeedId(params.id, 'sponsor') &&
-			agreement.id === sponsorshipSeedId(params.id, 'agreement:' + agreement.coverage)
+		seedAgreementCount: sponsorshipAgreements.filter(
+			(agreement) =>
+				agreement.sponsor === sponsorshipSeedId(params.id, 'sponsor') &&
+				agreement.id === sponsorshipSeedId(params.id, 'agreement:' + agreement.coverage)
 		).length,
-		canSeedSponsorships: import.meta.env.DEV && ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname),
+		canSeedSponsorships:
+			import.meta.env.DEV &&
+			['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname),
 		athletes,
 		teams,
 		rosters,
@@ -952,21 +1025,39 @@ export const actions: Actions = {
 		const lowerWeight = String(form.get('lowerWeight') ?? '0');
 		const perTournament = form.get('perTournament') === '1';
 		const eventId = String(form.get('event') ?? '');
-		if (params.capability !== 'standings' || !ID_PATTERN.test(params.id) || !ID_PATTERN.test(leagueId))
+		if (
+			params.capability !== 'standings' ||
+			!ID_PATTERN.test(params.id) ||
+			!ID_PATTERN.test(leagueId)
+		)
 			return fail(404, { message: 'League not found.' });
-		if (!/^\d{1,3}$/.test(weight) || Number(weight) > 100 || !/^\d{1,3}$/.test(lowerWeight) || Number(lowerWeight) > 100)
+		if (
+			!/^\d{1,3}$/.test(weight) ||
+			Number(weight) > 100 ||
+			!/^\d{1,3}$/.test(lowerWeight) ||
+			Number(lowerWeight) > 100
+		)
 			return fail(400, { message: 'Choose an emphasis between 0 and 100.' });
 		try {
-			const owner = await pb.collection('memberships').getFirstListItem(
-				pb.filter('organization = {:org} && user = {:user} && role = "owner"', { org: params.id, user: user.id })
-			).catch(() => null);
-			if (!owner) return fail(403, { message: 'Only the organization Owner can save a payout curve.' });
+			const owner = await pb
+				.collection('memberships')
+				.getFirstListItem(
+					pb.filter('organization = {:org} && user = {:user} && role = "owner"', {
+						org: params.id,
+						user: user.id
+					})
+				)
+				.catch(() => null);
+			if (!owner)
+				return fail(403, { message: 'Only the organization Owner can save a payout curve.' });
 			const league = await pb.collection('leagues').getOne(leagueId);
 			if (league.organization !== params.id) return fail(404, { message: 'League not found.' });
 			if (perTournament) {
 				if (!ID_PATTERN.test(eventId)) return fail(400, { message: 'Choose a tournament.' });
 				const tournament = await pb.collection('events').getOne(eventId, { fields: 'id,season' });
-				const season = await pb.collection('seasons').getOne(String(tournament.season), { fields: 'id,league' });
+				const season = await pb
+					.collection('seasons')
+					.getOne(String(tournament.season), { fields: 'id,league' });
 				if (season.league !== leagueId) return fail(404, { message: 'Tournament not found.' });
 				const curves = parseEventCurves(league.payoutEventCurves);
 				curves[eventId] = { top: Number(weight), lower: Number(lowerWeight) };
@@ -983,7 +1074,9 @@ export const actions: Actions = {
 			}
 			return { payoutCurveSaved: true };
 		} catch (err) {
-			return fail(pbErrorStatus(err), { message: pbErrorMessage(err, 'Unable to save the payout curve.') });
+			return fail(pbErrorStatus(err), {
+				message: pbErrorMessage(err, 'Unable to save the payout curve.')
+			});
 		}
 	},
 
@@ -991,13 +1084,24 @@ export const actions: Actions = {
 		if (!pb || !user) return fail(401, { message: 'Sign in to reset the payout curve.' });
 		const form = await request.formData();
 		const leagueId = String(form.get('league') ?? '');
-		if (params.capability !== 'standings' || !ID_PATTERN.test(params.id) || !ID_PATTERN.test(leagueId))
+		if (
+			params.capability !== 'standings' ||
+			!ID_PATTERN.test(params.id) ||
+			!ID_PATTERN.test(leagueId)
+		)
 			return fail(404, { message: 'League not found.' });
 		try {
-			const owner = await pb.collection('memberships').getFirstListItem(
-				pb.filter('organization = {:org} && user = {:user} && role = "owner"', { org: params.id, user: user.id })
-			).catch(() => null);
-			if (!owner) return fail(403, { message: 'Only the organization Owner can reset a payout curve.' });
+			const owner = await pb
+				.collection('memberships')
+				.getFirstListItem(
+					pb.filter('organization = {:org} && user = {:user} && role = "owner"', {
+						org: params.id,
+						user: user.id
+					})
+				)
+				.catch(() => null);
+			if (!owner)
+				return fail(403, { message: 'Only the organization Owner can reset a payout curve.' });
 			const league = await pb.collection('leagues').getOne(leagueId);
 			if (league.organization !== params.id) return fail(404, { message: 'League not found.' });
 			await pb.collection('leagues').update(leagueId, {
@@ -1008,7 +1112,9 @@ export const actions: Actions = {
 			});
 			return { payoutCurveReset: true };
 		} catch (err) {
-			return fail(pbErrorStatus(err), { message: pbErrorMessage(err, 'Unable to reset the payout curve.') });
+			return fail(pbErrorStatus(err), {
+				message: pbErrorMessage(err, 'Unable to reset the payout curve.')
+			});
 		}
 	},
 
@@ -1018,23 +1124,40 @@ export const actions: Actions = {
 		const { pb, user } = locals;
 		if (!pb || !user) return fail(503, { demoScoringError: 'PocketBase is not configured.' });
 		if (!['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname))
-			return fail(403, { demoScoringError: 'Season scoring tools require local development PocketBase.' });
+			return fail(403, {
+				demoScoringError: 'Season scoring tools require local development PocketBase.'
+			});
 
 		const form = await request.formData();
 		const season = String(form.get('season') ?? '');
 		const operation = form.get('operation');
 		const ids = [...new Set(form.getAll('event').map(String))];
-		if (![params.id, season, ...ids].every((id) => ID_PATTERN.test(id)) || !ids.length ||
-			(operation !== 'fill' && operation !== 'submit' && operation !== 'undo'))
+		if (
+			![params.id, season, ...ids].every((id) => ID_PATTERN.test(id)) ||
+			!ids.length ||
+			(operation !== 'fill' && operation !== 'submit' && operation !== 'undo')
+		)
 			return fail(400, { demoScoringError: 'Choose a season and scoring action.' });
 
 		try {
-			const membership = await pb.collection('memberships').getFirstListItem(
-				pb.filter('organization = {:org} && user = {:user} && (role = "owner" || role = "admin")', { org: params.id, user: user.id })
-			).catch(() => null);
-			if (!membership) return fail(403, { demoScoringError: 'Only Owners and Admins can use season scoring tools.' });
+			const membership = await pb
+				.collection('memberships')
+				.getFirstListItem(
+					pb.filter(
+						'organization = {:org} && user = {:user} && (role = "owner" || role = "admin")',
+						{ org: params.id, user: user.id }
+					)
+				)
+				.catch(() => null);
+			if (!membership)
+				return fail(403, {
+					demoScoringError: 'Only Owners and Admins can use season scoring tools.'
+				});
 			const rows = await pb.collection('events').getFullList({
-				filter: pb.filter('organization = {:org} && season = {:season} && status != "archived"', { org: params.id, season }),
+				filter: pb.filter('organization = {:org} && season = {:season} && status != "archived"', {
+					org: params.id,
+					season
+				}),
 				sort: 'startsAt,id'
 			});
 			const events = rows.filter((row) => ids.includes(row.id));
@@ -1046,7 +1169,14 @@ export const actions: Actions = {
 				try {
 					let message: string;
 					if (operation === 'fill') {
-						const { added } = await fillEventDemoScores(pb, params.id, event.id, user.id, Math.random, true);
+						const { added } = await fillEventDemoScores(
+							pb,
+							params.id,
+							event.id,
+							user.id,
+							Math.random,
+							true
+						);
 						message = added ? `Added ${added} demo scores.` : 'No missing demo scores.';
 					} else if (operation === 'undo') {
 						const { removed, locked } = await pb.send<{ removed: number; locked: number }>(
@@ -1055,17 +1185,28 @@ export const actions: Actions = {
 						);
 						message = `Removed ${removed} generated draft scores. ${locked} submitted or previously submitted scores kept.`;
 					} else {
-						const { submitted, skipped } = await submitEventDemoScorecards(pb, params.id, event.id, user.id);
+						const { submitted, skipped } = await submitEventDemoScorecards(
+							pb,
+							params.id,
+							event.id,
+							user.id
+						);
 						message = `Submitted ${submitted} cards. ${skipped} already submitted.`;
 					}
 					demoScoringResults.push({ id: event.id, ok: true, message });
 				} catch (err) {
-					demoScoringResults.push({ id: event.id, ok: false, message: err instanceof DemoFillError ? err.message : pbErrorMessage(err) });
+					demoScoringResults.push({
+						id: event.id,
+						ok: false,
+						message: err instanceof DemoFillError ? err.message : pbErrorMessage(err)
+					});
 				}
 			}
 			return { demoScoringResults };
 		} catch (err) {
-			return fail(pbErrorStatus(err), { demoScoringError: pbErrorMessage(err, 'Unable to process season scores.') });
+			return fail(pbErrorStatus(err), {
+				demoScoringError: pbErrorMessage(err, 'Unable to process season scores.')
+			});
 		}
 	},
 
@@ -1085,12 +1226,31 @@ export const actions: Actions = {
 		const intent = read('intent');
 		const seeding = intent === 'seed-agreement';
 		const clearing = intent === 'clear-seed-agreements';
-		if ((seeding || clearing) && (!import.meta.env.DEV ||
-			!['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname))) {
-			return fail(404, { message: 'Sponsorship seed tools are available only in local development.' });
+		if (
+			(seeding || clearing) &&
+			(!import.meta.env.DEV ||
+				!['127.0.0.1', 'localhost', '[::1]'].includes(new URL(pb.baseURL).hostname))
+		) {
+			return fail(404, {
+				message: 'Sponsorship seed tools are available only in local development.'
+			});
 		}
 		if (
-			!['create', 'edit', 'archive', 'restore', 'agreement', 'seed-agreement', 'clear-seed-agreements', 'quote', 'convert-quote', 'funding-entry', 'reverse-payment', 'funding-condition', 'release-installments'].includes(intent) ||
+			![
+				'create',
+				'edit',
+				'archive',
+				'restore',
+				'agreement',
+				'seed-agreement',
+				'clear-seed-agreements',
+				'quote',
+				'convert-quote',
+				'funding-entry',
+				'reverse-payment',
+				'funding-condition',
+				'release-installments'
+			].includes(intent) ||
 			(intent !== 'create' && !seeding && !clearing && !ID_PATTERN.test(id))
 		) {
 			return fail(400, { message: 'Choose a valid sponsor action.' });
@@ -1108,7 +1268,9 @@ export const actions: Actions = {
 				!memberships.some(({ role }) => role === 'owner' || role === 'admin') ||
 				!toOrganizationDTO(organization).capabilities.includes('sponsorships')
 			) {
-				return fail(403, { message: 'Sponsorships must be enabled and managed by an Owner or Admin.' });
+				return fail(403, {
+					message: 'Sponsorships must be enabled and managed by an Owner or Admin.'
+				});
 			}
 
 			if (intent === 'release-installments') {
@@ -1116,19 +1278,29 @@ export const actions: Actions = {
 				if (!ID_PATTERN.test(agreement)) return fail(400, { message: 'Choose an agreement.' });
 				try {
 					await pb.send('/api/flihub/sponsorships/' + params.id + '/release-installments', {
-						method: 'POST', body: { sponsor: id, agreement }
+						method: 'POST',
+						body: { sponsor: id, agreement }
 					});
 				} catch (err) {
-					return fail(pbErrorStatus(err), { conditionAgreement: agreement, releaseError: pbErrorMessage(err) });
+					return fail(pbErrorStatus(err), {
+						conditionAgreement: agreement,
+						releaseError: pbErrorMessage(err)
+					});
 				}
-				redirect(303, '/organizations/' + params.id + '/cap/sponsorships#sponsorship-agreement-' + agreement);
+				redirect(
+					303,
+					'/organizations/' + params.id + '/cap/sponsorships#sponsorship-agreement-' + agreement
+				);
 			}
 
 			if (intent === 'funding-condition') {
 				const agreement = read('agreement');
 				const conditionValues = {
-					target: read('target'), percentage: read('percentage'), currency: read('currency'),
-					deadline: read('deadline'), selectedIds: form.getAll('selectedIds').map(String)
+					target: read('target'),
+					percentage: read('percentage'),
+					currency: read('currency'),
+					deadline: read('deadline'),
+					selectedIds: form.getAll('selectedIds').map(String)
 				};
 				const targetCents = parseFundingTarget(conditionValues.target);
 				const invalid = (conditionError: string, status = 400) =>
@@ -1138,21 +1310,34 @@ export const actions: Actions = {
 				try {
 					await pb.send('/api/flihub/sponsorships/' + params.id + '/funding-condition', {
 						method: 'POST',
-						body: { ...conditionValues, sponsor: id, agreement, targetCents, percentage: Number(conditionValues.percentage) }
+						body: {
+							...conditionValues,
+							sponsor: id,
+							agreement,
+							targetCents,
+							percentage: Number(conditionValues.percentage)
+						}
 					});
 				} catch (err) {
 					return invalid(pbErrorMessage(err), pbErrorStatus(err));
 				}
-				redirect(303, '/organizations/' + params.id + '/cap/sponsorships#sponsorship-agreement-' + agreement);
+				redirect(
+					303,
+					'/organizations/' + params.id + '/cap/sponsorships#sponsorship-agreement-' + agreement
+				);
 			}
 
 			if (intent === 'reverse-payment') {
 				const paymentId = read('payment');
 				const agreementId = read('agreement');
 				const reason = read('reason');
-				const invalid = (message: string, status = 400) => fail(status, {
-					reversalError: message, fundingAgreement: agreementId, reversalPayment: paymentId, reversalReason: reason
-				});
+				const invalid = (message: string, status = 400) =>
+					fail(status, {
+						reversalError: message,
+						fundingAgreement: agreementId,
+						reversalPayment: paymentId,
+						reversalReason: reason
+					});
 				if (!ID_PATTERN.test(paymentId) || !ID_PATTERN.test(agreementId))
 					return invalid('Choose a payment to reverse.');
 				if (!reason || reason.length > 500)
@@ -1160,13 +1345,24 @@ export const actions: Actions = {
 				try {
 					const payment = await pb.collection('sponsorship_funding_entries').getOne(paymentId);
 					const agreement = await pb.collection('sponsorship_agreements').getOne(agreementId);
-					if (payment.organization !== params.id || payment.agreement !== agreementId ||
-						payment.kind !== 'payment' || agreement.organization !== params.id || agreement.sponsor !== id)
+					if (
+						payment.organization !== params.id ||
+						payment.agreement !== agreementId ||
+						payment.kind !== 'payment' ||
+						agreement.organization !== params.id ||
+						agreement.sponsor !== id
+					)
 						return invalid('Payment not found for this sponsor.', 404);
 					await pb.collection('sponsorship_payment_reversals').create({
-						organization: params.id, payment: paymentId, reason
+						organization: params.id,
+						payment: paymentId,
+						reason
 					});
-					return { fundingMessage: 'Payment reversed.', fundingAgreement: agreementId, reversalPayment: paymentId };
+					return {
+						fundingMessage: 'Payment reversed.',
+						fundingAgreement: agreementId,
+						reversalPayment: paymentId
+					};
 				} catch (err) {
 					return invalid(pbErrorMessage(err), pbErrorStatus(err));
 				}
@@ -1175,23 +1371,38 @@ export const actions: Actions = {
 			if (intent === 'funding-entry') {
 				const agreementId = read('agreement');
 				const kind = read('kind');
-				const values = { amount: read('amount'), entryDate: read('entryDate'), method: read('method'), reference: read('reference') };
-				const invalid = (message: string, status = 400) => fail(status, {
-					fundingError: message, fundingAgreement: agreementId, fundingKind: kind, fundingValues: values
-				});
+				const values = {
+					amount: read('amount'),
+					entryDate: read('entryDate'),
+					method: read('method'),
+					reference: read('reference')
+				};
+				const invalid = (message: string, status = 400) =>
+					fail(status, {
+						fundingError: message,
+						fundingAgreement: agreementId,
+						fundingKind: kind,
+						fundingValues: values
+					});
 				if (!ID_PATTERN.test(agreementId) || !['installment', 'payment'].includes(kind))
 					return invalid('Choose an agreement and funding entry type.');
 				const amount = /^(\d{1,9}|\d{1,3}(?:,\d{3}){1,2})(?:\.(\d{1,2}))?$/.exec(values.amount);
 				if (!amount) return invalid('Enter an amount with at most two decimal places.');
-				const amountCents = Number(amount[1].replaceAll(',', '')) * 100 + Number((amount[2] ?? '').padEnd(2, '0'));
+				const amountCents =
+					Number(amount[1].replaceAll(',', '')) * 100 + Number((amount[2] ?? '').padEnd(2, '0'));
 				if (amountCents < 1) return invalid('Enter an amount greater than zero.');
 				try {
 					const agreement = await pb.collection('sponsorship_agreements').getOne(agreementId);
 					if (agreement.organization !== params.id || agreement.sponsor !== id)
 						return invalid('Agreement not found for this sponsor.', 404);
 					await pb.collection('sponsorship_funding_entries').create({
-						organization: params.id, agreement: agreementId, kind, amountCents,
-						entryDate: values.entryDate, method: values.method, reference: values.reference
+						organization: params.id,
+						agreement: agreementId,
+						kind,
+						amountCents,
+						entryDate: values.entryDate,
+						method: values.method,
+						reference: values.reference
 					});
 					return {
 						fundingMessage: kind === 'payment' ? 'Payment recorded.' : 'Installment added.',
@@ -1207,23 +1418,37 @@ export const actions: Actions = {
 				const coverage = read('coverage');
 				const signedOn = read('signedOn');
 				const dueOn = read('dueOn');
-				const invalid = (message: string, status = 400) => fail(status, {
-					conversionError: message, conversionQuote: quoteId, coverage, signedOn, dueOn
-				});
+				const invalid = (message: string, status = 400) =>
+					fail(status, {
+						conversionError: message,
+						conversionQuote: quoteId,
+						coverage,
+						signedOn,
+						dueOn
+					});
 				if (!ID_PATTERN.test(quoteId) || read('confirm') !== 'signed')
 					return invalid('Confirm the sponsorship agreement has been signed.');
 				try {
 					const quote = await pb.collection('sponsorship_quotes').getOne<SponsorshipQuote>(quoteId);
 					const reviewTerms = JSON.stringify([
-						quote.packageName, quote.currency, quote.amountCents,
+						quote.packageName,
+						quote.currency,
+						quote.amountCents,
 						quote.benefits.map((benefit) => [benefit.id, benefit.name, benefit.amountCents])
 					]);
 					if (quote.sponsor !== id) return invalid('Quote not found for this sponsor.', 404);
 					if (read('reviewTerms') !== reviewTerms)
 						return invalid('The quote changed. Review the latest draft and try again.');
 					await pb.collection('sponsorship_agreements').create({
-						organization: params.id, sponsor: id, quote: quoteId, title: quote.packageName,
-						amountCents: quote.amountCents, currency: quote.currency, coverage, signedOn, dueOn,
+						organization: params.id,
+						sponsor: id,
+						quote: quoteId,
+						title: quote.packageName,
+						amountCents: quote.amountCents,
+						currency: quote.currency,
+						coverage,
+						signedOn,
+						dueOn,
 						benefits: quote.benefits.map((benefit) => benefit.name).join('\n')
 					});
 					return { conversionMessage: 'Sponsorship agreement created.', conversionQuote: quoteId };
@@ -1244,22 +1469,36 @@ export const actions: Actions = {
 							return fail(400, { quoteError: 'Invalid draft quote.', quoteSponsor: id });
 						const existing = await quotes.getOne(quoteId);
 						if (existing.organization !== params.id || existing.sponsor !== id)
-							return fail(404, { quoteError: 'Draft quote not found for this sponsor.', quoteSponsor: id });
+							return fail(404, {
+								quoteError: 'Draft quote not found for this sponsor.',
+								quoteSponsor: id
+							});
 						await quotes.update(quoteId, selection);
 					} else {
 						await quotes.create({ organization: params.id, sponsor: id, ...selection });
 					}
-					return { quoteMessage: quoteId ? 'Draft quote updated.' : 'Draft quote saved.', quoteSponsor: id };
+					return {
+						quoteMessage: quoteId ? 'Draft quote updated.' : 'Draft quote saved.',
+						quoteSponsor: id
+					};
 				} catch (err) {
 					return fail(pbErrorStatus(err), {
-						quoteError: pbErrorMessage(err), quoteSponsor: id, quoteId, quotePackage, quoteSelected: selected
+						quoteError: pbErrorMessage(err),
+						quoteSponsor: id,
+						quoteId,
+						quotePackage,
+						quoteSelected: selected
 					});
 				}
 			}
 
 			if (clearing) {
 				const expectedCount = Number(read('expectedCount'));
-				if (read('confirm') !== 'CLEAR' || !Number.isSafeInteger(expectedCount) || expectedCount < 1)
+				if (
+					read('confirm') !== 'CLEAR' ||
+					!Number.isSafeInteger(expectedCount) ||
+					expectedCount < 1
+				)
 					return fail(400, { seedError: 'Confirm which demo agreements to clear.' });
 				try {
 					const { cleared } = await pb.send<{ cleared: number }>(
@@ -1276,8 +1515,15 @@ export const actions: Actions = {
 				const coverage = read('coverage');
 				const targetId = '[a-z0-9]{15}';
 				const targetPattern = new RegExp(
-					'^(?:(?:league|season|team|event):' + targetId + '|hole:' +
-					targetId + ':' + targetId + ':' + targetId + ')$'
+					'^(?:(?:league|season|team|event):' +
+						targetId +
+						'|hole:' +
+						targetId +
+						':' +
+						targetId +
+						':' +
+						targetId +
+						')$'
 				);
 				if (coverage !== 'organization' && !targetPattern.test(coverage)) {
 					return fail(400, { seedError: 'Choose a sponsorship target.', seedCoverage: coverage });
@@ -1293,9 +1539,16 @@ export const actions: Actions = {
 						throw err;
 					});
 					if (prior) {
-						if (prior.organization !== params.id || prior.sponsor !== sponsorId || prior.coverage !== coverage)
+						if (
+							prior.organization !== params.id ||
+							prior.sponsor !== sponsorId ||
+							prior.coverage !== coverage
+						)
 							throw new Error('The demo agreement ID is already in use.');
-						return { seedMessage: 'A demo agreement already exists for this target.', seedCoverage: coverage };
+						return {
+							seedMessage: 'A demo agreement already exists for this target.',
+							seedCoverage: coverage
+						};
 					}
 
 					const sponsor = await sponsors.getOne(sponsorId).catch((err) => {
@@ -1303,53 +1556,88 @@ export const actions: Actions = {
 						throw err;
 					});
 					if (sponsor?.archived) {
-						return fail(400, { seedError: 'Restore the demo sponsor before adding more deals.', seedCoverage: coverage });
+						return fail(400, {
+							seedError: 'Restore the demo sponsor before adding more deals.',
+							seedCoverage: coverage
+						});
 					}
 					if (sponsor && (sponsor.organization !== params.id || sponsor.name !== 'Demo Sponsor')) {
-						return fail(400, { seedError: 'The demo sponsor was renamed or its ID is in use.', seedCoverage: coverage });
+						return fail(400, {
+							seedError: 'The demo sponsor was renamed or its ID is in use.',
+							seedCoverage: coverage
+						});
 					}
 					if (!sponsor) {
 						await sponsors.create({
-							id: sponsorId, organization: params.id, name: 'Demo Sponsor',
-							stage: 'signed', notes: 'Sample data created by Quick seed deal.'
+							id: sponsorId,
+							organization: params.id,
+							name: 'Demo Sponsor',
+							stage: 'signed',
+							notes: 'Sample data created by Quick seed deal.'
 						});
 					}
 
 					await agreements.create({
-						id: agreementId, organization: params.id, sponsor: sponsorId,
-						title: 'Demo sponsorship agreement', coverage, amountCents: 100000, currency: 'USD',
+						id: agreementId,
+						organization: params.id,
+						sponsor: sponsorId,
+						title: 'Demo sponsorship agreement',
+						coverage,
+						amountCents: 100000,
+						currency: 'USD',
 						signedOn: new Date().toISOString().slice(0, 10),
 						benefits: 'Sample sponsorship placement for development testing.'
 					});
-					return { seedMessage: 'Demo agreement added under Demo Sponsor.', seedCoverage: coverage };
+					return {
+						seedMessage: 'Demo agreement added under Demo Sponsor.',
+						seedCoverage: coverage
+					};
 				} catch (err) {
-					return fail(pbErrorStatus(err), { seedError: pbErrorMessage(err), seedCoverage: coverage });
+					return fail(pbErrorStatus(err), {
+						seedError: pbErrorMessage(err),
+						seedCoverage: coverage
+					});
 				}
 			}
 
 			if (intent === 'agreement') {
 				const values = {
-					title: read('title'), coverage: read('coverage'), amount: read('amount'),
-					currency: read('currency'), signedOn: read('signedOn'), dueOn: read('dueOn'),
+					title: read('title'),
+					coverage: read('coverage'),
+					amount: read('amount'),
+					currency: read('currency'),
+					signedOn: read('signedOn'),
+					dueOn: read('dueOn'),
 					benefits: read('benefits')
 				};
-				const invalid = (message: string) => fail(400, {
-					agreementError: message, agreementSponsor: id, agreementValues: values
-				});
+				const invalid = (message: string) =>
+					fail(400, {
+						agreementError: message,
+						agreementSponsor: id,
+						agreementValues: values
+					});
 				const amount = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(values.amount);
 				if (!amount) return invalid('Enter an amount with at most two decimal places.');
 				const amountCents = Number(amount[1]) * 100 + Number((amount[2] ?? '').padEnd(2, '0'));
 				if (amountCents < 1) return invalid('Enter an amount greater than zero.');
 				try {
 					await pb.collection('sponsorship_agreements').create({
-						organization: params.id, sponsor: id, title: values.title, coverage: values.coverage,
-						amountCents, currency: values.currency, signedOn: values.signedOn,
-						dueOn: values.dueOn, benefits: values.benefits
+						organization: params.id,
+						sponsor: id,
+						title: values.title,
+						coverage: values.coverage,
+						amountCents,
+						currency: values.currency,
+						signedOn: values.signedOn,
+						dueOn: values.dueOn,
+						benefits: values.benefits
 					});
 					return { agreementMessage: 'Sponsorship agreement added.', agreementSponsor: id };
 				} catch (err) {
 					return fail(pbErrorStatus(err), {
-						agreementError: pbErrorMessage(err), agreementSponsor: id, agreementValues: values
+						agreementError: pbErrorMessage(err),
+						agreementSponsor: id,
+						agreementValues: values
 					});
 				}
 			}
@@ -1362,7 +1650,9 @@ export const actions: Actions = {
 				}
 				if (intent === 'archive' || intent === 'restore') {
 					await collection.update(id, { archived: intent === 'archive' });
-					return { sponsorMessage: intent === 'archive' ? 'Sponsor archived.' : 'Sponsor restored.' };
+					return {
+						sponsorMessage: intent === 'archive' ? 'Sponsor archived.' : 'Sponsor restored.'
+					};
 				}
 			}
 
@@ -3042,10 +3332,20 @@ function parseEventCurves(raw: unknown): Record<string, { top: number; lower: nu
 	try {
 		const parsed = JSON.parse(String(raw ?? '') || '{}');
 		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return curves;
-		for (const [id, value] of Object.entries(parsed as Record<string, { top?: unknown; lower?: unknown }>)) {
+		for (const [id, value] of Object.entries(
+			parsed as Record<string, { top?: unknown; lower?: unknown }>
+		)) {
 			const top = Number(value?.top);
 			const lower = Number(value?.lower);
-			if (ID_PATTERN.test(id) && Number.isInteger(top) && Number.isInteger(lower) && top >= 0 && top <= 100 && lower >= 0 && lower <= 100)
+			if (
+				ID_PATTERN.test(id) &&
+				Number.isInteger(top) &&
+				Number.isInteger(lower) &&
+				top >= 0 &&
+				top <= 100 &&
+				lower >= 0 &&
+				lower <= 100
+			)
 				curves[id] = { top, lower };
 		}
 	} catch {

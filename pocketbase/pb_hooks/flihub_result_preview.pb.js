@@ -9,7 +9,10 @@ routerAdd(
 		const [membership] = e.app.findRecordsByFilter(
 			'memberships',
 			'organization = {:org} && user = {:user} && (role = "owner" || role = "admin")',
-			'', 1, 0, { org, user: e.auth.id }
+			'',
+			1,
+			0,
+			{ org, user: e.auth.id }
 		);
 		if (!membership) throw new ForbiddenError('Owner or Admin access required.');
 		const event = e.app.findRecordById('events', eventId);
@@ -19,7 +22,10 @@ routerAdd(
 		if (!capabilities.includes('scoring-results'))
 			throw new ForbiddenError('Scoring & official results is disabled.');
 
-		const totals = require(`${__hooks}/result_snapshot_rules.js`).computeEventTotals(e.app, eventId);
+		const totals = require(`${__hooks}/result_snapshot_rules.js`).computeEventTotals(
+			e.app,
+			eventId
+		);
 		return e.json(200, {
 			teams: totals.teams.map(({ entry, teamName, total }) => ({ entry, teamName, total }))
 		});

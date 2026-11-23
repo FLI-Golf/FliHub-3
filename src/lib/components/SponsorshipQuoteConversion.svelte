@@ -3,19 +3,26 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { Sponsor, SponsorshipQuote } from '$lib/sponsorships/model';
 
-	let { sponsor, quote, targets, form }: {
+	let {
+		sponsor,
+		quote,
+		targets,
+		form
+	}: {
 		sponsor: Sponsor;
 		quote: SponsorshipQuote;
 		targets: { value: string; label: string }[];
 		form: unknown;
 	} = $props();
-	const feedback = $derived(form as {
-		conversionQuote?: string;
-		conversionError?: string;
-		coverage?: string;
-		signedOn?: string;
-		dueOn?: string;
-	} | null);
+	const feedback = $derived(
+		form as {
+			conversionQuote?: string;
+			conversionError?: string;
+			coverage?: string;
+			signedOn?: string;
+			dueOn?: string;
+		} | null
+	);
 	const error = $derived(feedback?.conversionQuote === quote.id ? feedback.conversionError : null);
 	let open = $state(false);
 	let step = $state(1);
@@ -34,11 +41,17 @@
 	const validDates = $derived(Boolean(signedOn) && (!dueOn || dueOn >= signedOn));
 	const ready = $derived(Boolean(coverage) && validDates);
 	const money = (cents: number) =>
-		new Intl.NumberFormat('en-US', { style: 'currency', currency: quote.currency }).format(cents / 100);
-	const reviewTerms = $derived(JSON.stringify([
-		quote.packageName, quote.currency, quote.amountCents,
-		quote.benefits.map((benefit) => [benefit.id, benefit.name, benefit.amountCents])
-	]));
+		new Intl.NumberFormat('en-US', { style: 'currency', currency: quote.currency }).format(
+			cents / 100
+		);
+	const reviewTerms = $derived(
+		JSON.stringify([
+			quote.packageName,
+			quote.currency,
+			quote.amountCents,
+			quote.benefits.map((benefit) => [benefit.id, benefit.name, benefit.amountCents])
+		])
+	);
 	$effect(() => {
 		if (error && feedback) {
 			open = true;
@@ -57,10 +70,14 @@
 		Convert to agreement
 	</summary>
 	<p class="mt-3 font-semibold">Step {step} of 3</p>
-	<ol class="mb-3 mt-2 grid gap-2 sm:grid-cols-3" aria-label="Conversion progress">
+	<ol class="mt-2 mb-3 grid gap-2 sm:grid-cols-3" aria-label="Conversion progress">
 		{#each steps as item, index (item.label)}
-			<li aria-current={index + 1 === step ? 'step' : undefined}
-				class="flex items-center gap-1 rounded px-2 py-1 {index + 1 === step ? 'bg-blue-100 text-blue-950' : 'bg-muted'}">
+			<li
+				aria-current={index + 1 === step ? 'step' : undefined}
+				class="flex items-center gap-1 rounded px-2 py-1 {index + 1 === step
+					? 'bg-blue-100 text-blue-950'
+					: 'bg-muted'}"
+			>
 				<item.icon class="size-4 shrink-0" aria-hidden="true" />{item.label}
 			</li>
 		{/each}
@@ -68,7 +85,10 @@
 	{#if error}<p class="mb-2 text-destructive" role="alert">{error}</p>{/if}
 
 	{#if step === 1 || step === 3}
-		<p class="font-semibold">{sponsor.name} · {quote.packageName} · {money(quote.amountCents)} {quote.currency}</p>
+		<p class="font-semibold">
+			{sponsor.name} · {quote.packageName} · {money(quote.amountCents)}
+			{quote.currency}
+		</p>
 		<ul class="my-2 overflow-hidden rounded border">
 			{#each quote.benefits as benefit (benefit.id)}
 				<li class="flex justify-between gap-3 p-2 odd:bg-muted even:bg-background">
@@ -79,12 +99,22 @@
 	{/if}
 
 	{#if step === 1}
-		<Button type="button" class={blue} onclick={() => step = 2}>Continue to coverage</Button>
+		<Button type="button" class={blue} onclick={() => (step = 2)}>Continue to coverage</Button>
 	{:else if step === 2}
-		<form class="grid gap-3" onsubmit={(event) => { event.preventDefault(); if (ready) step = 3; }}>
+		<form
+			class="grid gap-3"
+			onsubmit={(event) => {
+				event.preventDefault();
+				if (ready) step = 3;
+			}}
+		>
 			<label class="grid gap-1">
 				Coverage
-				<select required bind:value={coverage} class={field + ' ' + (coverage ? 'bg-background' : amber)}>
+				<select
+					required
+					bind:value={coverage}
+					class={field + ' ' + (coverage ? 'bg-background' : amber)}
+				>
 					<option value="" disabled>Choose coverage</option>
 					{#each targets as target (target.value)}
 						<option value={target.value}>{target.label}</option>
@@ -93,19 +123,33 @@
 			</label>
 			<label class="grid gap-1">
 				Signed on
-				<input required type="date" bind:value={signedOn} class={field + ' ' + (signedOn ? 'bg-background' : amber)} />
+				<input
+					required
+					type="date"
+					bind:value={signedOn}
+					class={field + ' ' + (signedOn ? 'bg-background' : amber)}
+				/>
 			</label>
 			<label class="grid gap-1">
 				Payment due (optional)
-				<input type="date" min={signedOn || undefined} bind:value={dueOn} class={field + ' bg-background'} />
+				<input
+					type="date"
+					min={signedOn || undefined}
+					bind:value={dueOn}
+					class={field + ' bg-background'}
+				/>
 			</label>
 			<div class="flex flex-wrap gap-2">
-				<Button type="button" variant="outline" onclick={() => step = 1}>Back</Button>
+				<Button type="button" variant="outline" onclick={() => (step = 1)}>Back</Button>
 				<Button type="submit" class={blue} disabled={!ready}>Review agreement</Button>
 			</div>
 		</form>
 	{:else}
-		<p class="mb-2">{targets.find((target) => target.value === coverage)?.label} · Signed {signedOn}{dueOn ? ' · Due ' + dueOn : ''}</p>
+		<p class="mb-2">
+			{targets.find((target) => target.value === coverage)?.label} · Signed {signedOn}{dueOn
+				? ' · Due ' + dueOn
+				: ''}
+		</p>
 		<form method="POST" action="?/saveSponsor" class="grid gap-3">
 			<input type="hidden" name="intent" value="convert-quote" />
 			<input type="hidden" name="sponsor" value={sponsor.id} />
@@ -119,8 +163,12 @@
 				The sponsorship agreement has been signed.
 			</label>
 			<div class="flex flex-wrap gap-2">
-				<Button type="button" variant="outline" onclick={() => step = 2}>Back</Button>
-				<Button type="submit" disabled={!confirmed || !ready} class="bg-green-700 text-white hover:bg-green-800">
+				<Button type="button" variant="outline" onclick={() => (step = 2)}>Back</Button>
+				<Button
+					type="submit"
+					disabled={!confirmed || !ready}
+					class="bg-green-700 text-white hover:bg-green-800"
+				>
 					Create agreement
 				</Button>
 			</div>

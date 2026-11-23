@@ -159,13 +159,14 @@ onRecordUpdateRequest((e) => {
 		const roundNumber = round.getInt('number');
 		for (const hole of holes) {
 			const holeNumber = hole.getInt('number');
-			const afterHandoff = handoff && (roundNumber > handoff.roundNumber ||
-				(roundNumber === handoff.roundNumber && holeNumber >= handoff.holeNumber));
+			const afterHandoff =
+				handoff &&
+				(roundNumber > handoff.roundNumber ||
+					(roundNumber === handoff.roundNumber && holeNumber >= handoff.holeNumber));
 			for (const athlete of athletes) {
 				const originalAthlete = athlete.getString('athlete');
-				const required = afterHandoff && originalAthlete === handoff.outgoing
-					? handoff.reserve
-					: originalAthlete;
+				const required =
+					afterHandoff && originalAthlete === handoff.outgoing ? handoff.reserve : originalAthlete;
 				if (!filled.has(required + '|' + hole.id)) {
 					missing.push('hole ' + holeNumber);
 				}
@@ -295,11 +296,19 @@ onRecordCreateRequest((e) => {
 	const group = e.app.findRecordById('event_groups', scorecard.getString('group'));
 	const handoff = JSON.parse(String(group.get('injuryHandoff') || 'null'));
 	const athlete = e.record.getString('athlete');
-	const afterHandoff = handoff && (round.getInt('number') > handoff.roundNumber ||
-		(round.getInt('number') === handoff.roundNumber && hole.getInt('number') >= handoff.holeNumber));
-	if (handoff && ((athlete === handoff.outgoing && afterHandoff) ||
-		(athlete === handoff.reserve && !afterHandoff))) {
-		throw new BadRequestError('This player is outside the lineup for this hole. Refresh the scorecard.');
+	const afterHandoff =
+		handoff &&
+		(round.getInt('number') > handoff.roundNumber ||
+			(round.getInt('number') === handoff.roundNumber &&
+				hole.getInt('number') >= handoff.holeNumber));
+	if (
+		handoff &&
+		((athlete === handoff.outgoing && afterHandoff) ||
+			(athlete === handoff.reserve && !afterHandoff))
+	) {
+		throw new BadRequestError(
+			'This player is outside the lineup for this hole. Refresh the scorecard.'
+		);
 	}
 	if (afterHandoff && athlete === handoff.reserve) {
 		e.record.set('entry', handoff.entry);
@@ -328,7 +337,10 @@ onRecordCreateRequest((e) => {
 		const membership = e.app.findRecordsByFilter(
 			'memberships',
 			'organization = {:org} && user = {:user} && (role = "owner" || role = "admin")',
-			'', 1, 0, { org: orgId, user: e.auth.id }
+			'',
+			1,
+			0,
+			{ org: orgId, user: e.auth.id }
 		)[0];
 		if (!membership)
 			throw new ForbiddenError('Owner or Admin access required to mark season demo scores.');

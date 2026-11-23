@@ -32,8 +32,7 @@
 
 	const result = $derived(form as ExpenseForm | null);
 	const values = $derived(result?.expenseValues);
-	const field =
-		'w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
+	const field = 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
 	const currency = new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD'
@@ -46,10 +45,7 @@
 </script>
 
 {#if result?.expenseError}
-	<p
-		role="alert"
-		class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900"
-	>
+	<p role="alert" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
 		{result.expenseError}
 	</p>
 {/if}
@@ -66,9 +62,7 @@
 	class="group/add-expense rounded-xl border border-green-200 bg-green-50 p-4 text-green-950"
 	open={Boolean(values)}
 >
-	<summary
-		class="cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden"
-	>
+	<summary class="cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
 		<span class="inline-flex items-center gap-2 group-open/add-expense:hidden">
 			<span
 				class="inline-flex size-8 items-center justify-center rounded-full bg-green-700 text-white"
@@ -95,13 +89,7 @@
 	>
 		<label class="grid gap-1 text-sm font-medium">
 			Expense date
-			<input
-				class={field}
-				type="date"
-				name="expenseOn"
-				value={values?.expenseOn ?? ''}
-				required
-			/>
+			<input class={field} type="date" name="expenseOn" value={values?.expenseOn ?? ''} required />
 		</label>
 		<label class="grid gap-1 text-sm font-medium">
 			Amount (USD)
@@ -118,13 +106,7 @@
 		</label>
 		<label class="grid gap-1 text-sm font-medium">
 			Vendor
-			<input
-				class={field}
-				name="vendor"
-				maxlength="120"
-				value={values?.vendor ?? ''}
-				required
-			/>
+			<input class={field} name="vendor" maxlength="120" value={values?.vendor ?? ''} required />
 		</label>
 		<label class="grid gap-1 text-sm font-medium">
 			Category
@@ -158,9 +140,7 @@
 			/>
 		</label>
 		<p id="expense-receipt-help" class="text-xs sm:col-span-2">
-			PDF, JPEG, or PNG up to 5 MB. {values
-				? 'Select the receipt again before resubmitting.'
-				: ''}
+			PDF, JPEG, or PNG up to 5 MB. {values ? 'Select the receipt again before resubmitting.' : ''}
 		</p>
 		<div class="sm:col-span-2">
 			<Button type="submit" class="bg-green-700 text-white hover:bg-green-800"
@@ -175,9 +155,7 @@
 		{canManage ? 'Organization expenses' : 'My expenses'}
 	</h2>
 	{#each expenses as expense (expense.id)}
-		<article
-			class="grid gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground"
-		>
+		<article class="grid gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground">
 			<div class="flex flex-wrap items-center gap-2">
 				<h3 class="font-semibold">{expense.vendor}</h3>
 				<Badge variant="secondary" class={badgeClass[expense.status]}
@@ -186,9 +164,7 @@
 				{#if canManage && expense.submitter === userId}
 					<Badge variant="outline">Your expense</Badge>
 				{:else if canManage && expense.submitterName}
-					<span class="text-sm text-muted-foreground"
-						>Submitted by {expense.submitterName}</span
-					>
+					<span class="text-sm text-muted-foreground">Submitted by {expense.submitterName}</span>
 				{/if}
 			</div>
 			<p class="text-sm">
@@ -203,14 +179,11 @@
 				{#if expense.hasReceipt}
 					<a
 						class="inline-flex items-center gap-2 text-sm text-blue-700 underline"
-						href={resolve(
-							'/(app)/organizations/[id]/cap/[capability]/receipts/[expense]',
-							{
-								id: organizationId,
-								capability: 'reimbursements',
-								expense: expense.id
-							}
-						)}
+						href={resolve('/(app)/organizations/[id]/cap/[capability]/receipts/[expense]', {
+							id: organizationId,
+							capability: 'reimbursements',
+							expense: expense.id
+						})}
 						download
 					>
 						<ReceiptText aria-hidden="true" class="size-4" /> Download receipt
@@ -260,27 +233,15 @@
 				</p>
 			{/if}
 			{#if canManage && expense.status === 'submitted'}
-				<form
-					method="POST"
-					action="?/reviewExpense"
-					class="grid gap-3 border-t pt-3"
-				>
+				<form method="POST" action="?/reviewExpense" class="grid gap-3 border-t pt-3">
 					<input type="hidden" name="expense" value={expense.id} />
 					<label class="grid gap-1 text-sm font-medium">
 						Review note (required when returning)
-						<textarea class={field} name="note" maxlength="500" rows="2"
-						></textarea>
+						<textarea class={field} name="note" maxlength="500" rows="2"></textarea>
 					</label>
 					<div class="flex flex-wrap gap-2">
-						<Button type="submit" name="decision" value="approved"
-							>Approve</Button
-						>
-						<Button
-							type="submit"
-							name="decision"
-							value="returned"
-							variant="outline">Return</Button
-						>
+						<Button type="submit" name="decision" value="approved">Approve</Button>
+						<Button type="submit" name="decision" value="returned" variant="outline">Return</Button>
 					</div>
 				</form>
 			{/if}

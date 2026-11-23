@@ -37,8 +37,7 @@ export function allocateTournamentPurses(
 	totalCents: number,
 	events: { id: string; startsAt: string }[]
 ): Map<string, number> {
-	if (!Number.isSafeInteger(totalCents) || totalCents < 0 || events.length === 0)
-		return new Map();
+	if (!Number.isSafeInteger(totalCents) || totalCents < 0 || events.length === 0) return new Map();
 
 	const ordered = [...events].sort(
 		(a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id)

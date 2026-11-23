@@ -31,9 +31,10 @@
 	} = $props();
 	let inlineFeedback = $state<Record<string, unknown> | null>(null);
 	const feedback = $derived(
-		inlineFeedback ?? (form && typeof form === 'object' && 'setupLeagueSeason' in form
-			? (form as Record<string, unknown>)
-			: null)
+		inlineFeedback ??
+			(form && typeof form === 'object' && 'setupLeagueSeason' in form
+				? (form as Record<string, unknown>)
+				: null)
 	);
 	const initial = untrack(() => {
 		const input = feedback?.input;
@@ -144,7 +145,8 @@
 		{#each steps as label, index (label)}
 			<li
 				aria-current={step === index ? 'step' : undefined}
-				class="flex min-w-0 items-center justify-between gap-1 rounded-lg border px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm {step === index
+				class="flex min-w-0 items-center justify-between gap-1 rounded-lg border px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm {step ===
+				index
 					? 'border-blue-700 bg-linear-to-r from-blue-800 to-indigo-700 text-white shadow-sm'
 					: step > index
 						? 'border-blue-200 bg-blue-100 text-blue-950'
@@ -180,9 +182,19 @@
 		{#if activeLeagues.length > 0}
 			<fieldset class="grid gap-3">
 				<legend class="mb-2 text-sm font-medium">New or existing league</legend>
-				<div class="grid gap-3 rounded-lg border bg-violet-50 p-4 {mode === 'existing' ? 'ring-2 ring-blue-600' : ''}">
+				<div
+					class="grid gap-3 rounded-lg border bg-violet-50 p-4 {mode === 'existing'
+						? 'ring-2 ring-blue-600'
+						: ''}"
+				>
 					<label class="flex cursor-pointer items-start gap-3">
-						<input class="mt-1" type="radio" name="league-setup-mode" value="existing" bind:group={mode} />
+						<input
+							class="mt-1"
+							type="radio"
+							name="league-setup-mode"
+							value="existing"
+							bind:group={mode}
+						/>
 						<strong>Add a season to an existing league</strong>
 					</label>
 					{#if mode === 'existing'}
@@ -199,7 +211,12 @@
 						</select>
 					{/if}
 				</div>
-				<label class="flex cursor-pointer items-start gap-3 rounded-lg border bg-white p-4 {mode === 'new' ? 'ring-2 ring-blue-600' : ''}">
+				<label
+					class="flex cursor-pointer items-start gap-3 rounded-lg border bg-white p-4 {mode ===
+					'new'
+						? 'ring-2 ring-blue-600'
+						: ''}"
+				>
 					<input class="mt-1" type="radio" name="league-setup-mode" value="new" bind:group={mode} />
 					<span>
 						<strong class="block">Create a new league and its first season</strong>
@@ -331,23 +348,26 @@
 					return async ({ result, update }) => {
 						try {
 							if (onSaved) {
-										const payload = result.type === 'success' || result.type === 'failure'
-											? result.data : null;
-										if (result.type === 'success' && payload?.setupLeagueSeasonCreated &&
-											typeof payload.seasonId === 'string') {
-											onSaved({
-												id: payload.seasonId,
-												name: String(payload.seasonName),
-												leagueName: String(payload.leagueName)
-											});
-										} else {
-											inlineFeedback = {
-												message: payload?.message ?? 'Could not confirm the season was saved.'
-											};
-										}
-										return;
-									}
-									await update({ reset: false });
+								const payload =
+									result.type === 'success' || result.type === 'failure' ? result.data : null;
+								if (
+									result.type === 'success' &&
+									payload?.setupLeagueSeasonCreated &&
+									typeof payload.seasonId === 'string'
+								) {
+									onSaved({
+										id: payload.seasonId,
+										name: String(payload.seasonName),
+										leagueName: String(payload.leagueName)
+									});
+								} else {
+									inlineFeedback = {
+										message: payload?.message ?? 'Could not confirm the season was saved.'
+									};
+								}
+								return;
+							}
+							await update({ reset: false });
 							if (result.type === 'success' && result.data?.setupLeagueSeasonCreated) {
 								clearAfterSuccess();
 								await tick();

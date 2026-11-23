@@ -11,7 +11,12 @@ export interface PayoutEvent {
 	perTournament?: boolean;
 	eventCurve?: { top: number; lower: number };
 	teams: { entry: string; total: number }[];
-	athletes: { athlete: string; entry: string; holesPlayed?: number | null; eventHoles?: number | null }[];
+	athletes: {
+		athlete: string;
+		entry: string;
+		holesPlayed?: number | null;
+		eventHoles?: number | null;
+	}[];
 }
 
 export const minimumPerProCents = 800_000;
@@ -57,42 +62,76 @@ export function placeShares(
 export function tournamentAwards(event: PayoutEvent, topWeight: number, lowerWeight = 0) {
 	const teams = [...event.teams].sort((a, b) => a.total - b.total);
 	const shares =
-		event.purseCents === null ? null : placeShares(event.purseCents, teams.length, topWeight, lowerWeight);
+		event.purseCents === null
+			? null
+			: placeShares(event.purseCents, teams.length, topWeight, lowerWeight);
 	const lineups = new Map<string, PayoutEvent['athletes']>();
 	for (const athlete of event.athletes) {
 		const lineup = lineups.get(athlete.entry) ?? [];
 		lineup.push(athlete);
 		lineups.set(athlete.entry, lineup);
 	}
-	if (!shares || teams.some((team) => {
-		const lineup = lineups.get(team.entry) ?? [];
-		if (new Set(lineup.map((row) => row.athlete)).size !== lineup.length) return true;
-		if (lineup.every((row) => row.eventHoles == null && row.holesPlayed == null)) return lineup.length !== 2;
-		const holes = lineup[0]?.eventHoles ?? 0;
-		return !Number.isSafeInteger(holes) || holes < 1 ||
-			lineup.some((row) => row.eventHoles !== holes || !Number.isSafeInteger(row.holesPlayed) ||
-				(row.holesPlayed ?? 0) < 1 || (row.holesPlayed ?? 0) > holes) ||
-			lineup.reduce((n, row) => n + (row.holesPlayed ?? 0), 0) !== 2 * holes ||
-			(lineup.length !== 2 && !(lineup.length === 3 &&
-				lineup.filter((row) => row.holesPlayed === holes).length === 1));
-	})) return null;
-	const awards: { entry: string; athletes: string[]; perPro: number; pending: boolean; athleteCents: Record<string, number> }[] = [];
+	if (
+		!shares ||
+		teams.some((team) => {
+			const lineup = lineups.get(team.entry) ?? [];
+			if (new Set(lineup.map((row) => row.athlete)).size !== lineup.length) return true;
+			if (lineup.every((row) => row.eventHoles == null && row.holesPlayed == null))
+				return lineup.length !== 2;
+			const holes = lineup[0]?.eventHoles ?? 0;
+			return (
+				!Number.isSafeInteger(holes) ||
+				holes < 1 ||
+				lineup.some(
+					(row) =>
+						row.eventHoles !== holes ||
+						!Number.isSafeInteger(row.holesPlayed) ||
+						(row.holesPlayed ?? 0) < 1 ||
+						(row.holesPlayed ?? 0) > holes
+				) ||
+				lineup.reduce((n, row) => n + (row.holesPlayed ?? 0), 0) !== 2 * holes ||
+				(lineup.length !== 2 &&
+					!(lineup.length === 3 && lineup.filter((row) => row.holesPlayed === holes).length === 1))
+			);
+		})
+	)
+		return null;
+	const awards: {
+		entry: string;
+		athletes: string[];
+		perPro: number;
+		pending: boolean;
+		athleteCents: Record<string, number>;
+	}[] = [];
 	function addAward(entry: string, perPro: number, pending: boolean) {
 		const lineup = lineups.get(entry) ?? [];
 		const athleteCents: Record<string, number> = {};
 		let splitAllocated = 0;
-		const split = lineup.filter((row) => row.eventHoles != null && row.holesPlayed !== row.eventHoles);
+		const split = lineup.filter(
+			(row) => row.eventHoles != null && row.holesPlayed !== row.eventHoles
+		);
 		for (const row of lineup) {
-			if (row.eventHoles == null || row.holesPlayed === row.eventHoles) athleteCents[row.athlete] = perPro;
+			if (row.eventHoles == null || row.holesPlayed === row.eventHoles)
+				athleteCents[row.athlete] = perPro;
 			else {
-				const cents = splitAllocated === 0 && row === split[0]
-					? Number((BigInt(perPro) * BigInt(row.holesPlayed!) + BigInt(row.eventHoles!) / 2n) / BigInt(row.eventHoles!))
-					: perPro - splitAllocated;
+				const cents =
+					splitAllocated === 0 && row === split[0]
+						? Number(
+								(BigInt(perPro) * BigInt(row.holesPlayed!) + BigInt(row.eventHoles!) / 2n) /
+									BigInt(row.eventHoles!)
+							)
+						: perPro - splitAllocated;
 				athleteCents[row.athlete] = cents;
 				splitAllocated += cents;
 			}
 		}
-		awards.push({ entry, athletes: lineup.map((row) => row.athlete), perPro, pending, athleteCents });
+		awards.push({
+			entry,
+			athletes: lineup.map((row) => row.athlete),
+			perPro,
+			pending,
+			athleteCents
+		});
 	}
 	let unallocated = event.purseCents! % 2;
 	let held = 0;
@@ -104,11 +143,17 @@ export function tournamentAwards(event: PayoutEvent, topWeight: number, lowerWei
 		const playoff = start <= 1 && tied.length > 1;
 		const entries = tied.map((team) => team.entry);
 		const legacyWinner = event.playoffWinner;
-		const order = event.playoffOrder ?? (entries.length === 2 && legacyWinner && entries.includes(legacyWinner)
-			? [legacyWinner, ...entries.filter((entry) => entry !== legacyWinner)]
-			: []);
-		if (playoff && order.length === tied.length && new Set(order).size === tied.length &&
-			order.every((entry) => entries.includes(entry))) {
+		const order =
+			event.playoffOrder ??
+			(entries.length === 2 && legacyWinner && entries.includes(legacyWinner)
+				? [legacyWinner, ...entries.filter((entry) => entry !== legacyWinner)]
+				: []);
+		if (
+			playoff &&
+			order.length === tied.length &&
+			new Set(order).size === tied.length &&
+			order.every((entry) => entries.includes(entry))
+		) {
 			for (const [offset, entry] of order.entries()) {
 				addAward(entry, shares[start + offset], false);
 			}

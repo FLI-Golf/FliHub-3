@@ -177,11 +177,13 @@
 	const filteredEvents = $derived.by(() => {
 		const query = eventSearch.trim().toLowerCase();
 		return events
-			.filter((event) =>
-				(!eventStatus || event.status === eventStatus) &&
-				(!query || [event.name, event.seasonName, event.venueName].some(
-					(value) => value?.toLowerCase().includes(query)
-				))
+			.filter(
+				(event) =>
+					(!eventStatus || event.status === eventStatus) &&
+					(!query ||
+						[event.name, event.seasonName, event.venueName].some((value) =>
+							value?.toLowerCase().includes(query)
+						))
 			)
 			.sort((a, b) => {
 				const byName = a.name.localeCompare(b.name);
@@ -231,46 +233,62 @@
 			<Card.Description>Review each event’s setup and open it to make changes.</Card.Description>
 		</Card.Header>
 		<Card.Content class="grid gap-4 pt-5 xl:grid-cols-2">
-		<div class="grid gap-3 sm:grid-cols-3 xl:col-span-2">
-			<label class="grid gap-1 text-sm font-medium">
-				Search events
-				<input type="search" bind:value={eventSearch} placeholder="Name, season, or venue"
-					class="min-h-11 min-w-0 rounded-md border bg-background px-3 py-2" />
-			</label>
-			<label class="grid gap-1 text-sm font-medium">
-				Status
-				<select bind:value={eventStatus} class="min-h-11 rounded-md border bg-background px-3 py-2">
-					<option value="">All statuses</option>
-					{#each eventStatuses as status (status)}
-						<option value={status}>{status[0].toUpperCase() + status.slice(1)}</option>
-					{/each}
-				</select>
-			</label>
-			<label class="grid gap-1 text-sm font-medium">
-				Sort by
-				<select bind:value={eventSort} class="min-h-11 rounded-md border bg-background px-3 py-2">
-					<option value="date-asc">Date: earliest first</option>
-					<option value="date-desc">Date: latest first</option>
-					<option value="name">Name: A–Z</option>
-				</select>
-			</label>
-			<p class="text-sm text-muted-foreground sm:col-span-3" aria-live="polite">
-				Showing {filteredEvents.length} of {events.length} events
-			</p>
-		</div>
+			<div class="grid gap-3 sm:grid-cols-3 xl:col-span-2">
+				<label class="grid gap-1 text-sm font-medium">
+					Search events
+					<input
+						type="search"
+						bind:value={eventSearch}
+						placeholder="Name, season, or venue"
+						class="min-h-11 min-w-0 rounded-md border bg-background px-3 py-2"
+					/>
+				</label>
+				<label class="grid gap-1 text-sm font-medium">
+					Status
+					<select
+						bind:value={eventStatus}
+						class="min-h-11 rounded-md border bg-background px-3 py-2"
+					>
+						<option value="">All statuses</option>
+						{#each eventStatuses as status (status)}
+							<option value={status}>{status[0].toUpperCase() + status.slice(1)}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="grid gap-1 text-sm font-medium">
+					Sort by
+					<select bind:value={eventSort} class="min-h-11 rounded-md border bg-background px-3 py-2">
+						<option value="date-asc">Date: earliest first</option>
+						<option value="date-desc">Date: latest first</option>
+						<option value="name">Name: A–Z</option>
+					</select>
+				</label>
+				<p class="text-sm text-muted-foreground sm:col-span-3" aria-live="polite">
+					Showing {filteredEvents.length} of {events.length} events
+				</p>
+			</div>
 			{#if filteredEvents.length === 0}
-				<p class="text-sm text-muted-foreground">{events.length ? 'No events match those filters.' : 'No events yet.'}</p>
+				<p class="text-sm text-muted-foreground">
+					{events.length ? 'No events match those filters.' : 'No events yet.'}
+				</p>
 			{/if}
 			{#each filteredEvents as event (event.id)}
 				{@const setup = eventSetup(event)}
 				<details class="group/event rounded-xl border border-slate-200 bg-card">
-					<summary class="flex cursor-pointer list-none flex-wrap items-center gap-2 rounded-xl p-4 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-						<span class="min-w-0 flex-1 break-words font-bold">{event.name}</span>
-						<span class="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
-		<span class="group-open/event:hidden">Show setup</span>
-		<span class="hidden group-open/event:inline">Hide setup</span>
-		<EventChevron class="size-4 shrink-0 transition-transform group-open/event:rotate-180" aria-hidden="true" />
-	</span>
+					<summary
+						class="flex cursor-pointer list-none flex-wrap items-center gap-2 rounded-xl p-4 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+					>
+						<span class="min-w-0 flex-1 font-bold break-words">{event.name}</span>
+						<span
+							class="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
+						>
+							<span class="group-open/event:hidden">Show setup</span>
+							<span class="hidden group-open/event:inline">Hide setup</span>
+							<EventChevron
+								class="size-4 shrink-0 transition-transform group-open/event:rotate-180"
+								aria-hidden="true"
+							/>
+						</span>
 						{#if event.seasonName}
 							<Badge variant="outline" class="gap-1.5 border-slate-300 bg-slate-50 text-slate-700">
 								<Layers class="size-3.5" aria-hidden="true" />{event.seasonName}
@@ -296,8 +314,8 @@
 						<span class="text-sm text-muted-foreground">
 							{event.startsAt ? event.startsAt.slice(0, 10) : 'Date needed'}
 						</span>
-						</summary>
-						<div class="flex flex-col gap-3 border-t p-4">
+					</summary>
+					<div class="flex flex-col gap-3 border-t p-4">
 						{#if event.venueName || event.venueAddress}<div
 								class="w-full rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm"
 							>
@@ -332,100 +350,102 @@
 								<span>Start date needed — use Edit to schedule this event.</span>
 							{/if}
 						</div>
-					{#if event.status !== 'archived'}
-						<div class="grid gap-2 rounded-lg border border-slate-200 p-3 text-sm">
-							<h4 class="font-semibold">Event setup</h4>
-							<ul class="grid gap-1">
-								{@render setupItem(
-									Boolean(event.startsAt),
-									event.startsAt ? 'Event date set' : 'Event date needed'
-								)}
-								{#if setup.rounds.length === 0}
-									{@render setupItem(false, 'Rounds needed')}
-								{/if}
-								{#each setup.rounds as round}
-									{@const scheduled = new Set(round.teeSchedule?.slots.map((slot) => slot.group))}
-									{@const teeCount = setup.groups.filter((group) => scheduled.has(group.id)).length}
-									{@render setupItem(
-										Boolean(round.courseName),
-										`Round ${round.number} · ${round.courseName ?? 'Course needed'}${round.positionLabel ? ' · ' + round.positionLabel : ''}`
-									)}
-									{@render setupItem(
-										setup.groups.length > 0 && teeCount === setup.groups.length,
-										`Round ${round.number} tee times · ${setup.groups.length ? teeCount + '/' + setup.groups.length + ' saved' : 'Add groups first'}`
-									)}
-								{/each}
-								{@render setupItem(
-									setup.groups.length > 0,
-									setup.groups.length ? setup.groups.length + ' groups' : 'Groups needed'
-								)}
-								{#if event.season}
-									{@render setupItem(
-										setup.eligibleEntries.size > 0 &&
-											setup.assignedEntries.size === setup.eligibleEntries.size,
-										`${setup.assignedEntries.size}/${setup.eligibleEntries.size} season teams assigned`
-									)}
-									{@render setupItem(
-										setup.assignedEntries.size > 0 && setup.missingLineups === 0,
-										`${setup.athletes.length} athlete assignments${setup.missingLineups ? ' · Lineups needed for ' + setup.missingLineups + ' team(s)' : ''}`
-									)}
-								{/if}
-								{@render setupItem(
-									setup.groups.length > 0 && setup.scorekeepers === setup.groups.length,
-									setup.groups.length
-										? `${setup.scorekeepers}/${setup.groups.length} groups with scorekeepers`
-										: 'Scorekeepers · Add groups first'
-								)}
-							</ul>
-						</div>
-					{/if}
-
-					<div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
 						{#if event.status !== 'archived'}
-							<Button
-								type="button"
-								class="min-h-11 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
-								onclick={() => {
-		const panel = document.getElementById('event-operations-panel');
-		if (panel instanceof HTMLDetailsElement) panel.open = true;
-		manageEvent(event.id);
-	}}
-							>
-								<SlidersHorizontal class="mr-2 size-4" aria-hidden="true" />{canManage
-									? 'Manage event'
-									: 'View event'}
-							</Button>
-						{/if}
-						{#if canManage}
-							<div class="flex flex-wrap items-center gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onclick={() => {
-										editing = { ...event };
-										editMultiDay = Boolean(event.endsAt);
-									}}
-								>
-									<Pencil class="mr-1 size-3.5" /> Edit
-								</Button>
-								{#if event.status === 'archived'}
-									<form method="POST" action="?/unarchiveEvent">
-										<input type="hidden" name="event" value={event.id} />
-										<Button variant="outline" size="sm" type="submit">
-											<ArchiveRestore class="mr-1 size-3.5" /> Restore
-										</Button>
-									</form>
-								{:else}
-									<form method="POST" action="?/archiveEvent">
-										<input type="hidden" name="event" value={event.id} />
-										<Button variant="outline" size="sm" type="submit">
-											<Archive class="mr-1 size-3.5" /> Archive
-										</Button>
-									</form>
-								{/if}
+							<div class="grid gap-2 rounded-lg border border-slate-200 p-3 text-sm">
+								<h4 class="font-semibold">Event setup</h4>
+								<ul class="grid gap-1">
+									{@render setupItem(
+										Boolean(event.startsAt),
+										event.startsAt ? 'Event date set' : 'Event date needed'
+									)}
+									{#if setup.rounds.length === 0}
+										{@render setupItem(false, 'Rounds needed')}
+									{/if}
+									{#each setup.rounds as round}
+										{@const scheduled = new Set(round.teeSchedule?.slots.map((slot) => slot.group))}
+										{@const teeCount = setup.groups.filter((group) =>
+											scheduled.has(group.id)
+										).length}
+										{@render setupItem(
+											Boolean(round.courseName),
+											`Round ${round.number} · ${round.courseName ?? 'Course needed'}${round.positionLabel ? ' · ' + round.positionLabel : ''}`
+										)}
+										{@render setupItem(
+											setup.groups.length > 0 && teeCount === setup.groups.length,
+											`Round ${round.number} tee times · ${setup.groups.length ? teeCount + '/' + setup.groups.length + ' saved' : 'Add groups first'}`
+										)}
+									{/each}
+									{@render setupItem(
+										setup.groups.length > 0,
+										setup.groups.length ? setup.groups.length + ' groups' : 'Groups needed'
+									)}
+									{#if event.season}
+										{@render setupItem(
+											setup.eligibleEntries.size > 0 &&
+												setup.assignedEntries.size === setup.eligibleEntries.size,
+											`${setup.assignedEntries.size}/${setup.eligibleEntries.size} season teams assigned`
+										)}
+										{@render setupItem(
+											setup.assignedEntries.size > 0 && setup.missingLineups === 0,
+											`${setup.athletes.length} athlete assignments${setup.missingLineups ? ' · Lineups needed for ' + setup.missingLineups + ' team(s)' : ''}`
+										)}
+									{/if}
+									{@render setupItem(
+										setup.groups.length > 0 && setup.scorekeepers === setup.groups.length,
+										setup.groups.length
+											? `${setup.scorekeepers}/${setup.groups.length} groups with scorekeepers`
+											: 'Scorekeepers · Add groups first'
+									)}
+								</ul>
 							</div>
 						{/if}
-					</div>
+
+						<div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+							{#if event.status !== 'archived'}
+								<Button
+									type="button"
+									class="min-h-11 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
+									onclick={() => {
+										const panel = document.getElementById('event-operations-panel');
+										if (panel instanceof HTMLDetailsElement) panel.open = true;
+										manageEvent(event.id);
+									}}
+								>
+									<SlidersHorizontal class="mr-2 size-4" aria-hidden="true" />{canManage
+										? 'Manage event'
+										: 'View event'}
+								</Button>
+							{/if}
+							{#if canManage}
+								<div class="flex flex-wrap items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => {
+											editing = { ...event };
+											editMultiDay = Boolean(event.endsAt);
+										}}
+									>
+										<Pencil class="mr-1 size-3.5" /> Edit
+									</Button>
+									{#if event.status === 'archived'}
+										<form method="POST" action="?/unarchiveEvent">
+											<input type="hidden" name="event" value={event.id} />
+											<Button variant="outline" size="sm" type="submit">
+												<ArchiveRestore class="mr-1 size-3.5" /> Restore
+											</Button>
+										</form>
+									{:else}
+										<form method="POST" action="?/archiveEvent">
+											<input type="hidden" name="event" value={event.id} />
+											<Button variant="outline" size="sm" type="submit">
+												<Archive class="mr-1 size-3.5" /> Archive
+											</Button>
+										</form>
+									{/if}
+								</div>
+							{/if}
+						</div>
 					</div>
 				</details>
 			{/each}

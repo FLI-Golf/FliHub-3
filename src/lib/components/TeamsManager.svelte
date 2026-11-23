@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { Archive, ArchiveRestore, ChevronDown, CircleAlert, Pencil, Plus, Users, X } from 'lucide-svelte';
+	import {
+		Archive,
+		ArchiveRestore,
+		ChevronDown,
+		CircleAlert,
+		Pencil,
+		Plus,
+		Users,
+		X
+	} from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -72,8 +81,12 @@
 
 	{#if canManage}
 		<details class="group/add-team rounded-xl border bg-card p-4">
-			<summary class="flex cursor-pointer list-none items-center gap-2 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
-				<span class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-green-700 text-white group-open/add-team:bg-red-700">
+			<summary
+				class="flex cursor-pointer list-none items-center gap-2 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+			>
+				<span
+					class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-green-700 text-white group-open/add-team:bg-red-700"
+				>
 					<Plus class="size-4 group-open/add-team:hidden" aria-hidden="true" />
 					<X class="hidden size-4 group-open/add-team:block" aria-hidden="true" />
 				</span>
@@ -98,9 +111,7 @@
 					</Card.Content>
 				</Card.Root>
 
-				<details
-					class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm"
-				>
+				<details class="rounded-xl border-2 border-blue-200 bg-slate-50 p-4 shadow-sm">
 					<summary
 						class="cursor-pointer rounded-lg bg-blue-900 px-4 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4"
 					>
@@ -128,8 +139,8 @@
 						<form method="POST" action="?/importTeams" class="flex flex-col items-start gap-2">
 							<Label for="team-csv">Team names, one per line</Label>
 							<p id="team-csv-help" class="text-sm text-muted-foreground">
-								Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets, and
-								the “Team Name” heading.
+								Paste the chat reply as-is. Put one team name on each line. Skip commas, bullets,
+								and the “Team Name” heading.
 							</p>
 							<textarea
 								id="team-csv"
@@ -154,10 +165,15 @@
 	{/if}
 
 	<details class="group/team-list rounded-xl border bg-card">
-		<summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+		<summary
+			class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+		>
 			<Users class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 			<span>Teams ({teams.length})</span>
-			<ChevronDown class="ml-auto size-4 shrink-0 transition-transform group-open/team-list:rotate-180" aria-hidden="true" />
+			<ChevronDown
+				class="ml-auto size-4 shrink-0 transition-transform group-open/team-list:rotate-180"
+				aria-hidden="true"
+			/>
 		</summary>
 		<Card.Root class="gap-4 rounded-none border-0 border-t bg-transparent py-4 shadow-none">
 			<Card.Header>

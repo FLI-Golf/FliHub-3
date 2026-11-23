@@ -64,12 +64,17 @@
 			title: 'Funding',
 			icon: Wallet,
 			color: 'border-emerald-200 bg-emerald-50 text-emerald-950',
-			summary: 'Record sponsorship agreements. Tier quotes, installments, donations, and pledges are planned.'
+			summary:
+				'Record sponsorship agreements. Tier quotes, installments, donations, and pledges are planned.'
 		}
 	] as const;
 	const inCategory = (category: CapabilityCategory) =>
-		capabilities.filter((item) => item.category === category && (category === 'funding' || item.status !== 'planned'));
-	const planned = capabilities.filter((item) => item.status === 'planned' && item.category !== 'funding');
+		capabilities.filter(
+			(item) => item.category === category && (category === 'funding' || item.status !== 'planned')
+		);
+	const planned = capabilities.filter(
+		(item) => item.status === 'planned' && item.category !== 'funding'
+	);
 	const completeCount = capabilities.filter((item) => item.status === 'complete').length;
 	const reviewCount = capabilities.filter(
 		(item) => item.status === 'ready-to-verify' || item.status === 'in-progress'
@@ -227,11 +232,17 @@
 		</div>
 		<div>
 			<dt class="font-semibold">Working on</dt>
-			<dd>Verifying that published results credit the original fantasy pick for the holes played by both players.</dd>
+			<dd>
+				Verifying that published results credit the original fantasy pick for the holes played by
+				both players.
+			</dd>
 		</div>
 		<div>
 			<dt class="font-semibold">Next step</dt>
-			<dd>Check the combined score and hole breakdown for a substituted pick in live fantasy standings.</dd>
+			<dd>
+				Check the combined score and hole breakdown for a substituted pick in live fantasy
+				standings.
+			</dd>
 		</div>
 	</dl>
 </section>

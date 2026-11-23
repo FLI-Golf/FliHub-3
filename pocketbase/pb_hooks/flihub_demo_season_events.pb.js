@@ -4,16 +4,21 @@ routerAdd(
 	'/api/flihub/demo/organizations/{id}/season-events',
 	(e) => {
 		if ($os.getenv('FLIHUB_DEMO_FANTASY') !== '1' || !$os.getenv('CODESPACE_NAME'))
-			throw new ForbiddenError('Start local PocketBase with FLIHUB_DEMO_FANTASY=1 to create demo events.');
+			throw new ForbiddenError(
+				'Start local PocketBase with FLIHUB_DEMO_FANTASY=1 to create demo events.'
+			);
 
 		const org = e.request.pathValue('id');
 		const { source, destination, teeTime, secondTeeTime } = e.requestInfo().body || {};
-		const validTeeTime = (value) => typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+		const validTeeTime = (value) =>
+			typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 		if (!validTeeTime(teeTime) || !validTeeTime(secondTeeTime))
 			return e.json(400, { message: 'Choose valid tee times for both rounds.' });
 		const idPattern = /^[a-z0-9]{15}$/;
-		if (![org, source, destination].every((id) => typeof id === 'string' && idPattern.test(id)) ||
-			source === destination) {
+		if (
+			![org, source, destination].every((id) => typeof id === 'string' && idPattern.test(id)) ||
+			source === destination
+		) {
 			return e.json(400, { message: 'Choose two different seasons.' });
 		}
 
@@ -39,31 +44,51 @@ routerAdd(
 					return record;
 				};
 
-				const membership = rows('memberships',
-					'organization = {:org} && user = {:actor}', { org, actor })[0];
+				const membership = rows('memberships', 'organization = {:org} && user = {:actor}', {
+					org,
+					actor
+				})[0];
 				if (!membership || !['owner', 'admin'].includes(membership.getString('role')))
 					fail('Owner or Admin access is required.', 403);
 
-				const seasons = rows('seasons',
+				const seasons = rows(
+					'seasons',
 					'organization = {:org} && (id = {:source} || id = {:destination})',
-					{ org, source, destination });
+					{ org, source, destination }
+				);
 				const from = seasons.find((row) => row.id === source);
 				const to = seasons.find((row) => row.id === destination);
-				if (!from || from.getString('status') !== 'completed' ||
-					!to || to.getString('status') !== 'planned')
-					fail('Choose a completed template season and a planned destination in this organization.');
+				if (
+					!from ||
+					from.getString('status') !== 'completed' ||
+					!to ||
+					to.getString('status') !== 'planned'
+				)
+					fail(
+						'Choose a completed template season and a planned destination in this organization.'
+					);
 
-				const eventsIn = (season) => rows('events',
-					'organization = {:org} && season = {:season}', { org, season }, 'startsAt,name,id');
-				const templates = eventsIn(source).filter((event) => event.getString('status') !== 'archived');
+				const eventsIn = (season) =>
+					rows(
+						'events',
+						'organization = {:org} && season = {:season}',
+						{ org, season },
+						'startsAt,name,id'
+					);
+				const templates = eventsIn(source).filter(
+					(event) => event.getString('status') !== 'archived'
+				);
 				if (!templates.length || templates.length > 24)
 					fail('Choose a template season with 1–24 non-archived events.');
 				const names = templates.map((event) => event.getString('name').trim().toLowerCase());
 				if (new Set(names).size !== names.length)
 					fail('The template season needs unique event names.');
 				const destinationEvents = eventsIn(destination);
-				const existing = new Set(destinationEvents.map((event) => event.getString('name').trim().toLowerCase()));
-				const pending = templates.map((event, index) => ({ event, index }))
+				const existing = new Set(
+					destinationEvents.map((event) => event.getString('name').trim().toLowerCase())
+				);
+				const pending = templates
+					.map((event, index) => ({ event, index }))
 					.filter(({ index }) => !existing.has(names[index]));
 				summary = {
 					created: 0,
@@ -77,7 +102,8 @@ routerAdd(
 				const firstMinute = hour * 60 + minute;
 				const [secondHour, secondMinuteOfHour] = secondTeeTime.split(':').map(Number);
 				const secondMinute = secondHour * 60 + secondMinuteOfHour;
-				const roundMinute = (index) => index === 0 ? firstMinute : secondMinute + (index - 1) * 120;
+				const roundMinute = (index) =>
+					index === 0 ? firstMinute : secondMinute + (index - 1) * 120;
 
 				function teeStart(date, roundIndex, roundCount, groupCount) {
 					const lastGroupOffset = (groupCount - 1) * intervalMinutes;
@@ -95,20 +121,35 @@ routerAdd(
 				}
 
 				for (const event of destinationEvents) {
-					if (event.getString('status') !== 'planned' ||
+					if (
+						event.getString('status') !== 'planned' ||
 						!names.includes(event.getString('name').trim().toLowerCase()) ||
-						event.getString('fantasyCutoffAt')) continue;
+						event.getString('fantasyCutoffAt')
+					)
+						continue;
 					const scope = { org, event: event.id };
 					if (rows('event_results', 'organization = {:org} && event = {:event}', scope).length)
 						continue;
-					const rounds = rows('rounds',
-						'organization = {:org} && event = {:event} && status = "active"', scope, 'number');
-					if (!rounds.length || rounds.some((round) => {
-						const saved = round.getString('teeSchedule');
-						return saved && saved !== 'null';
-					})) continue;
-					const groups = rows('event_groups',
-						'organization = {:org} && event = {:event} && status = "active"', scope, 'created,id');
+					const rounds = rows(
+						'rounds',
+						'organization = {:org} && event = {:event} && status = "active"',
+						scope,
+						'number'
+					);
+					if (
+						!rounds.length ||
+						rounds.some((round) => {
+							const saved = round.getString('teeSchedule');
+							return saved && saved !== 'null';
+						})
+					)
+						continue;
+					const groups = rows(
+						'event_groups',
+						'organization = {:org} && event = {:event} && status = "active"',
+						scope,
+						'created,id'
+					);
 					if (!groups.length) fail(`Set up groups for ${event.getString('name')} first.`);
 					const date = event.getString('startsAt').slice(0, 10);
 					for (const [index, round] of rounds.entries()) {
@@ -132,13 +173,18 @@ routerAdd(
 				const lastDay = to.getString('endsOn').slice(0, 10);
 				if (!Number.isFinite(firstDay)) fail('Set a start date on the destination season.');
 
-				const entriesIn = (season) => rows('season_entries',
-					'organization = {:org} && season = {:season}', { org, season });
-				const activeRoster = (entry) => rows('roster_memberships',
-					'organization = {:org} && entry = {:entry} && status = "active"', { org, entry });
+				const entriesIn = (season) =>
+					rows('season_entries', 'organization = {:org} && season = {:season}', { org, season });
+				const activeRoster = (entry) =>
+					rows(
+						'roster_memberships',
+						'organization = {:org} && entry = {:entry} && status = "active"',
+						{ org, entry }
+					);
 				let entries = entriesIn(destination);
 				if (!entries.length) {
-					entries = entriesIn(source).filter((entry) => entry.getString('status') === 'active')
+					entries = entriesIn(source)
+						.filter((entry) => entry.getString('status') === 'active')
 						.map((entry) => {
 							const copy = save('season_entries', {
 								organization: org,
@@ -159,7 +205,8 @@ routerAdd(
 							return copy;
 						});
 				}
-				const lineups = entries.filter((entry) => entry.getString('status') === 'active')
+				const lineups = entries
+					.filter((entry) => entry.getString('status') === 'active')
 					.map((entry) => ({
 						entry: entry.id,
 						athletes: activeRoster(entry.id).map((member) => member.getString('athlete'))
@@ -179,19 +226,24 @@ routerAdd(
 					const date = new Date(firstDay + index * 7 * 86400000).toISOString().slice(0, 10);
 					if (lastDay && date > lastDay)
 						fail('The destination season is too short for the weekly schedule.');
-					const rounds = rows('rounds',
+					const rounds = rows(
+						'rounds',
 						'organization = {:org} && event = {:event} && status = "active"',
-						{ org, event: event.id }, 'number').map((round) => {
-							const course = round.getString('course');
-							return {
-								name: round.getString('name'),
-								course,
-								position: round.getString('positionLabel'),
-								holeIds: rows('course_holes',
-									'organization = {:org} && course = {:course} && status = "active"',
-									{ org, course }).map((hole) => hole.id)
-							};
-						});
+						{ org, event: event.id },
+						'number'
+					).map((round) => {
+						const course = round.getString('course');
+						return {
+							name: round.getString('name'),
+							course,
+							position: round.getString('positionLabel'),
+							holeIds: rows(
+								'course_holes',
+								'organization = {:org} && course = {:course} && status = "active"',
+								{ org, course }
+							).map((hole) => hole.id)
+						};
+					});
 					try {
 						createGuidedEvent(app, org, actor, {
 							version: 1,

@@ -429,7 +429,11 @@
 							)} seconds remaining. Picks and timeout auto-picks are stopped.
 						</p>
 						{#if isOwner}
-src/routes/(app)/organizations/[id]/fantasy/[league]							<form method="POST" action="?/draftClock" use:enhance>
+							src/routes/(app)/organizations/[id]/fantasy/[league] <form
+								method="POST"
+								action="?/draftClock"
+								use:enhance
+							>
 								<input type="hidden" name="operation" value="resume" /><Button
 									type="submit"
 									style="background-color: #166534; color: white;"

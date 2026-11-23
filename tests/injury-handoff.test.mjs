@@ -5,17 +5,21 @@ import { runInNewContext } from 'node:vm';
 
 const rulesFile = new URL('../pocketbase/pb_hooks/injury_substitution_rules.js', import.meta.url);
 const hookModule = { exports: {} };
-runInNewContext(readFileSync(rulesFile, 'utf8'), { module: hookModule }, {
-    filename: rulesFile.pathname
-});
+runInNewContext(
+	readFileSync(rulesFile, 'utf8'),
+	{ module: hookModule },
+	{
+		filename: rulesFile.pathname
+	}
+);
 const rules = hookModule.exports;
 
 const { planInjuryHandoff, splitSlotAward } = rules;
 const holes = ['r1:h1', 'r1:h2', 'r1:h3', 'r1:h4', 'r2:h1'];
 const lineup = ['calvin', 'ohn'];
-const scores = holes.slice(0, 3).flatMap((hole) =>
-	lineup.map((athlete) => ({ hole, athlete, strokes: 3 }))
-);
+const scores = holes
+	.slice(0, 3)
+	.flatMap((hole) => lineup.map((athlete) => ({ hole, athlete, strokes: 3 })));
 
 function plan(savedScores = scores, reserve = 'elliot') {
 	return planInjuryHandoff(holes, lineup, savedScores, 'r1:h4', 'calvin', reserve);
@@ -31,10 +35,13 @@ test('preserves the original slot through hole 3 and starts the reserve at hole 
 		{ hole: 'r2:h1', athletes: ['elliot', 'ohn'] }
 	]);
 	const award = splitSlotAward(10001, handoff.outgoingHoles, handoff.reserveHoles);
-	assert.deepEqual({ ...award }, {
-		outgoingCents: 6001,
-		reserveCents: 4000
-	});
+	assert.deepEqual(
+		{ ...award },
+		{
+			outgoingCents: 6001,
+			reserveCents: 4000
+		}
+	);
 });
 
 test('rejects a handoff when any earlier score is missing', () => {

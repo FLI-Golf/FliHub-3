@@ -142,9 +142,15 @@ function computeEventTotals(app, eventId) {
 		const members = athletesByGroup.get(group.id);
 		const outgoing = members.get(handoff.outgoing);
 		const cutoff = holesByRound.get(handoff.round)?.get(handoff.hole);
-		if (!outgoing || outgoing.entry !== handoff.entry || !handoff.reserve ||
-			athleteById.has(handoff.reserve) || !cutoff || cutoff.number !== handoff.holeNumber ||
-			roundNumbers.get(handoff.round) !== handoff.roundNumber) {
+		if (
+			!outgoing ||
+			outgoing.entry !== handoff.entry ||
+			!handoff.reserve ||
+			athleteById.has(handoff.reserve) ||
+			!cutoff ||
+			cutoff.number !== handoff.holeNumber ||
+			roundNumbers.get(handoff.round) !== handoff.roundNumber
+		) {
 			blocked('A recorded injury handoff does not match the active lineup or course.');
 		}
 		const reserve = app.findRecordById('athletes', handoff.reserve);
@@ -167,7 +173,8 @@ function computeEventTotals(app, eventId) {
 	function isAssigned(athlete, roundNumber, holeNumber) {
 		const handoff = handoffsByAthlete.get(athlete);
 		if (!handoff) return true;
-		const afterCutoff = roundNumber > handoff.roundNumber ||
+		const afterCutoff =
+			roundNumber > handoff.roundNumber ||
 			(roundNumber === handoff.roundNumber && holeNumber >= handoff.holeNumber);
 		return afterCutoff ? athlete === handoff.reserve : athlete === handoff.outgoing;
 	}
@@ -217,8 +224,7 @@ function computeEventTotals(app, eventId) {
 		same(score, 'entry', row.entry, 'Score');
 		const holeId = score.getString('hole');
 		const hole = holesByRound.get(roundId).get(holeId);
-		if (!hole)
-			blocked('A score references a hole outside the active round course.');
+		if (!hole) blocked('A score references a hole outside the active round course.');
 		if (!isAssigned(row.athlete, roundNumbers.get(roundId), hole.number))
 			blocked('A score references an athlete outside the required lineup for its hole.');
 		const key = roundId + '|' + row.athlete + '|' + holeId;

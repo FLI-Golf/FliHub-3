@@ -24,11 +24,15 @@ export function summarizeAgreementFunding(
 	condition: SponsorshipFundingCondition | undefined,
 	asOf: string
 ) {
-	const installments = entries.filter((entry) => entry.kind === 'installment')
+	const installments = entries
+		.filter((entry) => entry.kind === 'installment')
 		.sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.id.localeCompare(b.id));
 	const payments = entries.filter((entry) => entry.kind === 'payment');
 	const scheduled = installments.reduce((sum, entry) => sum + entry.amountCents, 0);
-	const received = payments.reduce((sum, entry) => sum + (entry.reversal ? 0 : entry.amountCents), 0);
+	const received = payments.reduce(
+		(sum, entry) => sum + (entry.reversal ? 0 : entry.amountCents),
+		0
+	);
 
 	const due = new Map<string, { status: 'Due now' | 'Overdue'; amount: number }>();
 	let available = received;
@@ -70,14 +74,22 @@ function matchesPaymentStatus(
 	held: boolean
 ) {
 	switch (status) {
-		case 'unpaid': return balance.received === 0 && committed > 0;
-		case 'partial': return balance.received > 0 && balance.received < committed;
-		case 'paid': return balance.received === committed;
-		case 'overpaid': return balance.received > committed;
-		case 'held': return held && balance.scheduled > balance.received;
-		case 'due': return balance.dueNow > 0;
-		case 'overdue': return balance.overdue > 0;
-		default: return true;
+		case 'unpaid':
+			return balance.received === 0 && committed > 0;
+		case 'partial':
+			return balance.received > 0 && balance.received < committed;
+		case 'paid':
+			return balance.received === committed;
+		case 'overpaid':
+			return balance.received > committed;
+		case 'held':
+			return held && balance.scheduled > balance.received;
+		case 'due':
+			return balance.dueNow > 0;
+		case 'overdue':
+			return balance.overdue > 0;
+		default:
+			return true;
 	}
 }
 
@@ -92,8 +104,19 @@ export function summarizeSponsorshipFunding(
 	const currencies = new Map<string, FundingTotals>();
 	for (const agreement of agreements) {
 		const condition = conditions.get(agreement.id);
-		const balance = summarizeAgreementFunding(entriesByAgreement.get(agreement.id) ?? [], condition, asOf);
-		if (!matchesPaymentStatus(status, agreement.amountCents, balance, Boolean(condition && !condition.releasedAt)))
+		const balance = summarizeAgreementFunding(
+			entriesByAgreement.get(agreement.id) ?? [],
+			condition,
+			asOf
+		);
+		if (
+			!matchesPaymentStatus(
+				status,
+				agreement.amountCents,
+				balance,
+				Boolean(condition && !condition.releasedAt)
+			)
+		)
 			continue;
 		const total = currencies.get(agreement.currency) ?? emptyTotals();
 		total.committed += agreement.amountCents;
@@ -105,6 +128,7 @@ export function summarizeSponsorshipFunding(
 		currencies.set(agreement.currency, total);
 	}
 
-	return Array.from(currencies, ([currency, totals]) => ({ currency, ...totals }))
-		.sort((a, b) => a.currency.localeCompare(b.currency));
+	return Array.from(currencies, ([currency, totals]) => ({ currency, ...totals })).sort((a, b) =>
+		a.currency.localeCompare(b.currency)
+	);
 }

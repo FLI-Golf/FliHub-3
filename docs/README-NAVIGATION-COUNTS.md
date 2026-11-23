@@ -10,7 +10,7 @@ Overview, capability pages, and Settings now supply counts to the shared OrgNav.
 | Athletes                   | Non-archived athlete identities, including reserves                                                                               |
 | Teams & rosters            | Separate non-archived team and season roster-spot counts                                                                          |
 | Leagues & seasons          | Separate non-archived league and season counts                                                                                    |
-| Courses           | Non-archived courses; no claim of implemented generic venues                                                                      |
+| Courses                    | Non-archived courses; no claim of implemented generic venues                                                                      |
 | Events                     | Non-archived events                                                                                                               |
 | Scoring & official results | Visible scorecards and published result records for non-archived events                                                           |
 | Competition standings      | Published result records, not ranked rows or computed standing positions                                                          |

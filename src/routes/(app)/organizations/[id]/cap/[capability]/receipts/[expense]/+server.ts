@@ -23,27 +23,19 @@ export const GET: RequestHandler = async ({ locals, params, fetch }) => {
 			if (pbErrorStatus(err) === 404) error(404, 'Receipt not found.');
 			error(502, 'Unable to load the receipt.');
 		});
-	if (expense.organization !== params.id || !expense.receipt)
-		error(404, 'Receipt not found.');
+	if (expense.organization !== params.id || !expense.receipt) error(404, 'Receipt not found.');
 
-	const token = await pb.files
-		.getToken()
-		.catch(() => error(502, 'Unable to load the receipt.'));
-	const file = await fetch(
-		pb.files.getURL(expense, expense.receipt, { token, download: true }),
-		{
-			redirect: 'error'
-		}
-	).catch(() => error(502, 'Unable to load the receipt.'));
-	if (file.status === 404 || file.status === 403)
-		error(404, 'Receipt not found.');
+	const token = await pb.files.getToken().catch(() => error(502, 'Unable to load the receipt.'));
+	const file = await fetch(pb.files.getURL(expense, expense.receipt, { token, download: true }), {
+		redirect: 'error'
+	}).catch(() => error(502, 'Unable to load the receipt.'));
+	if (file.status === 404 || file.status === 403) error(404, 'Receipt not found.');
 	if (!file.ok || !file.body) error(502, 'Unable to load the receipt.');
 
 	return new Response(file.body, {
 		headers: {
 			'content-type': 'application/octet-stream',
-			'content-disposition':
-				file.headers.get('content-disposition') ?? 'attachment',
+			'content-disposition': file.headers.get('content-disposition') ?? 'attachment',
 			'cache-control': 'private, no-store',
 			'x-content-type-options': 'nosniff'
 		}

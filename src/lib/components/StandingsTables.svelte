@@ -55,7 +55,9 @@
 	);
 
 	function perTournamentFor(event: PayoutEvent) {
-		return (event.leagueId ? modeDrafts[event.leagueId] : undefined) ?? event.perTournament ?? false;
+		return (
+			(event.leagueId ? modeDrafts[event.leagueId] : undefined) ?? event.perTournament ?? false
+		);
 	}
 
 	function savedCurve(event: PayoutEvent) {
@@ -81,7 +83,8 @@
 
 	function previewLower(weight: number) {
 		if (chartEvent?.leagueId) {
-			if (perTournament) eventDrafts[chartEvent.event] = { ...eventDrafts[chartEvent.event], lower: weight };
+			if (perTournament)
+				eventDrafts[chartEvent.event] = { ...eventDrafts[chartEvent.event], lower: weight };
 			else lowerDrafts[chartEvent.leagueId] = weight;
 		}
 		saveStatus = null;
@@ -94,7 +97,8 @@
 
 	function previewCurve(weight: number) {
 		if (chartEvent?.leagueId) {
-			if (perTournament) eventDrafts[chartEvent.event] = { ...eventDrafts[chartEvent.event], top: weight };
+			if (perTournament)
+				eventDrafts[chartEvent.event] = { ...eventDrafts[chartEvent.event], top: weight };
 			else drafts[chartEvent.leagueId] = weight;
 		}
 		saveStatus = null;
@@ -107,7 +111,10 @@
 	);
 	const earningsByEvent = $derived(
 		new Map(
-			payoutEvents.map((event) => [event.event, tournamentAwards(event, curveFor(event).top, curveFor(event).lower)])
+			payoutEvents.map((event) => [
+				event.event,
+				tournamentAwards(event, curveFor(event).top, curveFor(event).lower)
+			])
 		)
 	);
 
@@ -248,7 +255,10 @@
 						type="button"
 						class="rounded-md border bg-white px-3 py-2 text-sm font-medium"
 						disabled={saving || !chartEvent.leagueId}
-						onclick={() => { previewCurve(0); previewLower(0); }}>Preview standard curve</button
+						onclick={() => {
+							previewCurve(0);
+							previewLower(0);
+						}}>Preview standard curve</button
 					>
 				</div>
 				{#if chartEvent.leagueId}
@@ -302,7 +312,11 @@
 						>
 							{saving ? 'Saving…' : 'Save league payout curve'}
 						</button>
-						<p class="text-sm">{chartEvent.leagueName} · Saved: top-place {savedCurve(chartEvent).top}% · places 7–12 {savedCurve(chartEvent).lower}%{chartEvent.perTournament ? ' · per tournament' : ''}</p>
+						<p class="text-sm">
+							{chartEvent.leagueName} · Saved: top-place {savedCurve(chartEvent).top}% · places 7–12 {savedCurve(
+								chartEvent
+							).lower}%{chartEvent.perTournament ? ' · per tournament' : ''}
+						</p>
 					</form>
 					<form
 						method="POST"
@@ -327,7 +341,10 @@
 										lowerDrafts = {};
 										modeDrafts = {};
 										eventDrafts = {};
-										saveStatus = { ok: true, message: 'Payout curves reset to the standard settings.' };
+										saveStatus = {
+											ok: true,
+											message: 'Payout curves reset to the standard settings.'
+										};
 									} else {
 										saveStatus = {
 											ok: false,
