@@ -127,6 +127,26 @@
 							<option value={pkg.name}>{pkg.name}</option>
 						{/each}
 					</optgroup>
+					<optgroup label="Tier 3 · Tournament partnerships">
+						{#each packages.filter((pkg) => pkg.tier === 'Tier 3') as pkg (pkg.id)}
+							<option value={pkg.name}>{pkg.name}</option>
+						{/each}
+					</optgroup>
+					<optgroup label="Tier 4 · Team partnerships">
+						{#each packages.filter((pkg) => pkg.tier === 'Tier 4') as pkg (pkg.id)}
+							<option value={pkg.name}>{pkg.name}</option>
+						{/each}
+					</optgroup>
+					<optgroup label="Tier 5 · Hole partnerships">
+						{#each packages.filter((pkg) => pkg.tier === 'Tier 5') as pkg (pkg.id)}
+							<option value={pkg.name}>{pkg.name}</option>
+						{/each}
+					</optgroup>
+					<optgroup label="Tier 6 · Community supporters">
+						{#each packages.filter((pkg) => pkg.tier === 'Tier 6') as pkg (pkg.id)}
+							<option value={pkg.name}>{pkg.name}</option>
+						{/each}
+					</optgroup>
 				</select>
 			</label>
 			{#if packageName}
