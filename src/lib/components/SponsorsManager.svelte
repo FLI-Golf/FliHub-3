@@ -28,7 +28,7 @@
 
 	import { previewFundingThreshold, type SponsorshipFundingCondition as FundingCondition } from '$lib/sponsorships/funding-threshold';
 
-	import { summarizeSponsorshipFunding } from '$lib/sponsorships/funding-summary';
+	import { paymentStatuses, summarizeSponsorshipFunding, type FundingPaymentStatus } from '$lib/sponsorships/funding-summary';
 
 	type SponsorFields = Omit<Sponsor, 'id' | 'archived'>;
 	interface SponsorForm {
@@ -43,19 +43,37 @@
 		agreementValues?: Record<string, string>;
 		conditionAgreement?: string;
 	}
-	let { sponsors, agreements, quotes, funding, conditions, asOf, targets, form }: {
+	let { sponsors, agreements, quotes, funding, conditions, asOf, seasons, events, targets, form }: {
 		sponsors: Sponsor[];
 		agreements: SponsorshipAgreement[];
 		quotes: SponsorshipQuote[];
 		funding: SponsorshipFundingEntry[];
 		conditions: FundingCondition[];
 		asOf: string;
+		seasons: { id: string; label: string }[];
+		events: { id: string; label: string; season: string }[];
 		targets: { value: string; label: string }[];
 		form: unknown;
 	} = $props();
 
 	const conditionsByAgreement = $derived(new Map(conditions.map((row) => [row.agreement, row])));
-	const fundingSummary = $derived(summarizeSponsorshipFunding(agreements, funding, conditionsByAgreement, asOf));
+	let summarySponsor = $state('');
+	let summarySeason = $state('');
+	let summaryEvent = $state('');
+	let summaryStatus = $state<FundingPaymentStatus>('');
+	const eventsById = $derived(new Map(events.map((event) => [event.id, event])));
+	const eventOptions = $derived(events.filter((event) => !summarySeason || event.season === summarySeason));
+	const summaryAgreements = $derived(agreements.filter((agreement) => {
+		if (summarySponsor && agreement.sponsor !== summarySponsor) return false;
+		const [kind, id] = agreement.coverage.split(':');
+		const eventId = kind === 'event' || kind === 'hole' ? id : '';
+		if (summaryEvent && eventId !== summaryEvent) return false;
+		const seasonId = kind === 'season' ? id : eventsById.get(eventId)?.season;
+		return !summarySeason || seasonId === summarySeason;
+	}));
+	const fundingSummary = $derived(summarizeSponsorshipFunding(
+		summaryAgreements, funding, conditionsByAgreement, asOf, summaryStatus
+	));
 	const result = $derived(form as SponsorForm | null);
 	const active = $derived(sponsors.filter((sponsor) => !sponsor.archived));
 	const archived = $derived(sponsors.filter((sponsor) => sponsor.archived));
@@ -388,6 +406,39 @@
 		<ChartNoAxesCombined class="size-5 text-blue-700 dark:text-blue-300" aria-hidden="true" />
 		Organization funding summary
 	</h2>
+	<div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+		<label class="grid gap-1">Sponsor
+			<select class={agreementSelect} bind:value={summarySponsor}>
+				<option value="">All sponsors</option>
+				{#each sponsors as sponsor (sponsor.id)}
+					<option value={sponsor.id}>{sponsor.name}{sponsor.archived ? ' (archived)' : ''}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="grid gap-1">Season
+			<select class={agreementSelect} bind:value={summarySeason} onchange={() => { summaryEvent = ''; }}>
+				<option value="">All seasons</option>
+				{#each seasons as season (season.id)}
+					<option value={season.id}>{season.label}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="grid gap-1">Event
+			<select class={agreementSelect} bind:value={summaryEvent}>
+				<option value="">All events</option>
+				{#each eventOptions as event (event.id)}
+					<option value={event.id}>{event.label}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="grid gap-1">Payment status
+			<select class={agreementSelect} bind:value={summaryStatus}>
+				{#each paymentStatuses as [value, label] (value)}
+					<option {value}>{label}</option>
+				{/each}
+			</select>
+		</label>
+	</div>
 	{#if fundingSummary.length}
 		<p class="text-sm text-muted-foreground">Due now covers installments due on {asOf} (UTC). Overdue covers earlier dates.</p>
 		<div class="overflow-x-auto rounded-lg border bg-background">
@@ -417,7 +468,7 @@
 			</table>
 		</div>
 	{:else}
-		<p class="text-sm text-muted-foreground">No signed sponsorship agreements yet.</p>
+		<p class="text-sm text-muted-foreground">{agreements.length ? 'No funding matches these filters.' : 'No signed sponsorship agreements yet.'}</p>
 	{/if}
 </section>
 

@@ -100,7 +100,7 @@
 		/>
 	{:else if data.capability.id === 'sponsorships'}
 		{#if data.sponsors}
-			<SponsorsManager sponsors={data.sponsors} agreements={data.sponsorshipAgreements} quotes={data.sponsorshipQuotes} funding={data.sponsorshipFunding} conditions={data.sponsorshipConditions} asOf={data.sponsorshipAsOf} targets={data.sponsorshipTargets} {form} />
+			<SponsorsManager sponsors={data.sponsors} agreements={data.sponsorshipAgreements} quotes={data.sponsorshipQuotes} funding={data.sponsorshipFunding} conditions={data.sponsorshipConditions} asOf={data.sponsorshipAsOf} seasons={data.sponsorshipSeasons} events={data.sponsorshipEvents} targets={data.sponsorshipTargets} {form} />
 		{:else}
 			<Alert.Root>
 				<Lock class="size-4" />

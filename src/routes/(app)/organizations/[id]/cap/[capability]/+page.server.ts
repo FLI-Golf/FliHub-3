@@ -118,6 +118,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	let sponsorshipConditions: SponsorshipFundingCondition[] = [];
 	let sponsorshipQuotes: SponsorshipQuote[] = [];
 	let sponsorshipAgreements: SponsorshipAgreement[] = [];
+	const sponsorshipSeasons: { id: string; label: string }[] = [];
+	const sponsorshipEvents: { id: string; label: string; season: string }[] = [];
 	const sponsorshipTargets: { value: string; label: string }[] = [
 		{ value: 'organization', label: 'Organization' }
 	];
@@ -127,19 +129,24 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			sort: 'name,id',
 			fields: 'id,name,contactName,contactEmail,stage,followUpOn,nextAction,notes,archived'
 		});
+		const orgFilter = pb.filter('organization = {:org}', { org: params.id });
 		const activeFilter = pb.filter('organization = {:org} && status != "archived"', { org: params.id });
 		const [agreements, leagues, seasons, teams, events, rounds, holes] = await Promise.all([
 			pb.collection('sponsorship_agreements').getFullList<SponsorshipAgreement>({
 				filter: pb.filter('organization = {:org}', { org: params.id }), sort: '-signedOn,id'
 			}),
 			pb.collection('leagues').getFullList({ filter: activeFilter, sort: 'name' }),
-			pb.collection('seasons').getFullList({ filter: activeFilter, sort: 'name' }),
+			pb.collection('seasons').getFullList({ filter: orgFilter, sort: 'name' }),
 			pb.collection('teams').getFullList({ filter: activeFilter, sort: 'name' }),
-			pb.collection('events').getFullList({ filter: activeFilter, sort: 'name' }),
+			pb.collection('events').getFullList({ filter: orgFilter, sort: 'name' }),
 			pb.collection('rounds').getFullList({ filter: activeFilter, sort: 'number' }),
 			pb.collection('course_holes').getFullList({ filter: activeFilter, sort: 'number' })
 		]);
 		sponsorshipAgreements = agreements;
+		for (const season of seasons)
+			sponsorshipSeasons.push({ id: season.id, label: String(season.name) });
+		for (const event of events)
+			sponsorshipEvents.push({ id: event.id, label: String(event.name), season: String(event.season ?? '') });
 		const fundingFilter = pb.filter('organization = {:org}', { org: params.id });
 		const [funding, reversals, conditions] = await Promise.all([
 			pb.collection('sponsorship_funding_entries').getFullList<SponsorshipFundingEntry>({
@@ -160,8 +167,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			fields: 'id,sponsor,packageName,currency,amountCents,benefits'
 		});
 		for (const [kind, label, rows] of [
-			['league', 'League', leagues], ['season', 'Season', seasons],
-			['team', 'Team', teams], ['event', 'Event', events]
+			['league', 'League', leagues], ['season', 'Season', seasons.filter((row) => row.status !== 'archived')],
+			['team', 'Team', teams], ['event', 'Event', events.filter((row) => row.status !== 'archived')]
 		] as const) {
 			for (const row of rows) sponsorshipTargets.push({
 				value: kind + ':' + row.id, label: label + ' · ' + String(row.name)
@@ -170,7 +177,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		const eventsById = new Map(events.map((event) => [event.id, event]));
 		for (const round of rounds) {
 			const event = eventsById.get(String(round.event));
-			if (!event) continue;
+			if (!event || event.status === 'archived') continue;
 			for (const hole of holes.filter((hole) => hole.course === round.course)) {
 				sponsorshipTargets.push({
 					value: ['hole', event.id, round.id, hole.id].join(':'),
@@ -883,6 +890,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		sponsorshipConditions,
 		sponsorshipAsOf: new Date().toISOString().slice(0, 10),
 		sponsorshipTargets,
+		sponsorshipSeasons,
+		sponsorshipEvents,
 		seedAgreementCount: sponsorshipAgreements.filter((agreement) =>
 			agreement.sponsor === sponsorshipSeedId(params.id, 'sponsor') &&
 			agreement.id === sponsorshipSeedId(params.id, 'agreement:' + agreement.coverage)
