@@ -104,5 +104,109 @@
 				"required": false
 			}
 		]
+	},
+	{
+		"id": "tournament-partner-demo",
+		"name": "Tournament Partner (Demo)",
+		"tier": "Tier 3",
+		"currency": "USD",
+		"benefits": [
+			{
+				"id": "recognition",
+				"name": "Tournament Partner recognition and logo placement on the event page",
+				"amountCents": 1500000,
+				"required": true
+			},
+			{
+				"id": "signage",
+				"name": "On-site sponsor signage",
+				"amountCents": 750000,
+				"required": false
+			},
+			{
+				"id": "recap",
+				"name": "Sponsor mention in the post-event recap",
+				"amountCents": 250000,
+				"required": false
+			}
+		]
+	},
+	{
+		"id": "team-partner-demo",
+		"name": "Team Partner (Demo)",
+		"tier": "Tier 4",
+		"currency": "USD",
+		"benefits": [
+			{
+				"id": "recognition",
+				"name": "Team Partner recognition on the team page",
+				"amountCents": 750000,
+				"required": true
+			},
+			{
+				"id": "graphics",
+				"name": "Sponsor logo on team graphics",
+				"amountCents": 200000,
+				"required": false
+			},
+			{
+				"id": "spotlight",
+				"name": "Sponsor mention in a team spotlight",
+				"amountCents": 50000,
+				"required": false
+			}
+		]
+	},
+	{
+		"id": "hole-partner-demo",
+		"name": "Hole Partner (Demo)",
+		"tier": "Tier 5",
+		"currency": "USD",
+		"benefits": [
+			{
+				"id": "recognition",
+				"name": "Hole Partner recognition at the sponsored hole",
+				"amountCents": 250000,
+				"required": true
+			},
+			{
+				"id": "signage",
+				"name": "Sponsor signage at the tee",
+				"amountCents": 75000,
+				"required": false
+			},
+			{
+				"id": "recap",
+				"name": "Sponsor mention in the tournament recap",
+				"amountCents": 25000,
+				"required": false
+			}
+		]
+	},
+	{
+		"id": "community-supporter-demo",
+		"name": "Community Supporter (Demo)",
+		"tier": "Tier 6",
+		"currency": "USD",
+		"benefits": [
+			{
+				"id": "listing",
+				"name": "Community Supporter listing on the tournament page",
+				"amountCents": 50000,
+				"required": true
+			},
+			{
+				"id": "recap",
+				"name": "Supporter mention in the tournament recap",
+				"amountCents": 25000,
+				"required": false
+			},
+			{
+				"id": "social",
+				"name": "Group thank-you mention on social media",
+				"amountCents": 10000,
+				"required": false
+			}
+		]
 	}
 ]
