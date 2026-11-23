@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
 	import { resolve } from '$app/paths';
 	import ScoreCompletionMark from '$lib/components/ScoreCompletionMark.svelte';
 	import {
@@ -82,8 +83,8 @@
 	const pendingVersionTies = $derived(tiedTotals(pendingVersion?.totals.teams ?? []));
 
 	function tiedTotals(teams: { total: number }[]) {
-		const seen = new Set<number>();
-		const ties = new Set<number>();
+		const seen = new SvelteSet<number>();
+		const ties = new SvelteSet<number>();
 		for (const { total } of teams) {
 			if (seen.has(total)) ties.add(total);
 			seen.add(total);

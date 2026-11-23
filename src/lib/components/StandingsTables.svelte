@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { enhance } from '$app/forms';
 	import { formatTournamentPurse } from '$lib/season-purse';
 	import {
@@ -121,7 +122,7 @@
 	type Earnings = Map<string, { cents: number; pending: boolean }>;
 
 	function earningsFor(events: PayoutEvent[], athletes: boolean): Earnings {
-		const earnings: Earnings = new Map();
+		const earnings: Earnings = new SvelteMap();
 		for (const event of events) {
 			for (const award of earningsByEvent.get(event.event)?.awards ?? []) {
 				for (const id of athletes ? award.athletes : [award.entry]) {
@@ -481,7 +482,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each sorted(table.teams, sortBy, teamEarnings) as row}
+							{#each sorted(table.teams, sortBy, teamEarnings) as row, index (row.id ?? index)}
 								{@const par = toParDisplay(row.total, row.par)}
 								{@const award = teamEarnings.get(row.id ?? '')}
 								<tr class="border-b bg-white last:border-0 even:bg-slate-300">
@@ -528,7 +529,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each sorted(table.athletes, sortBy, athleteEarnings) as row}
+							{#each sorted(table.athletes, sortBy, athleteEarnings) as row, index (row.id ?? index)}
 								{@const par = toParDisplay(row.total, row.par)}
 								{@const award = athleteEarnings.get(row.id ?? '')}
 								<tr class="border-b bg-white last:border-0 even:bg-slate-300">

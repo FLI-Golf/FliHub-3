@@ -220,7 +220,7 @@
 				<details class="text-sm">
 					<summary class="cursor-pointer font-medium">Review history</summary>
 					<ul class="mt-2 grid gap-2">
-						{#each expense.returnHistory as review}
+						{#each expense.returnHistory as review, index (index)}
 							<li class="whitespace-pre-wrap"><strong>Returned</strong> · {review.note}</li>
 						{/each}
 					</ul>

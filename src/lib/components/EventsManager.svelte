@@ -361,7 +361,7 @@
 									{#if setup.rounds.length === 0}
 										{@render setupItem(false, 'Rounds needed')}
 									{/if}
-									{#each setup.rounds as round}
+									{#each setup.rounds as round, index (index)}
 										{@const scheduled = new Set(round.teeSchedule?.slots.map((slot) => slot.group))}
 										{@const teeCount = setup.groups.filter((group) =>
 											scheduled.has(group.id)

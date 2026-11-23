@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { enhance } from '$app/forms';
 	import { tick } from 'svelte';
 	import { firstUnsubmittedRound, blockingRounds } from '$lib/scoring/round-flow';
@@ -291,7 +292,7 @@
 				score.strokes
 			])
 		);
-		const lineups = new Map<
+		const lineups = new SvelteMap<
 			string,
 			{
 				group: string;

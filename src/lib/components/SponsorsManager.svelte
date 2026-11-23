@@ -600,7 +600,7 @@
 						})}
 						<tr class="border-t even:bg-muted/50">
 							<th scope="row" class="p-3 text-left font-semibold">{total.currency}</th>
-							{#each [total.committed, total.scheduled, total.received, total.outstanding, total.dueNow, total.overdue] as amount}
+							{#each [total.committed, total.scheduled, total.received, total.outstanding, total.dueNow, total.overdue] as amount, index (index)}
 								<td class="p-3 text-right whitespace-nowrap tabular-nums"
 									>{format.format(amount / 100)}</td
 								>
