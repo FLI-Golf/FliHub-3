@@ -73,14 +73,27 @@
 			<Alert.Title>{data.capability.label} is not enabled</Alert.Title>
 			<Alert.Description>
 				This capability is disabled for {data.organization.name}, so its workflows are hidden.
-				{#if data.canManage}
+				{#if data.organization.profile === 'charity-run-walk'}
+					This capability is not currently available for charity run / walk organizations. Available
+					workflows are listed on your organization overview.
+				{:else if data.canManage}
 					Enable it in organization settings — nothing is created until the software exists.
 				{:else}
 					Ask an Owner or Admin to enable it. Your role ({data.myRole}) cannot change configuration.
 				{/if}
 			</Alert.Description>
 		</Alert.Root>
-		{#if data.canManage}
+		{#if data.organization.profile === 'charity-run-walk'}
+			<div>
+				<Button
+					href={resolve('/(app)/organizations/[id]', {
+						id: data.organization.id
+					})}
+				>
+					Return to overview
+				</Button>
+			</div>
+		{:else if data.canManage}
 			<div>
 				<Button
 					href={resolve('/(app)/organizations/[id]/settings', {

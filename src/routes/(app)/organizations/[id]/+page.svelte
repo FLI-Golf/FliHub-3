@@ -15,9 +15,12 @@
 	import { ShieldCheck, Settings } from 'lucide-svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import OrganizationSetupChecklist from '$lib/components/OrganizationSetupChecklist.svelte';
+	import { getOrganizationProfile } from '$lib/organizations/profiles';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+
+	const profile = $derived(getOrganizationProfile(data.organization.profile));
 
 	const message = $derived(form && 'message' in form ? form.message : null);
 	const invite = $derived(form && 'inviteLink' in form ? form : null);
@@ -76,6 +79,57 @@
 			{/if}
 		</div>
 	</div>
+
+	{#if profile}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="text-lg">{profile.label}</Card.Title>
+				<Card.Description>{profile.description}</Card.Description>
+			</Card.Header>
+
+			<Card.Content class="flex flex-col gap-5">
+				<div class="grid gap-3 sm:grid-cols-2">
+					<div class="rounded-md border bg-muted/30 p-3">
+						<p class="text-sm text-muted-foreground">Default distances</p>
+						<p class="mt-1 font-semibold">
+							{data.organization.raceDistances.map((distance) => distance.label).join(', ') ||
+								'Not configured'}
+						</p>
+					</div>
+
+					<div class="rounded-md border bg-muted/30 p-3">
+						<p class="text-sm text-muted-foreground">Participation model</p>
+						<p class="mt-1 font-semibold">{profile.participationModel}</p>
+					</div>
+				</div>
+
+				<Separator />
+
+				<div class="flex flex-col gap-2">
+					<h2 class="font-semibold">Upcoming workflows</h2>
+					<p class="text-sm text-muted-foreground">
+						These workflows are planned and will become available as their implementation phases are
+						verified.
+					</p>
+
+					{#each profile.plannedWorkflows as workflow, index (workflow.id)}
+						<div
+							class="flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2 {index %
+								2 ===
+							1
+								? 'bg-slate-100 dark:bg-slate-800'
+								: 'bg-background'}"
+						>
+							<span class="text-sm font-medium">{workflow.label}</span>
+							<span class="text-xs text-muted-foreground">
+								{workflow.phase} · Planned
+							</span>
+						</div>
+					{/each}
+				</div>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 
 	{#if canManage && data.setupChecklist}
 		<OrganizationSetupChecklist

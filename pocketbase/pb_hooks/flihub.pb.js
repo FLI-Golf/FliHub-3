@@ -77,6 +77,16 @@ routerAdd(
 
 		const auth = e.auth;
 		const body = { ...(e.requestInfo().body || {}) };
+
+		if (Object.prototype.hasOwnProperty.call(body, 'profile')) {
+			return e.json(400, {
+				code: 'invalid_profile',
+				message: 'Organization profiles are assigned by guided creation.'
+			});
+		}
+
+		let profile = '';
+
 		// Guided submissions are validated before any transaction or record writes.
 		// Legacy callers remain compatible; they do not claim a guided activity profile.
 		if (Object.prototype.hasOwnProperty.call(body, 'guidedSetup')) {
@@ -103,6 +113,7 @@ routerAdd(
 					message: 'Guided setup derives its own capabilities.'
 				});
 			}
+			profile = plan.profile || '';
 			Object.assign(body, plan);
 		}
 
@@ -162,6 +173,7 @@ routerAdd(
 			const org = new Record(orgs);
 			org.set('name', name);
 			org.set('template', templateId ?? '');
+			org.set('profile', profile);
 			org.set('capabilities', JSON.stringify(capabilities));
 			org.set('onboarded', onboarded);
 			org.set('race_distances', JSON.stringify(raceDistances));
@@ -176,6 +188,7 @@ routerAdd(
 
 			recordEvent(txApp, org.id, auth.id, 'organization_created', auth.id, null, {
 				template: templateId,
+				...(profile ? { profile } : {}),
 				capabilities,
 				...(body.guidedSetup ? { guidedSetup: body.guidedSetup } : {})
 			});

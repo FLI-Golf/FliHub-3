@@ -39,7 +39,7 @@ routerAdd('GET', '/api/flihub/public/{slug}', (e) => {
 	} catch (_) {
 		org = null;
 	}
-	if (!org || !org.getBool('publicPublished')) {
+	if (!org || org.getString('profile') === 'charity-run-walk' || !org.getBool('publicPublished')) {
 		// Unpublished pages are hidden — indistinguishable from unknown slugs.
 		return e.json(404, { code: 'not_found', message: 'Page not found.' });
 	}
@@ -75,6 +75,13 @@ routerAdd(
 		if (!member) {
 			return e.json(404, { code: 'not_found', message: 'Organization not found.' });
 		}
+		if (org.getString('profile') === 'charity-run-walk') {
+			return e.json(403, {
+				code: 'charity_public_unavailable',
+				message: 'Public pages are not yet available for charity organizations.'
+			});
+		}
+
 		return e.json(200, {
 			preview: {
 				published: org.getBool('publicPublished'),
@@ -109,6 +116,15 @@ routerAdd(
 		if (!member) {
 			return e.json(404, { code: 'not_found', message: 'Organization not found.' });
 		}
+		const org = e.app.findRecordById('organizations', orgId);
+
+		if (org.getString('profile') === 'charity-run-walk') {
+			return e.json(403, {
+				code: 'charity_standings_unavailable',
+				message: 'Competitive standings are not available for charity organizations.'
+			});
+		}
+
 		return e.json(200, { standings: rules.buildMemberStandings(e.app, orgId) });
 	},
 	$apis.requireAuth()
@@ -155,6 +171,13 @@ routerAdd(
 			return e.json(403, {
 				code: 'forbidden_role',
 				message: 'Only Owners and Admins can manage the public page.'
+			});
+		}
+
+		if (org.getString('profile') === 'charity-run-walk') {
+			return e.json(403, {
+				code: 'charity_public_unavailable',
+				message: 'Public pages are not yet available for charity organizations.'
 			});
 		}
 
@@ -256,6 +279,16 @@ routerAdd(
 				return;
 			}
 			const fresh = txApp.findRecordById('organizations', orgId);
+
+			if (fresh.getString('profile') === 'charity-run-walk') {
+				failure = {
+					status: 403,
+					code: 'charity_public_unavailable',
+					message: 'Public pages are not yet available for charity organizations.'
+				};
+				return;
+			}
+
 			const before = {
 				publicSlug: fresh.getString('publicSlug'),
 				publicPublished: fresh.getBool('publicPublished'),

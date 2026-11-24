@@ -23,7 +23,7 @@ export const actions: Actions = {
 		if (!creationPlan(selection))
 			return denied(
 				400,
-				'This combination is preview-only. Creation currently supports Disc golf → League season → Teams → Strokes.'
+				'This combination is preview-only. Creation supports Disc golf → League season → Teams → Strokes, or Charity run / walk → Single event → Individual participants → Participation.'
 			);
 		let id: string;
 		try {

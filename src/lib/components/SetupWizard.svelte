@@ -31,6 +31,7 @@
 	let submitting = $state(false);
 
 	const activityVisuals: Record<string, { icon: typeof Flag; color: string }> = {
+		'charity-run-walk': { icon: Users, color: 'border-teal-200 bg-teal-50 text-teal-950' },
 		'disc-golf': { icon: Flag, color: 'border-emerald-200 bg-emerald-50 text-emerald-950' },
 		golf: { icon: Flag, color: 'border-green-200 bg-green-50 text-green-950' },
 		baseball: { icon: CircleDot, color: 'border-sky-200 bg-sky-50 text-sky-950' },
@@ -65,6 +66,7 @@
 		exhibit: { icon: Shapes, color: 'border-amber-200 bg-amber-50 text-amber-950' }
 	};
 	const resultVisuals: typeof activityVisuals = {
+		participation: { icon: Users, color: 'border-teal-200 bg-teal-50 text-teal-950' },
 		strokes: { icon: Flag, color: 'border-emerald-200 bg-emerald-50 text-emerald-950' },
 		time: { icon: Timer, color: 'border-cyan-200 bg-cyan-50 text-cyan-950' },
 		pins: { icon: CircleDot, color: 'border-violet-200 bg-violet-50 text-violet-950' },
@@ -84,7 +86,16 @@
 	let validation = $state('');
 	let heading = $state<HTMLHeadingElement>();
 	let errorMessage = $state<HTMLParagraphElement>();
-	const steps = ['Organization', 'Activity', 'Format', 'Competitors', 'Results', 'Review'];
+	const charity = $derived(selection.activity === 'charity-run-walk');
+
+	const steps = $derived([
+		'Organization',
+		'Activity',
+		'Format',
+		charity ? 'Participants' : 'Competitors',
+		charity ? 'Participation' : 'Results',
+		'Review'
+	]);
 	const fieldByStep = ['', 'activity', 'format', 'competitors', 'result', ''] as const;
 	const activity = $derived(activities.find((item) => item.id === selection.activity));
 	const choices = $derived(
@@ -98,14 +109,14 @@
 		step >= 1 && step <= 4 ? selection[fieldByStep[step] as keyof Selection] : ''
 	);
 	const golf = $derived(selection.activity === 'disc-golf' || selection.activity === 'golf');
-	const questions = [
-		'Who is organizing the competition?',
+	const questions = $derived([
+		'Who is organizing the activity?',
 		'What is the activity?',
-		'How will the competition run?',
-		'What competes?',
-		'How are results determined?',
+		charity ? 'How will the event run?' : 'How will the competition run?',
+		charity ? 'Who will participate?' : 'What competes?',
+		charity ? 'How will participation be recorded?' : 'How are results determined?',
 		'Review your setup'
-	];
+	]);
 	const summary = $derived([
 		{ label: 'Organization', value: name.trim() },
 		{ label: 'Activity', value: activity?.label ?? '' },
@@ -166,11 +177,11 @@
 				>{creation ? 'Guided organization setup' : 'Preview · nothing is saved'}</span
 			>
 		</div>
-		<h1 class="text-2xl font-semibold tracking-tight">Build the right competition setup</h1>
+		<h1 class="text-2xl font-semibold tracking-tight">Build the right organization setup</h1>
 		<p class="text-muted-foreground">
 			Choose a setup tailored to your activity. Back and Next keep your answers here; refreshing or
 			leaving resets unfinished answers. {creation
-				? 'Only Disc golf → League season → Teams → Strokes can create an organization in this increment. Creation happens only when you submit on Review.'
+				? 'Disc golf league and charity run / walk organization creation are available. Creation happens only when you submit on Review.'
 				: 'This preview creates no records.'} Existing organizations are not changed.
 		</p>
 	</header>
@@ -198,16 +209,20 @@
 			aria-label="Workflow support"
 		>
 			<strong
-				>{activity.label}: {golf
-					? 'existing golf foundation; configuration preview'
-					: 'Planned workflow'}</strong
+				>{activity.label}: {charity
+					? 'Organization foundation available'
+					: golf
+						? 'existing golf foundation; configuration preview'
+						: 'Planned workflow'}</strong
 			>
 			<p class="mt-1">
-				{golf
-					? 'Course and stroke workflows exist. This preview does not certify every format or competitor combination; pairs, brackets, and format-specific rules still need review.'
-					: 'This activity’s complete entry and result workflow is not implemented. Shared organization features do not provide its scoring rules.'}
+				{charity
+					? 'Charity organization creation is supported. Participant management, events, registrations, sponsorships, expenses, and fundraising workflows are being implemented in stages.'
+					: golf
+						? 'Course and stroke workflows exist. This preview does not certify every format or competitor combination; pairs, brackets, and format-specific rules still need review.'
+						: 'This activity’s complete entry and result workflow is not implemented. Shared organization features do not provide its scoring rules.'}
 				{creation && plan
-					? 'Organization creation is available on Review; competitions are configured afterward.'
+					? 'Organization creation is available on Review; operational setup follows afterward.'
 					: 'This combination remains a preview; no records will be created.'}
 			</p>
 		</aside>
@@ -256,12 +271,14 @@
 					rules.
 				</p>{/if}
 			{#if step === 3}<p class="mb-4 text-sm text-muted-foreground">
-					Competitors are separate from people’s accounts and permissions. Animals, vehicles, and
-					exhibits need dedicated records.
+					{charity
+						? 'Participants are separate from organization staff accounts and permissions. Individual runners and walkers do not need user accounts.'
+						: 'Competitors are separate from people’s accounts and permissions. Animals, vehicles, and exhibits need dedicated records.'}
 				</p>{/if}
 			{#if step === 4}<p class="mb-4 text-sm text-muted-foreground">
-					Required inputs, ranking, ties, penalties, and corrections need explicit rules for this
-					method.
+					{charity
+						? 'Participation does not require competitive scoring, rankings, or finish times. Registration and check-in workflows are planned.'
+						: 'Required inputs, ranking, ties, penalties, and corrections need explicit rules for this method.'}
 				</p>{/if}
 			<fieldset class="grid gap-3 sm:grid-cols-2">
 				<legend class="sr-only">{questions[step]}</legend>
@@ -316,22 +333,38 @@
 					class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950"
 				>
 					<h3 class="font-semibold">Ready to create the organization</h3>
-					<p class="mt-2">
-						You will become its Owner. This creates the organization with Athletes, Teams &amp;
-						rosters, Leagues &amp; seasons, Courses, Events, Scoring &amp; official results, and
-						Competition standings enabled.
-					</p>
-					<p class="mt-2">
-						It does not create a league, season, team, athlete, course, event, or result. Configure
-						those afterward using existing tools. Fantasy is optional and is not enabled by this
-						setup. Your selections are recorded in creation history; they are not permanent
-						restrictions or new competition rules.
-					</p>
+					{#if charity}
+						<p class="mt-2">
+							You will become its Owner. This creates a charity run / walk organization with a
+							default 5K distance and noncompetitive participation.
+						</p>
+						<p class="mt-2">
+							No operational capabilities are enabled yet. Participant management, events,
+							registrations, sponsorships, expenses, and fundraising will become available as their
+							implementation phases are verified.
+						</p>
+						<p class="mt-2">
+							No league, season, course, competitive scoring, or fantasy league is required. This
+							setup does not create an event, participant, or fundraising record.
+						</p>
+					{:else}
+						<p class="mt-2">
+							You will become its Owner. This creates the organization with Athletes, Teams &amp;
+							rosters, Leagues &amp; seasons, Courses, Events, Scoring &amp; official results, and
+							Competition standings enabled.
+						</p>
+						<p class="mt-2">
+							It does not create a league, season, team, athlete, course, event, or result.
+							Configure those afterward using existing tools. Fantasy is optional and is not enabled
+							by this setup. Your selections are recorded in creation history; they are not
+							permanent restrictions or new competition rules.
+						</p>
+					{/if}
 				</div>
 			{:else}
 				<p class="mt-4 rounded-md bg-muted p-4 text-sm">
 					{creation
-						? 'This combination is preview-only. Real creation currently supports Disc golf → League season → Teams → Strokes.'
+						? 'This combination is preview-only. Real creation supports disc golf league organizations and charity run / walk organizations using their reviewed setup options.'
 						: 'Preview complete. Nothing has been saved.'} Other entry types and result methods need reviewed
 					workflows before creation is enabled.
 				</p>

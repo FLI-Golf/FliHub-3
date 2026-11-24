@@ -36,6 +36,7 @@ export const load: LayoutServerLoad = async ({ locals: { pb, user }, params, par
 	return {
 		organizationNav: {
 			orgId: dto.id,
+			profile: dto.profile,
 			name: dto.name,
 			canManage: membership.role === 'owner' || membership.role === 'admin',
 			enabledCapabilities,

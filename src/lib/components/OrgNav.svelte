@@ -13,18 +13,29 @@
 		Settings
 	} from 'lucide-svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { getOrganizationProfile } from '$lib/organizations/profiles';
 	import NavigationCountBadges from '$lib/components/NavigationCountBadges.svelte';
 	import { availabilityMeta, type CapabilityDefinition } from '$lib/capabilities/catalog';
 	import type { OrganizationNavigationCounts } from '$lib/server/organization-navigation-counts';
 
 	interface Props {
 		orgId: string;
+		profile?: string;
 		enabledCapabilities: CapabilityDefinition[];
 		canManage: boolean;
 		current: string;
 		counts?: OrganizationNavigationCounts;
 	}
-	let { orgId, enabledCapabilities, canManage, current, counts = {} }: Props = $props();
+	let {
+		orgId,
+		profile = '',
+		enabledCapabilities,
+		canManage,
+		current,
+		counts = {}
+	}: Props = $props();
+
+	const profileDefinition = $derived(getOrganizationProfile(profile));
 	const icons: Record<string, typeof CircleDot> = {
 		athletes: CircleDot,
 		teams: Users,
@@ -74,7 +85,10 @@
 		>
 			<span class="flex items-start gap-2"
 				><Icon aria-hidden="true" class="mt-0.5 size-4 shrink-0" /><span
-					class="min-w-0 leading-snug font-semibold break-words">{capability.label}</span
+					class="min-w-0 leading-snug font-semibold break-words"
+					>{capability.id === 'athletes' && profileDefinition
+						? profileDefinition.terminology.athletes
+						: capability.label}</span
 				>
 				<NavigationCountBadges items={capabilityCounts.filter((item) => !item.shortLabel)} /></span
 			>
@@ -110,7 +124,7 @@
 			{/if}
 		</a>
 	{/each}
-	{#if canManage}
+	{#if canManage && !profileDefinition}
 		<a
 			href={resolve('/(app)/organizations/[id]/public', { id: orgId })}
 			aria-current={current === 'public' ? 'page' : undefined}
@@ -123,6 +137,8 @@
 			>
 			<span class="sr-only">Branding and publication</span>
 		</a>
+	{/if}
+	{#if canManage}
 		<a
 			href={resolve('/(app)/organizations/[id]/settings', { id: orgId })}
 			aria-current={current === 'settings' ? 'page' : undefined}

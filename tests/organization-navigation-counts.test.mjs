@@ -89,11 +89,11 @@ test('reads use organization boundaries, identity fields only, and current-user 
 		/event.status != "archived"/
 	);
 });
-test('disabled and planned capabilities do not produce badges or reads', async () => {
+test('disabled capabilities do not produce badges or reads', async () => {
 	const f = fixture();
 	const counts = await loadOrganizationNavigationCounts(f.pb, {
 		...context,
-		enabled: ['events', 'sponsorships']
+		enabled: ['events']
 	});
 	assert.deepEqual(Object.keys(counts).sort(), ['events', 'overview']);
 	assert.deepEqual(f.calls.map((item) => item.name).sort(), ['events', 'memberships']);
@@ -153,4 +153,17 @@ test('disabling courses skips all physical-hole and position queries', async () 
 	assert.ok(
 		!f.calls.some((call) => ['courses', 'course_holes', 'hole_positions'].includes(call.name))
 	);
+});
+
+test('enabled sponsorships produce navigation counts', async () => {
+	const f = fixture();
+	const counts = await loadOrganizationNavigationCounts(f.pb, {
+		...context,
+		enabled: ['events', 'sponsorships']
+	});
+
+	assert.deepEqual(Object.keys(counts).sort(), ['events', 'overview', 'sponsorships']);
+
+	assert.ok(counts.sponsorships.length > 0);
+	assert.ok(f.calls.some((call) => call.name === 'sponsors'));
 });

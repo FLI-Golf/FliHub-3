@@ -9,9 +9,12 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { availabilityMeta, type RaceDistance, type TemplateId } from '$lib/capabilities/catalog';
+	import { getOrganizationProfile } from '$lib/organizations/profiles';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+
+	const profile = $derived(getOrganizationProfile(data.organization.profile));
 
 	const capabilityDefs = $derived(data.catalog.capabilities);
 	const templateList = $derived(data.catalog.templates);
@@ -23,7 +26,9 @@
 	let distances = $state<RaceDistance[]>(untrack(() => [...data.organization.raceDistances]));
 
 	const activeTemplate = $derived(templateList.find((t) => t.id === template) ?? null);
-	const presetKeys = $derived(activeTemplate?.defaultRaceDistances?.map((d) => d.key) ?? []);
+	const presetKeys = $derived(
+		profile ? [] : (activeTemplate?.defaultRaceDistances?.map((d) => d.key) ?? [])
+	);
 	const distancesJson = $derived(
 		JSON.stringify(distances.filter((d) => d.label.trim() && d.distance > 0))
 	);
@@ -146,91 +151,139 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Starter template</Card.Title>
-				<Card.Description>
-					Templates suggest capability defaults; switching template re-applies its suggestions,
-					which you can still adjust before saving. Templates do not select an activity or add a
-					result method. Available scorekeeping, official results, and standings currently use golf
-					rules. Timing, match scoring, judging, and animal, vehicle, or exhibit entries are
-					planned.
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<div class="grid gap-2 sm:grid-cols-3">
-					{#each templateList as t (t.id)}
-						<label
-							class={`flex flex-col gap-1 rounded-md border p-3 text-sm ${
-								template === t.id ? 'border-primary bg-accent' : ''
-							} ${data.canManage ? 'cursor-pointer' : 'opacity-70'}`}
-						>
-							<span class="flex items-center gap-2 font-medium">
-								<input
-									type="radio"
-									name="template"
-									value={t.id}
-									checked={template === t.id}
-									disabled={!data.canManage}
-									onchange={() => chooseTemplate(t.id)}
-								/>
-								{t.label}
-							</span>
-							<span class="text-muted-foreground">{t.description}</span>
-						</label>
+		{#if profile}
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-base">Organization profile</Card.Title>
+					<Card.Description>
+						This profile was assigned during guided organization creation.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content class="flex flex-col gap-2">
+					<p class="font-semibold">{profile.label}</p>
+					<p class="text-sm text-muted-foreground">{profile.description}</p>
+					<p class="text-sm">
+						Participation model: {profile.participationModel}
+					</p>
+					<p class="text-sm text-muted-foreground">
+						The organization profile and its compatible template cannot be changed through settings.
+					</p>
+					<input type="hidden" name="template" value={data.organization.template} />
+					{#each data.organization.capabilities as capability (capability)}
+						<input type="hidden" name="capability" value={capability} />
 					{/each}
-				</div>
-			</Card.Content>
-		</Card.Root>
+				</Card.Content>
+			</Card.Root>
 
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Capabilities</Card.Title>
-				<Card.Description>
-					Disabling a capability hides its workflows in navigation — its records and configuration
-					are never deleted, and re-enabling restores them. Capabilities never grant permissions
-					beyond a member's role, and Planned/Upcoming capabilities are not implemented software.
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<div class="grid gap-2 sm:grid-cols-2">
-					{#each capabilityDefs as capability (capability.id)}
-						{@const meta = availabilityMeta[capability.availability]}
-						<label
-							class="flex items-start gap-2 rounded-md border p-2.5 text-sm {data.canManage
-								? ''
-								: 'opacity-70'}"
-						>
-							<input
-								type="checkbox"
-								name="capability"
-								value={capability.id}
-								checked={selectedCaps.includes(capability.id)}
-								disabled={!data.canManage}
-								onchange={(e) => toggleCapability(capability.id, e.currentTarget.checked)}
-								class="mt-0.5"
-							/>
-							<span class="flex min-w-0 flex-col">
-								<span class="flex flex-wrap items-center gap-2 font-medium">
-									{capability.label}
-									<Badge variant="secondary" class={meta.badgeClass}>{meta.label}</Badge>
-								</span>
-								<span class="text-muted-foreground">{capability.description}</span>
-								<span class="text-xs text-muted-foreground">{capability.milestone}</span>
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-base">Operational workflows</Card.Title>
+					<Card.Description>
+						Workflows become available as their implementation phases are verified. Planned
+						workflows cannot be activated here.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content class="flex flex-col gap-2">
+					{#each profile.plannedWorkflows as workflow (workflow.id)}
+						<div class="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+							<span class="text-sm font-medium">{workflow.label}</span>
+							<span class="text-xs text-muted-foreground">
+								{workflow.phase} · Planned
 							</span>
-						</label>
+						</div>
 					{/each}
-				</div>
-			</Card.Content>
-		</Card.Root>
+				</Card.Content>
+			</Card.Root>
+		{:else}
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-base">Starter template</Card.Title>
+					<Card.Description>
+						Templates suggest capability defaults; switching template re-applies its suggestions,
+						which you can still adjust before saving. Templates do not select an activity or add a
+						result method. Available scorekeeping, official results, and standings currently use
+						golf rules. Timing, match scoring, judging, and animal, vehicle, or exhibit entries are
+						planned.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<div class="grid gap-2 sm:grid-cols-3">
+						{#each templateList as t (t.id)}
+							<label
+								class={`flex flex-col gap-1 rounded-md border p-3 text-sm ${
+									template === t.id ? 'border-primary bg-accent' : ''
+								} ${data.canManage ? 'cursor-pointer' : 'opacity-70'}`}
+							>
+								<span class="flex items-center gap-2 font-medium">
+									<input
+										type="radio"
+										name="template"
+										value={t.id}
+										checked={template === t.id}
+										disabled={!data.canManage}
+										onchange={() => chooseTemplate(t.id)}
+									/>
+									{t.label}
+								</span>
+								<span class="text-muted-foreground">{t.description}</span>
+							</label>
+						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-base">Capabilities</Card.Title>
+					<Card.Description>
+						Disabling a capability hides its workflows in navigation — its records and configuration
+						are never deleted, and re-enabling restores them. Capabilities never grant permissions
+						beyond a member's role, and Planned/Upcoming capabilities are not implemented software.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<div class="grid gap-2 sm:grid-cols-2">
+						{#each capabilityDefs as capability (capability.id)}
+							{@const meta = availabilityMeta[capability.availability]}
+							<label
+								class="flex items-start gap-2 rounded-md border p-2.5 text-sm {data.canManage
+									? ''
+									: 'opacity-70'}"
+							>
+								<input
+									type="checkbox"
+									name="capability"
+									value={capability.id}
+									checked={selectedCaps.includes(capability.id)}
+									disabled={!data.canManage}
+									onchange={(e) => toggleCapability(capability.id, e.currentTarget.checked)}
+									class="mt-0.5"
+								/>
+								<span class="flex min-w-0 flex-col">
+									<span class="flex flex-wrap items-center gap-2 font-medium">
+										{capability.label}
+										<Badge variant="secondary" class={meta.badgeClass}>{meta.label}</Badge>
+									</span>
+									<span class="text-muted-foreground">{capability.description}</span>
+									<span class="text-xs text-muted-foreground">{capability.milestone}</span>
+								</span>
+							</label>
+						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+		{/if}
 
 		{#if template === 'race-event'}
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="text-base">Race distances</Card.Title>
+					<Card.Title class="text-base">
+						{profile ? 'Default event distances' : 'Race distances'}
+					</Card.Title>
 					<Card.Description>
-						Distance options for race configuration (kilometers or miles). This is configuration
-						only — scoring and timing rules are separate, later milestones.
+						{profile
+							? 'Default distance options for future charity events, in kilometers or miles. These settings do not create an event, route, or registration.'
+							: 'Distance options for race configuration (kilometers or miles). This is configuration only — scoring and timing rules are separate, later milestones.'}
 					</Card.Description>
 				</Card.Header>
 				<Card.Content class="flex flex-col gap-2">
