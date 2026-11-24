@@ -3,7 +3,7 @@
 ## 1. Project Overview
 
 - Status: Active development
-- Current phase: CE-2 closeout; CE-3 next
+- Current phase: CE-2 complete; CE-3 next
 - Last updated: November 24, 2026
 - Branch: feature/charity-event-organizations
 - Baseline: a148564
@@ -85,7 +85,7 @@ Acceptance criteria:
 
 ### Phase CE-2: Organization Onboarding
 
-Status: Implementation verified; commit and CI verification pending
+Status: Complete
 
 - [x] Define and persist a distinct charity run/walk organization profile.
 - [x] Reuse the existing race-event organization template.
@@ -128,7 +128,7 @@ Acceptance criteria:
 
 ### Phase CE-3: Participant Management
 
-Status: Next after CE-2 closeout
+Status: Next
 
 - [ ] Adapt the existing athlete model for participant management.
 - [ ] Support runners and walkers.
@@ -799,8 +799,8 @@ Mailpit remains the local email verification service.
   outstanding.
 - Private participant companion-record organization integrity must
   be explicitly reviewed and tested in CE-3.
-- Full repository CI and broader legacy browser regression
-  verification are not claimed as complete.
+- GitHub install, check, lint, and build CI passed.
+- Broader legacy browser regression remains outstanding.
 - New accounts must follow the account activity selection workflow
   before guided organization creation.
 - The existing Open organizations link can return users without
@@ -812,18 +812,34 @@ Mailpit remains the local email verification service.
 Implementation, targeted automated verification, persistent
 migration, and manual charity onboarding are complete.
 
-Final documentation review, final changed-file quality checks,
-commit, push, and GitHub CI verification remain the closeout gates.
+Final documentation, changed-file quality checks, commit,
+push, and implementation CI verification are complete.
+
+- Implementation commit: 5a95800
+- Pull request: #53
+- GitHub CI run: 45411678649
+- CI verification date: November 24, 2026
+- Install, check, lint, and build: Passed
+- Netlify header rules: Passed
+- Netlify deployment preview: Passed
+- Checks: 3 successful, 2 skipped, 0 failing, 0 pending
+- Merge status at implementation verification: CLEAN
+
+CE-2 implementation is complete. The final documentation commit
+requires CI verification before pull request merge.
+
+Full legacy browser regression remains outstanding and is not
+claimed as complete.
 
 ## 12. Current Focus
 
 Phase CE-1: Complete.
 
-Phase CE-2: Implementation verified; final commit and CI pending.
+Phase CE-2: Complete.
 
 Next phase: CE-3 — Participant Management.
 
-Do not begin CE-3 implementation until CE-2 closeout is complete.
+Begin CE-3 after the CE-2 pull request is merged and main is synchronized.
 
 ### CE-3 Entry Requirements
 
