@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	type SubmitFunction = NonNullable<Parameters<typeof enhance>[1]>;
 	import { ChevronDown as AthleteListChevron } from 'lucide-svelte';
 	import { CircleAlert, Download, Pencil, Plus, UserRound, Archive, X } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -37,6 +39,111 @@
 
 	let editing = $state<Athlete | null>(null);
 	let showImport = $state(false);
+
+	interface ImportWarning {
+		key: string;
+		row: number;
+		type: 'batch' | 'existing';
+		matchingRow?: number;
+		participantId?: string;
+		status?: string;
+		fields: string[];
+	}
+
+	interface ImportReview {
+		rowCount: number;
+		fingerprint: string;
+		warnings: ImportWarning[];
+	}
+
+	let importCsv = $state('');
+	let reviewedCsv = $state('');
+	let importReview = $state<ImportReview | null>(null);
+	let confirmedWarnings = $state<string[]>([]);
+	let importBusy = $state(false);
+	let importError = $state('');
+
+	const importReady = $derived(
+		importReview !== null &&
+			importCsv === reviewedCsv &&
+			confirmedWarnings.length === importReview.warnings.length &&
+			importReview.warnings.every((warning) => confirmedWarnings.includes(warning.key))
+	);
+
+	function clearImportReview() {
+		importReview = null;
+		reviewedCsv = '';
+		confirmedWarnings = [];
+		importError = '';
+	}
+
+	function closeImport() {
+		showImport = false;
+		importCsv = '';
+		clearImportReview();
+	}
+
+	function existingMatchName(id?: string) {
+		const athlete = athletes.find((entry) => entry.id === id);
+		return athlete ? nameOf(athlete) : 'Existing athlete';
+	}
+
+	const enhanceImportPreview: SubmitFunction = ({ formData, cancel }) => {
+		if (importBusy) {
+			cancel();
+			return;
+		}
+
+		const submittedCsv = String(formData.get('csv') ?? '');
+		clearImportReview();
+		importBusy = true;
+
+		return async ({ result }) => {
+			try {
+				if (result.type === 'success' && result.data?.importPreview) {
+					if (importCsv === submittedCsv && showImport) {
+						importReview = result.data.importPreview as ImportReview;
+						reviewedCsv = submittedCsv;
+					}
+				} else if (result.type === 'failure') {
+					importError = String(result.data?.message ?? 'Unable to preview the CSV.');
+				} else {
+					importError = 'Unable to preview the CSV. Please try again.';
+				}
+			} finally {
+				importBusy = false;
+			}
+		};
+	};
+
+	const enhanceImportCommit: SubmitFunction = ({ cancel }) => {
+		if (importBusy || !importReady) {
+			cancel();
+			return;
+		}
+
+		importBusy = true;
+		importError = '';
+
+		return async ({ result, update }) => {
+			try {
+				if (result.type === 'success' && typeof result.data?.imported === 'number') {
+					closeImport();
+					await update();
+				} else {
+					const detail =
+						result.type === 'failure'
+							? String(result.data?.message ?? 'Import failed.')
+							: 'Unable to confirm the import result. Check the athlete list before retrying.';
+
+					clearImportReview();
+					importError = detail;
+				}
+			} finally {
+				importBusy = false;
+			}
+		};
+	};
 	const athleteCsvExample = [
 		'Riley,Chen,female,USA,',
 		'Jordan,Patel,male,Canada,',
@@ -127,8 +234,8 @@
 			<Download class="size-4" />
 			<Alert.Title>Import complete</Alert.Title>
 			<Alert.Description>
-				{importedCount} athlete{importedCount === 1 ? '' : 's'} imported. Rows are added as new records
-				— duplicate matching is a documented open decision and is not performed yet.
+				{importedCount} athlete{importedCount === 1 ? '' : 's'} imported successfully. All reviewed rows
+				were saved together.
 			</Alert.Description>
 		</Alert.Root>
 	{/if}
@@ -442,26 +549,129 @@
 </Dialog.Root>
 
 <!-- Import dialog -->
-<Dialog.Root open={showImport} onOpenChange={(open) => !open && (showImport = false)}>
-	<Dialog.Content>
+<Dialog.Root
+	open={showImport}
+	onOpenChange={(open) => {
+		if (!open && !importBusy) closeImport();
+	}}
+>
+	<Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Import athletes from CSV</Dialog.Title>
 			<Dialog.Description>
 				One athlete per row: firstName,lastName,gender,nationality,email. Only first and last name
-				are required. Every row becomes a new record — duplicate matching is not implemented yet
-				(open product decision).
+				are required. Maximum 200 rows, without a header. Preview the CSV before saving.
 			</Dialog.Description>
 		</Dialog.Header>
-		<form method="POST" action="?/importAthletes" class="flex flex-col gap-3">
+
+		{#if importError}
+			<Alert.Root variant="destructive">
+				<CircleAlert class="size-4" />
+				<Alert.Title>Import needs attention</Alert.Title>
+				<Alert.Description>{importError}</Alert.Description>
+			</Alert.Root>
+		{/if}
+
+		<form
+			method="POST"
+			action="?/previewAthleteImport"
+			use:enhance={enhanceImportPreview}
+			class="flex flex-col gap-3"
+		>
+			<Label for="athlete-import-csv">CSV rows</Label>
 			<textarea
+				id="athlete-import-csv"
 				name="csv"
 				rows="8"
+				required
+				maxlength={262144}
+				readonly={importBusy}
+				bind:value={importCsv}
+				oninput={clearImportReview}
 				class="w-full rounded-md border bg-background p-2 font-mono text-sm"
-				placeholder="Riley,Chen,female,USA,\nJordan,Patel,male,Canada,jordan@example.com"
+				placeholder="Riley,Chen,female,USA,\\nJordan,Patel,male,Canada,jordan@example.com"
 			></textarea>
-			<Dialog.Footer>
-				<Button type="submit">Import</Button>
-			</Dialog.Footer>
+
+			<Button type="submit" variant="outline" disabled={importBusy || !importCsv.trim()}>
+				{importBusy ? 'Please wait…' : 'Preview CSV'}
+			</Button>
 		</form>
+
+		{#if importReview && reviewedCsv === importCsv}
+			<section class="space-y-3 rounded-md border p-3" aria-label="Import review">
+				<p class="font-semibold">
+					{importReview.rowCount} valid row{importReview.rowCount === 1 ? '' : 's'}
+				</p>
+
+				{#if importReview.warnings.length === 0}
+					<p class="text-sm text-green-700">No potential duplicates found.</p>
+				{:else}
+					<div class="flex items-center gap-2 text-amber-800">
+						<CircleAlert class="size-4 shrink-0" />
+						<p class="font-medium">
+							{importReview.warnings.length} potential duplicate match{importReview.warnings
+								.length === 1
+								? ''
+								: 'es'}
+						</p>
+					</div>
+
+					<p class="text-sm text-muted-foreground">
+						Review each match. Confirm only if the row should be imported as a new athlete. Existing
+						records will not be merged or overwritten. To exclude a row, edit the CSV and preview
+						again.
+					</p>
+
+					<div class="max-h-64 space-y-2 overflow-y-auto">
+						{#each importReview.warnings as warning (warning.key)}
+							<label class="flex items-start gap-3 rounded-md border p-3 text-sm">
+								<input
+									type="checkbox"
+									class="mt-1 size-4 shrink-0"
+									value={warning.key}
+									bind:group={confirmedWarnings}
+									disabled={importBusy}
+								/>
+								<span class="min-w-0">
+									<span class="block font-medium">
+										Row {warning.row}:
+										{#if warning.type === 'batch'}
+											matches row {warning.matchingRow}
+										{:else}
+											matches {existingMatchName(warning.participantId)}
+											({warning.status ?? 'existing'})
+										{/if}
+									</span>
+									<span class="block text-muted-foreground">
+										Matching fields: {warning.fields.join(', ')}
+									</span>
+									<span class="block">Import as a separate athlete.</span>
+								</span>
+							</label>
+						{/each}
+					</div>
+
+					<p class="text-sm" role="status">
+						{confirmedWarnings.length} of {importReview.warnings.length} matches reviewed
+					</p>
+				{/if}
+			</section>
+
+			<form method="POST" action="?/importAthletes" use:enhance={enhanceImportCommit}>
+				<input type="hidden" name="csv" value={reviewedCsv} />
+				<input type="hidden" name="fingerprint" value={importReview.fingerprint} />
+
+				{#each confirmedWarnings as warning (warning)}
+					<input type="hidden" name="confirmedWarnings" value={warning} />
+				{/each}
+
+				<Dialog.Footer>
+					<Button type="button" variant="outline" disabled={importBusy} onclick={closeImport}>
+						Cancel
+					</Button>
+					<Button type="submit" disabled={importBusy || !importReady}>Confirm import</Button>
+				</Dialog.Footer>
+			</form>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>

@@ -75,7 +75,28 @@ async function registerVerifySignIn(page, who) {
 	await page.fill('input[name="email"]', who.email);
 	await page.fill('input[name="password"]', PASS);
 	await page.click('button[type="submit"]');
-	await page.waitForURL(/\/organizations/, { timeout: 15000 });
+	await page.waitForURL((url) => url.pathname === '/account', {
+		timeout: 15000
+	});
+
+	await page.locator('input[name="activity"][value="organization"]').check();
+	await page.getByRole('button', { name: 'Continue', exact: true }).click();
+
+	await page.waitForURL(
+		(url) => url.pathname === '/account' && url.searchParams.get('activity') === 'organization',
+		{ timeout: 15000 }
+	);
+
+	await page
+		.getByRole('link', {
+			name: 'Create an organization',
+			exact: true
+		})
+		.click();
+
+	await page.waitForURL((url) => url.pathname === '/organizations/new', {
+		timeout: 15000
+	});
 }
 
 try {
@@ -86,10 +107,34 @@ try {
 
 	console.log('Step 1: owner account + org with athletes enabled');
 	await registerVerifySignIn(p, OWNER);
-	await p.fill('#org-name', 'C Athletes Org');
-	await p.click('input[name="template"][value="custom"]');
-	await p.check('input[name="capability"][value="athletes"]');
-	await p.click('button:has-text("Create organization")');
+	await p.getByLabel('Organization name').fill('C Athletes Org');
+	await p.getByRole('button', { name: 'Next', exact: true }).click();
+
+	const selections = ['disc-golf', 'league', 'team', 'strokes'];
+
+	for (let i = 0; i < selections.length; i++) {
+		await p.locator(`input[type="radio"][value="${selections[i]}"]`).check();
+		await p
+			.getByRole('button', {
+				name: i === selections.length - 1 ? 'Review setup' : 'Next',
+				exact: true
+			})
+			.click();
+	}
+
+	await p
+		.getByText('Ready to create the organization', {
+			exact: true
+		})
+		.first()
+		.waitFor();
+
+	await p
+		.getByRole('button', {
+			name: 'Create organization',
+			exact: true
+		})
+		.click();
 	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
 	const orgUrl = p.url();
 	const orgId = orgUrl.split('/').pop();
@@ -110,6 +155,7 @@ try {
 	);
 
 	console.log('Step 3: create, edit, archive, restore');
+	await p.getByText('Add an athlete', { exact: true }).click();
 	await p.fill('#firstName', 'Riley');
 	await p.fill('#lastName', 'Chen');
 	await p.selectOption('#gender', 'female');
@@ -118,9 +164,29 @@ try {
 	await p.fill('#phone', '+1-555-0101');
 	await p.fill('#eligibilityNotes', 'NOTE-MARKER-U24');
 	await p.click('button:has-text("Add athlete")');
+	await p.getByText('Riley Chen', { exact: true }).waitFor({
+		state: 'attached',
+		timeout: 15000
+	});
+
+	await p.getByText('Riley Chen', { exact: true }).evaluate((element) => {
+		let parent = element.parentElement;
+
+		while (parent) {
+			if (parent.tagName === 'DETAILS') {
+				parent.open = true;
+			}
+
+			parent = parent.parentElement;
+		}
+	});
+
 	await p.waitForSelector('text=Riley Chen', { timeout: 15000 });
 	// Owner/Admin see the private contact fields merged onto the row; notes
 	// are not rendered in the list — the owner sees them in the edit dialog.
+	await p.locator('details[class*="group/athlete-list"]').evaluate((element) => {
+		element.open = true;
+	});
 	await p.waitForSelector('text=riley.chen@example.com', { timeout: 15000 });
 	await p.waitForSelector('text=+1-555-0101', { timeout: 15000 });
 	expect(true, 'athlete created and listed (owner sees private contact fields)');
@@ -130,17 +196,29 @@ try {
 	expect(notesValue === 'NOTE-MARKER-U24', 'owner sees eligibility notes in the edit dialog');
 	await p.fill('#edit-displayName', 'Riley C.');
 	await p.click('button:has-text("Save changes")');
+	await p.locator('details[class*="group/athlete-list"]').evaluate((element) => {
+		element.open = true;
+	});
 	await p.waitForSelector('text=Riley C.', { timeout: 15000 });
 	expect(true, 'athlete edited via dialog');
 	await p.click('button:has-text("Archive")');
+	await p.locator('details[class*="group/athlete-list"]').evaluate((element) => {
+		element.open = true;
+	});
 	await p.waitForSelector('text=Archived', { timeout: 15000 });
 	expect(true, 'athlete archived (records preserved)');
 	await p.click('button:has-text("Restore")');
+	await p.locator('details[class*="group/athlete-list"]').evaluate((element) => {
+		element.open = true;
+	});
 	await p.waitForSelector('text=Active', { timeout: 15000 });
 	expect(true, 'athlete restored');
 	await p.screenshot({ path: path.join(OUT, '1c-03-athletes.png') });
 
 	console.log('Step 4: CSV import');
+	await p.locator('details[class*="group/add-athlete"]').evaluate((element) => {
+		element.open = true;
+	});
 	await p.click('button:has-text("Import CSV")');
 	await p.waitForSelector('text=Import athletes from CSV');
 	const dialog = p.locator('[data-slot="dialog-content"]');
@@ -149,10 +227,79 @@ try {
 		.fill(
 			'Jordan,Patel,male,Canada,jordan@example.com\nSam,Garcia,female,Mexico,\nAlex,Kim,unspecified,USA,'
 		);
-	await dialog.locator('button:has-text("Import")').click();
+	await dialog.getByRole('button', { name: 'Preview CSV', exact: true }).click();
+	await dialog.getByText('3 valid rows', { exact: true }).waitFor();
+	await dialog.getByText('No potential duplicates found.').waitFor();
+	await dialog.getByRole('button', { name: 'Confirm import', exact: true }).click();
 	await p.waitForSelector('text=Import complete', { timeout: 20000 });
 	await p.waitForSelector('text=Athletes (4)');
 	expect(true, 'CSV import created three more athletes');
+
+	console.log('Step 4B: duplicate review and invalid CSV');
+
+	await p.locator('details[class*="group/add-athlete"]').evaluate((element) => {
+		element.open = true;
+	});
+
+	await p.getByRole('button', { name: 'Import CSV', exact: true }).click();
+
+	const reviewDialog = p.locator('[data-slot="dialog-content"]');
+	const csvField = reviewDialog.locator('textarea[name="csv"]');
+
+	await csvField.fill('Riley,Chen,female,USA,riley.chen@example.com');
+
+	await reviewDialog
+		.getByRole('button', {
+			name: 'Preview CSV',
+			exact: true
+		})
+		.click();
+
+	await reviewDialog
+		.getByText('1 potential duplicate match', {
+			exact: true
+		})
+		.waitFor();
+
+	const confirmButton = reviewDialog.getByRole('button', {
+		name: 'Confirm import',
+		exact: true
+	});
+
+	expect(await confirmButton.isDisabled(), 'unreviewed duplicate blocks import');
+
+	await reviewDialog.getByRole('checkbox').check();
+
+	expect(await confirmButton.isEnabled(), 'reviewed duplicate permits confirmation');
+
+	await csvField.fill('Incomplete');
+
+	await confirmButton.waitFor({ state: 'detached' });
+
+	expect((await confirmButton.count()) === 0, 'editing CSV invalidates the previous review');
+
+	await reviewDialog
+		.getByRole('button', {
+			name: 'Preview CSV',
+			exact: true
+		})
+		.click();
+
+	await reviewDialog
+		.getByText('Import needs attention', {
+			exact: true
+		})
+		.waitFor();
+
+	expect((await confirmButton.count()) === 0, 'invalid CSV cannot be confirmed');
+
+	await p.keyboard.press('Escape');
+	await reviewDialog.waitFor({ state: 'hidden' });
+
+	await p.reload();
+	await p.waitForSelector('text=Athletes (4)');
+
+	expect(true, 'preview and rejected CSV leave athlete records unchanged');
 
 	console.log('Step 5: viewer is read-only');
 	// Pre-create + accept a viewer off-camera (the UI path is proven in 1A/1B).
@@ -308,6 +455,27 @@ try {
 		`viewer page-data athlete objects omit email/phone/eligibilityNotes (${viewerAthletes.length} rows)`
 	);
 	// Post-hydration rendered DOM: identity visible, all private markers absent.
+	await v.getByText('Riley C.', { exact: true }).waitFor({
+		state: 'attached',
+		timeout: 15000
+	});
+
+	await v.getByText('Riley C.', { exact: true }).evaluate((element) => {
+		let parent = element.parentElement;
+
+		while (parent) {
+			if (parent.tagName === 'DETAILS') {
+				parent.open = true;
+			}
+
+			parent = parent.parentElement;
+		}
+	});
+
+	await v.getByText('Riley C.', { exact: true }).waitFor({
+		state: 'visible'
+	});
+
 	const viewerDom = await v.evaluate(() => document.body.innerText);
 	expect(
 		viewerDom.includes('Riley') &&
@@ -382,6 +550,27 @@ try {
 		`scorekeeper page-data athlete objects omit email/phone/eligibilityNotes (${skAthletes.length} rows)`
 	);
 	await s.waitForSelector('text=can view athletes but not manage them');
+	await s.getByText('Riley C.', { exact: true }).waitFor({
+		state: 'attached',
+		timeout: 15000
+	});
+
+	await s.getByText('Riley C.', { exact: true }).evaluate((element) => {
+		let parent = element.parentElement;
+
+		while (parent) {
+			if (parent.tagName === 'DETAILS') {
+				parent.open = true;
+			}
+
+			parent = parent.parentElement;
+		}
+	});
+
+	await s.getByText('Riley C.', { exact: true }).waitFor({
+		state: 'visible'
+	});
+
 	const skDom = await s.evaluate(() => document.body.innerText);
 	expect(
 		skDom.includes('Riley') &&
@@ -402,7 +591,7 @@ try {
 	);
 	expect(!navOff.includes('Athletes'), 'athletes leaves navigation when disabled');
 	await p.goto(`${orgUrl}/cap/athletes`);
-	await v.waitForLoadState; // no-op
+	await p.waitForLoadState('load');
 	await p.waitForSelector('text=is not enabled');
 	expect(true, 'disabled athletes page shows honest not-enabled state');
 	// Direct API write while disabled is hook-denied (against PocketBase directly).
