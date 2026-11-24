@@ -79,6 +79,12 @@ export const competitors: Choice[] = [
 ];
 export const results: Choice[] = [
 	{
+		id: 'participation',
+		label: 'Participation — noncompetitive',
+		description:
+			'Record participation without competitive scores, rankings, or finish-time requirements.'
+	},
+	{
 		id: 'strokes',
 		label: 'Strokes',
 		description: 'Scores for holes and rounds; lower complete totals lead.'
@@ -126,6 +132,20 @@ export const results: Choice[] = [
 ];
 const sportFormats = ['league', 'tournament', 'series', 'single'];
 export const activities: Activity[] = [
+	{
+		id: 'charity-run-walk',
+		label: 'Charity run / walk',
+		description: 'Community participation and fundraising events without competitive scoring.',
+		formats: ['single'],
+		competitors: ['individual'],
+		results: ['participation'],
+		features: [
+			'Participant management — planned',
+			'Standalone events, registrations, routes, and distances — planned',
+			'Sponsorships and expense management — planned',
+			'Donations, pledges, and fundraising goals — planned'
+		]
+	},
 	{
 		id: 'disc-golf',
 		label: 'Disc golf',
@@ -319,8 +339,24 @@ export function choicesFor(
 	if (!activity) return [];
 	if (field === 'format') return formats.filter((item) => activity.formats.includes(item.id));
 	if (!activity.formats.includes(selection.format)) return [];
-	if (field === 'competitors')
-		return competitors.filter((item) => activity.competitors.includes(item.id));
+	if (field === 'competitors') {
+		const options = competitors.filter((item) => activity.competitors.includes(item.id));
+
+		if (activity.id === 'charity-run-walk') {
+			return options.map((item) =>
+				item.id === 'individual'
+					? {
+							...item,
+							label: 'Individual participants',
+							description:
+								'Runners and walkers participate individually. A user account is not required for each participant.'
+						}
+					: item
+			);
+		}
+
+		return options;
+	}
 	if (!activity.competitors.includes(selection.competitors)) return [];
 	return results.filter((item) => activity.results.includes(item.id));
 }

@@ -3,10 +3,13 @@
 	import { page } from '$app/state';
 	import { PanelLeft } from 'lucide-svelte';
 	import OrgNav from '$lib/components/OrgNav.svelte';
+	import { getOrganizationProfile } from '$lib/organizations/profiles';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
+
+	const profile = $derived(getOrganizationProfile(data.organizationNav?.profile ?? ''));
 	let mobileOpen = $state(false);
 	let desktopOpen = $state(true);
 	const route = $derived(page.route.id ?? '');
@@ -60,7 +63,14 @@
 					? 'block'
 					: 'hidden'} {desktopOpen ? 'lg:block' : 'lg:hidden'}"
 			>
-				<p class="mb-3 px-2 font-semibold">{data.organizationNav.name}</p>
+				<div class="mb-3 px-2">
+					<p class="font-semibold">{data.organizationNav.name}</p>
+					{#if profile}
+						<p class="mt-1 text-xs text-muted-foreground">
+							{profile.label}
+						</p>
+					{/if}
+				</div>
 				<OrgNav {...data.organizationNav} {current} />
 			</aside>
 			<div class="w-full min-w-0 flex-1">

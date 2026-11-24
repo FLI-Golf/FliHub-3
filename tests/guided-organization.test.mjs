@@ -242,3 +242,154 @@ test('successful action sends only guided answers, sets active organization, and
 	});
 	assert.deepEqual(cookies, ['neworg']);
 });
+
+const charitySetup = {
+	version: 1,
+	activity: 'charity-run-walk',
+	format: 'single',
+	competitors: 'individual',
+	result: 'participation'
+};
+
+test('charity guided creation persists the server-derived profile', () => {
+	const { response, saved, transactions } = backend({
+		name: 'Community Steps Foundation',
+		guidedSetup: charitySetup
+	});
+
+	assert.equal(response.status, 200);
+	assert.equal(transactions, 1);
+	assert.deepEqual(
+		saved.map((record) => record.collection),
+		['organizations', 'memberships', 'membership_events']
+	);
+
+	const org = saved[0].values;
+
+	assert.equal(org.template, 'race-event');
+	assert.equal(org.profile, 'charity-run-walk');
+	assert.equal(org.onboarded, true);
+	assert.deepEqual(JSON.parse(org.capabilities), []);
+	assert.deepEqual(JSON.parse(org.race_distances), [
+		{ key: '5k', label: '5K', distance: 5, unit: 'km' }
+	]);
+
+	assert.equal(saved[1].values.role, 'owner');
+
+	const audit = JSON.parse(saved[2].values.details);
+	assert.equal(audit.profile, 'charity-run-walk');
+	assert.deepEqual(audit.guidedSetup, charitySetup);
+});
+
+test('charity creation rejects forged configuration before writes', () => {
+	for (const extra of [
+		{ profile: 'charity-run-walk' },
+		{ profile: '' },
+		{ template: 'league' },
+		{ capabilities: ['fantasy'] },
+		{ raceDistances: [] }
+	]) {
+		const { response, saved, transactions } = backend({
+			name: 'Forged charity',
+			guidedSetup: charitySetup,
+			...extra
+		});
+
+		assert.equal(response.status, 400);
+		assert.equal(saved.length, 0);
+		assert.equal(transactions, 0);
+	}
+});
+
+test('legacy creation cannot assign a charity profile', () => {
+	const { response, saved, transactions } = backend({
+		name: 'Forged legacy organization',
+		profile: 'charity-run-walk'
+	});
+
+	assert.equal(response.status, 400);
+	assert.equal(saved.length, 0);
+	assert.equal(transactions, 0);
+});
+
+test('charity guided creation requires verified email', () => {
+	const { response, saved, transactions } = backend(
+		{
+			name: 'Unverified charity',
+			guidedSetup: charitySetup
+		},
+		false
+	);
+
+	assert.equal(response.status, 403);
+	assert.equal(saved.length, 0);
+	assert.equal(transactions, 0);
+});
+
+test('unsupported charity combinations cannot create organizations', () => {
+	for (const changes of [
+		{ format: 'league' },
+		{ competitors: 'team' },
+		{ result: 'time' },
+		{ version: 2 },
+		{ extra: true }
+	]) {
+		const { response, saved, transactions } = backend({
+			name: 'Unsupported charity',
+			guidedSetup: { ...charitySetup, ...changes }
+		});
+
+		assert.equal(response.status, 400);
+		assert.equal(saved.length, 0);
+		assert.equal(transactions, 0);
+	}
+});
+
+test('existing organization creation retains an empty profile', () => {
+	for (const body of [
+		{ name: 'Legacy organization' },
+		{
+			name: 'Disc golf organization',
+			guidedSetup: { version: 1, ...supported }
+		}
+	]) {
+		const { response, saved } = backend(body);
+
+		assert.equal(response.status, 200);
+		assert.equal(saved[0].values.profile, '');
+	}
+});
+
+test('CE-2: charity frontend mapping exactly matches PocketBase', () => {
+	const { version, ...selection } = charitySetup;
+
+	const frontend = creationPlan(selection);
+	const backendPlan = guidedOrganizationPlan({ version, ...selection }, catalog);
+
+	assert.ok(frontend);
+	assert.deepEqual(plain(backendPlan), frontend);
+
+	assert.equal(frontend.template, 'race-event');
+	assert.equal(frontend.profile, 'charity-run-walk');
+	assert.deepEqual(frontend.capabilities, []);
+	assert.deepEqual(frontend.raceDistances, [{ key: '5k', label: '5K', distance: 5, unit: 'km' }]);
+});
+
+test('CE-2: charity frontend rejects unsupported configurations', () => {
+	const { activity, format, competitors, result } = charitySetup;
+	const selection = { activity, format, competitors, result };
+
+	for (const changes of [
+		{ format: 'league' },
+		{ format: 'series' },
+		{ format: 'tournament' },
+		{ competitors: 'team' },
+		{ competitors: 'relay' },
+		{ result: 'time' },
+		{ result: 'strokes' },
+		{ result: 'points' },
+		{ activity: 'running' }
+	]) {
+		assert.equal(creationPlan({ ...selection, ...changes }), null);
+	}
+});

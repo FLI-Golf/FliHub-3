@@ -107,6 +107,13 @@ routerAdd(
 		// ---- validate the changeset before touching the database -------------
 		const changes = {};
 
+		if (Object.prototype.hasOwnProperty.call(body, 'profile')) {
+			return e.json(400, {
+				code: 'invalid_profile',
+				message: 'Organization profiles cannot be changed here.'
+			});
+		}
+
 		if (body.name !== undefined) {
 			const name = String(body.name).trim();
 			if (name.length < 2 || name.length > 120) {
@@ -190,6 +197,35 @@ routerAdd(
 					message: 'Only Owners and Admins can configure this organization.'
 				};
 				return;
+			}
+
+			// Reload configuration inside the transaction.
+			org = txApp.findRecordById('organizations', orgId);
+
+			if (org.getString('profile') === 'charity-run-walk') {
+				const template =
+					changes.template !== undefined ? changes.template : org.getString('template');
+
+				const capabilities =
+					changes.capabilities !== undefined
+						? changes.capabilities
+						: getJsonList(org, 'capabilities');
+
+				// CE-2: no charity operational capabilities are verified yet.
+				// Expand this allowlist only after the corresponding phase passes.
+				const allowedCapabilities = [];
+
+				if (
+					template !== 'race-event' ||
+					capabilities.some((id) => !allowedCapabilities.includes(id))
+				) {
+					failure = {
+						status: 400,
+						code: 'incompatible_profile_config',
+						message: 'This configuration is not available for charity organizations.'
+					};
+					return;
+				}
 			}
 
 			const before = {

@@ -23,11 +23,15 @@ export interface UserDTO {
 	verified: boolean;
 }
 
+export type OrganizationProfile = '' | 'charity-run-walk';
+
 export interface OrganizationDTO {
 	id: string;
 	name: string;
 	/** Starter template id, or '' when the organization was created without one. */
 	template: TemplateId | '';
+	/** Persisted organization profile; empty preserves legacy behavior. */
+	profile: OrganizationProfile;
 	/** Enabled capability ids (validated server-side against the catalog). */
 	capabilities: string[];
 	/** Whether onboarding has been completed. Existing orgs stay false until setup. */
@@ -56,6 +60,7 @@ export function toOrganizationDTO(record: RecordModel): OrganizationDTO {
 		id: record.id,
 		name: String(record.name ?? ''),
 		template: (String(record.template ?? '') || '') as OrganizationDTO['template'],
+		profile: record.profile === 'charity-run-walk' ? 'charity-run-walk' : '',
 		capabilities: jsonList<string>(record.capabilities),
 		onboarded: Boolean(record.onboarded),
 		raceDistances: jsonList<RaceDistance>(record.race_distances)
@@ -100,6 +105,7 @@ export async function listMyMemberships(pb: PocketBase, userId: string): Promise
 						id: String(m.organization),
 						name: '',
 						template: '' as const,
+						profile: '' as const,
 						capabilities: [],
 						onboarded: false,
 						raceDistances: []

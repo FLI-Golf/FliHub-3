@@ -114,12 +114,38 @@ test('failed count reads stay unknown rather than becoming zero or complete', as
 test('positive counts are presence hints, never event readiness', async () => {
 	const { pb } = fixture({ leagues: 1, seasons: 1 });
 	const result = await loadSetupChecklist(pb, context);
-	assert.equal(result.steps[0].state, 'started');
+	const step = result.steps.find((item) => item.id === 'structure');
+	assert.ok(step);
+	assert.equal(step.state, 'started');
 	assert.ok(!result.steps.some((step) => step.state === 'complete'));
 });
 test('malformed totalItems cannot become a false presence or absence claim', async () => {
 	const { pb } = fixture({ leagues: -1, seasons: '2' });
 	const result = await loadSetupChecklist(pb, context);
-	assert.equal(result.steps[0].state, 'unknown');
-	assert.ok(result.steps[0].counts.every((item) => item.count === null));
+	const step = result.steps.find((item) => item.id === 'structure');
+	assert.ok(step);
+	assert.equal(step.state, 'unknown');
+	assert.ok(step.counts.every((item) => item.count === null));
+});
+
+test('charity guided creation does not trigger the disc golf checklist', async () => {
+	const { pb, calls } = fixture();
+
+	const result = await loadSetupChecklist(pb, {
+		...context,
+		capabilities: [],
+		creationDetails: {
+			profile: 'charity-run-walk',
+			guidedSetup: {
+				version: 1,
+				activity: 'charity-run-walk',
+				format: 'single',
+				competitors: 'individual',
+				result: 'participation'
+			}
+		}
+	});
+
+	assert.equal(result, null);
+	assert.deepEqual(calls, []);
 });

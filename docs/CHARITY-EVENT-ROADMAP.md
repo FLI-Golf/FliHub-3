@@ -3,6 +3,8 @@
 ## 1. Project Overview
 
 - Status: Active development
+- Current phase: CE-2 closeout; CE-3 next
+- Last updated: November 24, 2026
 - Branch: feature/charity-event-organizations
 - Baseline: a148564
 - Started: November 23, 2026
@@ -83,21 +85,21 @@ Acceptance criteria:
 
 ### Phase CE-2: Organization Onboarding
 
-Status: Next
+Status: Implementation verified; commit and CI verification pending
 
-- [ ] Define and persist a distinct charity run/walk organization profile.
-- [ ] Reuse the existing race-event organization template.
-- [ ] Extend the existing guided organization creation workflow.
-- [ ] Add a noncompetitive participation result method.
-- [ ] Keep frontend and PocketBase creation mappings consistent.
-- [ ] Configure verified default capabilities.
-- [ ] Introduce organization-specific terminology.
-- [ ] Configure organization navigation.
-- [ ] Reject unsupported and forged configurations.
-- [ ] Verify owner and administrator permissions.
-- [ ] Verify profile persistence after refresh.
-- [ ] Create the charity demo organization.
-- [ ] Verify existing disc golf onboarding.
+- [x] Define and persist a distinct charity run/walk organization profile.
+- [x] Reuse the existing race-event organization template.
+- [x] Extend the existing guided organization creation workflow.
+- [x] Add a noncompetitive participation result method.
+- [x] Keep frontend and PocketBase creation mappings consistent.
+- [x] Configure verified default capabilities.
+- [x] Introduce organization-specific terminology.
+- [x] Configure organization navigation.
+- [x] Reject unsupported and forged configurations.
+- [x] Verify owner and administrator permissions.
+- [x] Verify profile persistence after refresh.
+- [x] Create the charity demo organization.
+- [x] Verify existing disc golf onboarding.
 
 Supported charity creation configuration:
 
@@ -126,7 +128,7 @@ Acceptance criteria:
 
 ### Phase CE-3: Participant Management
 
-Status: Planned
+Status: Next after CE-2 closeout
 
 - [ ] Adapt the existing athlete model for participant management.
 - [ ] Support runners and walkers.
@@ -247,6 +249,32 @@ All names, amounts and targets are fictional demonstration data.
 | Participant target | 250                            |
 | Fundraising target | $50,000                        |
 
+### Persistent Demo Organization
+
+Created through normal account registration, email verification,
+and guided organization onboarding on November 23, 2026.
+
+- Organization: Community Steps Foundation
+- Organization ID: 18lsco0vyx0h058
+- Owner: Sarah Mitchell
+- Demo email: sarah.mitchell@example.com
+- Template: race-event
+- Profile: charity-run-walk
+- Participation model: Noncompetitive
+- Default distance: 5K (5 kilometers)
+- Enabled operational capabilities: None
+- Organization creation audit: Verified
+- Persistence after Codespace restart: Verified
+
+The existing FLI Golf organization remains in the same database
+with its existing league template and ten enabled capabilities.
+
+The charity event, participant target, and fundraising target
+remain demonstration plans rather than created operational records.
+
+Do not create artificial leagues, seasons, teams, golf courses,
+or competitive scoring records for the charity organization.
+
 ### Funding Verification Scenario
 
 | Metric                    | Expected value |
@@ -350,8 +378,18 @@ but its current defaults include golf-oriented capabilities.
 A charity profile must remain distinguishable from competitive
 running organizations.
 
-The profile storage mechanism will be designed in CE-2.
-Existing organizations must retain their current behavior.
+Implemented in CE-2 using migration
+1795046422_organization_profile.js.
+
+The organizations collection has an optional single-select profile
+field supporting charity-run-walk. Existing organizations retain
+an empty profile and their existing behavior.
+
+The charity profile is assigned by server-validated guided creation.
+Clients cannot directly assign or change the profile.
+
+The initial charity configuration uses the race-event template,
+a default 5K distance, and an empty operational capability set.
 
 ### CE-ADR-005: Guided Organization Creation
 
@@ -472,6 +510,56 @@ Do not rely exclusively on hidden navigation or disabled UI controls.
 Review backend capability configuration and direct API requests
 to ensure unfinished workflows cannot be activated improperly.
 
+### CE-ADR-015: Charity Configuration Restrictions
+
+Decision: Keep charity profile configuration restricted to
+verified charity-compatible capabilities.
+
+CE-2 permits no operational capabilities for charity organizations.
+The race-event template and charity profile cannot be replaced
+through ordinary organization configuration.
+
+Owner and Admin users can manage permitted settings, including
+organization name and default event distances.
+
+The backend must reject forged profile assignments, incompatible
+templates, and unauthorized capability activation.
+
+Expand the charity capability allowlist only after each applicable
+workflow has passed its implementation and permission checks.
+
+### CE-ADR-016: Planned Workflow Presentation
+
+Decision: Display unfinished charity workflows as planned rather
+than presenting them as operational navigation destinations.
+
+The charity overview and settings identify upcoming workflows
+and their implementation phases.
+
+Disabled capability routes retain the existing informational-page
+behavior for authorized organization members. They must not expose
+operational forms or editable workflow fields.
+
+Charity-specific disabled pages return users to the organization
+overview rather than instructing them to enable unavailable features.
+
+Charity public-page management, public publication, and standings
+remain unavailable until appropriate workflows are implemented.
+
+### CE-ADR-017: Development Database Preservation
+
+Decision: Apply new charity migrations without reversing or
+removing deferred Funding Phase 2A migrations.
+
+Verify migrations against fresh and copied databases before
+applying them to persistent development data.
+
+Create and verify a complete database backup before persistent
+schema changes. Compare existing organization records, deferred
+funding records, migration history, and integrity triggers.
+
+Use disposable databases for automated integration and browser tests.
+
 ## CE-1 Architecture Audit Findings
 
 ### Existing Infrastructure
@@ -551,25 +639,230 @@ Temporary backup and test directories are not permanent storage.
 - Preserved existing application code and development database.
 - Established CE-2 implementation requirements.
 
+### CE-2 Organization Onboarding Closeout
+
+Implementation completed November 23-24, 2026.
+
+#### Implementation
+
+- Added the persisted charity-run-walk organization profile.
+- Reused the race-event organization template.
+- Extended the existing guided organization creation wizard.
+- Added the noncompetitive participation result method.
+- Kept frontend and PocketBase creation mappings consistent.
+- Preserved transactional creation, verified-email requirements,
+  Owner membership, active organization selection, and audit history.
+- Added charity-specific overview, settings, and navigation.
+- Introduced profile-aware participant terminology.
+- Preserved existing compact and responsive organization navigation.
+- Added backend profile and capability configuration restrictions.
+- Restricted unfinished charity public-page and standings workflows.
+- Preserved informational pages for disabled capabilities.
+- Updated disabled charity workflow messaging and navigation.
+- Updated the shared application footer to advertise charity onboarding
+  without claiming that charity operational workflows are available.
+- Retained the existing global Phase 2C build label.
+
+#### Automated Verification
+
+| Verification                           | Result                   |
+| -------------------------------------- | ------------------------ |
+| Guided organization tests              | 39/39 passed             |
+| Targeted unit tests                    | 69/69 passed             |
+| Integration tests                      | 116/116 passed           |
+| Charity browser acceptance             | All eight stages passed  |
+| Svelte and TypeScript checks           | Zero errors and warnings |
+| Production build                       | Passed                   |
+| Changed implementation file formatting | Passed                   |
+| Changed implementation file ESLint     | Passed                   |
+| Git whitespace checks                  | Passed                   |
+
+The guided organization test count is included in the targeted unit
+test coverage; these counts must not be added together.
+
+The integration suite includes thirteen charity-specific tests and
+existing integration regression coverage.
+
+Browser acceptance verified:
+
+- New account registration and email verification.
+- Guided charity organization creation.
+- Charity overview and capability-based navigation.
+- Default event distance configuration and persistence.
+- All ten disabled capability informational pages.
+- Denial of charity public-page management.
+- Responsive mobile layout at 375 pixels.
+- Returning authenticated sessions.
+- Existing guided disc golf organization creation.
+
+Final browser acceptance was executed against a separately verified
+production build using a disposable database.
+
+Browser acceptance command:
+
+```bash
+E2E_SKIP_BUILD=1 node tests/e2e/run-e2e.mjs charity-organization
+```
+
+Full legacy browser-suite execution remains outstanding. Some older
+browser tests still assume the previous account and organization
+creation workflows. Do not interpret targeted browser acceptance
+as full application end-to-end regression coverage.
+
+#### Production Build Procedure
+
+Unrestricted production builds were terminated in the development
+Codespace after bundling. No explicit compiler error was identified.
+
+A resource-constrained standalone build completed successfully:
+
+```bash
+NODE_OPTIONS="--max-old-space-size=1536" RAYON_NUM_THREADS=1 npm run build
+```
+
+Reuse the verified build for targeted browser acceptance when
+necessary to avoid redundant resource-intensive builds.
+
+Existing SvelteKit alias deprecation and local adapter-auto
+environment warnings were observed. These did not prevent the
+successful build or browser acceptance.
+
+#### Database Migration and Preservation
+
+Migration applied:
+
+1795046422_organization_profile.js
+
+Verification completed against fresh and copied databases before
+application to persistent development data.
+
+Persistent database backup:
+
+/tmp/flihub-backups/pb-data-before-ce2-demo-20261124-031925.tar.gz
+
+Verified extracted backup:
+
+/tmp/flihub-ce2-backup-verify.bqyDYn
+
+- Archive integrity and SHA-256 checksum recorded.
+- Extracted main and auxiliary database integrity checks passed.
+- Persistent database integrity check passed after migration.
+- Existing organization data compared against the verified backup.
+- Existing organization profile defaults remained empty.
+- Deferred funding tables and their records remained unchanged.
+- Both deferred funding integrity triggers remained unchanged.
+- Existing migration history was preserved.
+- Only the organization profile migration was added.
+
+Community Steps Foundation was subsequently created through the
+normal guided onboarding workflow.
+
+Both organizations and the deferred funding schema were verified
+again after stopping and restarting the Codespace.
+
+Temporary backup directories remain Codespace-local storage and
+must not be treated as independent permanent backups.
+
+#### Development Startup
+
+The application requires POCKETBASE_URL to be configured.
+
+For a running local PocketBase instance:
+
+```bash
+POCKETBASE_URL=http://127.0.0.1:8090 npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
+```
+
+PocketBase health endpoint:
+
+http://127.0.0.1:8090/api/health
+
+The working combined startup procedure checks PocketBase health,
+starts pocketbase/serve-dev.sh when necessary, waits for readiness,
+and launches SvelteKit with the explicit PocketBase URL.
+
+The startup procedure cleans up the PocketBase process it starts
+when the script exits. Review the startup script and migration
+settings before changing branches with different migration histories.
+
+Mailpit remains the local email verification service.
+
+#### Known Limitations and Deferred Work
+
+- Charity operational capabilities remain disabled.
+- Participant management is the next implementation phase.
+- Event registration, check-in, routes, and event-specific distances
+  remain planned for CE-4.
+- Sponsorships and reimbursements require charity verification in CE-5.
+- Funding Phase 2A remains deferred in draft PR #52.
+- Authenticated funding API and user-interface verification remain
+  outstanding.
+- Private participant companion-record organization integrity must
+  be explicitly reviewed and tested in CE-3.
+- Full repository CI and broader legacy browser regression
+  verification are not claimed as complete.
+- New accounts must follow the account activity selection workflow
+  before guided organization creation.
+- The existing Open organizations link can return users without
+  memberships to the account activity picker; broader onboarding
+  navigation polish remains outside this increment.
+
+#### Closeout Status
+
+Implementation, targeted automated verification, persistent
+migration, and manual charity onboarding are complete.
+
+Final documentation review, final changed-file quality checks,
+commit, push, and GitHub CI verification remain the closeout gates.
+
 ## 12. Current Focus
 
 Phase CE-1: Complete.
 
-Next phase: CE-2 — Organization Onboarding.
+Phase CE-2: Implementation verified; final commit and CI pending.
 
-Next action: Design the persisted charity organization profile and
-implement the smallest verified guided creation increment.
+Next phase: CE-3 — Participant Management.
 
-Before implementation:
+Do not begin CE-3 implementation until CE-2 closeout is complete.
 
-1. Review organization schema and migration identifiers.
-2. Define profile persistence and backward-compatible defaults.
-3. Define the supported charity creation mapping.
-4. Establish the initial verified capability set.
-5. Add frontend and backend configuration tests.
-6. Use disposable databases for migration verification.
+### CE-3 Entry Requirements
+
+1. Review this roadmap and the existing athlete implementation.
+2. Review athletes and athlete_private collections, API rules,
+   request hooks, server actions, and import workflows.
+3. Define participant terminology across navigation, pages, forms,
+   validation messages, and import instructions.
+4. Define the minimum participant identity and private contact fields.
+5. Determine which running and walking attributes belong to the
+   participant identity and which belong to event registration.
+6. Verify same-organization integrity for private companion records,
+   including forged relations and attempted relationship changes.
+7. Define Owner, Admin, and restricted-user permissions.
+8. Review optional participant teams without imposing season rosters.
+9. Define event registration requirements for CE-4 without prematurely
+   implementing the registration lifecycle.
+10. Establish integration, browser, and disc golf regression tests
+    before activating the participant capability.
+
+### CE-3 Implementation Boundaries
+
+- Reuse athletes and athlete_private wherever practical.
+- Keep existing collection and capability identifiers stable.
+- Display Participants for charity organizations and Athletes for
+  existing disc golf organizations.
+- Do not require a league, season, team, competitive division,
+  or participant user account.
+- Protect private contact information.
+- Verify direct API requests and organization isolation.
+- Do not expose public participant publication prematurely.
+- Do not activate additional charity capabilities before verification.
+- Use Community Steps Foundation as the persistent demonstration
+  organization.
+- Preserve the existing FLI Golf organization and deferred funding
+  schema.
+- Use disposable databases for automated and destructive tests.
 
 Funding Phase 2A remains deferred in draft PR #52.
 
-Do not expose participant registration, competitive race timing,
+Do not expose event registration, competitive race timing,
 donations, pledges, or other unfinished workflows as available.
