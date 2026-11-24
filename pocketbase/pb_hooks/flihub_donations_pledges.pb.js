@@ -6,6 +6,7 @@ onRecordCreateRequest((e) => {
 		fundingValidateAmount,
 		fundingValidateContributor,
 		fundingValidatePaymentMethod
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS modules.
 	} = require(`${__hooks}/funding_donation_rules.js`);
 	const org = fundingAuthorize(e);
 	const record = e.record;
@@ -29,6 +30,7 @@ onRecordCreateRequest((e) => {
 		fundingValidateEvent,
 		fundingValidateAmount,
 		fundingValidateContributor
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS modules.
 	} = require(`${__hooks}/funding_donation_rules.js`);
 	const org = fundingAuthorize(e);
 	const record = e.record;
@@ -55,6 +57,7 @@ onRecordCreateRequest((e) => {
 		fundingAuthorize,
 		fundingValidateAmount,
 		fundingValidatePaymentMethod
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- PocketBase JSVM requires CommonJS modules.
 	} = require(`${__hooks}/funding_donation_rules.js`);
 	const org = fundingAuthorize(e);
 	const record = e.record;

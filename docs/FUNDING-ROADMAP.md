@@ -78,14 +78,14 @@ Phase 1 introduced the following functionality:
 
 ### Recent development history
 
-| Work | Status |
-|---|---|
-| Funding Phase 1 | Merged into main |
-| PR #50 — Demo sponsorship tiers 3–6 | Merged, commit `a148564` |
-| PR #51 — Restore CI lint checks | Merged; five checks passed |
-| Reduced-price draft verification | Verified for tiers 3–6 |
-| Required-benefit protection | Verified for tested tier drafts |
-| Specific tournament-hole selection | Verified in conversion form |
+| Work                                      | Status                                       |
+| ----------------------------------------- | -------------------------------------------- |
+| Funding Phase 1                           | Merged into main                             |
+| PR #50 — Demo sponsorship tiers 3–6       | Merged, commit `a148564`                     |
+| PR #51 — Restore CI lint checks           | Merged; five checks passed                   |
+| Reduced-price draft verification          | Verified for tiers 3–6                       |
+| Required-benefit protection               | Verified for tested tier drafts              |
+| Specific tournament-hole selection        | Verified in conversion form                  |
 | PR #50 final CI and production deployment | Not verified in previous development session |
 
 **Important:** Sponsorship package prices and benefits are illustrative demonstration data. They are not approved commercial prices.
@@ -157,11 +157,11 @@ The initial pilot is a running event that raises money for a designated charity.
 
 ### Funding types
 
-| Funding type | Description |
-|---|---|
-| Sponsorship | Paid agreement associated with a sponsor and defined benefits or placements |
-| Donation | Contribution already received for an organization, event, or beneficiary |
-| Pledge | Promise to contribute a specified amount, with optional due date and payment history |
+| Funding type | Description                                                                          |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Sponsorship  | Paid agreement associated with a sponsor and defined benefits or placements          |
+| Donation     | Contribution already received for an organization, event, or beneficiary             |
+| Pledge       | Promise to contribute a specified amount, with optional due date and payment history |
 
 All funding types must preserve their distinct financial meanings.
 
@@ -219,13 +219,13 @@ All funding types must preserve their distinct financial meanings.
 
 A charity running event records:
 
-| Transaction | Amount |
-|---|---:|
-| Direct donation received | $500 |
-| Pledge commitment | $10,000 |
-| Partial pledge payment received | $3,000 |
-| Remaining pledge balance | $7,000 |
-| Total cash received | $3,500 |
+| Transaction                     |  Amount |
+| ------------------------------- | ------: |
+| Direct donation received        |    $500 |
+| Pledge commitment               | $10,000 |
+| Partial pledge payment received |  $3,000 |
+| Remaining pledge balance        |  $7,000 |
+| Total cash received             |  $3,500 |
 
 The direct donation and pledge reference the same charitable beneficiary.
 
