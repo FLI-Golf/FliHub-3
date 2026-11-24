@@ -44,3 +44,19 @@ export const charityRunWalkProfile: OrganizationProfileDefinition = {
 export function getOrganizationProfile(id: string): OrganizationProfileDefinition | null {
 	return id === charityRunWalkProfile.id ? charityRunWalkProfile : null;
 }
+
+/** Presentation only; never grants capability access or permissions. */
+export function getParticipantTerminology(profile: string) {
+	const definition = getOrganizationProfile(profile);
+	const singular = definition?.terminology.athlete ?? 'Athlete';
+	const plural = definition?.terminology.athletes ?? 'Athletes';
+
+	return {
+		singular,
+		plural,
+		singularLower: singular.toLowerCase(),
+		pluralLower: plural.toLowerCase(),
+		indefinite: profile === 'charity-run-walk' ? 'a participant' : 'an athlete',
+		isCharity: profile === 'charity-run-walk'
+	};
+}

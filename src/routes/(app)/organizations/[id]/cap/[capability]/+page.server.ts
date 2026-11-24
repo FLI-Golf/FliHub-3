@@ -236,7 +236,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	// Scorekeepers/Viewers simply get an empty list back).
 	let athletes = null;
 	if (capability.id === 'athletes' && enabled) {
-		const canSeePrivate = myRole === 'owner' || myRole === 'admin';
+		const canSeePrivate =
+			dto.profile !== 'charity-run-walk' && (myRole === 'owner' || myRole === 'admin');
 		const records = await pb.collection('athletes').getFullList({
 			filter: `organization = "${params.id}"`,
 			sort: 'lastName,firstName'
@@ -259,7 +260,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				hasPrivateRecord: privateByAthlete.has(r.id),
 				status: (String(r.status) || 'active') as 'active' | 'archived'
 			};
-			// Scorekeepers/Viewers: the private keys are OMITTED from the page
+			// Charity directories and non-manager roles omit private keys from the page
 			// data entirely — not just nulled — so the payload cannot carry them.
 			if (!canSeePrivate) return base;
 			const priv = privateByAthlete.get(r.id);

@@ -1124,9 +1124,9 @@ reviewing the roadmap update.
 | Increment | Scope                                  | Status   |
 | --------- | -------------------------------------- | -------- |
 | CE-3A     | Architecture and requirements audit    | Complete |
-| CE-3B     | Data integrity and backend security    | Next     |
-| CE-3C     | Profile-specific participant interface | Pending  |
-| CE-3D     | CSV imports and lifecycle operations   | Pending  |
+| CE-3B     | Data integrity and backend security    | Complete |
+| CE-3C     | Profile-specific participant interface | Complete |
+| CE-3D     | CSV imports and lifecycle operations   | Next     |
 | CE-3E     | Controlled capability activation       | Pending  |
 | CE-3F     | Automated and regression verification  | Pending  |
 | CE-3G     | Persistent participant demonstration   | Pending  |
@@ -1136,12 +1136,12 @@ Security and functional tests must accompany implementation.
 CE-3E activation is gated by successful targeted verification;
 CE-3F provides final integrated and regression verification.
 
-The next implementation task is CE-3B. Begin with authenticated
-security tests against disposable PocketBase data, establish
-the existing behavior, and implement targeted safeguards.
+The next implementation task is CE-3D. Complete charity-specific
+CSV import and participant lifecycle integration using the
+verified CE-3B security foundation and CE-3C interface.
 
 Do not activate the participant capability in persistent data
-during CE-3B.
+during CE-3D. Controlled activation remains gated by CE-3E.
 
 ### CE-3 Implementation Boundaries
 
@@ -1238,3 +1238,134 @@ CI execution of that harness remains to be verified.
 
 This checkpoint does not complete CE-3, activate charity participant
 management, or resume deferred Funding Phase 2 development.
+
+## CE-3C Interface Checkpoint — 2026-11-24
+
+Status: Interface implementation and targeted verification complete.
+CE-3 overall remains in progress.
+
+### Completed implementation
+
+- Profile-aware participant and athlete terminology.
+- Charity-specific participant management presentation.
+- Simplified participant creation and editing without sporting
+  demographic fields.
+- Participant directory with identity search, active and archived
+  status filters, counts, reset controls, and empty states.
+- Preservation of existing disc golf athlete functionality.
+- Charity-specific CSV instructions, examples, and preview presentation.
+- Privacy guidance for externally generated CSV content.
+- Creation and editing validation with recoverable form errors.
+- Success feedback and private form-value cleanup.
+- Unsaved creation and editing navigation protection.
+- Duplicate submission prevention.
+- Read-only protection for all 12 charity creation and editing
+  input fields while their respective save requests are pending.
+- Responsive participant management and dialog presentation.
+
+### Privacy and security
+
+- Ordinary charity directory payloads exclude private contact
+  information and private participant notes, including for managers.
+- Authorized owners and administrators retrieve private information
+  through a dedicated organization-scoped endpoint when editing.
+- Private endpoint responses use private, no-store cache controls
+  and the nosniff response header.
+- Viewer and scorekeeper roles retain identity-only directory access.
+- Nonmembers, anonymous requests, foreign participant identifiers,
+  and unauthorized organization requests are denied.
+- Disabled participant capability prevents private endpoint access.
+- Pending private requests are cancelled when the editing component
+  is destroyed.
+- Stale private responses cannot update a different participant
+  editing context.
+- Organization and management permission changes recreate the
+  participant management component.
+- Saving, discarding, and navigating away remove private editing
+  values from the active interface.
+- Existing transactional participant operations and database
+  integrity safeguards remain unchanged.
+
+### Verification completed
+
+- Svelte and TypeScript checks passed with zero errors and warnings.
+- Changed-file formatting and targeted ESLint checks passed.
+- JavaScript syntax validation passed.
+- Production build passed.
+- Git diff validation passed.
+- Existing Phase 1C disc golf athlete browser regression passed.
+- Dedicated charity participant browser specification passed
+  all 18 verification stages.
+
+The charity browser specification covers:
+
+1. Disposable charity fixtures.
+2. Authenticated browser sessions.
+3. Private endpoint authorization.
+4. Directory document and page-data privacy.
+5. Disabled capability enforcement.
+6. Charity participant interface.
+7. Participant creation and validation.
+8. Identity search and status filtering.
+9. Authorized editing and validation.
+10. Unsaved edit protection.
+11. Archive, restore, and status filtering.
+12. Charity CSV presentation and preview.
+13. Read-only participant access.
+14. Organization navigation privacy.
+15. Mobile participant interface at 375-pixel viewport width.
+16. Interrupted private request cancellation during client-side
+    organization navigation.
+17. Unsaved creation navigation protection.
+18. Pending save input protection and recovery after validation
+    failure.
+
+Automated browser verification used disposable PocketBase data.
+The final production rebuild and both targeted browser regression
+suites passed after the input protection correction.
+
+### Implementation files
+
+- src/lib/components/AthletesManager.svelte
+- src/lib/organizations/profiles.ts
+- src/routes/(app)/organizations/[id]/cap/[capability]/+page.server.ts
+- src/routes/(app)/organizations/[id]/cap/[capability]/+page.svelte
+- src/routes/(app)/organizations/[id]/cap/[capability]/participants/[participant]/private/+server.ts
+- tests/e2e/charity-participants.spec.mjs
+
+### Persistent database status
+
+No persistent database changes were performed during CE-3C.
+
+The previously applied participant integrity migration and deferred
+funding schema remain in place. CE-3C did not require a new migration,
+database reset, or migration reversal.
+
+Community Steps Foundation remains the designated persistent charity
+demonstration organization. Its participant capability remains
+intentionally inactive until controlled activation in CE-3E.
+
+The existing FLI Golf organization remains outside the scope of
+persistent charity demonstration changes.
+
+### Remaining work
+
+- CE-3D: Complete charity CSV import and participant lifecycle
+  integration, including committed imports, duplicate acknowledgment,
+  stale review rejection, and atomic failure verification.
+- CE-3E: Controlled participant capability activation.
+- CE-3F: Final integrated acceptance and regression verification.
+- CE-3G: Persistent fictional charity participant demonstration.
+- CE-3H: Final documentation, pull request, CI, and merge review.
+- Dedicated forged SvelteKit server-action verification.
+- Full legacy browser regression.
+- Incorporation of standalone SQL integrity checks into the
+  automated suite.
+- GitHub CI verification, including the Python 3 integration
+  failure-injection harness.
+
+Funding Phase 2A remains deferred in draft PR #52.
+
+This checkpoint completes CE-3C implementation and targeted
+verification only. It does not complete CE-3, activate persistent
+charity participant management, or authorize a merge into main.

@@ -24,11 +24,18 @@
 	import StandingsTables from '$lib/components/StandingsTables.svelte';
 	import FantasyManager from '$lib/components/FantasyManager.svelte';
 	import { availabilityMeta } from '$lib/capabilities/catalog';
+	import { getParticipantTerminology } from '$lib/organizations/profiles';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 
 	const meta = $derived(availabilityMeta[data.capability.availability]);
+
+	const capabilityLabel = $derived(
+		data.capability.id === 'athletes'
+			? getParticipantTerminology(data.organization.profile).plural
+			: data.capability.label
+	);
 
 	let eventView = $state<'current' | 'past'>('current');
 	const pastSeasonIds = $derived(
@@ -50,7 +57,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.capability.label} — {data.organization.name} — FliHub</title>
+	<title>{capabilityLabel} — {data.organization.name} — FliHub</title>
 </svelte:head>
 
 <section class="flex flex-col gap-6 py-4">
@@ -63,14 +70,14 @@
 	{/if}
 	<div class="flex flex-col gap-2">
 		<h1 class="text-2xl font-semibold tracking-tight">
-			{data.organization.name} — {data.capability.label}
+			{data.organization.name} — {capabilityLabel}
 		</h1>
 	</div>
 
 	{#if !data.enabled}
 		<Alert.Root>
 			<ToggleRight class="size-4" />
-			<Alert.Title>{data.capability.label} is not enabled</Alert.Title>
+			<Alert.Title>{capabilityLabel} is not enabled</Alert.Title>
 			<Alert.Description>
 				This capability is disabled for {data.organization.name}, so its workflows are hidden.
 				{#if data.organization.profile === 'charity-run-walk'}
@@ -133,12 +140,15 @@
 			</Alert.Root>
 		{/if}
 	{:else if data.capability.id === 'athletes' && data.capability.availability === 'available' && data.athletes}
-		<AthletesManager
-			athletes={data.athletes}
-			canManage={data.canManage}
-			myRole={data.myRole}
-			{form}
-		/>
+		{#key `${data.organization.id}:${data.canManage}`}
+			<AthletesManager
+				athletes={data.athletes}
+				profile={data.organization.profile}
+				canManage={data.canManage}
+				myRole={data.myRole}
+				{form}
+			/>
+		{/key}
 	{:else if data.capability.id === 'teams' && data.capability.availability === 'available' && data.teams && data.rosters}
 		<TeamsManager teams={data.teams} canManage={data.canManage} myRole={data.myRole} {form} />
 		<RostersManager
@@ -405,7 +415,7 @@
 		<Card.Root class="max-w-2xl">
 			<Card.Header>
 				<div class="flex items-center justify-between gap-2">
-					<Card.Title class="text-base">{data.capability.label}</Card.Title>
+					<Card.Title class="text-base">{capabilityLabel}</Card.Title>
 					<Badge variant="secondary" class={meta.badgeClass}>
 						{meta.label}
 					</Badge>
