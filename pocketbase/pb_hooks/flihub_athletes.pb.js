@@ -29,6 +29,14 @@ onRecordCreateRequest((e) => {
 			'capability_disabled: The Athletes capability is not enabled for this organization.'
 		);
 	}
+
+	// CE-3: Charity participants are private identities, not public athletes.
+	if (org.getString('profile') === 'charity-run-walk' && e.record.getBool('publicPublished')) {
+		throw new BadRequestError(
+			'publication_not_allowed: Charity participants cannot be marked for public publication.'
+		);
+	}
+
 	e.next();
 }, 'athletes');
 
@@ -57,6 +65,14 @@ onRecordUpdateRequest((e) => {
 			'immutable_relation: A record cannot be moved to another organization.'
 		);
 	}
+
+	// CE-3: Charity participants are private identities, not public athletes.
+	if (org.getString('profile') === 'charity-run-walk' && e.record.getBool('publicPublished')) {
+		throw new BadRequestError(
+			'publication_not_allowed: Charity participants cannot be marked for public publication.'
+		);
+	}
+
 	e.next();
 }, 'athletes');
 
@@ -95,6 +111,16 @@ onRecordCreateRequest((e) => {
 			'capability_disabled: The Athletes capability is not enabled for this organization.'
 		);
 	}
+
+	// CE-3: A private companion must belong to its athlete's organization.
+	const parentAthlete = e.app.findRecordById('athletes', e.record.getString('athlete'));
+
+	if (parentAthlete.getString('organization') !== e.record.getString('organization')) {
+		throw new BadRequestError(
+			'organization_mismatch: The private record and athlete must belong to the same organization.'
+		);
+	}
+
 	e.next();
 }, 'athlete_private');
 
@@ -123,5 +149,22 @@ onRecordUpdateRequest((e) => {
 			'immutable_relation: A record cannot be moved to another organization.'
 		);
 	}
+
+	// CE-3: Private contact data cannot be reassigned to another identity.
+	if (originalPrivate && originalPrivate.getString('athlete') !== e.record.getString('athlete')) {
+		throw new BadRequestError(
+			'immutable_relation: A private record cannot be moved to another athlete.'
+		);
+	}
+
+	// CE-3: A private companion must belong to its athlete's organization.
+	const parentAthlete = e.app.findRecordById('athletes', e.record.getString('athlete'));
+
+	if (parentAthlete.getString('organization') !== e.record.getString('organization')) {
+		throw new BadRequestError(
+			'organization_mismatch: The private record and athlete must belong to the same organization.'
+		);
+	}
+
 	e.next();
 }, 'athlete_private');

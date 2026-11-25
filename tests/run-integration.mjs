@@ -77,6 +77,55 @@ try {
 	spawnSync(pbBin, [...pbArgs, 'superuser', 'upsert', SUPERUSER_EMAIL, SUPERUSER_PASSWORD], {
 		stdio: 'inherit'
 	});
+	// Install a test-only database failure trigger before PocketBase starts.
+	const failureInjection = spawnSync(
+		'python3',
+		[
+			'-c',
+			`
+import sqlite3
+import sys
+from pathlib import Path
+
+directory = Path(sys.argv[1]).resolve()
+
+assert directory.name.startswith('flihub-pbtest-')
+assert directory.is_dir()
+
+database = directory / 'data.db'
+
+assert database.is_file()
+
+with sqlite3.connect(database) as connection:
+    connection.execute(
+        '''
+        CREATE TRIGGER integration_participant_private_failure
+        BEFORE INSERT ON athlete_private
+        WHEN NEW.email = 'participant-rollback-failure@example.com'
+        BEGIN
+            SELECT RAISE(ABORT, 'Integration participant failure injection.');
+        END
+        '''
+    )
+
+    trigger = connection.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = ?",
+        ('integration_participant_private_failure',)
+    ).fetchone()
+
+    assert trigger is not None
+
+print('Disposable participant failure trigger installed.')
+`,
+			tmp
+		],
+		{ stdio: 'inherit' }
+	);
+
+	if (failureInjection.status !== 0) {
+		throw new Error('Failed to install disposable participant failure trigger.');
+	}
+
 	// Disposable test stack: the 2-second demo pick clock (D18) is allowed
 	// here so draft timeout behavior is testable without minute-long waits.
 	start('pocketbase', pbBin, [...pbArgs, 'serve', '--http', `127.0.0.1:${PB_PORT}`], {

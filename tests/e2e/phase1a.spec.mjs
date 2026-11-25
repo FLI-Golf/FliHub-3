@@ -11,6 +11,11 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import {
+	openOrganizationSetup,
+	createGuidedOrganization,
+	openSection
+} from './helpers/onboarding.mjs';
 
 const APP = process.env.FLIHUB_E2E_APP_URL;
 const MAILPIT = process.env.FLIHUB_E2E_MAILPIT_URL;
@@ -80,20 +85,22 @@ try {
 
 	console.log('Step 1: owner registers, verifies email, signs in');
 	await registerVerifySignIn(a, OWNER);
-	await a.waitForURL(/\/organizations/, { timeout: 15000 });
-	await a.waitForSelector('text=No memberships yet');
-	expect(true, 'empty state shown for account with no memberships');
+	await a.waitForURL((url) => url.pathname === '/account', {
+		timeout: 15000
+	});
+	await a.locator('input[name="activity"][value="organization"]').waitFor();
+	expect(true, 'new account sees activity selection');
 	await a.screenshot({ path: path.join(OUT, '01-empty.png') });
 
 	console.log('Step 2: owner creates Alpha Club');
-	await a.fill('#org-name', 'Alpha Club');
-	await a.click('text=Create organization');
-	await a.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
+	await openOrganizationSetup(a);
+	await createGuidedOrganization(a, 'Alpha Club');
 	await a.waitForSelector('text=Your role: Owner');
 	expect(true, 'org created; owner role badge shown');
 	await a.screenshot({ path: path.join(OUT, '02-org-created.png') });
 
 	console.log('Step 3: owner invites member as Scorekeeper');
+	await openSection(a, 'Invite a member');
 	await a.fill('#invite-email', MEMBER.email);
 	await a.click('button:has-text("Scorekeeper")');
 	await a.waitForSelector('text=Invitation created for', { timeout: 15000 });
@@ -127,16 +134,15 @@ try {
 	const invitesList = await b.$('text=Only Owners and Admins can see this list');
 	expect(invitesList === null, 'scorekeeper does not see invitations list');
 	await b.waitForSelector('text=Members (2)');
+	await openSection(b, 'Members (2)');
 	await b.waitForSelector('text=E2E Owner');
 	expect(true, 'member sees member names');
 	await b.screenshot({ path: path.join(OUT, '05-member-view.png') });
 
 	// ---- Second org + switching ---------------------------------------------
 	console.log('Step 6: second organization and switching');
-	await a.goto(`${APP}/organizations`);
-	await a.fill('#org-name', 'Beta League');
-	await a.click('text=Create organization');
-	await a.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
+	await a.goto(`${APP}/organizations/new`);
+	await createGuidedOrganization(a, 'Beta League');
 	await a.waitForSelector('text=Beta League');
 	await a.goto(`${APP}/organizations`);
 	await a.waitForSelector('text=Beta League');
@@ -147,6 +153,7 @@ try {
 	expect(headerText.includes('Alpha Club'), 'header shows Alpha Club active after switch');
 	await a.screenshot({ path: path.join(OUT, '06-switch.png') });
 	await b.goto(`${APP}/organizations`);
+	await openSection(b, 'Your organizations');
 	const bOrgsText = await b.locator('main').innerText();
 	expect(
 		bOrgsText.includes('Alpha Club') && !bOrgsText.includes('Beta League'),
@@ -158,9 +165,11 @@ try {
 	await a.goto(`${APP}/organizations`);
 	await a.click('text=Open');
 	await a.waitForSelector('text=Your role: Owner');
+	await openSection(a, 'Members (2)');
 	await a.click('button:has-text("Transfer ownership")'); // confirm() auto-accepted
 	await a.waitForSelector('text=Your role: Admin', { timeout: 15000 });
 	expect(true, 'former owner becomes Admin after transfer');
+	await openSection(a, 'Members (2)');
 	const ownerBadges = await a.locator('main').innerText();
 	expect((ownerBadges.match(/Owner/g) || []).length >= 1, 'an Owner still exists');
 	await a.screenshot({ path: path.join(OUT, '07-transferred.png') });

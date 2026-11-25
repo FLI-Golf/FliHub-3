@@ -236,7 +236,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	// Scorekeepers/Viewers simply get an empty list back).
 	let athletes = null;
 	if (capability.id === 'athletes' && enabled) {
-		const canSeePrivate = myRole === 'owner' || myRole === 'admin';
+		const canSeePrivate =
+			dto.profile !== 'charity-run-walk' && (myRole === 'owner' || myRole === 'admin');
 		const records = await pb.collection('athletes').getFullList({
 			filter: `organization = "${params.id}"`,
 			sort: 'lastName,firstName'
@@ -259,7 +260,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				hasPrivateRecord: privateByAthlete.has(r.id),
 				status: (String(r.status) || 'active') as 'active' | 'archived'
 			};
-			// Scorekeepers/Viewers: the private keys are OMITTED from the page
+			// Charity directories and non-manager roles omit private keys from the page
 			// data entirely — not just nulled — so the payload cannot carry them.
 			if (!canSeePrivate) return base;
 			const priv = privateByAthlete.get(r.id);
@@ -983,33 +984,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 };
 
 /** Parses one CSV line, honoring simple double-quoted fields. */
-function parseCsvLine(line: string): string[] {
-	const out: string[] = [];
-	let cur = '';
-	let inQuotes = false;
-	for (let i = 0; i < line.length; i++) {
-		const ch = line[i];
-		if (inQuotes) {
-			if (ch === '"' && line[i + 1] === '"') {
-				cur += '"';
-				i++;
-			} else if (ch === '"') {
-				inQuotes = false;
-			} else {
-				cur += ch;
-			}
-		} else if (ch === '"') {
-			inQuotes = true;
-		} else if (ch === ',') {
-			out.push(cur.trim());
-			cur = '';
-		} else {
-			cur += ch;
-		}
-	}
-	out.push(cur.trim());
-	return out;
-}
 
 /**
  * Athlete writes. The collection API rules enforce Owner/Admin; the
@@ -1988,96 +1962,145 @@ export const actions: Actions = {
 		return { responded: true };
 	},
 
+	// Shared participant operations. The PocketBase endpoint enforces
+	// organization scope, permissions, capability access and atomic writes.
 	createAthlete: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (params.capability !== 'athletes' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Participant destination not found.' });
+		}
+
 		const form = await request.formData();
-		try {
-			const created = await locals.pb.collection('athletes').create({
-				organization: params.id,
-				firstName: String(form.get('firstName') ?? '').trim(),
-				lastName: String(form.get('lastName') ?? '').trim(),
-				displayName: String(form.get('displayName') ?? '').trim(),
-				gender: String(form.get('gender') ?? 'unspecified'),
-				nationality: String(form.get('nationality') ?? '').trim(),
-				status: 'active'
-			});
-			const email = String(form.get('email') ?? '').trim();
-			const phone = String(form.get('phone') ?? '').trim();
-			const eligibilityNotes = String(form.get('eligibilityNotes') ?? '').trim();
-			if (email || phone || eligibilityNotes) {
-				await locals.pb.collection('athlete_private').create({
-					athlete: created.id,
-					organization: params.id,
-					email,
-					phone,
-					eligibilityNotes
-				});
+
+		const identity: Record<string, string> = {
+			firstName: String(form.get('firstName') ?? '').trim(),
+			lastName: String(form.get('lastName') ?? '').trim()
+		};
+
+		for (const field of ['displayName', 'gender', 'nationality']) {
+			if (form.has(field)) {
+				identity[field] = String(form.get(field) ?? '').trim();
 			}
+		}
+
+		const contact: Record<string, string> = {};
+
+		for (const field of ['email', 'phone', 'eligibilityNotes']) {
+			if (form.has(field)) {
+				contact[field] = String(form.get(field) ?? '').trim();
+			}
+		}
+
+		try {
+			await locals.pb.send(`/api/flihub/organizations/${params.id}/participants`, {
+				method: 'POST',
+				body: {
+					operation: 'create',
+					identity,
+					...(Object.keys(contact).length ? { contact } : {})
+				}
+			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
+
 		return { created: true };
 	},
 
-	updateAthlete: async ({ locals, request }) => {
+	updateAthlete: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (params.capability !== 'athletes' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Participant destination not found.' });
+		}
+
 		const form = await request.formData();
-		const id = String(form.get('athlete') ?? '');
-		try {
-			await locals.pb.collection('athletes').update(id, {
-				firstName: String(form.get('firstName') ?? '').trim(),
-				lastName: String(form.get('lastName') ?? '').trim(),
-				displayName: String(form.get('displayName') ?? '').trim(),
-				nationality: String(form.get('nationality') ?? '').trim()
-			});
-			const email = String(form.get('email') ?? '').trim();
-			const phone = String(form.get('phone') ?? '').trim();
-			const eligibilityNotes = String(form.get('eligibilityNotes') ?? '').trim();
-			const existing = await locals.pb
-				.collection('athlete_private')
-				.getFirstListItem(`athlete = "${id}"`)
-				.catch(() => null);
-			if (existing) {
-				await locals.pb.collection('athlete_private').update(existing.id, {
-					email,
-					phone,
-					eligibilityNotes
-				});
-			} else if (email || phone || eligibilityNotes) {
-				const athlete = await locals.pb.collection('athletes').getOne(id);
-				await locals.pb.collection('athlete_private').create({
-					athlete: id,
-					organization: String(athlete.organization),
-					email,
-					phone,
-					eligibilityNotes
-				});
+		const athleteId = String(form.get('athlete') ?? '');
+
+		if (!ID_PATTERN.test(athleteId)) {
+			return fail(400, { message: 'Invalid participant identifier.' });
+		}
+
+		const identity: Record<string, string> = {
+			firstName: String(form.get('firstName') ?? '').trim(),
+			lastName: String(form.get('lastName') ?? '').trim()
+		};
+
+		for (const field of ['displayName', 'gender', 'nationality']) {
+			if (form.has(field)) {
+				identity[field] = String(form.get(field) ?? '').trim();
 			}
+		}
+
+		const contact: Record<string, string> = {};
+
+		for (const field of ['email', 'phone', 'eligibilityNotes']) {
+			if (form.has(field)) {
+				contact[field] = String(form.get(field) ?? '').trim();
+			}
+		}
+
+		try {
+			await locals.pb.send(`/api/flihub/organizations/${params.id}/participants`, {
+				method: 'POST',
+				body: {
+					operation: 'update',
+					athleteId,
+					identity,
+					...(Object.keys(contact).length ? { contact } : {})
+				}
+			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
+
 		return { updated: true };
 	},
 
-	archiveAthlete: async ({ locals, request }) => {
+	archiveAthlete: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-		const id = String((await request.formData()).get('athlete') ?? '');
+		if (params.capability !== 'athletes' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Participant destination not found.' });
+		}
+
+		const athleteId = String((await request.formData()).get('athlete') ?? '');
+
+		if (!ID_PATTERN.test(athleteId)) {
+			return fail(400, { message: 'Invalid participant identifier.' });
+		}
+
 		try {
-			await locals.pb.collection('athletes').update(id, { status: 'archived' });
+			await locals.pb.send(`/api/flihub/organizations/${params.id}/participants`, {
+				method: 'POST',
+				body: { operation: 'archive', athleteId }
+			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
+
 		return { archived: true };
 	},
 
-	unarchiveAthlete: async ({ locals, request }) => {
+	unarchiveAthlete: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-		const id = String((await request.formData()).get('athlete') ?? '');
+		if (params.capability !== 'athletes' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Participant destination not found.' });
+		}
+
+		const athleteId = String((await request.formData()).get('athlete') ?? '');
+
+		if (!ID_PATTERN.test(athleteId)) {
+			return fail(400, { message: 'Invalid participant identifier.' });
+		}
+
 		try {
-			await locals.pb.collection('athletes').update(id, { status: 'active' });
+			await locals.pb.send(`/api/flihub/organizations/${params.id}/participants`, {
+				method: 'POST',
+				body: { operation: 'restore', athleteId }
+			});
 		} catch (err) {
 			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
 		}
+
 		return { restored: true };
 	},
 
@@ -2087,52 +2110,108 @@ export const actions: Actions = {
 	// There is no deleteAthlete action: permanent delete is not part of the
 	// Phase 1C lifecycle (archive/restore only) and the delete rule is locked.
 
+	/** Review CSV rows and potential duplicates without creating records. */
+	previewAthleteImport: async ({ locals, request, params }) => {
+		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (params.capability !== 'athletes' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Participant destination not found.' });
+		}
+
+		const form = await request.formData();
+		const csv = form.get('csv');
+
+		if (typeof csv !== 'string' || !csv.trim()) {
+			return fail(400, { message: 'Paste at least one CSV row.' });
+		}
+
+		if (csv.length > 262144) {
+			return fail(400, { message: 'CSV input is too large.' });
+		}
+
+		try {
+			const review = await locals.pb.send<{
+				operation: 'previewImport';
+				rowCount: number;
+				fingerprint: string;
+				warnings: {
+					key: string;
+					row: number;
+					type: 'batch' | 'existing';
+					matchingRow?: number;
+					participantId?: string;
+					status?: string;
+					fields: string[];
+				}[];
+			}>(`/api/flihub/organizations/${params.id}/participants`, {
+				method: 'POST',
+				body: {
+					operation: 'previewImport',
+					csv
+				}
+			});
+
+			return {
+				importPreview: {
+					rowCount: review.rowCount,
+					fingerprint: review.fingerprint,
+					warnings: review.warnings
+				}
+			};
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
+	},
+
+	/** Save a reviewed CSV import as one atomic participant operation. */
 	importAthletes: async ({ locals, request, params }) => {
 		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
-		const csv = String((await request.formData()).get('csv') ?? '');
-		const rows = csv
-			.split(/\r?\n/)
-			.map((l) => l.trim())
-			.filter((l) => l !== '');
-		if (rows.length === 0) return fail(400, { message: 'Paste at least one CSV row.' });
-		if (rows.length > 200) return fail(400, { message: 'Import at most 200 athletes at a time.' });
-
-		let imported = 0;
-		for (const [index, line] of rows.entries()) {
-			const [firstName = '', lastName = '', gender = '', nationality = '', email = ''] =
-				parseCsvLine(line);
-			if (!firstName || !lastName) {
-				return fail(400, {
-					message: `Row ${index + 1} needs at least a first and last name.`
-				});
-			}
-			const genderValue = ['female', 'male', 'other', 'unspecified'].includes(gender)
-				? gender
-				: 'unspecified';
-			try {
-				const created = await locals.pb.collection('athletes').create({
-					organization: params.id,
-					firstName,
-					lastName,
-					gender: genderValue,
-					nationality,
-					status: 'active'
-				});
-				if (email) {
-					await locals.pb.collection('athlete_private').create({
-						athlete: created.id,
-						organization: params.id,
-						email
-					});
-				}
-				imported += 1;
-			} catch (err) {
-				return fail(pbErrorStatus(err), {
-					message: `Row ${index + 1} failed: ${pbErrorMessage(err)} (${imported} imported before the failure)`
-				});
-			}
+		if (params.capability !== 'athletes' || !ID_PATTERN.test(params.id)) {
+			return fail(404, { message: 'Participant destination not found.' });
 		}
-		return { imported };
+
+		const form = await request.formData();
+		const csv = form.get('csv');
+		const fingerprint = form.get('fingerprint');
+		const confirmedWarnings = form.getAll('confirmedWarnings');
+
+		if (typeof csv !== 'string' || !csv.trim()) {
+			return fail(400, { message: 'Paste at least one CSV row.' });
+		}
+
+		if (csv.length > 262144) {
+			return fail(400, { message: 'CSV input is too large.' });
+		}
+
+		if (typeof fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(fingerprint)) {
+			return fail(400, { message: 'Preview the import before saving.' });
+		}
+
+		if (
+			confirmedWarnings.length > 2000 ||
+			!confirmedWarnings.every((warning) => typeof warning === 'string')
+		) {
+			return fail(400, { message: 'Invalid duplicate confirmations.' });
+		}
+
+		try {
+			const result = await locals.pb.send<{
+				operation: 'import';
+				importedCount: number;
+				participants: { row: number; id: string }[];
+			}>(`/api/flihub/organizations/${params.id}/participants`, {
+				method: 'POST',
+				body: {
+					operation: 'import',
+					csv,
+					fingerprint,
+					confirmedWarnings
+				}
+			});
+
+			return { imported: result.importedCount };
+		} catch (err) {
+			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+		}
 	},
 
 	// --- Phase 1D: teams ------------------------------------------------------
