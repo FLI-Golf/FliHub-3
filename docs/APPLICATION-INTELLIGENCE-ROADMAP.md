@@ -386,3 +386,51 @@ No arbitrary provider-generated interface code may execute.
 
 These additions do not waive AI-1F, AI-2, CE-3D,
 or any existing security and acceptance gates.
+
+## JAI-2A implementation checkpoint
+
+Date: 2026-11-25
+
+Status: Complete — local acceptance passed.
+
+### Implemented
+
+- Typed application objectives, requests and advisory outcomes.
+- Five registered recommendation-only capabilities.
+- Objective compatibility and bounded candidate selection.
+- Strict request and normalized recommendation validation.
+- Unknown, duplicate and excluded candidate rejection.
+- Explicit abstention and safe confidence handling.
+- Independent application intelligence tests.
+
+The provisional recommendation confidence threshold is 0.8.
+Confidence does not grant application permissions or authorize execution.
+
+### Verification evidence
+
+- Application intelligence tests: 16 passed, zero failed.
+- Existing intelligence regression tests: 11 passed, zero failed.
+- TypeScript verification passed.
+- Lint verification passed.
+- Production build passed.
+- Existing pickleball organization setup preview completed through review.
+- Unsupported pickleball functionality remained clearly identified as planned.
+- Existing intelligence foundation stash preserved.
+
+### Boundaries preserved
+
+- No live Jev requests or paid provider usage.
+- No Codex execution.
+- No database access or persistent application mutations introduced.
+- No existing wizard or component modifications.
+- No application operation execution.
+- Existing engineering and charity acceptance gates remain unchanged.
+
+### Outstanding work
+
+- JAI-2B: validated synthetic context and context-based eligibility.
+- Provider-specific response validation and shared service integration.
+- Application director and interactive terminal.
+- Full offline application intelligence acceptance.
+- Explicit authorization before live provider verification.
+- GitHub CI and final integration acceptance.
