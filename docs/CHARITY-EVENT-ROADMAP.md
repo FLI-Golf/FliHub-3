@@ -1136,9 +1136,10 @@ Security and functional tests must accompany implementation.
 CE-3E activation is gated by successful targeted verification;
 CE-3F provides final integrated and regression verification.
 
-The next implementation task is CE-3D. Complete charity-specific
-CSV import and participant lifecycle integration using the
-verified CE-3B security foundation and CE-3C interface.
+Charity development is frozen after CE-3C through AI-1F acceptance and
+the AI-2 pilot. See the [intelligence roadmap](INTELLIGENCE-ROADMAP.md).
+Resume at CE-3D with charity-specific CSV import and participant lifecycle
+integration using the verified CE-3B security foundation and CE-3C interface.
 
 Do not activate the participant capability in persistent data
 during CE-3D. Controlled activation remains gated by CE-3E.

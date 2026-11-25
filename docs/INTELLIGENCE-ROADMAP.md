@@ -1,0 +1,74 @@
+# FliHub Intelligence — Roadmap
+
+**Status:** AI-1 through AI-1E support a scoped synthetic workflow and manual local development console. Adoption for application development remains gated. Charity development is frozen after CE-3C.
+
+## Objective
+
+Introduce optional AI-assisted decisions without compromising deterministic business rules, tenant isolation, or existing workflows. Jev is the selected provider; intelligence remains an optional application capability.
+
+## Development sequence
+
+| Phase              | Scope                                                                                                                                   | Exit gate                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| AI-1               | Jev adapter, server-only provider interface, disabled and mock providers, configuration, validation, timeouts, audit and usage tracking | Offline tests and CI pass; disabled mode preserves existing behavior                         |
+| AI-1A              | Jev–Codex development guardrails                                                                                                        | Scoped interception verified in an isolated Codex session. Preserve native security.         |
+| AI-1B              | Development action auditing and approval                                                                                                | Local proposal binding and consumption verified. Agree retention before ongoing operation.   |
+| AI-1C              | Jev development orchestration                                                                                                           | Accept the bounded synthetic coordinator, durable checkpoints, and isolated worker boundary  |
+| AI-1D              | Jev-driven development and verification loop                                                                                            | Verify the offline loop and approve the live synthetic run before directing application work |
+| AI-1E              | Unified manual development environment                                                                                                  | Verify service lifecycle, offline operator console and its bounded worker                    |
+| AI-1F              | Final intelligence infrastructure acceptance                                                                                            | Review worker isolation, live and offline evidence, PR, GitHub CI, and merge authorization   |
+| AI-2               | First Jev-directed application feature using synthetic CSV headers                                                                      | Functional tests pass; human review required; cost and latency recorded                      |
+| Resume CE at CE-3D | Resume charity CSV and participant lifecycle work                                                                                       | Pilot is optional and isolated; no unresolved critical risks                                 |
+| AI-3               | Participant duplicate suggestions                                                                                                       | No automatic merges; tenant isolation verified                                               |
+| AI-4               | Sponsorship package recommendations                                                                                                     | Staff review; no automatic agreements                                                        |
+| AI-5               | Expense categorization suggestions                                                                                                      | No automated approval or payment                                                             |
+| AI-6               | Organization intelligence dashboard                                                                                                     | Authorized, explainable recommendations                                                      |
+| AI-7               | Natural-language navigation                                                                                                             | Existing access controls enforced                                                            |
+
+AI-3 onward are backlog candidates, not commitments or prerequisites for charity event development.
+
+## Baseline and progress
+
+- `feature/intelligence-foundation` is based on merge `28594c7`. PR #54 merged. The owner's baseline evidence records passing [PR CI](https://github.com/FLI-Golf/FliHub-3/actions/runs/45531001595) and [post-merge main CI](https://github.com/FLI-Golf/FliHub-3/actions/runs/45531068690).
+- Full legacy browser regression, final charity security acceptance and roadmap closeout remain open. Existing CE-3D through CE-3H gates remain in the [charity roadmap](CHARITY-EVENT-ROADMAP.md).
+- AI-1 has server-only providers, validation, process-local quotas and offline tests. AI-1A has a trusted Bash fixture hook and a decline-only native approval adapter. AI-1B has a private SQLite ledger and terminal human approval simulation. See [verification and coverage](INTELLIGENCE-ARCHITECTURE.md).
+- AI-1C and AI-1D have a bounded synthetic implementation, including private host-mediated fixture edits and independent verification. AI-1E adds manual service control and operator continuity. AI-2 remains pending and will be the first application feature developed through the accepted Jev-directed workflow.
+- The owner’s combined live Jev engineering workflow `580889b8-4d33-4333-9fb2-90d26cc8bb24` reached `complete` with `verified_acceptance`. It recorded 14 successful Jev decisions, six engineering operations, four actual Codex CLI invocations against a synthetic endpoint, one executable test failure, one successful correction, and passing final verification. Estimated Jev cost was USD $0.00027237 and elapsed time was 24.605 seconds.
+- Authenticated Codex model integration, independently enforced isolation for real project work, PR CI, and final AI-1F acceptance remain open. The combined workflow verifies the bounded disposable exercise.
+- The director now favors action, verification and correction among preauthorized choices. The decision-specific confidence policy retains explicit abstention, defect and security floors, and independent approval and acceptance. Live verification remains a gate before AI-2.
+
+## AI-1 acceptance criteria
+
+- [x] AI disabled by default; no provider credentials required for normal operation.
+- [x] Server-only provider boundary with runtime validation and typed outcomes.
+- [x] Deterministic mock provider; tests never call paid services.
+- [ ] Verify authorization and organization scoping before enabling any application caller.
+- [x] Timeouts, rate limits, budget enforcement and safe fallback tested.
+- [x] Minimal audit metadata; no raw sensitive payloads in logs.
+- [x] Existing check, lint, build and integration tests pass locally using repository-defined commands.
+- [ ] GitHub CI passes for the intelligence changes.
+
+## AI-2 acceptance criteria
+
+- [ ] Synthetic CSV headers and approved field names only; no participant records sent.
+- [ ] Test representative exact, ambiguous, unknown and malformed headers; preserve deterministic matching.
+- [ ] Verify useful suggestions and safe abstention; record live smoke-test latency and available usage data.
+- [ ] Suggestions require explicit user confirmation; existing import validation remains authoritative.
+- [ ] Disable provider and verify manual import still works.
+- [ ] Document implementation and verification results, fix defects, merge, and resume charity development.
+
+## Change control
+
+Use this roadmap as the implementation scope; no additional planning phase is required. Record verification evidence before merge. Use a dedicated PR when authorized. Do not change unrelated charity workflows. Roll back by disabling AI first; retain existing deterministic paths. Any new data collection, external disclosure or paid usage requires explicit approval.
+
+## Companion documents
+
+- [Architecture](INTELLIGENCE-ARCHITECTURE.md)
+- [Jev implementation notes (legacy filename)](INTELLIGENCE-PROVIDER-EVALUATION.md)
+
+## Outstanding AI-1F acceptance gates
+
+- Review the combined workflow’s live Jev decisions and disposable engineering evidence, including the isolation preflight, negative scope tests, executable verification, and review artifact handling.
+- Verify a deployment boundary for real project context, authorized edits, source and test subprocesses, and an explicitly approved model connection. Keep arbitrary repository work unavailable until these controls are proven.
+- Confirm operator authorization, execution and spending budgets, cleanup and retention, documentation, and failure and interruption handling. Require GitHub CI on the intelligence PR and explicit approval before publication or merge.
+- Confirm existing tenant, acceptance and charity requirements before AI-2. CE-3D and the previous charity regression, security and closeout gates remain open.

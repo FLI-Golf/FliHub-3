@@ -29,5 +29,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Offline intelligence tests
+        run: node tests/intelligence.test.mjs && node tests/development-guardrail.test.mjs && node tests/orchestration.test.mjs && node tests/unified-development.test.mjs && node tests/engineering-worker.test.mjs
+
       - name: Production build
         run: npm run build
