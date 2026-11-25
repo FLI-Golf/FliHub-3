@@ -47,9 +47,9 @@ CE-3D, or existing security and acceptance requirements.
 | Phase | Scope                                        | Status      |
 | ----- | -------------------------------------------- | ----------- |
 | JAI-1 | Discovery and architecture                   | Complete    |
-| JAI-2 | Offline application intelligence foundation  | In progress |
-| JAI-3 | Authorized live read-only demonstration      | Pending     |
-| JAI-4 | Controlled disposable application operations | Pending     |
+| JAI-2 | Offline application intelligence foundation  | Complete    |
+| JAI-3 | Authorized live read-only demonstration      | Complete    |
+| JAI-4 | Controlled disposable application operations | In progress |
 | JAI-5 | Application intelligence interface           | Pending     |
 | JAI-6 | Persistent application integration           | Pending     |
 | JAI-7 | Multi-step intelligent orchestration         | Pending     |
@@ -228,6 +228,223 @@ Acceptance requirements:
 - Execute only explicitly authorized operations.
 - Independently verify resulting state.
 - Stop safely on unexpected results.
+
+### JAI-4A — Architecture and checkpoint
+
+Status: Complete.
+
+Starting checkpoint: `d29abba`.
+
+JAI-3 closeout verified:
+
+- 342 scoped offline intelligence tests passed.
+- TypeScript verification passed with zero errors and warnings.
+- Lint and production build passed.
+- Live experiment release lock remains disabled.
+- Original private experiment evidence remains protected.
+- No additional paid provider requests were authorized.
+- Broader release acceptance remains outstanding.
+
+Architecture inspection reviewed the existing application
+intelligence contracts, synthetic fixtures, eligibility rules,
+group planning utilities, grouping business rules, and
+associated regression tests.
+
+The existing application capability catalog remains advisory.
+A recommendation is never execution authority.
+
+Jev supplies intelligence. FliHub retains control.
+
+#### First controlled operation
+
+Registered advisory capability:
+
+- `plan_group_assignments`
+
+Separate controlled operation:
+
+- `create_synthetic_group_assignments`
+
+The initial demonstration uses the Spring Invitational
+synthetic fixture with twelve teams, twenty-four athletes,
+and no existing groups.
+
+Each synthetic team has two active roster athletes.
+The proposed operation creates six groups with two teams
+and four athletes per group.
+
+These counts describe the demonstration fixture, not a
+universal production grouping requirement.
+
+The operation must preserve team and roster integrity.
+It must not create athlete identities, split teams,
+replace existing groups, assign scorekeepers, configure
+scoring, modify schedules, or activate an event.
+
+#### Reuse and architectural boundaries
+
+The existing grouping implementation uses two teams per
+group and preserves each team's roster assignments.
+
+Reuse the pure shuffle utility where appropriate, with
+controlled deterministic ordering for reviewed plans.
+
+Preserve applicable existing authorization, organization
+isolation, active roster, workflow lock, and transaction
+principles.
+
+Do not invoke existing PocketBase mutation handlers.
+
+The synthetic advisory context uses `draft` status.
+The persistent grouping handler requires `planned` status.
+These are separate lifecycle contracts and must not be
+silently treated as equivalent production states.
+
+The new operation layer must remain server-side, isolated,
+optional, and inaccessible to ordinary application routes.
+
+No persistent application integration is authorized.
+
+#### Operation lifecycle
+
+1. Obtain a validated advisory recommendation.
+2. Resolve an explicitly registered operation locally.
+3. Validate synthetic state and operation prerequisites.
+4. Resolve the registered synthetic actor and permissions.
+5. Construct a deterministic, bounded execution plan.
+6. Present the exact proposed changes for review.
+7. Obtain explicit approval bound to the plan and revision.
+8. Revalidate authorization, prerequisites, and approval.
+9. Apply changes to isolated candidate state.
+10. Independently verify the candidate state.
+11. Commit the verified candidate atomically.
+12. Record a sanitized operation outcome.
+
+Any failure must preserve the original state.
+
+Provider confidence, readiness scores, recommendation
+identifiers, and caller-supplied permission claims must
+never substitute for local authorization.
+
+#### Security and isolation requirements
+
+- Use disposable in-memory synthetic state only.
+- Use registered synthetic actors and organizations.
+- Require simulated owner or admin authorization.
+- Reject unknown actors, roles, scopes, and operations.
+- Require applicable simulated organization capabilities.
+- Require valid event lifecycle and active roster membership.
+- Reject existing groups and started downstream workflows.
+- Reject cross-organization records and duplicate assignments.
+- Reject arbitrary commands, code, SQL, and filesystem actions.
+- Reject unexpected fields and malformed input.
+- Do not expose mutable registry definitions or internal state.
+- Bind approvals to the exact operation, actor, scope,
+  plan digest, and state revision.
+- Revalidate approval and state immediately before execution.
+- Prevent repeated execution and approval reuse.
+- Prevent partial state changes on execution failure.
+- Prevent state publication on verification failure.
+- Keep audit records bounded and sanitized.
+- Make no external provider requests.
+- Do not access PocketBase or real organization records.
+- Preserve existing live experiment evidence and release locks.
+
+Simulated authorization does not establish production
+authentication, tenant isolation, or distributed replay
+protection. Those requirements remain subject to later
+acceptance gates.
+
+### JAI-4B — Operation registry and contracts
+
+Status: Pending.
+
+- Establish a separate server-side operation namespace.
+- Define operation identifiers and typed contracts.
+- Register the first synthetic group creation operation.
+- Define strict runtime input validation.
+- Define bounded operation outcomes and failure reasons.
+- Preserve existing advisory contracts unchanged.
+- Verify unknown operations and unexpected fields are rejected.
+- Verify returned registry definitions cannot mutate the registry.
+
+### JAI-4C — Synthetic state and deterministic planning
+
+Status: Pending.
+
+- Define isolated synthetic organization and event state.
+- Register synthetic actors, teams, athletes, and rosters.
+- Establish explicit lifecycle and workflow lock rules.
+- Validate organization ownership and active membership.
+- Build deterministic team-preserving group plans.
+- Verify complete roster coverage and unique assignments.
+- Reject existing groups and inconsistent state.
+- Keep planning free of state mutation.
+
+### JAI-4D — Execution plans and approval
+
+Status: Pending.
+
+- Define canonical operation plans and SHA-256 digests.
+- Bind plans to actor, scope, operation, and state revision.
+- Require explicit local operator approval.
+- Reject missing, modified, stale, and reused approvals.
+- Prevent approval of unregistered or ineligible operations.
+- Preserve independent copies of reviewed plans.
+
+### JAI-4E — Controlled execution
+
+Status: Pending.
+
+- Resolve only registered deterministic handlers.
+- Revalidate authorization and prerequisites.
+- Apply approved changes to isolated candidate state.
+- Enforce single-use approval and execution boundaries.
+- Reject concurrent or repeated execution.
+- Preserve original state on every failure.
+- Do not invoke persistent application services.
+
+### JAI-4F — Independent verification and audit
+
+Status: Pending.
+
+- Verify resulting state independently of handler success.
+- Verify six groups and complete fixture roster coverage.
+- Verify all twelve teams remain intact.
+- Verify all twenty-four athletes appear exactly once.
+- Verify unrelated state remains unchanged.
+- Commit only independently verified candidate state.
+- Record bounded sanitized outcomes.
+- Test injected execution and verification failures.
+
+### JAI-4G — Interactive terminal demonstration
+
+Status: Pending.
+
+- Use the existing offline mock intelligence pipeline.
+- Display the recommendation and exact proposed changes.
+- Require explicit operator approval before execution.
+- Display independently verified resulting state.
+- Demonstrate rejection, cancellation, and safe failure.
+- Keep all state disposable and process-local.
+- Make no paid provider requests.
+
+### JAI-4H — Final acceptance and checkpoint
+
+Status: Pending.
+
+- Complete positive and negative operation regression tests.
+- Verify advisory and engineering intelligence regressions.
+- Verify existing group planning regressions.
+- Verify TypeScript, lint, and production build.
+- Verify operation isolation and absence of provider dispatch.
+- Verify existing private experiment evidence protection.
+- Document acceptance evidence and remaining limitations.
+- Commit and synchronize the completed phase.
+
+JAI-4 does not authorize JAI-5 implementation, persistent
+application integration, automated engineering execution,
+additional paid provider requests, merge, or deployment.
 
 ## JAI-5 — Application intelligence interface
 
