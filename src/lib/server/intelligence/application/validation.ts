@@ -3,9 +3,9 @@ import {
 	type ApplicationObjective,
 	type ApplicationDecisionRequest,
 	type ApplicationDecisionOutcome
-} from './contracts';
+} from './contracts.ts';
 
-import { isApplicationCapabilityId, capabilitiesForObjective } from './capabilities';
+import { isApplicationCapabilityId, capabilitiesForObjective } from './capabilities.ts';
 
 /**
  * Provisional application recommendation threshold.

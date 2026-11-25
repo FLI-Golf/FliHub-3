@@ -1,3 +1,12 @@
+import {
+	APPLICATION_BATCH_ID,
+	applicationBatchFrom,
+	applicationAnswersFrom,
+	type ApplicationAnswers
+} from './application/batch.ts';
+import { mockApplicationAssessment } from './application/mock.ts';
+import type { Failure } from './types.ts';
+import { createDispatchResources } from './dispatch.ts';
 import { directorConfidencePolicy } from './director-policy.ts';
 import { randomUUID } from 'node:crypto';
 import {
@@ -8,11 +17,33 @@ import {
 	NANODOLLARS_PER_TOKEN,
 	RESERVED_TOKENS
 } from './providers.ts';
-import { outcomeFrom, record, requestFrom, usageFrom } from './validation.ts';
+import { outcomeFrom, requestFrom, usageFrom } from './validation.ts';
 import type { Audit, Outcome, Provider, Request, Usage } from './types.ts';
 
 type Environment = Readonly<Record<string, string | undefined>>;
-type Options = { fetch?: typeof fetch; audit?: (event: Audit) => void };
+export type ApplicationAssessment =
+	| {
+			status: 'assessed';
+			source: 'mock';
+			answers: ApplicationAnswers;
+	  }
+	| { status: 'disabled' }
+	| { status: 'unavailable'; reason: Failure };
+
+export type ApplicationAudit = {
+	requestId: string;
+	decision: typeof APPLICATION_BATCH_ID;
+	provider: Provider['name'];
+	status: ApplicationAssessment['status'];
+	reason?: Failure;
+	durationMs: number;
+};
+
+type Options = {
+	fetch?: typeof fetch;
+	audit?: (event: Audit) => void;
+	applicationAudit?: (event: ApplicationAudit) => void;
+};
 
 function limit(value: string | undefined, fallback: number, max: number) {
 	if (value === undefined) return fallback;
@@ -37,12 +68,108 @@ export function createIntelligence(env: Environment = {}, options: Options = {})
 		}
 	}
 	const reservation = provider.name === 'jev' ? RESERVED_TOKENS : 0;
-	let committedTokens = 0;
-	let budgetClosed = false;
-	let inFlight = 0;
-	const starts: number[] = [];
+	const resources = createDispatchResources({
+		timeoutMs,
+		requestsPerMinute,
+		concurrency,
+		budget,
+		reservation
+	});
 
 	return {
+		async assessApplication(input: unknown): Promise<ApplicationAssessment> {
+			const started = performance.now();
+
+			const finish = (outcome: ApplicationAssessment) => {
+				try {
+					options.applicationAudit?.({
+						requestId: randomUUID(),
+						decision: APPLICATION_BATCH_ID,
+						provider: provider.name,
+						status: outcome.status,
+						reason: outcome.status === 'unavailable' ? outcome.reason : undefined,
+						durationMs: Math.round(performance.now() - started)
+					});
+				} catch {
+					// Optional telemetry must not break caller fallback.
+				}
+				return outcome;
+			};
+
+			// Live application dispatch remains deliberately disabled.
+			if (provider.name !== 'mock') {
+				return finish({ status: 'disabled' });
+			}
+
+			let snapshot: unknown;
+			let batch: ReturnType<typeof applicationBatchFrom> = null;
+
+			try {
+				if (input && typeof input === 'object') {
+					const descriptors = Object.getOwnPropertyDescriptors(input);
+					const keys = Reflect.ownKeys(descriptors);
+
+					if (
+						keys.length === 2 &&
+						keys.includes('objectiveId') &&
+						keys.includes('fixtureId') &&
+						Object.hasOwn(descriptors.objectiveId, 'value') &&
+						Object.hasOwn(descriptors.fixtureId, 'value') &&
+						(Object.getPrototypeOf(input) === Object.prototype ||
+							Object.getPrototypeOf(input) === null)
+					) {
+						snapshot = {
+							objectiveId: descriptors.objectiveId.value,
+							fixtureId: descriptors.fixtureId.value
+						};
+
+						batch = applicationBatchFrom(snapshot);
+					}
+				}
+			} catch {
+				// Invalid inputs fail closed.
+			}
+
+			if (!batch) {
+				return finish({
+					status: 'unavailable',
+					reason: 'invalid_input'
+				});
+			}
+
+			const registeredBatch = batch;
+
+			const dispatched = await resources.dispatch(started, () =>
+				mockApplicationAssessment(registeredBatch)
+			);
+
+			if (dispatched.status === 'unavailable') {
+				return finish(dispatched);
+			}
+
+			if (dispatched.result?.status === 'unavailable') {
+				return finish({
+					status: 'unavailable',
+					reason: 'provider'
+				});
+			}
+
+			const answers = applicationAnswersFrom(snapshot, dispatched.result?.answers);
+
+			if (!answers) {
+				return finish({
+					status: 'unavailable',
+					reason: 'invalid_output'
+				});
+			}
+
+			return finish({
+				status: 'assessed',
+				source: 'mock',
+				answers
+			});
+		},
+
 		async decide(input: unknown): Promise<Outcome> {
 			const started = performance.now();
 			let request: Request | undefined;
@@ -77,46 +204,16 @@ export function createIntelligence(env: Environment = {}, options: Options = {})
 			if (!request || ('candidates' in request && !directorPolicy)) {
 				return finish({ status: 'unavailable', reason: 'invalid_input' });
 			}
-			if (inFlight >= concurrency) return finish({ status: 'unavailable', reason: 'concurrency' });
-			while (starts.length && started - starts[0] >= 60_000) starts.shift();
-			if (starts.length >= requestsPerMinute)
-				return finish({ status: 'unavailable', reason: 'rate' });
-			if (budgetClosed || committedTokens + reservation > budget)
-				return finish({ status: 'unavailable', reason: 'budget' });
+			const dispatched = await resources.dispatch(started, (signal) =>
+				provider.decide(request, signal)
+			);
 
-			starts.push(started);
-			committedTokens += reservation;
-			inFlight++;
-			const controller = new AbortController();
-			let timer: ReturnType<typeof setTimeout> | undefined;
-			const timedOut = new Promise<null>((resolve) => {
-				timer = setTimeout(() => {
-					resolve(null);
-					controller.abort();
-				}, timeoutMs);
-			});
-			const pending = provider
-				.decide(request, controller.signal)
-				.then(record, (): Record<string, unknown> => ({
-					status: 'unavailable',
-					reason: 'provider'
-				}))
-				.then((result) => {
-					if (
-						reservation &&
-						result?.model === MODEL &&
-						(usageFrom(result.usage)?.inputTokens ?? 0) > reservation
-					) {
-						budgetClosed = true;
-					}
-					return result;
-				})
-				.finally(() => {
-					inFlight--;
-				});
-			const result = await Promise.race([pending, timedOut]);
-			clearTimeout(timer);
-			if (result === null) return finish({ status: 'unavailable', reason: 'timeout' });
+			if (dispatched.status === 'unavailable') {
+				return finish(dispatched);
+			}
+
+			const result = dispatched.result;
+
 			const model = result?.model === MODEL && reservation ? MODEL : undefined;
 			const usage = model ? usageFrom(result?.usage) : undefined;
 			const outcome = outcomeFrom(result, request, directorPolicy);
@@ -129,7 +226,7 @@ export function createIntelligence(env: Environment = {}, options: Options = {})
 			) {
 				if (!usage || !usage.inputTokens)
 					return finish({ status: 'unavailable', reason: 'invalid_output' }, undefined, model);
-				if (outcome.status !== 'unavailable') committedTokens -= reservation - usage.inputTokens;
+				if (outcome.status !== 'unavailable') dispatched.reconcile(usage.inputTokens);
 			}
 			return finish(outcome, usage, model);
 		}

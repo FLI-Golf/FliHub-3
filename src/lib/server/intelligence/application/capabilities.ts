@@ -2,7 +2,7 @@ import type {
 	ApplicationCapability,
 	ApplicationCapabilityId,
 	ApplicationObjective
-} from './contracts';
+} from './contracts.ts';
 
 const objectives = ['prepare_event', 'assess_event_readiness'] as const;
 

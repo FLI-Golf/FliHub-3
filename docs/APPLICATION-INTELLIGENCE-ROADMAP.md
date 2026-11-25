@@ -543,3 +543,58 @@ Status: Complete — offline primitive acceptance passed.
 The local rubric length restriction and score rounding tolerance
 remain provisional implementation choices. Primitive validation
 does not establish application readiness or operation authorization.
+
+### JAI-2D implementation checkpoint
+
+Status: Complete — offline technical acceptance passed.
+
+Implemented:
+
+- Registered five-question application assessment batches.
+- Independent Choice, Score and Noul answer validation.
+- Shared process-local dispatch resource controller.
+- Single-use budget reservation reconciliation.
+- Reported usage snapshots protected from subsequent result mutation.
+- Synthetic application request snapshots.
+- Deterministic mock application assessment provider.
+- Separate sanitized application audit metadata.
+- Native Node.js-compatible TypeScript module imports.
+- Shared engineering and application rate and concurrency limits.
+
+Verification evidence:
+
+| Verification                                   | Passing tests |
+| ---------------------------------------------- | ------------: |
+| Application contracts and eligibility          |            37 |
+| Intelligence primitives                        |            27 |
+| Registered application batches                 |            22 |
+| Existing intelligence regression               |            11 |
+| Dispatch resource security                     |            11 |
+| Application service and cross-path integration |            17 |
+| Total                                          |           125 |
+
+Additional verification:
+
+- TypeScript and Svelte diagnostics: zero errors and warnings.
+- Prettier and ESLint: passed.
+- Production build: passed.
+- Git diff whitespace verification: passed.
+- Existing intelligence-foundation stash preserved.
+
+Boundaries and outstanding requirements:
+
+- Application assessments remain mock-only.
+- Live application dispatch is disabled even when Jev is configured.
+- Mock confidence and readiness values are synthetic, not measured AI
+  confidence or official event completion.
+- Cross-path resource sharing is verified in mock mode.
+- Live multi-question provider compatibility and application token
+  accounting remain unverified.
+- Process-local resource controls are not distributed account limits
+  or authorization boundaries.
+- No paid application requests, Codex execution, application operations,
+  persistent application data changes or deployment were performed.
+- AI-1F authenticated engineering acceptance remains independently gated.
+- AI-2 and CE-3D remain deferred.
+
+Next: JAI-2E — application intelligence director and recommendation policy.

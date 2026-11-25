@@ -1,4 +1,4 @@
-import type { SyntheticEventContext } from './context';
+import type { SyntheticEventContext } from './context.ts';
 
 const base: SyntheticEventContext = {
 	source: 'synthetic',

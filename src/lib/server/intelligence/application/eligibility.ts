@@ -1,8 +1,8 @@
-import type { ApplicationCapabilityId, ApplicationDecisionRequest } from './contracts';
+import type { ApplicationCapabilityId, ApplicationDecisionRequest } from './contracts.ts';
 
-import { applicationRequestFrom, isApplicationObjective } from './validation';
+import { applicationRequestFrom, isApplicationObjective } from './validation.ts';
 
-import { syntheticEventContextFrom } from './context';
+import { syntheticEventContextFrom } from './context.ts';
 
 /**
  * Advisory eligibility for the synthetic demonstration.
