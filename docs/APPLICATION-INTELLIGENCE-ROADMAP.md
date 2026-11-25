@@ -598,3 +598,93 @@ Boundaries and outstanding requirements:
 - AI-2 and CE-3D remain deferred.
 
 Next: JAI-2E — application intelligence director and recommendation policy.
+
+## JAI-2E implementation checkpoint
+
+Status: Complete — offline synthetic advisory director.
+
+### Completed implementation
+
+- JAI-2E.1: Application director contracts and deterministic decision policy.
+- JAI-2E.2: Confidence thresholds, clarification handling, conflicting judgments,
+  and essential prerequisite priority.
+- JAI-2E.3: Structured advisory plans with local facts, eligible recommendations,
+  alternatives, and qualitative readiness assessments.
+- JAI-2E.4: Deterministic human-readable explanation templates.
+- JAI-2E.5: Unified application advisory service integration.
+- JAI-2E.6: Local acceptance and documentation checkpoint.
+
+### Unified advisory service
+
+The shared intelligence service exposes `adviseApplication(input)`.
+
+A successful response contains:
+
+- Validated primitive assessment answers.
+- A structured application advisory plan.
+- A deterministic human-readable explanation.
+- Explicit mock-provider provenance.
+
+The existing `assessApplication()` and engineering intelligence interfaces
+remain available.
+
+Each advisory request uses one assessment dispatch. Local planning and
+explanation generation require no additional provider requests.
+
+### Decision policy
+
+- Application recommendations remain restricted to registered capabilities
+  and locally eligible context.
+- Missing required context produces clarification.
+- Known missing date or venue prerequisites take priority over other
+  preparation recommendations.
+- Objective and recommendation confidence thresholds are provisionally 0.8.
+- Clarification probability at or above 0.8 withholds preparation advice.
+- Qualitative readiness scores cannot establish official readiness,
+  authorize operations, or replace deterministic application rules.
+- Abstention and clarification suppress unrelated preparation advice.
+- All recommendations remain advisory only.
+
+### Local acceptance evidence
+
+- 209 intelligence regression tests passed.
+- All twelve registered objective and fixture combinations supported.
+- Unified assessment, plan, and explanation consistency verified.
+- In-flight request mutation resistance verified.
+- Shared rate and concurrency enforcement verified.
+- Disabled and unavailable outcomes preserved.
+- Sanitized assessment audit metadata verified.
+- Mock-only application dispatch verified.
+- Unified service smoke test reported zero external network calls.
+- TypeScript checks passed.
+- Prettier and ESLint passed.
+- Production compilation passed.
+- Existing engineering intelligence behavior preserved by regression tests.
+
+### Limitations and outstanding gates
+
+- Live Jev application dispatch remains disabled.
+- The live multi-question API contract remains unverified.
+- Confidence thresholds are provisional and not empirically calibrated.
+- Synthetic readiness judgments are not production readiness measurements.
+- Resource controls remain process-local.
+- Assessment auditing does not independently record final advisory
+  presentation outcomes.
+- Plans and explanations perform separate deterministic validation passes.
+- No authenticated application context, organization data, or operational
+  execution is introduced.
+- No paid provider requests, Codex invocations, database mutations,
+  deployment, or production capability activation occurred in this increment.
+- GitHub CI and final release acceptance remain outstanding.
+- Existing engineering security qualification gates remain unchanged.
+- AI-2 and charity CE-3D remain deferred.
+
+### Next implementation phase
+
+JAI-2F: Interactive offline application intelligence terminal.
+
+Introduce a separate `npm run jev:app` console using the unified advisory
+service, registered synthetic objectives, and registered fixtures.
+
+The terminal must remain isolated from application operations, engineering
+execution, live provider dispatch, and persistent application data.

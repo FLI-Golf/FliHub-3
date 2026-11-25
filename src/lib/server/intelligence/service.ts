@@ -5,6 +5,11 @@ import {
 	type ApplicationAnswers
 } from './application/batch.ts';
 import { mockApplicationAssessment } from './application/mock.ts';
+import { applicationAdvisoryPlanFrom, type ApplicationAdvisoryPlan } from './application/plan.ts';
+import {
+	applicationExplanationFrom,
+	type ApplicationExplanation
+} from './application/explanation.ts';
 import type { Failure } from './types.ts';
 import { createDispatchResources } from './dispatch.ts';
 import { directorConfidencePolicy } from './director-policy.ts';
@@ -30,6 +35,16 @@ export type ApplicationAssessment =
 	| { status: 'disabled' }
 	| { status: 'unavailable'; reason: Failure };
 
+export type ApplicationAdvice =
+	| {
+			status: 'advised';
+			source: 'mock';
+			answers: ApplicationAnswers;
+			plan: ApplicationAdvisoryPlan;
+			explanation: ApplicationExplanation;
+	  }
+	| Exclude<ApplicationAssessment, { status: 'assessed' }>;
+
 export type ApplicationAudit = {
 	requestId: string;
 	decision: typeof APPLICATION_BATCH_ID;
@@ -50,6 +65,37 @@ function limit(value: string | undefined, fallback: number, max: number) {
 	if (!/^[1-9][0-9]*$/.test(value)) return 0;
 	const number = Number(value);
 	return number <= max ? number : 0;
+}
+
+function snapshotApplicationRequest(input: unknown) {
+	try {
+		if (typeof input !== 'object' || input === null || Array.isArray(input)) return null;
+
+		const prototype = Object.getPrototypeOf(input);
+
+		if (prototype !== Object.prototype && prototype !== null) return null;
+
+		const descriptors = Object.getOwnPropertyDescriptors(input);
+		const keys = Reflect.ownKeys(descriptors);
+
+		if (
+			keys.length !== 2 ||
+			!keys.includes('objectiveId') ||
+			!keys.includes('fixtureId') ||
+			!Object.hasOwn(descriptors.objectiveId, 'value') ||
+			!Object.hasOwn(descriptors.fixtureId, 'value')
+		)
+			return null;
+
+		const objectiveId = descriptors.objectiveId.value;
+		const fixtureId = descriptors.fixtureId.value;
+
+		if (typeof objectiveId !== 'string' || typeof fixtureId !== 'string') return null;
+
+		return { objectiveId, fixtureId };
+	} catch {
+		return null;
+	}
 }
 
 // Keep one instance for the lifetime of the calling process.
@@ -76,98 +122,115 @@ export function createIntelligence(env: Environment = {}, options: Options = {})
 		reservation
 	});
 
-	return {
-		async assessApplication(input: unknown): Promise<ApplicationAssessment> {
-			const started = performance.now();
+	async function assessApplication(input: unknown): Promise<ApplicationAssessment> {
+		const started = performance.now();
 
-			const finish = (outcome: ApplicationAssessment) => {
-				try {
-					options.applicationAudit?.({
-						requestId: randomUUID(),
-						decision: APPLICATION_BATCH_ID,
-						provider: provider.name,
-						status: outcome.status,
-						reason: outcome.status === 'unavailable' ? outcome.reason : undefined,
-						durationMs: Math.round(performance.now() - started)
-					});
-				} catch {
-					// Optional telemetry must not break caller fallback.
-				}
-				return outcome;
-			};
-
-			// Live application dispatch remains deliberately disabled.
-			if (provider.name !== 'mock') {
-				return finish({ status: 'disabled' });
-			}
-
-			let snapshot: unknown;
-			let batch: ReturnType<typeof applicationBatchFrom> = null;
-
+		const finish = (outcome: ApplicationAssessment) => {
 			try {
-				if (input && typeof input === 'object') {
-					const descriptors = Object.getOwnPropertyDescriptors(input);
-					const keys = Reflect.ownKeys(descriptors);
-
-					if (
-						keys.length === 2 &&
-						keys.includes('objectiveId') &&
-						keys.includes('fixtureId') &&
-						Object.hasOwn(descriptors.objectiveId, 'value') &&
-						Object.hasOwn(descriptors.fixtureId, 'value') &&
-						(Object.getPrototypeOf(input) === Object.prototype ||
-							Object.getPrototypeOf(input) === null)
-					) {
-						snapshot = {
-							objectiveId: descriptors.objectiveId.value,
-							fixtureId: descriptors.fixtureId.value
-						};
-
-						batch = applicationBatchFrom(snapshot);
-					}
-				}
+				options.applicationAudit?.({
+					requestId: randomUUID(),
+					decision: APPLICATION_BATCH_ID,
+					provider: provider.name,
+					status: outcome.status,
+					reason: outcome.status === 'unavailable' ? outcome.reason : undefined,
+					durationMs: Math.round(performance.now() - started)
+				});
 			} catch {
-				// Invalid inputs fail closed.
+				// Optional telemetry must not break caller fallback.
 			}
+			return outcome;
+		};
 
-			if (!batch) {
-				return finish({
-					status: 'unavailable',
-					reason: 'invalid_input'
-				});
-			}
+		// Live application dispatch remains deliberately disabled.
+		if (provider.name !== 'mock') {
+			return finish({ status: 'disabled' });
+		}
 
-			const registeredBatch = batch;
+		const snapshot = snapshotApplicationRequest(input);
+		const batch = snapshot ? applicationBatchFrom(snapshot) : null;
 
-			const dispatched = await resources.dispatch(started, () =>
-				mockApplicationAssessment(registeredBatch)
-			);
-
-			if (dispatched.status === 'unavailable') {
-				return finish(dispatched);
-			}
-
-			if (dispatched.result?.status === 'unavailable') {
-				return finish({
-					status: 'unavailable',
-					reason: 'provider'
-				});
-			}
-
-			const answers = applicationAnswersFrom(snapshot, dispatched.result?.answers);
-
-			if (!answers) {
-				return finish({
-					status: 'unavailable',
-					reason: 'invalid_output'
-				});
-			}
-
+		if (!batch) {
 			return finish({
-				status: 'assessed',
-				source: 'mock',
-				answers
+				status: 'unavailable',
+				reason: 'invalid_input'
 			});
+		}
+
+		const registeredBatch = batch;
+
+		const dispatched = await resources.dispatch(started, () =>
+			mockApplicationAssessment(registeredBatch)
+		);
+
+		if (dispatched.status === 'unavailable') {
+			return finish(dispatched);
+		}
+
+		if (dispatched.result?.status === 'unavailable') {
+			return finish({
+				status: 'unavailable',
+				reason: 'provider'
+			});
+		}
+
+		const answers = applicationAnswersFrom(snapshot, dispatched.result?.answers);
+
+		if (!answers) {
+			return finish({
+				status: 'unavailable',
+				reason: 'invalid_output'
+			});
+		}
+
+		return finish({
+			status: 'assessed',
+			source: 'mock',
+			answers
+		});
+	}
+
+	return {
+		assessApplication,
+
+		async adviseApplication(input: unknown): Promise<ApplicationAdvice> {
+			// Preserve the existing disabled-provider behavior.
+			if (provider.name !== 'mock') {
+				const result = await assessApplication(null);
+
+				return result.status === 'assessed'
+					? { status: 'unavailable', reason: 'invalid_output' }
+					: result;
+			}
+
+			// Capture the original input before any asynchronous work.
+			const snapshot = snapshotApplicationRequest(input);
+
+			// Exactly one assessment dispatch, using shared controls.
+			const assessment = await assessApplication(snapshot);
+
+			if (assessment.status !== 'assessed') {
+				return assessment;
+			}
+
+			if (!snapshot) {
+				return { status: 'unavailable', reason: 'invalid_input' };
+			}
+
+			const plan = applicationAdvisoryPlanFrom(snapshot, assessment.answers);
+
+			const explanation = applicationExplanationFrom(snapshot, assessment.answers);
+
+			if (!plan || !explanation) {
+				return { status: 'unavailable', reason: 'invalid_output' };
+			}
+
+			return {
+				status: 'advised',
+				source: assessment.source,
+				answers: assessment.answers,
+				plan,
+				explanation
+			};
 		},
 
 		async decide(input: unknown): Promise<Outcome> {

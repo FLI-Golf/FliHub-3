@@ -27,6 +27,12 @@ export function eligibleSyntheticRecommendations(value: unknown): ApplicationCap
 		return ['request_clarification'];
 	}
 
+	// Known missing essential prerequisites take priority.
+	// Unknown information is handled by clarification above.
+	if (!dateAssigned || !venueAssigned) {
+		return ['review_event_prerequisites'];
+	}
+
 	const candidates: ApplicationCapabilityId[] = ['review_event_prerequisites'];
 
 	if (participantCount === 0) {

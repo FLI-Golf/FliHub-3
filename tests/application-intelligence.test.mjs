@@ -425,15 +425,12 @@ test('prepared context still requires prerequisite review', () => {
 	]);
 });
 
-test('missing venue or date excludes group planning', () => {
+test('missing venue or date restricts recommendations to prerequisite review', () => {
 	for (const context of [
 		getSyntheticFixture('venue_missing'),
 		{ ...springContext, dateAssigned: false }
 	]) {
-		assert.deepEqual(eligibleSyntheticRecommendations(context), [
-			'review_event_prerequisites',
-			'review_scoring_requirements'
-		]);
+		assert.deepEqual(eligibleSyntheticRecommendations(context), ['review_event_prerequisites']);
 	}
 });
 
