@@ -204,6 +204,11 @@ export async function start(directory = runtime, definitions = services, readine
 		const log = openSync(logPath, 'a', 0o600);
 		const env = { ...process.env };
 		delete env.TYPESAFE_API_KEY;
+
+		// Connect the managed development client to local PocketBase.
+		if (service.name === 'vite') {
+			env.POCKETBASE_URL = loopback + '8090';
+		}
 		let spawnFailed = false;
 		let child;
 		try {

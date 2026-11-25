@@ -185,6 +185,104 @@ The application renders approved components.
 Do not execute provider-generated Svelte, HTML,
 JavaScript, or arbitrary interface instructions.
 
+## DP-09 — Lucide icons and visual semantics
+
+Use the existing lucide-svelte library throughout FliHub.
+
+Conventions:
+
+- Prefer recognizable icons alongside descriptive labels.
+- Use consistent icons for equivalent application concepts.
+- Use approximately 16px icons in compact controls.
+- Use approximately 18–24px icons in prominent headings.
+- Use rotating chevrons for disclosure controls.
+- Use lightbulbs for recommendations.
+- Use eye icons for historical retrieval and inspection.
+- Use shields and locks for security restrictions.
+- Use amber for attention and recommended next actions.
+- Reserve green completion indicators for verified success.
+- Reserve destructive styling for errors and destructive actions.
+- Hide decorative icons from assistive technology.
+- Provide accessible names for icon-only controls.
+- Never communicate important status through icons or color alone.
+
+Do not introduce additional icon libraries without justification.
+
+## DP-10 — Independent workspace navigation
+
+Use clearly separated workspace sections when a feature
+contains multiple related interaction modes.
+
+Conventions:
+
+- Combine recognizable navigation icons with text labels.
+- Clearly distinguish the selected section.
+- Display only the selected workspace content.
+- Preserve compatible form values when switching sections.
+- Keep frequently used actions visible.
+- Preserve keyboard accessibility and focus behavior.
+- Avoid unnecessary requests when switching sections.
+
+The development intelligence playground provides an initial
+example using Assessment, History, Capabilities and Usage.
+
+## DP-11 — Structured context and qualitative readiness
+
+Present structured application facts using readable labels,
+icons, compact rows and appropriate attention indicators.
+
+Conventions:
+
+- Prefer structured facts over dense summary paragraphs.
+- Use zebra rows where they improve scanning.
+- Distinguish unknown information from zero values.
+- Distinguish recorded values from verified readiness.
+- Highlight missing requirements using amber.
+- Explain the limitations of qualitative assessments.
+- Do not represent qualitative scores as official completion.
+- Withhold readiness judgments when required information
+  is insufficient.
+- Keep recommendations separate from authorization.
+
+## DP-12 — Historical retrieval without re-execution
+
+Historical views must retrieve recorded results rather than
+silently repeat the original operation or intelligence request.
+
+Conventions:
+
+- Display original timestamps and relevant context.
+- Preserve original results and recommendations.
+- Clearly identify historical views.
+- Keep retrieval actions visible when records are collapsed.
+- Provide a return path to the latest result.
+- Use bounded retention appropriate to the feature.
+- Distinguish historical views from new submissions.
+- Clearly disclose temporary or persistent storage behavior.
+
+Persistent history requires appropriate authorization,
+privacy, retention and audit controls.
+
+## DP-13 — Transparent resource and usage reporting
+
+Present resource consumption and operational restrictions
+using clearly labeled statistics and structured rows.
+
+Conventions:
+
+- Distinguish submissions from successful responses.
+- Distinguish historical retrieval from new execution.
+- Report unavailable and disabled outcomes separately.
+- Identify configured rate and concurrency limits.
+- Disclose the scope and lifetime of displayed counters.
+- Distinguish local statistics from provider billing records.
+- Identify synthetic data and offline provider configuration.
+- Never imply that displayed restrictions independently
+  establish security acceptance.
+
+The initial development intelligence playground demonstrates
+these conventions without live provider billing integration.
+
 ## Verification
 
 Future design changes should verify:

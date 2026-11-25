@@ -136,3 +136,83 @@ test('managed services recognize existing workers, recover partial starts and pr
 	assert.equal((await status(root, [good])).services[0].ready, false);
 	assert.equal(readFileSync(sentinel, 'utf8'), 'retain');
 });
+
+for (const inheritedUrl of [undefined, 'https://unrelated.invalid']) {
+	test(`managed Vite receives local PocketBase configuration (${inheritedUrl ? 'conflicting' : 'missing'} inherited URL)`, async () => {
+		const root = dir();
+		const reserved = await reservePort();
+		const port = reserved.address().port;
+		await new Promise((resolve) => reserved.close(resolve));
+
+		const script = join(root, 'service.mjs');
+
+		writeFileSync(
+			script,
+			`import { createServer } from 'node:http';
+				createServer((_request, response) => {
+					response.end(JSON.stringify({
+						localPocketBase:
+							process.env.POCKETBASE_URL === 'http://127.0.0.1:8090',
+						providerKeyPresent:
+							Boolean(process.env.TYPESAFE_API_KEY)
+					}));
+				}).listen(${port}, '127.0.0.1');`
+		);
+
+		const service = {
+			name: 'vite',
+			ports: [port],
+			url: 'http://127.0.0.1:' + port,
+			path: '/',
+			valid: (body) => {
+				const result = JSON.parse(body);
+				return result.localPocketBase === true && result.providerKeyPresent === false;
+			},
+			command: process.execPath,
+			args: [script]
+		};
+
+		const originalUrl = process.env.POCKETBASE_URL;
+		const originalKey = process.env.TYPESAFE_API_KEY;
+
+		try {
+			if (inheritedUrl === undefined) {
+				delete process.env.POCKETBASE_URL;
+			} else {
+				process.env.POCKETBASE_URL = inheritedUrl;
+			}
+
+			process.env.TYPESAFE_API_KEY = 'synthetic-regression-key';
+
+			await start(root, [service], 5000);
+
+			const response = await fetch(service.url);
+
+			assert.deepEqual(await response.json(), {
+				localPocketBase: true,
+				providerKeyPresent: false
+			});
+
+			const current = (await status(root, [service])).services[0];
+
+			assert.equal(current.ready, true);
+			assert.equal(current.owned, true);
+		} finally {
+			if (originalUrl === undefined) {
+				delete process.env.POCKETBASE_URL;
+			} else {
+				process.env.POCKETBASE_URL = originalUrl;
+			}
+
+			if (originalKey === undefined) {
+				delete process.env.TYPESAFE_API_KEY;
+			} else {
+				process.env.TYPESAFE_API_KEY = originalKey;
+			}
+
+			await stop(root, [service]);
+		}
+
+		assert.equal((await status(root, [service])).services[0].ready, false);
+	});
+}

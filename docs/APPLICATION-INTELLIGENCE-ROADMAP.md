@@ -145,6 +145,27 @@ The initial terminal must operate offline by default.
 - Complete check, lint, build, and relevant tests.
 - Review and document the complete Git diff.
 
+### JAI-2H — Offline development intelligence playground
+
+Introduce an authenticated development-only SvelteKit
+playground for the existing synthetic advisory service.
+
+- Provide Assessment, History, Capabilities and Usage sections.
+- Reuse registered objectives and synthetic scenarios.
+- Display structured context and bounded recommendations.
+- Distinguish qualitative readiness from official completion.
+- Display clarification when required information is unknown.
+- Retain bounded page-memory history.
+- Retrieve historical results without additional dispatch.
+- Report browser-session counters and configured server limits.
+- Follow FLIHUB-DESIGN-PATTERNS.md.
+- Block live provider access and application execution.
+- Verify development and authentication access restrictions.
+- Complete consolidated offline acceptance before JAI-3.
+
+This playground does not activate the production intelligence
+interface described in JAI-5.
+
 ## Initial proof of concept
 
 Scenario: prepare an upcoming synthetic tournament.
@@ -779,3 +800,172 @@ JAI-2F implementation and local terminal acceptance are complete.
 
 Next: JAI-2G consolidated offline application intelligence acceptance.
 JAI-3 live synthetic assessment remains subject to explicit authorization.
+
+## JAI-2H implementation checkpoint
+
+Date: 2026-11-25
+
+Status: Implemented — browser functional walkthrough passed.
+Server security and consolidated regression acceptance pending.
+
+### Delivered interface
+
+- Development route: /development/intelligence.
+- Four independent workspace sections.
+- Two registered synthetic objectives.
+- Six registered synthetic event scenarios.
+- Five registered advisory capabilities.
+- Unified offline advisory service integration.
+- Lucide icons, zebra rows and amber guidance.
+- Structured event facts and qualitative readiness.
+- Clarification and advisory-only notices.
+- Expandable capability and history records.
+- Always-visible historical retrieval controls.
+- Page-memory history limited to 50 records.
+- Session usage dashboard and configured resource limits.
+
+### Browser verification evidence
+
+- Spring Invitational displayed 24 participants and zero groups.
+- Group assignment recommendation and 2.00 / 4 readiness displayed.
+- Venue Missing produced a prerequisite review recommendation.
+- Information Missing distinguished unknown participants from zero.
+- Clarification withheld the qualitative readiness score.
+- Workspace navigation preserved assessment results.
+- Repeated assessments retained independent history records.
+- Historical retrieval preserved original results and timestamps.
+- Final browser counters showed one assessment submission,
+  one advisory response and three historical views.
+- Historical retrieval did not increase assessment submissions.
+- Final history capacity displayed 1 / 50.
+- Offline paid provider cost displayed $0.00.
+
+### Configured boundaries
+
+- Development-only route access.
+- Authentication required by server handlers.
+- Explicit mock provider configuration.
+- External provider fetch blocked.
+- Registered objective and scenario validation.
+- Ten requests per minute and one concurrent request.
+- No application operation handlers.
+- No persistent history storage.
+- No real organization context supplied to the advisory service.
+
+Browser statistics are page-local. Configured server limits
+are process-local. Neither establishes distributed resource
+controls or provider billing acceptance.
+
+### Outstanding acceptance
+
+- Verify development and production route access.
+- Verify unauthenticated action rejection.
+- Verify malformed and unexpected form rejection.
+- Verify ordinary and enhanced form submission behavior.
+- Verify response cache policy.
+- Verify cross-origin request protection.
+- Verify offline configuration isolation.
+- Complete consolidated JAI-2G regression acceptance.
+- Review the complete source diff.
+- Commit and push the verified development checkpoint.
+
+Live provider compatibility, GitHub CI, production integration
+and existing engineering and charity gates remain outstanding.
+
+No live provider request, Codex invocation, merge or deployment
+is authorized by this checkpoint.
+
+### JAI-2G / JAI-2H — Consolidated offline acceptance
+
+**Status:** Offline implementation and scoped local acceptance passed.
+GitHub CI, PR acceptance and merge remain outstanding.
+
+#### Completed capabilities
+
+- Registered application objectives and recommendation capabilities.
+- Structured synthetic event context and deterministic eligibility.
+- Typed Choice, Score and Noul response validation.
+- Registered multi-question assessment batches.
+- Shared dispatch resource controls.
+- Application intelligence director and advisory plans.
+- Deterministic explanations and manual fallback behavior.
+- Interactive application intelligence terminal.
+- Development-only browser intelligence playground.
+- Assessment, History, Capabilities and Usage workspaces.
+- Bounded browser-session history and replay without reassessment.
+- Shared FliHub design patterns and semantic iconography.
+
+#### Security and infrastructure verification
+
+- Playground requires freshly verified PocketBase authentication.
+- Missing and mismatched assessment origins are rejected.
+- Playground responses receive a no-store cache policy.
+- Production-mode assessment requests are rejected.
+- Managed Vite startup explicitly receives the local PocketBase URL.
+- Managed service startup excludes the inherited TypeSafe API key.
+- Managed shutdown preserves existing application data.
+- Missing and conflicting inherited PocketBase configuration are
+  covered by permanent service launcher regression tests.
+
+#### Acceptance evidence
+
+- Consolidated intelligence regression suite passed.
+- Application terminal regression suite passed.
+- Unified development regression suite passed.
+- TypeScript and Svelte verification passed.
+- Full repository lint passed.
+- Production build passed.
+- Git diff integrity verification passed.
+- Authenticated browser assessment returned HTTP 200 with JSON
+  content and no-store caching.
+- Spring Invitational returned the expected group assignment
+  recommendation and qualitative readiness of 2.00 / 4.
+- Unauthenticated development page and ordinary form requests
+  redirected to login.
+- Unauthenticated development JSON assessment returned HTTP 401.
+- Unauthenticated production preview page redirected to login.
+- Production preview JSON assessment returned HTTP 404.
+- Observed playground HTTP responses included no-store caching.
+- No paid Jev requests were made during JAI-2 implementation
+  and acceptance.
+
+#### Remaining limitations and deferred verification
+
+- Live Jev Choice, Score, Noul and multi-question wire contracts
+  require independent confirmation before live dispatch.
+- Authenticated production rejection has handler-level coverage
+  but has not been verified through an authenticated HTTP session.
+- Cross-origin rejection has handler-level coverage but has not
+  been independently verified through authenticated HTTP requests.
+- Concurrent real HTTP authentication isolation remains unverified.
+- An EventEmitter listener warning was observed in browser tooling
+  but was not reproduced in the inspected Vite logs.
+- The playground remains present in the route source and is
+  protected by development-mode and authentication restrictions.
+- Managed service readiness does not independently establish
+  complete application backend connectivity.
+- Existing ordinary application retained-session behavior during
+  PocketBase outages remains unchanged. Broader authentication
+  review is separate from the playground acceptance.
+- Process-local resource controls are not distributed or
+  account-wide billing controls.
+- GitHub CI, PR review, merge and deployment acceptance remain open.
+
+#### Next phase
+
+JAI-3 — Controlled live Jev application intelligence verification.
+
+Before live dispatch:
+
+1. Confirm current official provider API contracts.
+2. Confirm supported model and multi-question request structure.
+3. Validate response schemas and usage accounting.
+4. Establish a bounded synthetic request and maximum cost.
+5. Obtain explicit authorization for the individual paid request.
+6. Validate and document the result without executing operations.
+
+Application mutations, real organization data, unrestricted
+engineering execution, authenticated Codex dispatch, AI-2 CSV
+mapping and CE-3D remain outside this acceptance checkpoint.
+
+No merge or deployment is authorized by this checkpoint.
