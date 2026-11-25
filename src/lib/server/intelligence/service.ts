@@ -12,6 +12,7 @@ import {
 } from './application/explanation.ts';
 import type { Failure } from './types.ts';
 import { createDispatchResources } from './dispatch.ts';
+import { providerUsageFrom, estimatedUsageCostNanodollars } from './usage-accounting.ts';
 import { directorConfidencePolicy } from './director-policy.ts';
 import { randomUUID } from 'node:crypto';
 import {
@@ -19,10 +20,9 @@ import {
 	jevProvider,
 	mockProvider,
 	MODEL,
-	NANODOLLARS_PER_TOKEN,
 	RESERVED_TOKENS
 } from './providers.ts';
-import { outcomeFrom, requestFrom, usageFrom } from './validation.ts';
+import { outcomeFrom, requestFrom } from './validation.ts';
 import type { Audit, Outcome, Provider, Request, Usage } from './types.ts';
 
 type Environment = Readonly<Record<string, string | undefined>>;
@@ -252,10 +252,7 @@ export function createIntelligence(env: Environment = {}, options: Options = {})
 						reason: outcome.status === 'unavailable' ? outcome.reason : undefined,
 						durationMs: Math.round(performance.now() - started),
 						usage,
-						estimatedCostNanodollars:
-							usage && usage.inputTokens <= RESERVED_TOKENS
-								? usage.inputTokens * NANODOLLARS_PER_TOKEN
-								: undefined
+						estimatedCostNanodollars: estimatedUsageCostNanodollars(usage)
 					});
 				} catch {
 					// Optional telemetry must not break caller fallback.
@@ -277,8 +274,7 @@ export function createIntelligence(env: Environment = {}, options: Options = {})
 
 			const result = dispatched.result;
 
-			const model = result?.model === MODEL && reservation ? MODEL : undefined;
-			const usage = model ? usageFrom(result?.usage) : undefined;
+			const { model, usage } = providerUsageFrom(result, reservation);
 			const outcome = outcomeFrom(result, request, directorPolicy);
 			if (reservation && usage && usage.inputTokens > reservation) {
 				return finish({ status: 'unavailable', reason: 'budget' }, usage, model);
