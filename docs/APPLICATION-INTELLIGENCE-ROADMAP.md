@@ -688,3 +688,94 @@ service, registered synthetic objectives, and registered fixtures.
 
 The terminal must remain isolated from application operations, engineering
 execution, live provider dispatch, and persistent application data.
+
+### JAI-2F completion checkpoint
+
+Completed November 25, 2026.
+
+The application intelligence terminal is implemented as a separate
+development interface, launched using `npm run jev:app`.
+
+#### Delivered capabilities
+
+- Interactive terminal with seven registered menu actions.
+- Event preparation and readiness assessment objectives.
+- Six registered synthetic event scenarios.
+- Read-only capability and scenario inspection.
+- Unified application advisory service integration.
+- Structured event context, recommendations, reasoning, alternatives
+  and qualitative readiness presentation.
+- Explicit clarification when required information is missing.
+- Amber attention indicators and explicit advisory-only notices.
+- In-memory session history with replay without additional dispatch.
+- Resource reporting with independent lifetime session counters.
+- Bounded retention of the latest 50 responses.
+
+#### Security boundaries
+
+- Offline mock provider explicitly selected.
+- Live provider configuration overrides ignored.
+- Injected external provider fetch function blocks requests.
+- Blocked provider fetch attempts reported.
+- Rate limit of 10 requests per minute.
+- Concurrency limit of one.
+- Interactive terminal required.
+- Invalid selections and cancelled scenarios do not dispatch.
+- No persistent session storage.
+- No application operation execution.
+- No Codex worker invocation.
+- No paid application provider requests.
+- No real organization or participant data supplied.
+
+#### Verification evidence
+
+Local acceptance completed successfully:
+
+- Nine automated pseudo-terminal regression tests passed.
+- All 209 existing intelligence regression tests passed.
+- Combined total: 218 passing tests, zero failures.
+- Svelte diagnostics: zero errors and zero warnings.
+- Prettier and ESLint passed.
+- Server and client builds passed.
+- Git diff validation passed.
+
+The terminal regression suite verifies provider configuration isolation,
+invalid selections, cancellation, capability browsing, advisory
+responses, clarification, history replay, rate limiting, bounded
+history, session counters, interruption and session isolation.
+
+The rate-limit and retention exercise submits 52 offline assessment
+attempts, retains the latest 50 responses and preserves lifetime
+session counters.
+
+#### Repeatable verification
+
+```bash
+python3 tests/application-intelligence-terminal.py
+node --test tests/*intelligence*.test.mjs
+npm run check
+npm run lint
+npm run build
+git diff --check
+```
+
+#### Limitations and outstanding gates
+
+- The terminal regression harness uses Linux-compatible Python
+  pseudo-terminal support.
+- The rapid rate-limit test assumes completion within one minute.
+- Resource controls are process-local.
+- The blocked-fetch counter is not a system-wide network monitor.
+- Existing SvelteKit alias deprecation and adapter-auto notices remain.
+- Live application provider contracts and usage accounting require
+  verification before any paid assessment.
+- GitHub CI, full legacy browser regression and production acceptance
+  are not established by this checkpoint.
+- Authenticated engineering worker execution remains separately gated.
+- AI-2 CSV mapping and charity CE-3D remain deferred.
+- No merge or deployment is authorized by this checkpoint.
+
+JAI-2F implementation and local terminal acceptance are complete.
+
+Next: JAI-2G consolidated offline application intelligence acceptance.
+JAI-3 live synthetic assessment remains subject to explicit authorization.

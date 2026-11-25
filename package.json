@@ -29,7 +29,8 @@
 		"dev:all": "node tools/development/services.mjs start",
 		"dev:status": "node tools/development/services.mjs status",
 		"dev:stop": "node tools/development/services.mjs stop",
-		"jev:develop": "node tools/development/console.mjs"
+		"jev:develop": "node tools/development/console.mjs",
+		"jev:app": "node tools/application/console.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
