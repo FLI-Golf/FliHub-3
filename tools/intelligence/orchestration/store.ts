@@ -2,6 +2,7 @@ import { lstatSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import type { PilotCheckpoint } from '../engineering/project-pilot.ts';
 import { privateDatabase } from '../audit.ts';
 import {
 	jobFile,
@@ -20,9 +21,36 @@ export function workflowStore(directory?: string) {
 		id TEXT PRIMARY KEY, version INTEGER NOT NULL, updated INTEGER NOT NULL, state TEXT NOT NULL
 	)`);
 	db.prepare('DELETE FROM workflows WHERE updated < ?').run(Date.now() - retention);
+	db.exec(`CREATE TABLE IF NOT EXISTS project_pilots (
+		id TEXT PRIMARY KEY, version INTEGER NOT NULL, started INTEGER NOT NULL, state TEXT NOT NULL
+	)`);
+	db.prepare('DELETE FROM project_pilots WHERE started <= ?').run(Date.now() - 7 * 86_400_000);
 
 	return {
 		close: () => db.close(),
+		createPilot(state: PilotCheckpoint) {
+			db.prepare('INSERT INTO project_pilots VALUES (?, ?, ?, ?)').run(
+				state.id,
+				state.version,
+				state.started,
+				JSON.stringify(state)
+			);
+			return state;
+		},
+		getPilot(id: string): PilotCheckpoint | undefined {
+			const row = db.prepare('SELECT state FROM project_pilots WHERE id=?').get(id);
+			return row ? (JSON.parse(String(row.state)) as PilotCheckpoint) : undefined;
+		},
+		savePilot(state: PilotCheckpoint) {
+			const next = { ...state, version: state.version + 1, updated: Date.now() };
+			if (
+				db
+					.prepare('UPDATE project_pilots SET version=?, state=? WHERE id=? AND version=?')
+					.run(next.version, JSON.stringify(next), state.id, state.version).changes !== 1
+			)
+				throw new Error('Pilot changed concurrently.');
+			return next;
+		},
 		get(id: string): Workflow | undefined {
 			const row = db.prepare('SELECT state FROM workflows WHERE id=?').get(id);
 			return row ? (JSON.parse(String(row.state)) as Workflow) : undefined;

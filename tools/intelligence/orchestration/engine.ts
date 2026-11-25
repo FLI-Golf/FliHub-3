@@ -18,6 +18,7 @@ import { probability, usageFrom } from '../../../src/lib/server/intelligence/val
 import {
 	jobFile,
 	tasks,
+	workerDiagnostics,
 	type Event,
 	type Job,
 	type Task,
@@ -402,6 +403,10 @@ export async function runWorkflow(
 				finish('stopped', 'missing_fixture_checkpoint');
 				return false;
 			}
+			if (!scopeFile && state!.checkpoint !== result.checkpoint) {
+				finish('stopped', 'verification_checkpoint_mismatch');
+				return false;
+			}
 			state!.checkpoint = result.checkpoint;
 			if ((state!.localFixturePort !== undefined || worker.source === 'engineering') && scopeFile) {
 				if (result.codexAcknowledged !== true) {
@@ -414,7 +419,7 @@ export async function runWorkflow(
 				if (
 					typeof result.checks?.test !== 'boolean' ||
 					typeof result.checks.build !== 'boolean' ||
-					(result.evidence === 'pass' && !(result.checks.test && result.checks.build))
+					(result.evidence === 'pass') !== (result.checks.test && result.checks.build)
 				) {
 					finish('stopped', 'missing_test_or_build_evidence');
 					return false;
@@ -432,6 +437,10 @@ export async function runWorkflow(
 					task: job
 				});
 			}
+		}
+		const diagnostic = workerDiagnostics.find((value) => value === result.diagnostic);
+		if (result.evidence === 'missing' && diagnostic && worker.source === 'engineering') {
+			add(state!, { source: worker.source, category: 'diagnostic', value: diagnostic, task: job });
 		}
 		add(state!, { source: worker.source, category: 'evidence', value: result.evidence, task: job });
 		if (result.evidence !== 'pass' && result.evidence !== 'fail') {

@@ -84,3 +84,5 @@ npm run build
 ## Development principles
 
 Security by design. Tenant isolation. Human authorization. Independent verification. Documented decisions. Incremental delivery.
+
+For the proposed real-project pilot and pending authenticated dispatch requirements, see the [AI-1F authenticated engineering checkpoint](docs/INTELLIGENCE-ARCHITECTURE.md#ai-1f-authenticated-engineering-checkpoint).

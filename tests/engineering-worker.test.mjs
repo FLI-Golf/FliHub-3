@@ -8,8 +8,9 @@ import {
 	validateProposal,
 	namespaceAvailable
 } from '../tools/intelligence/engineering/worker.ts';
+import { teeTimePilot } from '../tools/intelligence/engineering/project-context.ts';
 import { reviewPatch } from '../tools/intelligence/engineering/review.ts';
-import { engineeringFiles } from '../tools/intelligence/orchestration/contracts.ts';
+import { engineeringFiles, jobFile } from '../tools/intelligence/orchestration/contracts.ts';
 import { createDirector, runWorkflow } from '../tools/intelligence/orchestration/engine.ts';
 import { workflowStore } from '../tools/intelligence/orchestration/store.ts';
 
@@ -51,6 +52,20 @@ test('engineering scope and checkpoint are validated before worker contact', asy
 		() => store.create({ ...auth, files: ['src/private.ts'] }, 'mock', {}, 'engineering'),
 		/Invalid workflow authorization/
 	);
+	assert.throws(
+		() =>
+			store.create(
+				{ ...auth, objective: teeTimePilot.objective, files: [teeTimePilot.path] },
+				'mock',
+				{},
+				'engineering'
+			),
+		/Invalid workflow authorization/
+	);
+	assert.throws(
+		() => store.create(auth, 'jev', {}, 'authenticated'),
+		/Invalid workflow authorization/
+	);
 	const state = store.create(auth, 'mock', {}, 'engineering');
 	const restricted = engineeringWorker(directory, state.id, ['discount.test.mjs']);
 	const signal = new AbortController().signal;
@@ -61,6 +76,35 @@ test('engineering scope and checkpoint are validated before worker contact', asy
 	const abort = new AbortController();
 	abort.abort();
 	assert.equal((await restricted.execute('checks', abort.signal, false)).evidence, 'cancelled');
+});
+
+test('verification cannot swap the candidate checkpoint or contradict executable checks', async (t) => {
+	const { store } = setup(t);
+	const checkpoint = 'a'.repeat(64);
+	for (const [verificationCheckpoint, evidence, reason] of [
+		['b'.repeat(64), 'pass', 'verification_checkpoint_mismatch'],
+		[checkpoint, 'fail', 'missing_test_or_build_evidence']
+	]) {
+		const state = store.create(auth, 'mock', {}, 'engineering');
+		const final = await runWorkflow(store, state.id, createDirector('mock'), {
+			source: 'engineering',
+			async execute(job) {
+				const file = jobFile(job, auth.objective);
+				if (file) {
+					return { evidence: 'pass', changed: [file], checkpoint, codexAcknowledged: true };
+				}
+				return {
+					evidence,
+					changed: [],
+					checkpoint: verificationCheckpoint,
+					checks: { test: true, build: true }
+				};
+			}
+		});
+		assert.equal(final.status, 'stopped');
+		assert.equal(final.reason, reason);
+		assert.equal(final.checkpoint, checkpoint);
+	}
 });
 
 test(
@@ -80,7 +124,16 @@ test(
 			engineeringWorker(directory, state.id, engineeringFiles),
 			signal
 		);
-		assert.equal(final.status, 'complete', final.reason);
+		assert.equal(
+			final.status,
+			'complete',
+			[
+				final.reason,
+				...final.events
+					.filter((event) => event.category === 'diagnostic')
+					.map((event) => event.task + ':' + event.value)
+			].join(', ')
+		);
 		assert.deepEqual(
 			final.events.filter((event) => event.category === 'test').map((event) => event.value),
 			['fail', 'pass']

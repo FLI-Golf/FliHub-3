@@ -15,7 +15,31 @@ export type Task = keyof typeof tasks;
 export type Operation = 'edit' | 'verify';
 export type Job = Task | 'verify_targeted' | 'verify_broader' | 'correct_defect' | 'reconsider';
 export type Evidence = 'pass' | 'fail' | 'missing' | 'unexpected' | 'timeout' | 'cancelled';
+export const workerDiagnostics = [
+	'partial_jsonl',
+	'event_after_completion',
+	'unexpected_item',
+	'codex_item_error',
+	'duplicate_proposal',
+	'malformed_jsonl',
+	'malformed_usage',
+	'unexpected_event',
+	'missing_terminal_evidence',
+	'codex_exit',
+	'codex_signal',
+	'codex_output_limit',
+	'capsule_busy',
+	'capsule_spawn',
+	'capsule_exit',
+	'capsule_invalid_report',
+	'capsule_timeout',
+	'capsule_output_limit',
+	'isolation_preflight',
+	'verification_incomplete'
+] as const;
+
 export type WorkerResult = {
+	diagnostic?: string;
 	evidence: Evidence;
 	changed: readonly string[];
 	checkpoint?: string;

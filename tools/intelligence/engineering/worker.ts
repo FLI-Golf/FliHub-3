@@ -16,6 +16,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { engineeringFiles, jobFile, type Job, type Worker } from '../orchestration/contracts.ts';
 
 const harness = fileURLToPath(new URL('./capsule.ts', import.meta.url));
+const evidenceParser = fileURLToPath(new URL('./turn-evidence.ts', import.meta.url));
 const acceptance = fileURLToPath(new URL('./acceptance.mjs', import.meta.url));
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const imports =
@@ -143,6 +144,9 @@ async function capsule(
 		harness,
 		'/harness/capsule.ts',
 		'--ro-bind',
+		evidenceParser,
+		'/harness/turn-evidence.ts',
+		'--ro-bind',
 		acceptance,
 		'/harness/acceptance.mjs',
 		'--chdir',
@@ -176,6 +180,8 @@ async function capsule(
 				: [
 						'--nonblock',
 						'--close',
+						'--conflict-exit-code',
+						'75',
 						join(dirname(root), '.engineering-worker.lock'),
 						'/usr/bin/bwrap',
 						...args
@@ -186,9 +192,8 @@ async function capsule(
 			stdio: ['ignore', 'pipe', 'ignore']
 		});
 		let output = '';
-		let aborted = false;
+		let failure: string | undefined;
 		const cancel = () => {
-			aborted = true;
 			if (child.pid) {
 				try {
 					process.kill(-child.pid, 'SIGKILL');
@@ -197,26 +202,33 @@ async function capsule(
 				}
 			}
 		};
-		const deadline = setTimeout(cancel, 12_000);
+		const deadline = setTimeout(() => {
+			failure ??= 'capsule_timeout';
+			cancel();
+		}, 12_000);
 		signal.addEventListener('abort', cancel, { once: true });
 		if (signal.aborted) cancel();
 		child.stdout.setEncoding('utf8');
 		child.stdout.on('data', (chunk: string) => {
-			if (output.length + chunk.length > 16_384) cancel();
-			else output += chunk;
+			if (Buffer.byteLength(output + chunk) > 16_384) {
+				failure ??= 'capsule_output_limit';
+				cancel();
+			} else output += chunk;
 		});
-		child.once('error', () => resolve(undefined));
+		child.once('error', () => {
+			failure ??= 'capsule_spawn';
+		});
 		child.once('close', (code) => {
 			clearTimeout(deadline);
 			signal.removeEventListener('abort', cancel);
-			if (aborted || code !== 0) {
-				resolve(undefined);
-				return;
-			}
+			if (signal.aborted) return resolve(undefined);
+			if (failure) return resolve({ failure });
+			if (mode !== 'probe' && code === 75) return resolve({ failure: 'capsule_busy' });
+			if (code !== 0) return resolve({ failure: 'capsule_exit' });
 			try {
 				resolve(JSON.parse(output));
 			} catch {
-				resolve(undefined);
+				resolve({ failure: 'capsule_invalid_report' });
 			}
 		});
 	});
@@ -273,22 +285,28 @@ export function engineeringWorker(
 				if (hash(JSON.stringify(before)) !== checkpoint)
 					return { evidence: 'unexpected', changed: [] };
 				if (!isolated) isolated = await namespaceAvailable(root, signal);
-				if (!isolated) return { evidence: 'missing', changed: [] };
+				if (!isolated)
+					return { evidence: 'missing', changed: [], diagnostic: 'isolation_preflight' };
 				if (job === 'verify_targeted' || job === 'verify_broader') {
 					if (!engineeringFiles.every((file) => Object.hasOwn(before, file)))
 						return { evidence: 'missing', changed: [] };
 					const report = (await capsule(root, 'verify', signal)) as
-						{ build?: unknown; test?: unknown; missing?: boolean } | undefined;
+						{ build?: unknown; test?: unknown; missing?: boolean; failure?: string } | undefined;
 					if (signal.aborted) return { evidence: 'cancelled', changed: [] };
 					if (hash(JSON.stringify(snapshot(root))) !== checkpoint)
 						return { evidence: 'unexpected', changed: [] };
 					if (
 						!report ||
+						report.failure ||
 						report.missing ||
 						typeof report.build !== 'boolean' ||
 						typeof report.test !== 'boolean'
 					) {
-						return { evidence: 'missing', changed: [] };
+						return {
+							evidence: 'missing',
+							changed: [],
+							diagnostic: report?.failure ?? 'verification_incomplete'
+						};
 					}
 					return {
 						evidence: report.build && report.test ? 'pass' : 'fail',
@@ -298,10 +316,12 @@ export function engineeringWorker(
 					};
 				}
 				if (!target) return { evidence: 'unexpected', changed: [] };
-				const response = await capsule(root, 'codex', signal, job, approach);
+				const response = (await capsule(root, 'codex', signal, job, approach)) as
+					{ proposal?: unknown; failure?: string } | undefined;
 				if (signal.aborted) return { evidence: 'cancelled', changed: [] };
-				if (!response) return { evidence: 'missing', changed: [] };
-				const proposal = validateProposal(job, response, allowed);
+				if (!response || response.failure)
+					return { evidence: 'missing', changed: [], diagnostic: response?.failure };
+				const proposal = validateProposal(job, response.proposal, allowed);
 				if (!proposal || hash(JSON.stringify(snapshot(root))) !== checkpoint)
 					return { evidence: 'unexpected', changed: [] };
 				const stage = join(root, '.stage-' + randomUUID());

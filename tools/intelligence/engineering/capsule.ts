@@ -1,3 +1,4 @@
+import { fixtureProposalEvidence } from './turn-evidence.ts';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
@@ -117,7 +118,10 @@ if (mode === 'probe') {
 		const address = server.address();
 		if (!address || typeof address === 'string') throw new Error('No synthetic endpoint.');
 		const { execFile } = await import('node:child_process');
-		const output = await new Promise<string>((resolve, reject) => {
+		const output = await new Promise<
+			| ReturnType<typeof fixtureProposalEvidence>
+			| { failure: 'codex_exit' | 'codex_signal' | 'codex_output_limit' }
+		>((resolve) => {
 			const child = execFile(
 				codex,
 				[
@@ -155,26 +159,16 @@ if (mode === 'probe') {
 						JSON.stringify(authorizedContext)
 				],
 				{ timeout: 9000, maxBuffer: 131_072 },
-				(error, stdout) => (error ? reject(error) : resolve(stdout))
+				(error, stdout) => {
+					if (!error) resolve(fixtureProposalEvidence(stdout));
+					else if (error.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER')
+						resolve({ failure: 'codex_output_limit' });
+					else resolve({ failure: error.signal ? 'codex_signal' : 'codex_exit' });
+				}
 			);
 			child.stdin?.end();
 		});
-		const lines = output
-			.trim()
-			.split('\n')
-			.map((line) => JSON.parse(line));
-		if (
-			lines.some((event) =>
-				['command_execution', 'file_change', 'mcp_tool_call'].includes(event.item?.type)
-			) ||
-			!lines.some((event) => event.type === 'turn.completed')
-		)
-			throw new Error('Missing clean turn evidence.');
-		const final = lines.filter(
-			(event) => event.type === 'item.completed' && event.item?.type === 'agent_message'
-		);
-		if (final.length !== 1) throw new Error('Missing unique proposal.');
-		result(JSON.parse(final[0].item.text));
+		result(output);
 	} finally {
 		server.close();
 	}

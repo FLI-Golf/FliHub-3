@@ -1,3 +1,4 @@
+import { runPilotConsole } from './pilot-console.mjs';
 import { engineeringFiles } from '../intelligence/orchestration/contracts.ts';
 import { engineeringWorker } from '../intelligence/engineering/worker.ts';
 import { createInterface } from 'node:readline/promises';
@@ -47,7 +48,7 @@ if (!process.stdin.isTTY) {
 		while (true) {
 			const action = (
 				await io.question(
-					'\n1 New objective  2 Inspect or control  3 History  4 Usage  5 Exit  6 Isolated engineering exercise\n> '
+					'\n1 New objective  2 Inspect or control  3 History  4 Usage  5 Exit  6 Isolated engineering exercise  7 Offline FliHub pilot\n> '
 				)
 			).trim();
 			if (action === '5') break;
@@ -65,7 +66,23 @@ if (!process.stdin.isTTY) {
 				);
 				continue;
 			}
-			if (action === '6') {
+			if (action === '7') {
+				active = new AbortController();
+				try {
+					await runPilotConsole({
+						question: (prompt) => io.question(prompt, { signal: active.signal }),
+						print,
+						directory,
+						repository: process.cwd(),
+						signal: active.signal
+					});
+				} catch {
+					if (active.signal.aborted) print('Pilot cancelled.');
+					else print('Pilot could not finish. Inspect its checkpoint before starting another run.');
+				} finally {
+					active = undefined;
+				}
+			} else if (action === '6') {
 				console.log(
 					'Disposable discount source and test exercise. Scope: discount.mjs and discount.test.mjs in a private workspace. Operations: edit and verify. Independent build/tests required. One correction. At most 15 mock decisions and six worker jobs. No paid usage.'
 				);
@@ -142,6 +159,13 @@ if (!process.stdin.isTTY) {
 				const store = workflowStore(directory);
 				try {
 					const existing = store.get(id);
+					if (!existing && operation === 'inspect') {
+						const pilot = store.getPilot(id);
+						if (pilot) {
+							print({ mode: 'offline-fixture', ...pilot });
+							continue;
+						}
+					}
 					if (!existing) {
 						console.log('Unknown workflow.');
 						continue;
