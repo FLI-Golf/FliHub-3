@@ -1,5 +1,7 @@
 # FliHub Intelligence — Architecture
 
+This file preserves historical provider evaluation and architecture evidence. The [intelligence architecture](INTELLIGENCE-ARCHITECTURE.md#assignment-11-deployment-decision) is the authoritative record for current transport decisions.
+
 ## Application foundation
 
 `src/lib/server/intelligence/` contains the shared service, decision definitions, validators and disabled, mock and Jev providers. The server entry point creates one instance per process. There are no application route or PocketBase callers yet. The registered development decision accepts only fixed synthetic descriptions, including the ordinary test and unfamiliar dependency fixtures. Adding CSV mapping requires a new decision definition and task-specific runtime input validation.

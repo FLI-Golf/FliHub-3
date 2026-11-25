@@ -60,7 +60,7 @@ flowchart TD
 
 Jev selects authorized development actions, Codex performs engineering tasks, and deterministic controls enforce permissions, scope, budgets and acceptance criteria. Humans retain final authority.
 
-**Current status:** Live Jev directed a disposable engineering workflow to verified acceptance using actual Codex CLI invocations against a synthetic model endpoint. Authenticated Codex model integration, real project isolation and final AI-1F acceptance remain open. The director defaults to offline operation. Live Jev use requires explicit authorization and a private `TYPESAFE_API_KEY`.
+**Current status:** The repository owner accepted the offline FliHub tee-time pilot through option 7 in `npm run jev:develop`, including isolated verification and review-only patch export. The earlier live Jev exercise used Codex CLI against a synthetic endpoint. Authenticated Codex engineering and final AI-1F acceptance remain pending. The director defaults to offline operation. Live Jev use requires explicit authorization and a private `TYPESAFE_API_KEY`.
 
 ## Verification
 
