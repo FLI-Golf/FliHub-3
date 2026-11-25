@@ -313,3 +313,76 @@ Record actual verification evidence before review.
 
 See JEV-APPLICATION-REFERENCE.md for provider
 concepts, implementation patterns, and research links.
+
+## Adaptive workflows and existing interfaces
+
+Preserve three complementary interaction modes:
+
+- Manual application navigation and forms.
+- Existing guided wizards.
+- Optional Jev-assisted workflows.
+
+Reuse deterministic application services across modes.
+
+Existing setup compatibility rules and creation
+mappings remain authoritative.
+
+Introduce intelligent navigation and wizard assistance
+incrementally. Adaptive sequencing must not bypass
+mandatory prerequisites or authorization.
+
+See FLIHUB-DESIGN-PATTERNS.md for presentation conventions
+and APPLICATION-CAPABILITY-CATALOG.md for the initial
+application capability inventory.
+
+## Multi-activity development strategy
+
+Disc golf and charity run/walk are initial activity
+implementations, not universal architectural templates.
+
+FliHub already defines 15 activity preview choices.
+
+Before broadly retrofitting existing workflows:
+
+1. Inventory existing activity and capability contracts.
+2. Establish the offline intelligence foundation.
+3. Complete authorized read-only intelligence verification.
+4. Evaluate an unimplemented activity as a development pilot.
+5. Identify reusable and activity-specific requirements.
+6. Implement an approved end-to-end pilot after applicable gates.
+7. Evaluate a substantially different second activity.
+8. Review existing disc golf and charity architecture using
+   evidence from the completed pilots.
+
+Candidate pilots:
+
+- Pickleball for match-based competition.
+- Car shows for judged events and non-human entries.
+- Golf for stroke-based capability reuse.
+
+Pilot selection remains subject to requirements review
+and explicit approval.
+
+Do not activate unsupported activity configurations
+merely because they exist in the preview catalog.
+
+## Shared design language
+
+Future application and authorized engineering intelligence
+should preserve established FliHub design conventions:
+
+- Collapsible sections with chevrons.
+- Amber-driven attention and next-action guidance.
+- Multi-step forms with deterministic validation.
+- Compact navigation and count badges.
+- Zebra-pattern tables and responsive layouts.
+- Honest progress and completion indicators.
+
+Future intelligent presentation may select from approved
+registered component patterns. The application remains
+responsible for rendering and validation.
+
+No arbitrary provider-generated interface code may execute.
+
+These additions do not waive AI-1F, AI-2, CE-3D,
+or any existing security and acceptance gates.
