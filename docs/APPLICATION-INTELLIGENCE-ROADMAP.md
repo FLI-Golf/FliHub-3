@@ -387,7 +387,50 @@ Acceptance evidence:
 
 ### JAI-4C — Synthetic state and deterministic planning
 
-Status: Up next.
+Status: Complete.
+
+Acceptance evidence:
+
+- Implemented independent, disposable synthetic state
+  instances for the Spring Invitational demonstration.
+- Registered synthetic organizations, actors, leagues,
+  seasons, event, teams, entries, athletes, and rosters.
+- Established a fixture containing twelve teams,
+  twenty-four athletes, and no existing groups.
+- Verified consistency with the existing advisory fixture.
+- Implemented simulated owner and administrator
+  authorization with restricted-role, inactive-actor,
+  unknown-actor, and cross-organization rejection.
+- Enforced required organization capabilities, event
+  lifecycle, league and season eligibility, workflow
+  locks, roster integrity, and unique identities.
+- Rejected existing groups and invalid roster relationships.
+- Reused the existing Fisher-Yates shuffle utility with
+  a deterministic, non-cryptographic random source.
+- Proposed six groups containing twelve intact teams
+  and twenty-four uniquely assigned athletes.
+- Verified reproducible proposals, complete roster
+  coverage, organization scope, and independent copies.
+- Verified that planning leaves original synthetic state
+  unchanged, including its group count and revision.
+- Passed consolidated intelligence, operation, and
+  existing grouping regression suites.
+- Passed TypeScript, lint, and production build checks.
+- No provider dispatch, persistent database access,
+  approval authority, or operation execution enabled.
+
+Limitations:
+
+- Fixed team and athlete counts are demonstration-specific.
+- Synthetic authorization assumes trusted local state
+  and is not production authentication.
+- The seeded shuffle is not cryptographic randomness
+  or an official competition draw mechanism.
+- Returned proposals are not approval credentials.
+- State encapsulation, canonical plan integrity,
+  explicit approval, replay protection, atomic execution,
+  and independent post-execution verification remain
+  subsequent implementation requirements.
 
 - Define isolated synthetic organization and event state.
 - Register synthetic actors, teams, athletes, and rosters.
@@ -400,7 +443,7 @@ Status: Up next.
 
 ### JAI-4D — Execution plans and approval
 
-Status: Pending.
+Status: Up next.
 
 - Define canonical operation plans and SHA-256 digests.
 - Bind plans to actor, scope, operation, and state revision.
