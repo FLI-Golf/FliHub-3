@@ -486,3 +486,60 @@ No application source changes or weakened assertions were required.
 - JAI-2G: complete offline acceptance.
 - JAI-3: explicitly authorized live Jev demonstration.
 - GitHub CI and final integration acceptance.
+
+## JAI-2C implementation checkpoint
+
+Date: 2026-11-25
+
+Status: Complete — offline primitive acceptance passed.
+
+### Implemented
+
+- Typed Choice, Score and Noul question and answer contracts.
+- Reusable primitive response validation.
+- Registered Choice selection and probability validation.
+- Score range, weighted mean and rubric legend validation.
+- Noul probability validation.
+- Strict response-field validation.
+- Rejection of unexpected execution and authorization fields.
+- Independent normalized response copies.
+- Preservation of valid low-confidence and null-confidence judgments
+  for subsequent application decision policy.
+
+### Verification evidence
+
+- Choice validation: 7 tests passed.
+- Score validation: 10 tests passed.
+- Noul validation: 3 tests passed.
+- Shared primitive validation: 7 tests passed.
+- Existing application intelligence: 37 tests passed.
+- Existing engineering intelligence: 11 tests passed.
+- Total intelligence tests: 75 passed, zero failures.
+- TypeScript verification: zero errors and zero warnings.
+- Prettier and ESLint passed.
+- Production build passed.
+- Original intelligence foundation stash preserved.
+
+### Boundaries preserved
+
+- Offline synthetic response fixtures only.
+- No live Jev requests or paid provider usage.
+- No new network client.
+- Existing provider and engineering contracts unchanged.
+- No database access or application operation execution.
+- No Codex execution.
+- No existing application interface modifications.
+
+### Outstanding requirements
+
+- Runtime validation of registered question definitions.
+- Bounded multi-question request construction.
+- Shared provider dispatch and response integration.
+- Shared budget, timeout, rate and concurrency verification.
+- Application decision policy and consistency checks.
+- Live provider compatibility verification.
+- GitHub CI and final integration acceptance.
+
+The local rubric length restriction and score rounding tolerance
+remain provisional implementation choices. Primitive validation
+does not establish application readiness or operation authorization.
