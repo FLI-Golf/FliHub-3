@@ -1,3 +1,4 @@
+import { requestJev } from './jev-transport.ts';
 import { directorContext } from './director.ts';
 import type { Provider } from './types.ts';
 import { record, probability, definitionFor } from './validation.ts';
@@ -53,64 +54,26 @@ export const mockProvider: Provider = {
 	}
 };
 
-async function readJson(response: Response): Promise<unknown> {
-	const reader = response.body?.getReader();
-	if (!reader) return null;
-	const decoder = new TextDecoder('utf-8', { fatal: true });
-	let size = 0;
-	let body = '';
-	try {
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			size += value.byteLength;
-			if (size > 16_384) {
-				void reader.cancel().catch(() => {});
-				return null;
-			}
-			body += decoder.decode(value, { stream: true });
-		}
-		return JSON.parse(body + decoder.decode());
-	} catch (error) {
-		void reader.cancel().catch(() => {});
-		throw error;
-	} finally {
-		reader.releaseLock();
-	}
-}
-
 export function jevProvider(apiKey: string, fetcher: typeof fetch): Provider {
 	return {
 		name: 'jev',
 		async decide(request, signal) {
 			const { state } = request;
 			const { instructions, criteria } = definitionFor(request);
-			const response = await fetcher('https://api.typesafe.ai/v1/systemone', {
-				method: 'POST',
-				redirect: 'error',
-				headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-				body: JSON.stringify({
+			const response = await requestJev(
+				apiKey,
+				fetcher,
+				JSON.stringify({
 					model: MODEL,
 					state: 'candidates' in request ? directorContext[request.state] : state,
 					questions: { assessment: { type: 'choice', instructions, criteria } }
 				}),
 				signal
-			});
-			if (response.status !== 200) {
-				void response.body?.cancel().catch(() => {});
-				const reason =
-					{
-						401: 'authentication',
-						403: 'authentication',
-						402: 'billing',
-						429: 'rate',
-						400: 'invalid_input',
-						422: 'invalid_input'
-					}[response.status as 401 | 403 | 402 | 429 | 400 | 422] ?? 'provider';
-				return { status: 'unavailable', reason };
-			}
+			);
 
-			const payload = await readJson(response).catch(() => null);
+			if (response.status === 'unavailable') return response;
+
+			const payload = response.payload;
 			const envelope = record(payload);
 			const answer = record(record(envelope?.answers)?.assessment);
 			const probabilities = record(answer?.probabilities);
