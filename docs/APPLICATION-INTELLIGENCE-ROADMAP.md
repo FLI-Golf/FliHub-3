@@ -357,7 +357,24 @@ acceptance gates.
 
 ### JAI-4B — Operation registry and contracts
 
-Status: Pending.
+Status: Complete.
+
+Acceptance evidence:
+
+- Separate server-side operation namespace implemented.
+- Exactly one synthetic operation registered.
+- Advisory recommendation mapping resolved locally.
+- Existing advisory contracts preserved unchanged.
+- Strict request validation rejects unexpected fields,
+  unsupported fixtures, unknown operations, accessors,
+  malformed objects, and caller-supplied authority claims.
+- Registry lookups return independent definitions.
+- Exported identifier and failure-reason arrays are frozen.
+- Operation, intelligence, and existing grouping
+  regression suites passed.
+- TypeScript, lint, and production build passed.
+- No operation handler or execution authority enabled.
+- No provider requests or database operations performed.
 
 - Establish a separate server-side operation namespace.
 - Define operation identifiers and typed contracts.
@@ -370,7 +387,7 @@ Status: Pending.
 
 ### JAI-4C — Synthetic state and deterministic planning
 
-Status: Pending.
+Status: Up next.
 
 - Define isolated synthetic organization and event state.
 - Register synthetic actors, teams, athletes, and rosters.
