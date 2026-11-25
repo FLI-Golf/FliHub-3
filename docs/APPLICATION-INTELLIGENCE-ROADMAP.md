@@ -969,3 +969,150 @@ engineering execution, authenticated Codex dispatch, AI-2 CSV
 mapping and CE-3D remain outside this acceptance checkpoint.
 
 No merge or deployment is authorized by this checkpoint.
+
+## JAI-3 — Secure live experiment preparation
+
+Date: 2026-11-25
+
+Status: JAI-3D5 complete — scoped local offline acceptance passed.
+JAI-3D6 documentation and Git checkpoint in progress.
+Live provider qualification and paid assessment remain pending.
+
+### Completed implementation
+
+- JAI-3A: Development checkpoint and environment verification.
+- JAI-3B: Provider documentation research.
+- JAI-3C: Local contract and implementation gap analysis.
+- JAI-3D1: Reusable bounded Jev HTTP transport.
+- JAI-3D2: Offline application provider adapter.
+- JAI-3D3: Shared usage accounting.
+- JAI-3D4: Secure dedicated application experiment runner.
+- JAI-3D5: Full scoped offline regression and acceptance.
+
+### Experiment boundary
+
+The dedicated terminal command is:
+
+    npm run jev:app:experiment
+
+The existing interactive application terminal and browser
+playground remain mock-only.
+
+The experiment runner provides an offline preview by default.
+The preview exposes the exact registered synthetic request,
+request digest, question count and estimated reservation.
+
+The live execution path is implemented but remains protected
+by a disabled source-controlled release lock.
+
+### Registered experiment
+
+| Property                                | Value                      |
+| --------------------------------------- | -------------------------- |
+| Experiment                              | synthetic_event_assessment |
+| Objective                               | prepare_tournament         |
+| Fixture                                 | spring_invitational        |
+| Configured model                        | jev-1.14.0                 |
+| Questions                               | 5                          |
+| Request body bytes                      | 1929                       |
+| Maximum request attempts                | 1                          |
+| Timeout                                 | 10000 ms                   |
+| Reserved input tokens                   | 65536                      |
+| Estimated reservation USD               | 0.002752512                |
+| Automatic retries                       | Disabled                   |
+| Application execution                   | Not implemented            |
+| Paid requests during offline acceptance | 0                          |
+
+Exact request SHA-256:
+
+    544c28a28715dbb4189dd811500a40909abd2c19e00f125a2c07b1a04f563964
+
+The reservation is a local estimated cost, not a guaranteed
+provider invoice ceiling.
+
+### Security and evidence controls
+
+- Explicit authorization tied to the exact serialized request.
+- Credentials accessed by the CLI only after authorization
+  and release checks.
+- Fixed repository-relative private evidence storage.
+- Exclusive persistent authorization claim.
+- Durable dispatch intent recorded before network access.
+- Existing conflicting outcome evidence blocks dispatch.
+- Single-use bounded provider dispatch.
+- Transport abort and response size enforcement.
+- Strict model, answer and usage validation.
+- Deterministic advisory plan and explanation construction.
+- Sanitized durable outcome evidence before returning an assessment.
+- Authorization remains consumed after failures and timeouts.
+- No automatic retry or automatic evidence reset.
+
+Private evidence is stored under the ignored
+`.flihub-intelligence/` directory.
+
+A dispatch intent does not prove provider receipt.
+Missing outcome evidence does not prove that no charge occurred.
+
+### Verification evidence
+
+| Experiment acceptance area               | Passing tests |
+| ---------------------------------------- | ------------: |
+| Authorization validation                 |             8 |
+| Dispatch, advisory integration and audit |            26 |
+| Persistent authorization claim           |             8 |
+| Durable evidence storage                 |             6 |
+| Integrated orchestration                 |             9 |
+| Total experiment-specific tests          |            57 |
+
+Additional local acceptance:
+
+- Scoped intelligence regression suite passed.
+- TypeScript and Svelte diagnostics: zero errors and warnings.
+- Prettier and ESLint passed.
+- Production build passed.
+- Exact request bytes and SHA-256 preserved.
+- Correct authorization cannot bypass the release lock.
+- Private evidence paths are ignored by Git.
+- No persistent experiment evidence created.
+- No paid application provider requests.
+- No persistent application data changes.
+- Git diff whitespace validation passed.
+
+The aggregate intelligence regression count was not retained
+in the supplied acceptance output and is not asserted here.
+
+### Limitations and outstanding requirements
+
+- Live Choice, Score, Noul and mixed-question wire compatibility
+  remain unverified.
+- Official provider model availability, exact schemas, confidence
+  semantics, usage accounting and current pricing require final
+  qualification before release.
+- Local response validation is intentionally strict and may reject
+  otherwise legitimate provider responses until qualified.
+- Confidence thresholds remain provisional.
+- Persistent claims protect one experiment in the configured local
+  filesystem, not distributed workers or independent checkouts.
+- The source-controlled release lock is a development safeguard,
+  not an authentication mechanism.
+- Evidence storage assumes a trusted local operating-system user.
+- Filesystem failures can leave incomplete evidence and require
+  manual investigation without automatic retry.
+- Local token reservations do not establish account-wide billing limits.
+- The scoped JAI-3 regression does not replace the outstanding
+  authenticated HTTP security and legacy browser verification.
+- Existing SvelteKit alias deprecation remains a maintenance item.
+- GitHub CI, PR review, merge and deployment remain outstanding.
+- AI-1F authenticated engineering execution remains separately gated.
+- AI-2 and charity CE-3D remain deferred.
+
+### Remaining JAI-3 phases
+
+- JAI-3D6: Document, commit and push the offline checkpoint.
+- JAI-3E: Final official provider contract and exact request review.
+- JAI-3F: Explicitly authorize and execute one paid synthetic assessment.
+- JAI-3G: Validate judgments, usage, estimated cost and durable evidence.
+- JAI-3H: Document live results and remaining release gates.
+
+No paid request, merge, deployment, application mutation or
+engineering worker execution is authorized by this checkpoint.

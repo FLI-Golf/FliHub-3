@@ -83,10 +83,14 @@ Current configured model:
 These values describe the inspected local implementation,
 not a guarantee of the latest provider configuration.
 
-The current adapter supports one Choice question per
-request. Application-specific contracts, additional
-primitives, and multi-question handling are proposed
-extensions, not existing implementation.
+The engineering adapter supports one Choice question per
+request. Application intelligence now also implements
+registered Choice, Score and Noul questions, bounded
+multi-question batches, and strict response validation.
+
+The dedicated application experiment adapter and runner
+have passed offline acceptance. Live application provider
+compatibility remains unverified.
 
 ## Intelligence primitives
 
@@ -126,8 +130,10 @@ Potential FliHub applications:
 A model score must not replace actual prerequisite
 checks or authoritative application status.
 
-Exact score schemas, ranges, and response contracts
-require verification before implementation.
+Local Score contracts, weighted score validation,
+probability distributions and rubric legends are implemented
+and offline-tested. Live wire compatibility and rounding
+behavior remain subject to provider qualification.
 
 ### Noul
 
@@ -143,8 +149,9 @@ Potential FliHub applications:
 A Noul judgment is not proof of a factual condition.
 Deterministic verification remains necessary.
 
-Exact request and response contracts require
-verification before implementation.
+Local Noul request and response contracts are implemented
+and offline-tested. Live wire compatibility remains subject
+to provider qualification.
 
 ### Box
 
@@ -180,8 +187,11 @@ For dependent reasoning:
 4. Construct the next approved context.
 5. Submit another request only when authorized.
 
-Actual batching behavior, limits, response schemas,
-latency, and costs require verification.
+Registered five-question batches and independent answer
+validation are implemented and offline-tested.
+
+Actual provider batching behavior, limits, response schemas,
+latency, and costs still require live verification.
 
 ## Conceptual event preparation request
 
@@ -244,8 +254,9 @@ Initial synthetic recommendation candidates:
 - review_event_prerequisites
 - request_clarification
 
-These are proposed identifiers, not implemented
-FliHub operations.
+These identifiers are implemented as registered advisory
+capabilities. They do not have application operation
+execution handlers.
 
 The application computes eligible capabilities before
 requesting an intelligence judgment.
@@ -402,16 +413,22 @@ Established by local source inspection:
 - Existing engineering decision contracts.
 - Existing offline intelligence test coverage.
 
-Documented capabilities to evaluate:
+Implemented and verified offline:
 
-- Score.
-- Noul.
+- Choice, Score and Noul application contracts.
+- Registered multi-question requests.
+- Strict application provider response validation.
+- Shared Jev HTTP transport.
+- Application-specific usage accounting.
+- Secure synthetic experiment orchestration.
+
+Deferred capability evaluation:
+
 - Box.
-- Multi-question requests.
 
 Not yet established:
 
-- Application-specific provider contracts.
+- Live application-specific provider compatibility.
 - Unrestricted natural-language generation.
 - Arbitrary structured plan generation.
 - Application capability execution.
@@ -420,3 +437,120 @@ Not yet established:
 
 Update this reference with actual implementation
 and verification evidence as development progresses.
+
+## JAI-3 — Secure live experiment preparation
+
+The application experiment is separate from the existing
+engineering live smoke test and mock application interfaces.
+
+### Implementation map
+
+Shared intelligence modules:
+
+| Module                     | Responsibility                                |
+| -------------------------- | --------------------------------------------- |
+| jev-transport.ts           | Bounded shared HTTP transport                 |
+| usage-accounting.ts        | Validated usage and estimated cost            |
+| primitives.ts              | Choice, Score and Noul validation             |
+| dispatch.ts                | Shared resource controls                      |
+| application/batch.ts       | Registered synthetic assessment batch         |
+| application/jev-adapter.ts | Application wire request and response adapter |
+| application/director.ts    | Deterministic recommendation policy           |
+| application/plan.ts        | Structured advisory plan                      |
+| application/explanation.ts | Deterministic explanation                     |
+
+Dedicated terminal modules under `tools/application/`:
+
+| Module                      | Responsibility                                 |
+| --------------------------- | ---------------------------------------------- |
+| experiment.ts               | Preview and locked live entry point            |
+| experiment-authorization.ts | Exact request digest authorization             |
+| experiment-claim.ts         | Persistent local authorization consumption     |
+| experiment-dispatch.ts      | Single-use bounded assessment                  |
+| experiment-audit.ts         | Sanitized audit contract                       |
+| experiment-evidence.ts      | Exclusive durable evidence storage             |
+| experiment-orchestration.ts | Ordered authorization and dispatch integration |
+
+### Offline preview
+
+    npm run jev:app:experiment
+
+The preview requires no provider request and does not
+initialize persistent experiment evidence.
+
+The registered synthetic request contains two Choice,
+one Score and two Noul questions.
+
+The current local adapter expects a strict response envelope
+containing model, answers and usage. All five registered
+answers must validate before an assessment is accepted.
+
+This is an implemented local contract, not confirmation of
+the provider's actual live response envelope.
+
+### Local decision policy
+
+- Objective and recommendation confidence threshold: 0.8.
+- Clarification probability threshold: 0.8.
+- Readiness is qualitative and cannot authorize operations.
+- Low-confidence readiness is withheld.
+- Unknown context is not treated as zero.
+- Provider recommendations cannot expand locally eligible capabilities.
+- All plans remain recommendation-only.
+
+These thresholds are provisional application policy, not
+empirically calibrated provider confidence guarantees.
+
+### Persistent experiment evidence
+
+The terminal uses the fixed repository-relative
+`.flihub-intelligence/` directory.
+
+Expected evidence files:
+
+- `synthetic-event-assessment.claim`
+- `synthetic-event-assessment.intent.json`
+- `synthetic-event-assessment.outcome.json`
+
+The claim and intent must be recorded before dispatch.
+The outcome contains selected internal audit metadata,
+including reported usage when validated.
+
+Evidence does not contain the API key, raw request body,
+raw provider response or complete advisory assessment.
+
+Existing evidence is never automatically overwritten or reset.
+A failed or interrupted experiment must not be automatically retried.
+
+### Cost and provider qualification
+
+The current local reservation is 65536 input tokens at
+42 nanodollars per input token, producing an estimated
+reservation of USD 0.002752512.
+
+The estimate is not a guaranteed invoice ceiling.
+Actual provider usage, current pricing and billing behavior
+must be verified separately.
+
+The release lock remains disabled. Exact authorization alone
+cannot currently enable live terminal dispatch.
+
+Before releasing the first paid experiment, independently
+confirm the official provider contract, model availability,
+mixed-question support, response fields, usage units,
+confidence semantics and current pricing.
+
+Official TypeSafe documentation remains authoritative.
+The official skills repository and community examples require
+compatibility review before being relied upon.
+
+### Acceptance status
+
+Fifty-seven experiment-specific offline tests passed.
+The scoped intelligence regression, TypeScript checks,
+lint, production build and terminal security checks passed.
+
+No live application assessment has been executed.
+
+See the application intelligence roadmap for remaining
+security, provider qualification and release requirements.
