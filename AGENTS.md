@@ -11,3 +11,9 @@
 
 - Start the local stack manually with `npm run dev:all`. Use `npm run dev:status` for inspection and `npm run dev:stop` for managed shutdown. Service startup must remain independent of workflow creation or resumption. Keep persistent data and workflow records intact.
 - Use `npm run jev:develop` for the offline operator console. Real Codex subprocesses may propose closed fixture changes inside the isolated engineering exercise. The host must validate the scope and proposal, and collect independent test and build evidence before review export. Keep repository-writing workers disabled until independently enforceable read, write and execution boundaries are verified.
+
+## Development authority
+
+- Within an owner-assigned scope, manually authorized Codex development may make implementation decisions, run and repair verification, update documentation, create appropriate feature branches, stage and commit verified changes, and push to the appropriate feature branch. Open pull requests when the assignment calls for them. Monitor and repair GitHub CI within scope. Preserve meaningful checkpoints with concise commit subjects and bodies that explain changes, rationale and verification.
+- Merge and deployment require explicit assignment-level authorization. Privileged infrastructure, credentials, billing, destructive database operations and authenticated engineering dispatch retain their separate authorization requirements. Treat the public deployment as test production and preserve its existing safety boundaries.
+- This development authority applies to the manually authorized session. Automated Jev engineering workers remain constrained by the independently enforced authorization, isolation, tool, usage and evidence requirements above.

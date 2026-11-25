@@ -1,0 +1,24 @@
+# Mount at /etc/codex/requirements.toml only inside the dedicated client.
+# Qualification baseline for Codex 0.172.0. Hosted effects require separate proof.
+allowed_login_methods = ["chatgpt"]
+cli_auth_credentials_store = "file"
+allowed_approval_policies = ["never"]
+allowed_sandbox_modes = ["read-only"]
+allowed_web_search_modes = ["disabled"]
+allow_managed_hooks_only = true
+allow_login_shell = false
+allow_remote_control = false
+allow_browser_and_computer_use = false
+allow_appshots = false
+
+[mcp_servers]
+
+[features]
+shell_tool = false
+unified_exec = false
+apps = false
+plugins = false
+hooks = false
+browser_use = false
+skill_mcp_dependency_install = false
+goals = false

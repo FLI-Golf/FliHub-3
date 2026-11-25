@@ -84,3 +84,7 @@ The repository owner accepted the offline tee-time pilot in workflow `73eddca1-d
 AI-1F remains open. Authenticated Codex transport, live Jev-directed engineering, provider egress enforcement, compatible usage limits, full isolated candidate build verification, GitHub CI and final acceptance remain outstanding. AI-2 and CE-3D remain deferred.
 
 Assignment 11 recommends **PROVISION**. The installed CLI honored managed feature pins in a credential-free namespace. The current environment lacks a verified administrator-controlled deployment, complete tool routing and hosted-effect denial, and an approved subscription usage policy. Authenticated admission remains closed. The next milestone is a dedicated-runner admission test under owner-approved provisioning. See the [deployment decision](INTELLIGENCE-ARCHITECTURE.md#assignment-11-deployment-decision).
+
+Assignment 12A prepared a [Codespaces runner provisioning review](INTELLIGENCE-RUNNER-PROVISIONING.md) after the owner confirmed administrator availability in the interactive terminal. The managed feature pins passed the offline probe. Complete effective policy, isolated execution and authenticated service behavior remain qualification gates. 12B provisioning and any credentialed activity require separate authorization.
+
+12A closeout records the owner’s manual development authority and hardens the runner provisioning procedure. Effective local overrides and deployment isolation remain qualification requirements for 12B.
