@@ -554,3 +554,104 @@ No live application assessment has been executed.
 
 See the application intelligence roadmap for remaining
 security, provider qualification and release requirements.
+
+## JAI-3H — First live application assessment closeout
+
+On November 25, 2026, the registered synthetic application
+assessment completed one explicitly authorized live request using
+`jev-1.14.0`.
+
+### Observed contract compatibility
+
+The request combined two Choice questions, one Score question and
+two Noul questions in a single shared-state request.
+
+The live response passed the strict application response adapter,
+including model identification, all five registered answers and
+usage metadata.
+
+Observed objective probabilities:
+
+| Alternative            | Probability |
+| ---------------------- | ----------: |
+| Prepare event          |        0.35 |
+| Assess event readiness |        0.65 |
+| Abstain                |           0 |
+
+Reported objective confidence: 0.48.
+
+Observed recommendation probabilities:
+
+| Alternative                 | Probability |
+| --------------------------- | ----------: |
+| Review event prerequisites  |        0.13 |
+| Plan group assignments      |        0.22 |
+| Review scoring requirements |        0.65 |
+| Abstain                     |           0 |
+
+Reported recommendation confidence: 0.53.
+
+Observed Score probabilities:
+
+| Rubric position | Probability |
+| --------------- | ----------: |
+| 0               |        0.01 |
+| 1               |        0.33 |
+| 2               |        0.64 |
+| 3               |        0.02 |
+| 4               |           0 |
+
+The reported weighted score was 1.68 with confidence 0.69.
+
+The weighted value calculated from displayed probabilities was
+1.67. The observed difference of 0.01 was accepted by the existing
+local tolerance of 0.011.
+
+This observation does not establish a universal provider rounding
+guarantee.
+
+The clarification Noul value was 0.93 and the prerequisite-review
+Noul value was 0.90.
+
+### Deterministic reconciliation
+
+The provider selected `assess_event_readiness`, which did not match
+the registered preparation objective.
+
+FliHub returned `abstained` with reason `objective_mismatch`.
+
+No actionable recommendation or accepted readiness score was
+produced. No application operations were executed.
+
+Provider confidence is not treated as factual accuracy,
+authorization or permission to execute.
+
+### Observed usage
+
+- Input tokens: 684.
+- Output tokens: 179.
+- Estimated usage cost: 28,728 nanodollars ($0.000028728).
+- Assessment duration: 161 ms.
+- Audit duration: 162 ms.
+- Transport attempts: one.
+- Reservation: reconciled.
+- Automatic retries: none.
+
+The cost estimate uses the configured input-token price of
+42 nanodollars per token. Actual provider billing remains unverified.
+
+### Regression and evidence
+
+The sanitized offline reconstruction is maintained in
+`tests/application-intelligence-live-response.test.mjs`.
+
+Original private claim, intent and outcome evidence remain outside
+version control.
+
+The terminal live release lock remains disabled.
+
+This experiment establishes compatibility for one observed response,
+not every possible provider response or production workload.
+
+No confidence thresholds or authorization boundaries were weakened
+to obtain a successful result.

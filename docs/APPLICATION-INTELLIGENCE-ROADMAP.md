@@ -1116,3 +1116,153 @@ in the supplied acceptance output and is not asserted here.
 
 No paid request, merge, deployment, application mutation or
 engineering worker execution is authorized by this checkpoint.
+
+## JAI-3H — First live application assessment closeout
+
+Date: November 25, 2026.
+
+Status: Live technical acceptance completed for the registered
+synthetic application assessment. Production release is not authorized.
+
+### Authorized experiment
+
+- Provider: TypeSafe AI / Jev.
+- Model: `jev-1.14.0`.
+- Objective: `prepare_tournament`.
+- Fixture: `spring_invitational`.
+- Request size: 1,929 UTF-8 bytes.
+- Request SHA-256:
+  `544c28a28715dbb4189dd811500a40909abd2c19e00f125a2c07b1a04f563964`.
+- One authorized transport attempt.
+- Five independent questions in one request.
+- No automatic retries.
+- No real organization data.
+- No application mutations.
+- No engineering or Codex execution.
+
+### Observed provider results
+
+| Judgment                   | Observed result             |     Confidence |
+| -------------------------- | --------------------------- | -------------: |
+| Objective                  | Assess event readiness      |           0.48 |
+| Next recommendation        | Review scoring requirements |           0.53 |
+| Qualitative readiness      | 1.68 out of 4               |           0.69 |
+| Clarification needed       | Noul 0.93                   | Not applicable |
+| Prerequisite review needed | Noul 0.90                   | Not applicable |
+
+All five answers passed structural validation.
+
+The provider selected an objective different from the registered
+objective. The deterministic application director abstained with
+`objective_mismatch`.
+
+No next step, alternatives or readiness score were presented as an
+accepted advisory recommendation. The explanation directed the user
+toward manual review.
+
+The prerequisite-review advisory flag remained true.
+
+This is successful technical and safety acceptance, not evidence
+that the provider supplied a useful actionable recommendation.
+
+### Observed usage and latency
+
+| Measurement                   |       Result |
+| ----------------------------- | -----------: |
+| Reserved input tokens         |       65,536 |
+| Reported input tokens         |          684 |
+| Reported output tokens        |          179 |
+| Estimated reserved cost       | $0.002752512 |
+| Estimated reported usage cost | $0.000028728 |
+| Estimated cost in nanodollars |       28,728 |
+| Assessment duration           |       161 ms |
+| Audit duration                |       162 ms |
+| Transport attempts            |            1 |
+| Automatic retries             |            0 |
+
+The local reservation was reconciled against reported usage.
+
+Approximately 1.04 percent of the input-token reservation was
+consumed. The remaining local reservation was released.
+
+These are provider-reported usage measurements and locally calculated
+cost estimates. Actual invoice charges have not been independently
+verified.
+
+### Security and evidence
+
+The exact authorized request digest was verified before dispatch.
+
+The private authorization claim, dispatch intent and outcome evidence
+were persisted under `.flihub-intelligence/`.
+
+The outcome records one transport attempt, the expected model,
+validated usage and successful reservation reconciliation.
+
+The live release lock was restored after execution. The working tree
+was clean and synchronized with the remote branch.
+
+The original private evidence must remain intact. It must not be
+deleted to permit another experiment or committed to GitHub.
+
+### Offline regression preservation
+
+`tests/application-intelligence-live-response.test.mjs` preserves
+a sanitized reconstruction of the observed synthetic response.
+
+Six regression tests cover:
+
+- Structural validation of all five observed judgments.
+- Deterministic objective-mismatch abstention.
+- Recommendation-only and non-execution boundaries.
+- Safe manual-review explanation.
+- Exact estimated usage cost.
+- Observed weighted-score rounding.
+
+The fixture is reconstructed from validated terminal output rather
+than a captured raw HTTP response.
+
+No additional provider request is required to run these tests.
+
+### Intelligence-quality findings
+
+The live provider did not reproduce the deterministic mock judgments.
+
+Future evaluation should distinguish explicitly selected registered
+objectives from ambiguous natural-language objectives.
+
+For explicitly selected objectives, consider using the registered
+objective directly rather than requiring redundant model classification.
+
+Question instructions, context sufficiency and rubric design should
+be evaluated before changing confidence thresholds.
+
+The existing 0.8 thresholds remain unchanged and provisional.
+
+A single successful transport experiment does not establish model
+reliability, confidence calibration or recommendation quality.
+
+### Remaining boundaries
+
+The following remain outside this acceptance:
+
+- General production readiness and deployment authorization.
+- Actual provider invoice verification.
+- Broad intelligence-quality evaluation.
+- Distributed resource controls and replay protection.
+- Outstanding authenticated HTTP and cross-origin security checks.
+- Concurrent HTTP authentication isolation.
+- Outstanding legacy browser regression and GitHub CI verification.
+- Engineering intelligence security acceptance.
+- Real organization data access or application execution.
+
+The next planned application intelligence phase is JAI-4:
+controlled synthetic application operations.
+
+JAI-4 must preserve deterministic authorization, validation,
+transactional integrity, auditability and verification.
+
+JAI-4 is not authorized to operate on real organization data.
+
+No additional paid provider requests, merge or deployment are
+authorized by this closeout.
