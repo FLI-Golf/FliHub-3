@@ -434,3 +434,55 @@ Confidence does not grant application permissions or authorize execution.
 - Full offline application intelligence acceptance.
 - Explicit authorization before live provider verification.
 - GitHub CI and final integration acceptance.
+
+## JAI-2B implementation checkpoint
+
+Date: 2026-11-25
+
+Status: Complete — local acceptance passed.
+
+### Implemented
+
+- Minimized and strictly validated synthetic event context.
+- Six independent synthetic event scenarios.
+- Deterministic context-based recommendation eligibility.
+- Locally constructed bounded decision requests.
+- Rejection of malformed, inconsistent and unsupported context.
+- Rejection of unexpected private fields and accessor properties.
+- Clarification recommendations when required information is unknown.
+- Rejection of context-ineligible intelligence recommendations.
+
+### Verification evidence
+
+- Application intelligence tests: 37 passed.
+- Existing intelligence regression tests: 11 passed.
+- Total intelligence tests: 48 passed.
+- TypeScript verification passed.
+- Lint verification passed.
+- Production build passed.
+- Existing intelligence foundation stash preserved.
+
+An initial test initialization failure occurred because additional
+Vite module imports followed registered tests. Moving all module
+initialization before test registration resolved the failure.
+No application source changes or weakened assertions were required.
+
+### Boundaries preserved
+
+- Synthetic draft disc golf context only.
+- No production event readiness or authorization claims.
+- No database access or persistent application mutations introduced.
+- No live Jev requests or paid provider usage.
+- No Codex execution.
+- No existing wizard or component modifications.
+- Existing engineering and charity acceptance gates remain unchanged.
+
+### Outstanding work
+
+- JAI-2C: verify and implement supported Jev intelligence primitives.
+- JAI-2D: bounded multi-question requests.
+- JAI-2E: application intelligence director.
+- JAI-2F: interactive application intelligence terminal.
+- JAI-2G: complete offline acceptance.
+- JAI-3: explicitly authorized live Jev demonstration.
+- GitHub CI and final integration acceptance.
