@@ -43,6 +43,21 @@ or any existing acceptance and authorization requirements.
 
 AI-3 onward are backlog candidates, not commitments or prerequisites for charity event development.
 
+## Proposed assisted development milestones
+
+[Assisted Development Mode and the Development Assignment Builder](INTELLIGENCE-ARCHITECTURE.md#engineering-operating-modes) are deferred reusable engineering capabilities. They would support manual development through offline assignment preparation and evidence review. Automated Development Mode continues under the existing AI-1F qualification and native authorization boundaries.
+
+1. Assess assisted development architecture and existing reusable capabilities.
+2. Design the Development Assignment Builder and read-only context boundaries.
+3. Add human assignment review and export.
+4. Add bounded completion report ingestion.
+5. Add independent evidence and development progress review.
+6. Qualify optional live Jev planning and assessment under separate provider and disclosure approval.
+7. Continue authenticated runner qualification under AI-1F and the existing provisioning gates.
+8. Integrate engineering orchestration after applicable authorization, isolation, verification and publication gates pass.
+
+These are proposed milestones. Existing phase identifiers and acceptance requirements remain authoritative. Milestones 6 and 7 have independent gates. Assisted Development Mode does not close AI-1F or authorize Assignment 12B, authenticated dispatch, AI-2 or charity resumption. Current application development remains JAI-5F, then JAI-5G and JAI-5H.
+
 ## Baseline and progress
 
 - `feature/intelligence-foundation` is based on merge `28594c7`. PR #54 merged. The owner's baseline evidence records passing [PR CI](https://github.com/FLI-Golf/FliHub-3/actions/runs/45531001595) and [post-merge main CI](https://github.com/FLI-Golf/FliHub-3/actions/runs/45531068690).

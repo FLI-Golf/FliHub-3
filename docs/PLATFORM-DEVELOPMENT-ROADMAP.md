@@ -138,6 +138,20 @@ existing gates. Ticketing, activity catalog expansion and Intelligent
 Organization Configuration remain separate future work. This deferred
 initiative preserves the JAI-5F priority. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
 
+## Assisted Development initiative
+
+The proposed Assisted Development Mode supports human-directed engineering
+with an offline Development Assignment Builder, reviewed export and evidence
+review. Automated engineering remains governed by the existing AI-1F
+qualification. Both the assisted implementation and any authenticated
+dispatch require separate authorization.
+
+Preserve JAI-5F through JAI-5H as the current implementation sequence and
+retain all existing deferred platform initiatives. This proposal establishes
+no new relative implementation priority.
+See [Engineering operating modes](INTELLIGENCE-ARCHITECTURE.md#engineering-operating-modes)
+and [proposed assisted development milestones](INTELLIGENCE-ROADMAP.md#proposed-assisted-development-milestones).
+
 ## Shared platform dependencies
 
 Future capabilities should reuse appropriate foundations:
