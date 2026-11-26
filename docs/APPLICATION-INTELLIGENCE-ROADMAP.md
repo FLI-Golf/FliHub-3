@@ -44,16 +44,16 @@ CE-3D, or existing security and acceptance requirements.
 
 ## Development sequence
 
-| Phase | Scope                                        | Status      |
-| ----- | -------------------------------------------- | ----------- |
-| JAI-1 | Discovery and architecture                   | Complete    |
-| JAI-2 | Offline application intelligence foundation  | Complete    |
-| JAI-3 | Authorized live read-only demonstration      | Complete    |
-| JAI-4 | Controlled disposable application operations | In progress |
-| JAI-5 | Application intelligence interface           | Pending     |
-| JAI-6 | Persistent application integration           | Pending     |
-| JAI-7 | Multi-step intelligent orchestration         | Pending     |
-| JAI-8 | Production readiness and acceptance          | Pending     |
+| Phase | Scope                                        | Status   |
+| ----- | -------------------------------------------- | -------- |
+| JAI-1 | Discovery and architecture                   | Complete |
+| JAI-2 | Offline application intelligence foundation  | Complete |
+| JAI-3 | Authorized live read-only demonstration      | Complete |
+| JAI-4 | Controlled disposable application operations | Complete |
+| JAI-5 | Application intelligence interface           | Up next  |
+| JAI-6 | Persistent application integration           | Pending  |
+| JAI-7 | Multi-step intelligent orchestration         | Pending  |
+| JAI-8 | Production readiness and acceptance          | Pending  |
 
 ## JAI-1 — Discovery and architecture
 
@@ -705,7 +705,7 @@ Limitations:
 
 ### JAI-4H — Final acceptance and checkpoint
 
-Status: Up next.
+Status: Complete.
 
 - Complete positive and negative operation regression tests.
 - Verify advisory and engineering intelligence regressions.
@@ -715,6 +715,120 @@ Status: Up next.
 - Verify existing private experiment evidence protection.
 - Document acceptance evidence and remaining limitations.
 - Commit and synchronize the completed phase.
+
+#### JAI-4H final acceptance evidence
+
+Accepted implementation checkpoint: `a5b20df`.
+
+Final local acceptance completed on November 25, 2026.
+
+##### Implementation scope
+
+- Registered controlled synthetic operation:
+  `create_synthetic_group_assignments`.
+- Disposable synthetic state and deterministic team pairing.
+- Simulated organization and actor authorization.
+- Immutable execution plans bound to current state.
+- Explicit approval bound to the exact session, review, and plan.
+- Single-use approval consumption and local replay protection.
+- Registered candidate construction without publication authority.
+- Independent candidate verification.
+- Atomic synthetic state and audit snapshot publication.
+- Bounded, sanitized publication audit history.
+- Interactive offline operation console:
+  `npm run jev:app:operate`.
+
+##### Final automated acceptance
+
+- Consolidated regression: 852/852 passed.
+- Zero failed, cancelled, skipped, or todo tests.
+- TypeScript and Svelte checks passed.
+- Lint and formatting checks passed.
+- Production build compilation passed.
+- Existing advisory and engineering intelligence regressions passed.
+- Existing randomized event grouping and guided event setup
+  regressions passed.
+- No JAI-4 changes to PocketBase or existing web routes.
+
+##### Final interactive acceptance
+
+All seven interactive acceptance scenarios passed:
+
+1. Cancellation preserved zero groups and revision zero,
+   with no publication attempts.
+2. Owner approval published six groups containing twelve
+   teams and twenty-four athletes.
+3. Administrator approval independently produced the same
+   verified synthetic state.
+4. Unauthorized viewer execution was rejected.
+5. Missing information produced clarification without
+   a controlled operation proposal.
+6. Offline session usage reported zero blocked fetch attempts,
+   zero paid provider requests, and no persistent storage.
+7. Clean exit discarded disposable synthetic state.
+
+The successful owner and administrator operations both advanced
+the synthetic state from revision zero to revision one.
+
+Their approval plan digests differed by actor while their
+published state digests matched.
+
+The final usage check was performed in a restarted console
+session and recorded one assessment. Usage accounting is
+session-local rather than cumulative across console restarts.
+
+##### Security and isolation
+
+- The reviewed operation workflow explicitly selects the mock
+  provider and rejects external fetch attempts.
+- Recommendations do not grant execution authority.
+- Only registered synthetic operations can be considered.
+- Approval is consumed before candidate construction.
+- Candidate construction cannot publish authoritative state.
+- Independent verification is required before publication.
+- The state and audit snapshot are replaced together.
+- The live experiment release lock remains disabled.
+- Private experiment evidence remains ignored, untracked,
+  protected with mode 600, and unchanged by final regression.
+- The separate engineering intelligence documentation stash
+  remains preserved.
+- No additional paid provider requests were authorized or
+  performed during controlled operation development.
+- No persistent application mutations were performed by
+  the controlled synthetic operation demonstration.
+
+##### Remaining limitations and deferred requirements
+
+- Simulated operator identities are not production authentication.
+- The operation modules assume trusted, locally owned synthetic
+  state and are not public execution endpoints.
+- Canonical serialization is bounded for local synthetic data,
+  but its final byte limit is checked after serialization.
+  It is not a complete hostile-input resource exhaustion defense.
+- Approval and replay protection are process-local.
+- Audit history is bounded to 100 records per session and is
+  neither durable nor tamper-evident.
+- No persistent or distributed transaction guarantees are claimed.
+- Absence of direct operation route references is not proof
+  of complete production HTTP isolation.
+- Production authentication, cross-origin rejection, concurrent
+  HTTP authorization isolation, and persistent tenant isolation
+  remain outstanding.
+- Live recommendation quality and provider invoice reconciliation
+  remain outstanding.
+- GitHub CI verification and full legacy browser regression
+  remain outstanding.
+- Authenticated automated engineering execution remains disabled.
+- Charity CE-3D and subsequent deferred development requirements
+  remain unchanged.
+- Merge and deployment require separate authorization.
+
+JAI-4 is accepted as a controlled, offline, disposable synthetic
+operation foundation. This is not production execution approval.
+
+The next development phase is JAI-5: Application intelligence
+interface. Its architecture and authorization boundaries must
+be established before implementation.
 
 JAI-4 does not authorize JAI-5 implementation, persistent
 application integration, automated engineering execution,
