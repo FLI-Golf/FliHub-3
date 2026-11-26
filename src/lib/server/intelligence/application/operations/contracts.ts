@@ -25,7 +25,7 @@ export interface ApplicationOperationDefinition {
 	readonly scope: ApplicationOperationScope;
 	readonly effect: ApplicationOperationEffect;
 	readonly approvalRequired: true;
-	readonly execution: 'not-implemented';
+	readonly execution: 'controlled-synthetic';
 }
 
 export interface ApplicationOperationRequest {

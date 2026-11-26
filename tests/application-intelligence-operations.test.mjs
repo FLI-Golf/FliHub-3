@@ -30,7 +30,7 @@ test('registers exactly one synthetic operation', () => {
 	assert.equal(operations[0].id, operationId);
 	assert.equal(operations[0].scope, 'synthetic-only');
 	assert.equal(operations[0].approvalRequired, true);
-	assert.equal(operations[0].execution, 'not-implemented');
+	assert.equal(operations[0].execution, 'controlled-synthetic');
 });
 
 test('maps the registered advisory recommendation locally', () => {
@@ -74,7 +74,7 @@ test('registry definitions cannot be mutated through lookup', () => {
 
 	assert.equal(fresh.approvalRequired, true);
 	assert.equal(fresh.scope, 'synthetic-only');
-	assert.equal(fresh.execution, 'not-implemented');
+	assert.equal(fresh.execution, 'controlled-synthetic');
 });
 
 test('registry listings return independent definitions', () => {

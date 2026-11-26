@@ -95,7 +95,7 @@ export function verifySyntheticOperationCandidate(
 			proposal.fixtureId !== 'spring_invitational' ||
 			proposal.approvalRequired !== true ||
 			proposal.algorithm !== 'team-pairing-v1' ||
-			proposal.execution !== 'not-implemented'
+			proposal.execution !== 'requires-approval'
 		) {
 			return reject('invalid_plan');
 		}

@@ -138,7 +138,7 @@ test('prepares an exact synthetic execution plan', () => {
 
 	assert.equal(plan.body.proposal.groups.length, 6);
 
-	assert.equal(plan.body.proposal.execution, 'not-implemented');
+	assert.equal(plan.body.proposal.execution, 'requires-approval');
 
 	assert.deepEqual(state, before);
 });

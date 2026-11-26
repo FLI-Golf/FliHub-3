@@ -23,7 +23,7 @@ export interface SyntheticGroupProposal {
 		readonly athletesAssigned: number;
 	};
 	readonly approvalRequired: true;
-	readonly execution: 'not-implemented';
+	readonly execution: 'requires-approval';
 }
 
 export type SyntheticGroupPlanningOutcome =
@@ -172,7 +172,7 @@ export function planSyntheticGroupAssignments(
 					athletesAssigned: athletes.length
 				},
 				approvalRequired: true,
-				execution: 'not-implemented'
+				execution: 'requires-approval'
 			}
 		};
 	} catch {

@@ -34,7 +34,7 @@ test('proposes six groups without executing anything', () => {
 
 	assert.equal(result.kind, 'synthetic-group-proposal');
 	assert.equal(result.approvalRequired, true);
-	assert.equal(result.execution, 'not-implemented');
+	assert.equal(result.execution, 'requires-approval');
 	assert.equal(result.algorithm, 'team-pairing-v1');
 
 	assert.deepEqual(result.summary, {

@@ -54,7 +54,7 @@ for (const role of ['owner', 'admin']) {
 		assert.deepEqual(session.consumeApproval(receipt), {
 			status: 'consumed',
 			planDigest: plan.digest,
-			execution: 'not-implemented'
+			execution: 'approval-consumed'
 		});
 
 		assert.equal(session.getStatus(), 'consumed');
@@ -307,7 +307,7 @@ test('consumption never enables application execution', () => {
 	const result = session.consumeApproval(receipt);
 
 	assert.equal(result.status, 'consumed');
-	assert.equal(result.execution, 'not-implemented');
+	assert.equal(result.execution, 'approval-consumed');
 
 	assert.equal(Object.hasOwn(session, 'execute'), false);
 

@@ -10,7 +10,7 @@ const definitions = {
 		scope: 'synthetic-only',
 		effect: 'create-synthetic-groups',
 		approvalRequired: true,
-		execution: 'not-implemented'
+		execution: 'controlled-synthetic'
 	}
 } as const satisfies Record<ApplicationOperationId, ApplicationOperationDefinition>;
 

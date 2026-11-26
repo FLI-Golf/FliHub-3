@@ -31,7 +31,8 @@
 		"dev:stop": "node tools/development/services.mjs stop",
 		"jev:develop": "node tools/development/console.mjs",
 		"jev:app": "node tools/application/console.mjs",
-		"jev:app:experiment": "node tools/application/experiment.ts"
+		"jev:app:experiment": "node tools/application/experiment.ts",
+		"jev:app:operate": "node tools/application/operation-console.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

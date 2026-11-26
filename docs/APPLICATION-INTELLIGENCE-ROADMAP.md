@@ -627,7 +627,7 @@ Limitations:
 
 ### JAI-4G — Interactive terminal demonstration
 
-Status: Up next.
+Status: Complete.
 
 - Use the existing offline mock intelligence pipeline.
 - Display the recommendation and exact proposed changes.
@@ -637,9 +637,75 @@ Status: Up next.
 - Keep all state disposable and process-local.
 - Make no paid provider requests.
 
+#### JAI-4G implementation and acceptance evidence
+
+The separate interactive command `npm run jev:app:operate`
+connects the existing offline mock intelligence assessment
+to the registered synthetic group-assignment operation.
+
+Implemented:
+
+- Registered recommendation-to-operation resolution.
+- Exact plan and proposed assignment presentation.
+- Explicit confirmation bound to the current review identity.
+- Protected approval consumption and registered execution.
+- Independent candidate verification and atomic synthetic publication.
+- Resulting group assignments and sanitized publication audit.
+- Disposable, process-local operation sessions.
+- Offline session usage reporting.
+- Distinct advisory, operation, proposal and approval metadata.
+
+Manual terminal verification:
+
+- Spring Invitational assessed using the mock provider.
+- Simulated owner reviewed and explicitly approved the exact plan.
+- Six groups, twelve teams and twenty-four athletes published.
+- Published assignments matched the reviewed proposal.
+- Synthetic state revision advanced from zero to one.
+- Independent verification passed.
+- One successful publication audit record was displayed.
+- Simulated viewer was rejected with unauthorized_actor.
+- Missing information produced clarification without an operation.
+- Session usage reported zero paid requests and zero blocked fetches.
+- Persistent storage was false.
+- Terminal exited cleanly and discarded disposable state.
+
+The successful manual publication preceded the final
+metadata correction. Updated metadata and execution behavior
+were subsequently verified through automated regression.
+
+Cancellation, replay prevention, competing confirmations,
+handler failure and other negative cases are covered by
+automated regression tests. Manual cancellation output
+was not retained for review.
+
+Automated acceptance:
+
+- Consolidated regression: 852/852 passed.
+- Zero failed, cancelled, skipped or todo tests.
+- TypeScript and Svelte checks passed.
+- Lint passed.
+- Production build passed.
+- Adapter-auto did not identify a production deployment target.
+- Live experiment release lock remains disabled.
+- Private experiment evidence remains protected and untracked.
+- Existing engineering intelligence stash remains preserved.
+
+Limitations:
+
+- Intelligence assessments use the offline mock provider.
+- Operator identities are simulated, not authenticated users.
+- Operation state and audit history are process-local.
+- Each new assessment starts a fresh synthetic scenario.
+- No persistent application records are changed.
+- No additional paid provider requests are authorized.
+- Production authorization, persistent integration,
+  distributed replay protection and release acceptance
+  remain deferred.
+
 ### JAI-4H — Final acceptance and checkpoint
 
-Status: Pending.
+Status: Up next.
 
 - Complete positive and negative operation regression tests.
 - Verify advisory and engineering intelligence regressions.

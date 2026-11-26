@@ -70,7 +70,7 @@ export type SyntheticApprovalConsumptionOutcome =
 	| {
 			readonly status: 'consumed';
 			readonly planDigest: string;
-			readonly execution: 'not-implemented';
+			readonly execution: 'approval-consumed';
 	  }
 	| {
 			readonly status: 'rejected';
@@ -481,7 +481,7 @@ export function createSyntheticApprovalSession(
 					return {
 						status: 'consumed',
 						planDigest: plan.digest,
-						execution: 'not-implemented'
+						execution: 'approval-consumed'
 					};
 				} catch {
 					return {
