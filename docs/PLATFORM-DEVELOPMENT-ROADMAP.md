@@ -46,6 +46,7 @@ See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITEC
 | ------------------------ | ------------------------------------------------------- |
 | Application intelligence | Continue JAI-5D through JAI-5H                          |
 | Engineering intelligence | Preserve outstanding AI-1F qualification gates          |
+| Platform Administration  | Architecture documented. Implementation deferred.       |
 | Branding and media       | Requirements captured; implementation deferred          |
 | Activity catalog         | Requirements captured; implementation deferred          |
 | Charity events           | Preserve CE-3D and subsequent deferred requirements     |
@@ -120,6 +121,17 @@ Proposed implementation branch:
 
 Branch creation and implementation remain deferred.
 
+## Platform Administration initiative
+
+Plan separately authorized platform oversight with distinct platform,
+organization and activity scopes. Organization membership and activity
+permissions continue to use their existing boundaries. Platform roles describe
+responsibility and server-enforced capabilities determine authorized actions.
+
+Platform Administration remains deferred. Capture its requirements without
+changing the active application intelligence priorities or existing acceptance
+gates. See [Platform Administration Roadmap](PLATFORM-ADMINISTRATION-ROADMAP.md).
+
 ## Shared platform dependencies
 
 Future capabilities should reuse appropriate foundations:
@@ -189,6 +201,7 @@ or architectural proposals as operational functionality.
 - [Funding](FUNDING-ROADMAP.md)
 - [Application Capability Catalog](APPLICATION-CAPABILITY-CATALOG.md)
 - [Design Patterns](FLIHUB-DESIGN-PATTERNS.md)
+- [Platform Administration](PLATFORM-ADMINISTRATION-ROADMAP.md)
 - [Branding](BRANDING-ROADMAP.md)
 - [Activity Catalog](ACTIVITY-CATALOG-ROADMAP.md)
 
