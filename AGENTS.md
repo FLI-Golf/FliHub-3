@@ -30,6 +30,7 @@
 
 - Consult [docs/PLATFORM-DEVELOPMENT-ROADMAP.md](docs/PLATFORM-DEVELOPMENT-ROADMAP.md) for cross-track development priorities and deferred initiatives.
 - Follow the [Platform Administration Roadmap](docs/PLATFORM-ADMINISTRATION-ROADMAP.md) for future platform oversight. Keep platform, organization and activity authorization scopes separate. Implementation remains deferred until separately authorized.
+- Follow the [Intelligent Activity Configuration Roadmap](docs/INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md) for deferred guidance. Preserve structured selections, deterministic server eligibility, exact approval and planned capacity distinct from actual registrations. JAI-5F remains the next separately authorized implementation priority.
 - Capture newly identified platform requirements without automatically interrupting active implementation.
 - Branding and activity catalog expansion remain deferred initiatives governed by their respective roadmaps.
 - Preserve optional embedded intelligence, deterministic configuration and manual fallback in future platform capabilities.

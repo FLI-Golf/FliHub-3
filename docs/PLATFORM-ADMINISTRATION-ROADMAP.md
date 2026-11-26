@@ -13,7 +13,7 @@ Status: Approved architectural direction. Each implementation phase requires sep
 | Organization | Organization Viewer        | Authorized read-only access within an organization.                                    |
 | Activity     | Activity-specific roles    | Narrow operational responsibilities, including scorekeepers and fantasy commissioners. |
 
-PocketBase superuser accounts are separate privileged infrastructure identities. Platform Administrator is the application role name.
+PocketBase `_superusers` are separate privileged infrastructure identities. Platform Administrator is the everyday application role name. Keep infrastructure credentials and unrestricted PocketBase authority outside the application console. Future design must preserve separation between application and infrastructure privileges.
 
 Platform scope may cover the organization directory, user account oversight, platform health and diagnostics, intelligence provider administration, capability availability, usage and costs, security and audit oversight, platform configuration, and audited customer support operations. Each responsibility requires defined capabilities and resource boundaries.
 
@@ -35,7 +35,7 @@ Before implementation, evaluate secure initial provisioning, administrator assig
 
 ## Future console
 
-Plan a separate protected Platform Administration experience with independently authorized access and navigation. Proposed areas are Overview, Organizations, Users, Intelligence, System health, Usage and costs, Security, Audit history, and Settings.
+Plan a separate protected Platform Administration experience with independently authorized access and navigation. Proposed areas are Platform overview, Organizations, Users, Activity and capability administration, Intelligence administration, System health, Usage and costs, Security, Audit history, and Settings. These are candidate navigation areas. Each view and action needs its own scope and authorization requirements.
 
 Platform Administrators may receive an explicit capability to view the organization directory across tenants without joining or owning those organizations. Start with read-only oversight wherever practical. Sensitive organization records and administrative mutations require separately defined authorization, including applicable confirmation and audit requirements.
 
@@ -45,8 +45,8 @@ Platform Administrators may receive an explicit capability to view the organizat
 
 **FliHub guides the process. Jev helps improve the decisions.**
 
-- **Organization-facing intelligence** supports guided organization creation, contextual wizard assistance, event preparation, prerequisite assessment, sponsorship assistance, activity-specific recommendations and operational guidance. Structured Svelte workflows remain the primary interface. Jev supplies optional contextual assistance at appropriate points, with manual fallback.
-- **Platform-facing intelligence administration** covers provider configuration oversight, capability availability, usage and cost monitoring, intelligence policy administration, system diagnostics, and security and audit oversight. These responsibilities require explicit platform capabilities.
+- **Organization-facing intelligence** supports guided organization creation, contextual wizard assistance, event preparation, prerequisite assessment, sponsorship assistance, activity-specific recommendations, capability explanations, authorized operation preparation and operational guidance. Structured Svelte workflows remain the primary interface. Jev supplies optional contextual assistance at appropriate points, with manual fallback.
+- **Platform-facing intelligence administration** covers provider configuration and availability, capability registration and governance, usage and cost monitoring, intelligence policy administration, system diagnostics and operational health, and security and audit oversight. These responsibilities require explicit platform capabilities.
 
 Both areas may reuse the intelligence foundation while enforcing separate authorization and data access. FliHub owns authorization and privileged actions. Jev must never independently grant permissions, expand resource access, approve privileged operations or determine platform authorization.
 
@@ -54,14 +54,14 @@ Existing organization accounts, including development demonstration accounts, ma
 
 ## Deferred development sequence
 
-Each phase remains deferred until separately authorized. Current priorities and acceptance gates remain governed by the [Platform Development Roadmap](PLATFORM-DEVELOPMENT-ROADMAP.md).
+Each phase requires separate authorization. The [Platform Development Roadmap](PLATFORM-DEVELOPMENT-ROADMAP.md) governs priorities and acceptance gates.
 
-| Phase                                                 | Deliverable                                                                                                                                                       |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PA-1 — Architecture and authorization requirements    | Inspect existing authorization, define capability and resource boundaries, establish security requirements and record implementation decisions.                   |
-| PA-2 — Secure platform administrator foundation       | Implement approved application-level authorization, secure provisioning and revocation, and authorization regression coverage.                                    |
-| PA-3 — Protected administration console               | Add a separately authorized interface and navigation.                                                                                                             |
-| PA-4 — Organization and user oversight                | Add authorized organization directory visibility and bounded account oversight, starting with read-only access wherever practical.                                |
-| PA-5 — Intelligence administration and usage controls | Add authorized intelligence configuration, capability oversight, usage monitoring and cost controls.                                                              |
-| PA-6 — Audited support and administrative operations  | Add explicitly authorized operations with confirmation, accountability and auditing appropriate to each operation.                                                |
-| PA-7 — Production security and acceptance             | Verify authorization, cross-organization isolation, privilege escalation resistance and audit behavior. Complete operational readiness and production acceptance. |
+| Phase                                                  | Objective and dependency                                                                                              | Security and acceptance                                                                                                     | Exclusions                                                                      |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| PA-1 — Architecture and authorization requirements     | Inspect existing application and infrastructure boundaries. Define role, capability, resource and state requirements. | Review provisioning, revocation, tenant isolation, fresh authentication, least privilege, audit and recovery requirements.  | Role creation and schema choice in this checkpoint.                             |
+| PA-2 — Secure Platform Administrator foundation        | Implement separately approved application authorization after PA-1.                                                   | Verify provisioning, assignment, revocation, denied escalation, server checks and infrastructure separation.                | Console and unrestricted infrastructure access.                                 |
+| PA-3 — Protected Platform Administration console       | Establish separately authorized navigation after PA-2.                                                                | Verify direct route and action authorization, data minimization and production exclusion of development tools.              | Directory and mutation authority conferred through navigation.                  |
+| PA-4 — Organization and user oversight                 | Start with read-only directory and bounded account oversight after the platform foundation.                           | Verify resource boundaries and sensitive-field exclusions. Directory access does not create membership.                     | Unrestricted records, impersonation and mutation.                               |
+| PA-5 — Intelligence administration, usage and costs    | Add approved provider and capability oversight on the protected foundation, subject to provider and usage gates.      | Verify separate authorizations, minimized provider metadata, cost controls and configuration audit.                         | Credential exposure, automatic provider activation and development tool access. |
+| PA-6 — Bounded administrative and support operations   | Introduce individually approved operations after PA-1 through PA-4 and applicable PA-5 controls.                      | Require scoped authorization, appropriate fresh authentication, confirmation and auditable outcomes. Verify negative cases. | Blanket impersonation and unrestricted mutation.                                |
+| PA-7 — Production security and acceptance verification | Review relevant prior phases and production gates.                                                                    | Verify tenant isolation, escalation resistance, audit, recovery and operational readiness.                                  | Implicit enablement, merge or deployment.                                       |

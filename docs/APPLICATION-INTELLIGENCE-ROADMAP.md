@@ -851,8 +851,8 @@ Implementation sequence:
 
 - JAI-5B: Protected workspace foundation — implemented; scoped local acceptance completed.
 - JAI-5C: Objective resolution and advisory guidance — implemented; local acceptance completed.
-- JAI-5D: Reusable exact operation review.
-- JAI-5E: Protected synthetic execution.
+- JAI-5D: Reusable exact operation review — local acceptance completed.
+- JAI-5E: Protected synthetic execution — local acceptance completed.
 - JAI-5F: Results, history, audit and visual polish.
 - JAI-5G: Browser and security acceptance.
 - JAI-5H: Protected workspace closeout and checkpoint.
@@ -902,6 +902,10 @@ and security requirements.
 No persistent integration may begin until its
 applicable existing roadmap gates are satisfied.
 
+The Guided Prompt Builder is a deferred consumer for optional contextual
+interpretation behind structured controls. Pilot selection and integration
+require the existing JAI-6 gates and separate authorization. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
+
 ## JAI-7 — Intelligence-assisted structured workflow coordination
 
 FliHub owns workflow state, dependencies and transitions.
@@ -919,6 +923,10 @@ as a future candidate requiring separate approval.
 - Enforce workflow budgets and operation limits.
 - Reconcile interrupted operations before repetition.
 
+The proposed Adaptive Configuration Wizard is a future consumer of bounded
+progression, dependency evaluation and exact review. Preserve deterministic
+manual paths and existing execution gates. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
+
 ## JAI-8 — Production readiness
 
 - Complete security and authorization acceptance.
@@ -929,6 +937,12 @@ as a future candidate requiring separate approval.
 - Verify interruption and recovery behavior.
 - Complete GitHub CI and review.
 - Obtain explicit merge and deployment authorization.
+
+Apply these acceptance requirements to any separately authorized activity
+configuration integration, including proposal validation, tenant isolation
+and provider-independent behavior. Future platform-facing intelligence
+oversight uses separate capabilities and data access.
+See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md) and [Platform Administration](PLATFORM-ADMINISTRATION-ROADMAP.md).
 
 ## Future application opportunities
 
@@ -2162,3 +2176,34 @@ observation covers effective disablement in the running development environment.
 JAI-5E local acceptance is complete. Full legacy browser regression and remote
 GitHub CI remain outstanding. JAI-5F and subsequent phases remain separately
 gated.
+
+### Supervisor-reported JAI-5E walkthrough
+
+The supervisor started a disposable workspace, selected Spring Invitational,
+assessed preparation readiness, prepared the exact synthetic group assignment
+review, inspected the assignments and explicitly approved execution. The
+browser displayed synthetic publication, revision 0 to 1, six groups, twelve
+teams, twenty-four athletes, and passed independent verification. It reported
+no persistent mutations, zero paid provider requests and $0.00. Refresh
+preserved the outcome and concluded scenario. This is supervisor-reported
+browser evidence. The automated verification and raw disposable HTTP evidence
+are recorded separately above.
+
+The supervisor later restored the disabled managed configuration using a
+separate stop and start and observed the workspace denial in the browser.
+The architectural checkpoint independently verified the four effective Vite
+settings and all 17 managed environment checks, including persistent
+PocketBase identity.
+
+### Next implementation priority — JAI-5F
+
+Results, history, audit and visual polish remain next, subject to separate
+authorization. Replace stale preparation messages after execution. Clearly
+present success or failure and actual published synthetic group assignments.
+Provide expandable execution and independent verification details. Improve
+history and audit presentation. Explain that the scenario has concluded and a
+new workspace is required for another operation. Preserve exact approval,
+authorization, replay protection, atomic publication and independent
+verification. JAI-5G integrated verification and JAI-5H branch closeout remain
+in sequence. Platform Administration and Intelligent Activity Configuration
+remain deferred.

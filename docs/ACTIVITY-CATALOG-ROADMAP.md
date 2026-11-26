@@ -223,6 +223,15 @@ Future acceptance must verify:
 - Relevant legacy application regression.
 - GitHub CI and review evidence.
 
+## Relationship to Intelligent Activity Configuration
+
+This roadmap governs the introduction and verification of new activities.
+The proposed Guided Prompt Builder and Adaptive Configuration Wizard consume
+registered terminology, formats, templates, fields, compatibility rules and
+prerequisites. Initial planning focuses on disc golf and charity run/walk
+within existing restrictions. New activities and ticketing require separate
+authorization. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
+
 ## Deferred decisions
 
 The following remain unresolved:

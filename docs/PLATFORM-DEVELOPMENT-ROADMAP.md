@@ -42,18 +42,19 @@ See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITEC
 
 ## Development tracks
 
-| Track                    | Current direction                                       |
-| ------------------------ | ------------------------------------------------------- |
-| Application intelligence | Continue JAI-5D through JAI-5H                          |
-| Engineering intelligence | Preserve outstanding AI-1F qualification gates          |
-| Platform Administration  | Architecture documented. Implementation deferred.       |
-| Branding and media       | Requirements captured; implementation deferred          |
-| Activity catalog         | Requirements captured; implementation deferred          |
-| Charity events           | Preserve CE-3D and subsequent deferred requirements     |
-| Sponsorships and funding | Preserve existing functionality and roadmap             |
-| Competition and scoring  | Expand through approved activity implementations        |
-| Fantasy competitions     | Preserve existing functionality and future requirements |
-| Production readiness     | Complete applicable security and acceptance gates       |
+| Track                              | Current direction                                       |
+| ---------------------------------- | ------------------------------------------------------- |
+| Application intelligence           | Continue JAI-5F through JAI-5H                          |
+| Engineering intelligence           | Preserve outstanding AI-1F qualification gates          |
+| Intelligent Activity Configuration | Architecture documented. Implementation deferred.       |
+| Platform Administration            | Architecture documented. Implementation deferred.       |
+| Branding and media                 | Requirements captured; implementation deferred          |
+| Activity catalog                   | Requirements captured; implementation deferred          |
+| Charity events                     | Preserve CE-3D and subsequent deferred requirements     |
+| Sponsorships and funding           | Preserve existing functionality and roadmap             |
+| Competition and scoring            | Expand through approved activity implementations        |
+| Fantasy competitions               | Preserve existing functionality and future requirements |
+| Production readiness               | Complete applicable security and acceptance gates       |
 
 These descriptions are planning summaries, not independent
 verification of every development track.
@@ -66,16 +67,12 @@ implementation and acceptance status.
 Continue application intelligence on
 `feature/application-intelligence`.
 
-Complete:
+JAI-5D exact operation review and JAI-5E protected synthetic execution completed local acceptance. The next implementation priority is **JAI-5F — Results, history, audit and visual polish**, followed by:
 
-- JAI-5D: Reusable exact operation review.
-- JAI-5E: Protected synthetic execution.
-- JAI-5F: Results, history, audit and visual polish.
 - JAI-5G: Integrated browser and security acceptance.
 - JAI-5H: Protected workspace closeout.
 
-Do not interrupt this work to implement branding
-or expand activity configurations.
+Preserve this sequence while documenting deferred platform initiatives.
 
 The current protected workspace remains offline,
 synthetic-only and development-restricted.
@@ -131,6 +128,15 @@ responsibility and server-enforced capabilities determine authorized actions.
 Platform Administration remains deferred. Capture its requirements without
 changing the active application intelligence priorities or existing acceptance
 gates. See [Platform Administration Roadmap](PLATFORM-ADMINISTRATION-ROADMAP.md).
+
+## Intelligent Activity Configuration initiative
+
+Plan activity-specific templates, structured guided requirements, deterministic
+capability eligibility and an adaptive event wizard. Initial architecture
+focuses on the established FLI disc golf format and charity run/walk under
+existing gates. Ticketing, activity catalog expansion and Intelligent
+Organization Configuration remain separate future work. This deferred
+initiative preserves the JAI-5F priority. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
 
 ## Shared platform dependencies
 
@@ -202,6 +208,7 @@ or architectural proposals as operational functionality.
 - [Application Capability Catalog](APPLICATION-CAPABILITY-CATALOG.md)
 - [Design Patterns](FLIHUB-DESIGN-PATTERNS.md)
 - [Platform Administration](PLATFORM-ADMINISTRATION-ROADMAP.md)
+- [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md)
 - [Branding](BRANDING-ROADMAP.md)
 - [Activity Catalog](ACTIVITY-CATALOG-ROADMAP.md)
 

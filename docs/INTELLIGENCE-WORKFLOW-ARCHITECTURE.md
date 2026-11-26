@@ -336,7 +336,8 @@ Do not silently apply recommendations or initiate writes.
 Retain the original phase identifiers and completed
 JAI-1 through JAI-5C acceptance records.
 
-JAI-5D remains the next implementation phase.
+JAI-5D and JAI-5E have completed local acceptance. JAI-5F is the next
+implementation phase, followed by existing integrated acceptance and closeout.
 
 JAI-6 does not authorize persistent integration before
 the existing applicable roadmap gates are satisfied.
@@ -348,6 +349,18 @@ and safe stopping requirements.
 Preserve the existing multi-activity development strategy.
 Pilot selection and unsupported activity activation
 require separate approval.
+
+## Deferred configuration and administration consumers
+
+The proposed Guided Prompt Builder and Adaptive Configuration Wizard retain
+structured configuration and use deterministic progression, eligibility and
+validation. Optional intelligence interprets requirements and explains
+supported choices. FliHub owns exact review, authorization and execution.
+See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
+
+Platform-facing intelligence administration requires explicit platform
+capabilities and independent data scope. The protected development allowlist
+continues to govern only development access. See [Platform Administration](PLATFORM-ADMINISTRATION-ROADMAP.md).
 
 ## Acceptance requirements
 
