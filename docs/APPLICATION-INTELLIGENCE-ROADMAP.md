@@ -443,7 +443,58 @@ Limitations:
 
 ### JAI-4D — Execution plans and approval
 
-Status: Up next.
+Status: Complete.
+
+Acceptance evidence:
+
+- Implemented versioned canonical serialization and
+  SHA-256 state and execution-plan digests.
+- Bound exact proposed assignments, operation, actor,
+  organization, event, scope, and state revision.
+- Verified immutable reviewed plans and rejection of
+  modified, rehashed, malformed, and stale plans.
+- Regenerated expected plans during validation rather
+  than trusting caller-supplied digests.
+- Introduced disposable, process-local approval sessions
+  with privately owned synthetic state and actor identity.
+- Required explicit confirmation of the reviewed digest.
+- Protected approval records from external mutation.
+- Bound approval receipts to their originating session,
+  actor, operation, scope, plan, and state.
+- Implemented cancellation and terminal single-use
+  approval consumption.
+- Rejected missing, modified, cross-session, cancelled,
+  and repeated approval consumption attempts.
+- Verified competing consumption calls within one
+  JavaScript process succeed only once.
+- Added defensive Proxy rejection at canonical
+  serialization, confirmation, and preparation boundaries.
+- Verified that Proxy traps cannot reenter protected
+  session methods through these tested boundaries.
+- Preserved original synthetic state throughout
+  preparation, approval, cancellation, and consumption.
+- Passed consolidated offline regression, TypeScript,
+  lint, and production build checks.
+- No provider dispatch, persistent integration, or
+  application operation execution enabled.
+
+Limitations:
+
+- Synthetic actor selection is not production
+  authentication or authorization.
+- Plan digests identify content but are not credentials.
+- Approval receipts are informational and do not
+  independently authorize execution.
+- Approval state and replay protection are process-local
+  and disposable, not distributed or persistent.
+- Programmatic test confirmation is not evidence of
+  genuine human review.
+- Canonical serialization is not a general-purpose
+  hostile JavaScript sandbox.
+- Controlled candidate execution, independent
+  verification, atomic state publication, sanitized
+  execution audit, and interactive operator review
+  remain subsequent implementation requirements.
 
 - Define canonical operation plans and SHA-256 digests.
 - Bind plans to actor, scope, operation, and state revision.
@@ -454,7 +505,7 @@ Status: Up next.
 
 ### JAI-4E — Controlled execution
 
-Status: Pending.
+Status: Up next.
 
 - Resolve only registered deterministic handlers.
 - Revalidate authorization and prerequisites.
