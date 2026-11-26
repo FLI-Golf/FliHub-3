@@ -3,6 +3,10 @@ import { types } from 'node:util';
 
 import { canonicalJson } from './canonical.ts';
 
+import { prepareSyntheticOperationCandidate } from './handler.ts';
+
+import type { SyntheticCandidateOutcome } from './handler.ts';
+
 import { createSyntheticOperationState } from './fixtures.ts';
 
 import { authorizeSyntheticOperation } from './authorization.ts';
@@ -57,6 +61,21 @@ export type SyntheticApprovalConsumptionOutcome =
 				'approval_required' | 'invalid_approval' | 'replay_detected' | 'session_closed';
 	  };
 
+export type SyntheticAuthorizedExecutionOutcome =
+	| Extract<SyntheticCandidateOutcome, { status: 'candidate_prepared' }>
+	| {
+			readonly status: 'rejected';
+			readonly reason:
+				| 'approval_required'
+				| 'invalid_approval'
+				| 'replay_detected'
+				| 'session_closed'
+				| 'invalid_plan'
+				| 'stale_state'
+				| 'operation_unavailable'
+				| 'execution_failed';
+	  };
+
 export interface SyntheticApprovalSession {
 	readonly sessionId: string;
 
@@ -65,6 +84,8 @@ export interface SyntheticApprovalSession {
 	approve(confirmation: unknown): SyntheticApprovalOutcome;
 
 	consumeApproval(receipt: unknown): SyntheticApprovalConsumptionOutcome;
+
+	executeApprovedOperation(receipt: unknown): SyntheticAuthorizedExecutionOutcome;
 
 	getStatus(): SyntheticApprovalSessionStatus;
 
@@ -146,7 +167,7 @@ function readConfirmation(input: unknown): string | null {
  * Returned approval receipts are informational copies,
  * not bearer credentials or execution authorization.
  *
- * No persistent state or execution method is exposed.
+ * No persistent state or candidate publication is exposed.
  */
 export function createSyntheticApprovalSession(
 	fixtureId: unknown,
@@ -369,6 +390,37 @@ export function createSyntheticApprovalSession(
 					return {
 						status: 'rejected',
 						reason: 'invalid_approval'
+					};
+				}
+			},
+
+			executeApprovedOperation(receipt) {
+				// Capture only the privately retained plan.
+				// No caller-supplied plan, handler or state is used.
+				const plan = reviewedPlan;
+
+				// The existing protected boundary revalidates
+				// and consumes approval before candidate work.
+				const consumed = session.consumeApproval(receipt);
+
+				if (consumed.status !== 'consumed') {
+					return consumed;
+				}
+
+				if (!plan || consumed.planDigest !== plan.digest) {
+					return {
+						status: 'rejected',
+						reason: 'invalid_approval'
+					};
+				}
+
+				try {
+					return prepareSyntheticOperationCandidate(state, registeredActorId, plan);
+				} catch {
+					// Approval remains consumed after failure.
+					return {
+						status: 'rejected',
+						reason: 'execution_failed'
 					};
 				}
 			},

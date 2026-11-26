@@ -505,7 +505,54 @@ Limitations:
 
 ### JAI-4E — Controlled execution
 
-Status: Up next.
+Status: Complete.
+
+Acceptance evidence:
+
+- Implemented a private, allowlisted operation handler
+  registry for synthetic group creation.
+- Revalidated exact execution plans before constructing
+  isolated candidate state.
+- Preserved original synthetic state and unrelated
+  application records.
+- Constructed six groups containing twelve intact teams
+  and twenty-four uniquely assigned athletes.
+- Integrated registered candidate construction with
+  protected operator approval sessions.
+- Consumed single-use approval before invoking the
+  registered operation handler.
+- Rejected missing, forged, cancelled, cross-session,
+  and repeated execution attempts.
+- Verified competing execution attempts within one
+  JavaScript process construct only one candidate.
+- Verified standalone approval consumption cannot
+  authorize subsequent execution.
+- Injected test-only failures at both candidate
+  cloning stages.
+- Verified failed construction leaves original state
+  unchanged and approval permanently consumed.
+- Verified independent sessions remain unaffected
+  by another session's failed execution.
+- Verified failure outcomes expose neither partial
+  candidates nor internal exception details.
+- Passed consolidated offline regression, TypeScript,
+  lint, and production build checks.
+
+Limitations:
+
+- Successful execution produces an isolated,
+  unverified candidate only.
+- Candidate publication remains prohibited.
+- No authoritative state mutation has been enabled.
+- Independent verification, atomic state publication,
+  and sanitized execution audit remain JAI-4F
+  requirements.
+- Interactive human confirmation remains JAI-4G.
+- Failure injection exists only in regression tests.
+- Process-local synthetic authorization and replay
+  protection do not establish production security.
+- No provider dispatch, persistent integration,
+  merge, or deployment performed.
 
 - Resolve only registered deterministic handlers.
 - Revalidate authorization and prerequisites.
@@ -517,7 +564,7 @@ Status: Up next.
 
 ### JAI-4F — Independent verification and audit
 
-Status: Pending.
+Status: Up next.
 
 - Verify resulting state independently of handler success.
 - Verify six groups and complete fixture roster coverage.
