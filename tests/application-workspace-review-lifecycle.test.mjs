@@ -364,6 +364,7 @@ test('execution admission binds all confirmation fields, owner and session', asy
 	const { sessions, id, confirmation } = await executionSetup();
 	const second = sessions.start(owner);
 	assert.equal(sessions.readExecution(owner, id), null);
+	assert.equal(sessions.readExecutionEvidence(owner, id), null);
 	for (const field of Object.keys(confirmation)) {
 		assert.equal(
 			sessions.executeReview(owner, id, { ...confirmation, [field]: '' }).status,
@@ -372,7 +373,39 @@ test('execution admission binds all confirmation fields, owner and session', asy
 	}
 	assert.equal(sessions.executeReview(other, id, confirmation).status, 'missing_session');
 	assert.equal(sessions.executeReview(owner, second.id, confirmation).status, 'stale_confirmation');
+	const exact = sessions.readReview(owner, id);
 	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'completed');
+	const { publication, audit } = sessions.readExecutionEvidence(owner, id);
+	assert.deepEqual(
+		publication.groups,
+		exact.groups.map(({ name, teams }) => ({
+			name,
+			teams: teams.map((team) => ({
+				name: team.name,
+				athletes: team.athletes.map(({ name }) => name)
+			}))
+		}))
+	);
+	assert.equal(publication.groups.length, 6);
+	assert.ok(Object.isFrozen(publication.groups[0].teams[0].athletes));
+	assert.deepEqual(audit, {
+		sequence: 1,
+		outcome: 'published',
+		verification: 'passed',
+		revisionBefore: 0,
+		revisionAfter: 1,
+		stateChanged: true
+	});
+	assert.equal(sessions.readExecutionEvidence(other, id), null);
+	assert.equal(sessions.readExecutionEvidence(owner, second.id), null);
+	assert.doesNotMatch(
+		JSON.stringify({ publication, audit }),
+		/sessionId|reviewId|receipt|planDigest|athleteIds|rosters/
+	);
+	const lifecycle = sessions.readLifecycle(owner, id)[1];
+	assert.equal(lifecycle.objective, 'Prepare a tournament');
+	assert.ok(lifecycle.recommendation);
+	assert.ok(lifecycle.reviewPreparedAt <= lifecycle.executionAdmittedAt);
 	const outcome = sessions.readExecution(owner, id);
 	assert.deepEqual(outcome, {
 		status: 'published',
@@ -415,6 +448,15 @@ for (const boundary of ['candidate', 'verification']) {
 		}
 		const outcome = sessions.readExecution(owner, id);
 		assert.deepEqual(outcome, { status: 'failed' });
+		const evidence = sessions.readExecutionEvidence(owner, id);
+		assert.equal(evidence.publication, null);
+		assert.equal(evidence.audit.outcome, 'rejected');
+		assert.equal(
+			evidence.audit.verification,
+			boundary === 'verification' ? 'failed' : 'not-performed'
+		);
+		assert.equal(evidence.audit.revisionAfter, 0);
+		assert.equal(evidence.audit.stateChanged, false);
 		assert.ok(Object.isFrozen(outcome));
 		assert.equal(sessions.executeReview(owner, id, confirmation).status, 'concluded');
 		assert.equal(sessions.beginAssessment(owner, id).status, 'concluded');
@@ -435,6 +477,9 @@ for (const end of ['expire', 'revoke']) {
 test('assessment and cancellation invalidate execution when admitted first', async () => {
 	const { sessions, id, confirmation, cancel } = await executionSetup();
 	assert.equal(cancel(confirmation.reviewId).status, 'cancelled');
+	const lifecycle = sessions.readLifecycle(owner, id)[1];
+	assert.ok(lifecycle.reviewPreparedAt <= lifecycle.reviewCancelledAt);
+	assert.equal(lifecycle.executionAdmittedAt, undefined);
 	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'stale_confirmation');
 	const assessment = sessions.beginAssessment(owner, id);
 	assert.equal(assessment.status, 'admitted');
@@ -455,4 +500,22 @@ test('a failed outcome projection cannot change a published scenario', async (t)
 	}
 	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'concluded');
 	assert.equal(sessions.readExecution(owner, id).status, 'published');
+});
+
+test('publication details require the committed state, even when a review is retained', async (t) => {
+	const { sessions, id, confirmation } = await executionSetup();
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'completed');
+	const clone = globalThis.structuredClone;
+	const mock = t.mock.method(globalThis, 'structuredClone', (value) => {
+		const copy = clone(value);
+		if (copy?.source === 'synthetic') copy.groups[0].name = 'Unverified assignment';
+		return copy;
+	});
+	try {
+		assert.equal(sessions.readExecutionEvidence(owner, id).publication, null);
+		assert.equal(sessions.readExecution(owner, id).status, 'published');
+	} finally {
+		mock.mock.restore();
+	}
+	assert.equal(sessions.readExecutionEvidence(owner, id).publication.groups.length, 6);
 });

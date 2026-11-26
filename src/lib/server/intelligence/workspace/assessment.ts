@@ -222,7 +222,15 @@ export function createWorkspaceAssessment(
 					result.status === 'advised' && result.decision === 'clarification'
 						? 'clarification'
 						: result.status,
-					recommendation
+					recommendation,
+					result.status === 'advised'
+						? {
+								objective: result.objective,
+								recommendation: recommendation
+									? (getApplicationCapability(recommendation.capability)?.label ?? null)
+									: null
+							}
+						: undefined
 				)
 			) {
 				return { status: 'discarded' } as const;

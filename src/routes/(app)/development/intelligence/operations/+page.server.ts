@@ -80,15 +80,19 @@ async function refreshWorkspaceAccess(locals: App.Locals, expectedOwner: string)
 
 export const load: PageServerLoad = ({ locals, cookies }) => {
 	const owner = requireAccess(locals);
+	const sessionId = cookies.get(cookieName);
+	const session = workspaceSessions.read(owner, sessionId);
 
 	return {
-		session: workspaceSessions.read(owner, cookies.get(cookieName)),
-		assessmentSummary: workspaceAssessment.readSummary(owner, cookies.get(cookieName)),
-		review: workspaceSessions.readReview(owner, cookies.get(cookieName)),
-		reviewGeneration: workspaceSessions.readCurrentRecommendation(owner, cookies.get(cookieName))
-			?.generation,
-		execution: workspaceSessions.readExecution(owner, cookies.get(cookieName)),
-		reviewAvailability: workspaceSessions.readReviewAvailability(owner, cookies.get(cookieName)),
+		session,
+		sessionEnded: Boolean(sessionId && !session),
+		assessmentSummary: workspaceAssessment.readSummary(owner, sessionId),
+		review: workspaceSessions.readReview(owner, sessionId),
+		reviewGeneration: workspaceSessions.readCurrentRecommendation(owner, sessionId)?.generation,
+		execution: workspaceSessions.readExecution(owner, sessionId),
+		executionEvidence: workspaceSessions.readExecutionEvidence(owner, sessionId),
+		assessmentLifecycle: workspaceSessions.readLifecycle(owner, sessionId),
+		reviewAvailability: workspaceSessions.readReviewAvailability(owner, sessionId),
 		limits: workspaceLimits
 	};
 };

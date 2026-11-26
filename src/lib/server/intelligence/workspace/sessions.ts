@@ -18,6 +18,7 @@ type ActiveReview = {
 	readonly generation: string;
 	readonly handle: ProtectedReview['handle'];
 	readonly execute: ProtectedReview['execute'];
+	readonly readEvidence: ProtectedReview['readEvidence'];
 };
 
 export const workspaceLimits = Object.freeze({
@@ -45,6 +46,16 @@ export type WorkspaceAssessmentRecord = {
 	readonly outcome: WorkspaceAssessmentOutcome;
 };
 
+type AssessmentLifecycle = {
+	readonly objective: string | null;
+	readonly recommendation: string | null;
+	reviewPreparedAt?: number;
+	reviewCancelledAt?: number;
+	executionAdmittedAt?: number;
+};
+
+type RetainedAssessment = WorkspaceAssessmentRecord & { lifecycle: AssessmentLifecycle };
+
 export type WorkspaceRecommendationContext = {
 	readonly objectiveId: string;
 	readonly fixtureId: string;
@@ -69,7 +80,7 @@ type Session = {
 	lastActivityAt: number;
 	assessmentSequence: number;
 	activeAssessment: AssessmentTicket | null;
-	assessmentHistory: WorkspaceAssessmentRecord[];
+	assessmentHistory: RetainedAssessment[];
 	currentRecommendation: WorkspaceCurrentRecommendation | null;
 	activeReview: ActiveReview | null;
 	reviewAttempted: boolean;
@@ -191,7 +202,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			// Object identity prevents stale or replayed completion.
 			const finish = (
 				outcome: WorkspaceAssessmentOutcome,
-				recommendation: WorkspaceRecommendationContext | null = null
+				recommendation: WorkspaceRecommendationContext | null = null,
+				labels?: Pick<AssessmentLifecycle, 'objective' | 'recommendation'>
 			): boolean => {
 				const completedAt = now();
 				cleanup(completedAt);
@@ -230,7 +242,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 					sequence: ticket.sequence,
 					startedAt: ticket.startedAt,
 					completedAt,
-					outcome
+					outcome,
+					lifecycle: labels ? { ...labels } : { objective: null, recommendation: null }
 				});
 
 				if (current.assessmentHistory.length > workspaceLimits.maxAssessmentHistory) {
@@ -378,9 +391,12 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				session.activeReview = {
 					generation: context.generation,
 					handle: result.handle,
-					execute: result.execute
+					execute: result.execute,
+					readEvidence: result.readEvidence
 				};
 
+				const assessment = session.assessmentHistory.at(-1);
+				if (assessment) assessment.lifecycle.reviewPreparedAt = time;
 				session.lastActivityAt = time;
 
 				return { status: 'prepared', review } as const;
@@ -394,6 +410,29 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			cleanup(now());
 			const outcome = owned(owner, id)?.execution;
 			return outcome && outcome !== 'admitted' ? projectExecutionOutcome(outcome) : null;
+		},
+
+		readExecutionEvidence(owner: string, id: string | undefined) {
+			cleanup(now());
+			const session = owned(owner, id);
+			const outcome = session?.execution;
+			if (!outcome || outcome === 'admitted') return null;
+
+			try {
+				return session.activeReview?.readEvidence(outcome) ?? null;
+			} catch {
+				// Evidence projection must never reclassify a committed publication.
+				return null;
+			}
+		},
+
+		readLifecycle(owner: string, id: string | undefined) {
+			cleanup(now());
+			const session = owned(owner, id);
+			return Object.fromEntries(
+				session?.assessmentHistory.map(({ sequence, lifecycle }) => [sequence, { ...lifecycle }]) ??
+					[]
+			);
 		},
 
 		executeReview(
@@ -428,6 +467,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				return { status: 'stale_confirmation' } as const;
 
 			session.execution = 'admitted';
+			const assessment = session.assessmentHistory.at(-1);
+			if (assessment) assessment.lifecycle.executionAdmittedAt = time;
 			session.lastActivityAt = time;
 			try {
 				session.execution = retained.execute();
@@ -456,6 +497,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			}
 
 			invalidateReview(session);
+			const assessment = session.assessmentHistory.at(-1);
+			if (assessment) assessment.lifecycle.reviewCancelledAt = time;
 			session.lastActivityAt = time;
 
 			return { status: 'cancelled' } as const;
@@ -466,7 +509,14 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 
 			const session = owned(owner, id);
 
-			return session ? session.assessmentHistory.map((record) => ({ ...record })) : null;
+			return session
+				? session.assessmentHistory.map(({ sequence, startedAt, completedAt, outcome }) => ({
+						sequence,
+						startedAt,
+						completedAt,
+						outcome
+					}))
+				: null;
 		},
 
 		revokeOwner(owner: string) {

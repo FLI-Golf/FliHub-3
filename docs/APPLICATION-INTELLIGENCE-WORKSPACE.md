@@ -940,3 +940,48 @@ Disposable authenticated HTTP tests verified status and cache behavior separatel
 
 The [JAI-5E roadmap checkpoint](APPLICATION-INTELLIGENCE-ROADMAP.md#jai-5e--protected-synthetic-execution)
 records verification commands, results, and outstanding acceptance requirements.
+
+## JAI-5F — Verified results and disposable history
+
+The workspace displays the terminal execution outcome and separately projects
+published assignments from the committed synthetic snapshot. Before serving
+assignment details, the server binds that snapshot to the retained publication
+outcome by revision and canonical state digest, and checks the matching
+publication audit record. It resolves the organization, event, simulated actor,
+groups, teams and athletes from committed state. The projection exposes labels
+and membership only. It keeps approval receipts, internal identifiers, digests,
+raw state and exceptions private. Missing detail evidence leaves the retained
+outcome intact.
+
+The result includes expandable execution, independent verification and group
+details. The verifier checks exact assignments, unique groups and assignments,
+complete team and athlete coverage, revision advancement and unchanged synthetic
+records outside the assignment scope. Failed verification never supplies
+published assignments. The audit projection exposes the bounded record sequence,
+outcome, verification status, revisions and state-change flag.
+
+History adds registered objective and capability labels, review preparation and
+cancellation times, and admitted execution time to the existing assessment
+retention window. Approval issuance and verification appear when the engine
+audit supports them. No raw objective is retained. This evidence is process-local
+and is discarded with the disposable session.
+
+A terminal outcome replaces action notices such as the review-ready message.
+Operations stop prompting for an assessment once the scenario concludes.
+The operator can end the session from Workspace and start a fresh scenario.
+Refresh and lost-response recovery read retained state only.
+
+### Supervisor acceptance walkthrough
+
+Use an authorized disposable development environment. Start a fresh workspace
+and assess **Prepare a tournament** with **Spring Invitational** and the
+simulated organization owner. Prepare and inspect the exact review, then
+explicitly approve and execute. Inspect the published group, team and athlete
+assignments. Expand execution and verification details, then view History and
+expand the audit. Refresh and confirm the outcome persists, the scenario is
+concluded and conflicting controls are unavailable. End the synthetic session
+from Workspace and confirm that the result is cleared and the start control is
+available.
+
+Supervisor browser acceptance is pending. JAI-5G integrated acceptance and
+JAI-5H branch closeout remain separate.

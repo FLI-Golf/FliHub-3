@@ -146,13 +146,15 @@
 	onMount(() => {
 		hydrated = true;
 
-		if (data.session && data.review) {
+		if (data.session && (data.review || data.execution)) {
 			activeTab = 'Operations';
 		}
 	});
 
 	let assessment = $derived(
-		data.session && !busy && form && 'assessment' in form ? form.assessment : undefined
+		data.session && !data.execution && !busy && form && 'assessment' in form
+			? form.assessment
+			: undefined
 	);
 
 	function assignment(value: boolean | null, positive: string, negative: string) {
@@ -245,7 +247,8 @@
 		{#if data.execution}
 			<section aria-label="Synthetic execution outcome" class="space-y-2 rounded-md border p-4">
 				{#if data.execution.status === 'published'}
-					<h2 class="flex items-center gap-2 font-semibold">
+					{@const publication = data.executionEvidence?.publication}
+					<h2 class="flex items-center gap-2 font-semibold text-green-700 dark:text-green-400">
 						<ShieldCheck size={20} aria-hidden="true" />
 						Synthetic publication completed
 					</h2>
@@ -257,17 +260,105 @@
 							</div>
 						{/each}
 					</dl>
+
+					<details class="group rounded-md border">
+						<summary
+							class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold focus-visible:outline-2"
+						>
+							Execution details
+							<ChevronDown size={18} aria-hidden="true" class="shrink-0 group-open:rotate-180" />
+						</summary>
+						<div class="space-y-1 px-3 pb-3 text-sm">
+							{#if publication}
+								<p><strong>Operation</strong> {publication.operation}</p>
+								<p><strong>Synthetic organization</strong> {publication.organization}</p>
+								<p><strong>Synthetic event</strong> {publication.event}</p>
+								<p><strong>Simulated operator</strong> {publication.operator}</p>
+							{/if}
+							<p><strong>Publication</strong> Completed in this disposable workspace</p>
+							<p><strong>Scope</strong> Synthetic group assignments</p>
+						</div>
+					</details>
+
+					<details class="group rounded-md border">
+						<summary
+							class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold focus-visible:outline-2"
+						>
+							Independent verification details
+							<ChevronDown size={18} aria-hidden="true" class="shrink-0 group-open:rotate-180" />
+						</summary>
+						<div class="space-y-1 px-3 pb-3 text-sm">
+							<p>
+								The verifier checked the exact approved assignments, unique groups, teams and
+								athletes, and complete coverage of the eligible teams and athletes.
+							</p>
+							<p>
+								It verified revision {data.execution.revisionBefore} → {data.execution
+									.revisionAfter}
+								and checked that synthetic records outside the group assignments were unchanged.
+							</p>
+						</div>
+					</details>
+
+					<div class="space-y-2">
+						<h3 class="font-semibold">Published group assignments</h3>
+						{#if publication}
+							<div class="divide-y rounded-md border">
+								{#each publication.groups as group, index (group.name)}
+									<details class="group {index % 2 === 0 ? 'bg-muted/40' : ''}">
+										<summary
+											class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 text-sm font-semibold focus-visible:outline-2"
+										>
+											<span
+												>{group.name}
+												<span class="font-normal text-muted-foreground"
+													>· {group.teams.length} teams</span
+												></span
+											>
+											<ChevronDown
+												size={18}
+												aria-hidden="true"
+												class="shrink-0 group-open:rotate-180"
+											/>
+										</summary>
+										<ul class="grid gap-2 px-3 pb-3 text-sm sm:grid-cols-2">
+											{#each group.teams as team (team.name)}
+												<li class="min-w-0 rounded border p-2 break-words">
+													<strong>{team.name}</strong>
+													<ul class="mt-1 space-y-1">
+														{#each team.athletes as athlete, athleteIndex (athleteIndex)}
+															<li>{athlete}</li>
+														{/each}
+													</ul>
+												</li>
+											{/each}
+										</ul>
+									</details>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-muted-foreground">
+								Published assignment details are unavailable.
+							</p>
+						{/if}
+					</div>
 				{:else}
 					<h2 class="font-semibold">Synthetic execution failed</h2>
 					<p class="text-sm">The original synthetic state was retained.</p>
+					{#if data.executionEvidence?.audit?.verification === 'failed'}
+						<p class="text-sm">
+							Independent verification failed. Synthetic publication was rejected.
+						</p>
+					{/if}
 				{/if}
-				<p class="text-sm">
-					The scenario has concluded. A new workspace is required to begin another scenario.
+				<p class="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+					The scenario has concluded. In Workspace, end the synthetic session, then start a new
+					session.
 				</p>
 			</section>
 		{/if}
 
-		{#if form?.message}
+		{#if form?.message && !data.execution && reviewBusy !== 'execute'}
 			<p
 				role="status"
 				aria-live="polite"
@@ -293,7 +384,11 @@
 				<div class="flex items-center justify-between gap-2 border-t pt-3 text-sm">
 					<span class="font-semibold">Session status</span>
 					<Badge variant={data.session ? 'default' : 'outline'}>
-						{data.session ? 'Active at last server response' : 'Not started'}
+						{data.session
+							? 'Active at last server response'
+							: data.sessionEnded
+								? 'Previous session unavailable'
+								: 'Not started'}
 					</Badge>
 				</div>
 
@@ -401,11 +496,7 @@
 						assessment is required before preparing another review.
 					</p>
 				</section>
-			{:else if data.session && data.execution}
-				<p class="text-sm">
-					This scenario has concluded. Close the workspace to start another scenario.
-				</p>
-			{:else if data.session && !reviewBusy}
+			{:else if data.session && !data.execution && !reviewBusy}
 				<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
 					<div class="flex flex-wrap items-start justify-between gap-2">
 						<div class="space-y-1">
@@ -988,6 +1079,7 @@
 						{#each historyRecords as record, index (record.sequence)}
 							{@const presentation = outcomePresentation[record.outcome]}
 							{@const OutcomeIcon = presentation.icon}
+							{@const lifecycle = data.assessmentLifecycle[record.sequence]}
 
 							<details
 								class="group border-b last:border-b-0 {index % 2 === 0 ? 'bg-muted/40' : ''}"
@@ -1039,7 +1131,50 @@
 											{Math.max(0, record.completedAt - record.startedAt)} ms
 										</dd>
 									</div>
+									{#if lifecycle?.objective}
+										<div class="flex flex-wrap justify-between gap-2">
+											<dt class="font-semibold">Objective</dt>
+											<dd>{lifecycle.objective}</dd>
+										</div>
+									{/if}
+									{#if lifecycle?.recommendation}
+										<div class="flex flex-wrap justify-between gap-2">
+											<dt class="font-semibold">Recommended capability</dt>
+											<dd>{lifecycle.recommendation}</dd>
+										</div>
+									{/if}
 								</dl>
+								{#if lifecycle?.reviewPreparedAt !== undefined}
+									<ol aria-label="Operation milestones" class="space-y-1 px-3 pb-3 text-sm">
+										<li>Exact review prepared · {formatTimestamp(lifecycle.reviewPreparedAt)}</li>
+										{#if lifecycle.reviewCancelledAt !== undefined}
+											<li>Review cancelled · {formatTimestamp(lifecycle.reviewCancelledAt)}</li>
+										{/if}
+										{#if lifecycle.executionAdmittedAt !== undefined}
+											<li>
+												Explicit confirmation and execution admitted · {formatTimestamp(
+													lifecycle.executionAdmittedAt
+												)}
+											</li>
+											{#if data.executionEvidence?.audit}
+												<li>Approval issued</li>
+												<li>
+													Independent verification · {data.executionEvidence.audit.verification.replace(
+														'-',
+														' '
+													)}
+												</li>
+											{/if}
+											{#if data.execution}
+												<li>
+													{data.execution.status === 'published'
+														? 'Synthetic state published'
+														: 'Execution failed'} · Scenario concluded
+												</li>
+											{/if}
+										{/if}
+									</ol>
+								{/if}
 							</details>
 						{/each}
 					</div>
@@ -1062,6 +1197,29 @@
 					</div>
 				</div>
 			</section>
+			{#if data.executionEvidence?.audit}
+				{@const audit = data.executionEvidence.audit}
+				<details class="group rounded-md border">
+					<summary
+						class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold focus-visible:outline-2"
+					>
+						Synthetic publication audit
+						<ChevronDown size={18} aria-hidden="true" class="shrink-0 group-open:rotate-180" />
+					</summary>
+					<div class="space-y-1 px-3 pb-3 text-sm">
+						<p><strong>Record</strong> #{audit.sequence} · {audit.outcome}</p>
+						<p><strong>Independent verification</strong> {audit.verification.replace('-', ' ')}</p>
+						<p>
+							<strong>Synthetic revision</strong>
+							{audit.revisionBefore} → {audit.revisionAfter}
+						</p>
+						<p><strong>Synthetic state changed</strong> {audit.stateChanged ? 'Yes' : 'No'}</p>
+						<p class="text-muted-foreground">
+							Disposable audit evidence is retained only for this workspace session.
+						</p>
+					</div>
+				</details>
+			{/if}
 		{:else if activeTab === 'Usage'}
 			<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
 				<div class="flex flex-wrap items-center justify-between gap-2">
@@ -1220,7 +1378,7 @@
 					{/each}
 				</div>
 
-				{#if data.session}
+				{#if data.session && !data.execution}
 					<Button type="button" variant="outline" onclick={() => (activeTab = 'Workspace')}>
 						<Sparkles size={16} aria-hidden="true" />
 						Assess an objective
@@ -1241,7 +1399,7 @@
 					</p>
 				</div>
 			</section>
-		{:else if activeTab === 'Operations'}
+		{:else if activeTab === 'Operations' && !data.execution}
 			<section
 				aria-labelledby="operation-review-heading"
 				aria-busy={reviewBusy !== null}

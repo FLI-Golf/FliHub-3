@@ -2207,3 +2207,35 @@ authorization, replay protection, atomic publication and independent
 verification. JAI-5G integrated verification and JAI-5H branch closeout remain
 in sequence. Platform Administration and Intelligent Activity Configuration
 remain deferred.
+
+## JAI-5F — Results, history, audit and visual polish
+
+Implemented digest-bound published assignment details, expandable execution and
+verification evidence, and a sanitized process-local publication audit. History
+pairs retained assessments with registered objective and recommendation labels
+and observed review and execution milestones. The terminal result supersedes
+stale review notices and removes contradictory reassessment prompts.
+
+The [workspace architecture and supervisor walkthrough](APPLICATION-INTELLIGENCE-WORKSPACE.md#jai-5f--verified-results-and-disposable-history)
+describe the evidence boundary and pending supervisor browser acceptance.
+JAI-5G integrated browser and security acceptance and JAI-5H closeout remain
+outstanding.
+
+Automated verification passed:
+
+- `node tests/intelligence.test.mjs` — 11 tests.
+- `node --test --test-isolation=none tests/application-intelligence*.test.mjs tests/application-workspace*.test.mjs`
+  — 963 tests, including rejected verification and unavailable detail evidence.
+- `node tests/application-workspace-http.mjs` — 100 disposable acceptance
+  checks, including 27 Chromium checks. Covered authoritative assignments,
+  mobile and desktop layout, keyboard disclosures, audit ordering, replay,
+  scoped visibility, dropped-response recovery and production rejection.
+- `npm run check` — zero errors and warnings. `npm run lint`, scoped Prettier,
+  `npm run build` and `git diff --check` passed.
+- `npm run test:integration` — 215 tests against disposable services.
+- `E2E_SKIP_BUILD=1 npm run test:e2e -- phase1a` — 19 focused legacy browser
+  checks against disposable services and the verified production build.
+- Host `npm run dev:verify` — all 17 checks passed before and after testing.
+  The four effective managed Vite settings matched the disabled baseline.
+
+Full legacy browser regression and remote GitHub CI remain separate evidence.

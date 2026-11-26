@@ -721,6 +721,63 @@ export async function runWorkspaceBrowserAcceptance({
 				'0',
 				'$0.00'
 			]);
+			assert.equal(
+				await page.getByText('Exact synthetic operation review ready.', { exact: true }).count(),
+				0
+			);
+			assert.equal(await page.getByText('No active operation review', { exact: true }).count(), 0);
+
+			const executionDetails = outcome.getByText('Execution details', { exact: true });
+			await executionDetails.focus();
+			await executionDetails.press('Enter');
+			await visible(outcome.getByText('Spring Invitational', { exact: false }));
+			const verificationDetails = outcome.getByText('Independent verification details', {
+				exact: true
+			});
+			await verificationDetails.focus();
+			await verificationDetails.press('Space');
+			await visible(outcome.getByText('The verifier checked', { exact: false }));
+			const assignments = outcome
+				.getByRole('heading', { name: 'Published group assignments' })
+				.locator('xpath=..');
+			const groups = assignments.locator('details');
+			assert.equal(await groups.count(), 6);
+			const firstGroup = groups.first().locator('summary');
+			await firstGroup.focus();
+			await firstGroup.press('Enter');
+			await visible(groups.first().locator('li strong').first());
+			assert.equal(await groups.locator('li strong').count(), 12);
+			assert.equal(await groups.locator('li ul li').count(), 24);
+			await page.setViewportSize({ width: 375, height: 800 });
+			assert.ok(
+				await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+			);
+			pass(
+				'Browser shows verified published assignments and keyboard-accessible details on desktop and mobile'
+			);
+
+			await tab('History');
+			const milestones = page.locator('ol[aria-label="Operation milestones"]').first();
+			const historyRecord = milestones.locator('xpath=ancestor::details[1]');
+			await historyRecord.locator('summary').click();
+			assert.deepEqual(
+				(await milestones.locator('li').allTextContents()).map(
+					(item) => item.trim().split(' · ')[0]
+				),
+				[
+					'Exact review prepared',
+					'Explicit confirmation and execution admitted',
+					'Approval issued',
+					'Independent verification',
+					'Synthetic state published'
+				]
+			);
+			const audit = page.getByText('Synthetic publication audit', { exact: true });
+			await audit.focus();
+			await audit.press('Enter');
+			await visible(page.getByText('#1 · published', { exact: false }));
+			pass('Browser presents chronological milestones and expandable sanitized audit evidence');
+
 			await page.reload();
 			await visible(outcome);
 			await tab('Workspace');

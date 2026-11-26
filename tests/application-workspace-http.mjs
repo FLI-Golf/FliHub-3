@@ -1703,6 +1703,31 @@ try {
 			paidProviderCost: 0
 		};
 		assert.deepEqual((await readConcurrentWorkspace(replacement.cookie)).execution, published);
+		const retained = await readConcurrentWorkspace(replacement.cookie);
+		assert.deepEqual(
+			retained.executionEvidence.publication.groups,
+			replacementReview.groups.map(({ name, teams }) => ({
+				name,
+				teams: teams.map((team) => ({
+					name: team.name,
+					athletes: team.athletes.map(({ name }) => name)
+				}))
+			}))
+		);
+		assert.equal(retained.executionEvidence.audit.verification, 'passed');
+		assert.equal(retained.executionEvidence.audit.sequence, 1);
+		assert.doesNotMatch(
+			JSON.stringify(retained.executionEvidence),
+			/sessionId|reviewId|receipt|planDigest|stateDigest/i
+		);
+		assert.equal((await readConcurrentWorkspace(second.cookie)).executionEvidence, null);
+		assert.equal(
+			(await readConcurrentWorkspace(`${otherCookie}; ${replacement.selector}`)).executionEvidence,
+			null
+		);
+		pass(
+			'HTTP exposes only bounded published assignments and sanitized audit to the owning workspace'
+		);
 		await execute(replacement.cookie, execution, 409);
 		await cancel(replacement.cookie, replacementReview.reviewId, 409);
 		assert.equal((await assess(replacement.cookie)).status, 409);
