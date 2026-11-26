@@ -836,6 +836,28 @@ additional paid provider requests, merge, or deployment.
 
 ## JAI-5 — Application intelligence interface
 
+Architecture specification:
+[Application Intelligence Workspace](APPLICATION-INTELLIGENCE-WORKSPACE.md).
+
+JAI-5A establishes the protected browser architecture
+from the completed JAI-4 checkpoint `bc11b87`.
+
+Implementation sequence:
+
+- JAI-5B: Protected workspace foundation.
+- JAI-5C: Objective resolution and advisory guidance.
+- JAI-5D: Exact operation review.
+- JAI-5E: Protected synthetic execution.
+- JAI-5F: Results, history, audit and visual polish.
+- JAI-5G: Browser and security acceptance.
+- JAI-5H: Final documentation and checkpoint.
+
+The workspace remains offline, synthetic-only,
+development-restricted and disabled by default.
+
+JAI-5A does not authorize persistent integration,
+live provider dispatch, merge or deployment.
+
 - Build an optional SvelteKit intelligence workspace.
 - Follow existing Tailwind and shadcn-svelte conventions.
 - Provide natural-language objective entry.
