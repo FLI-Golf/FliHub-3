@@ -6,6 +6,22 @@
 
 Introduce optional AI-assisted decisions without compromising deterministic business rules, tenant isolation, or existing workflows. Jev is the selected provider; intelligence remains an optional application capability.
 
+## Application intelligence direction
+
+Prioritize optional embedded contextual intelligence
+within existing structured application workflows.
+
+FliHub guides the process. Jev helps improve the decisions.
+
+See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITECTURE.md)
+and [Application Intelligence Roadmap](APPLICATION-INTELLIGENCE-ROADMAP.md).
+
+The JAI application intelligence track and AI engineering
+qualification track remain independently governed.
+
+This direction does not waive AI-1F, AI-2, CE-3D,
+or any existing acceptance and authorization requirements.
+
 ## Development sequence
 
 | Phase              | Scope                                                                                                                                   | Exit gate                                                                                    |

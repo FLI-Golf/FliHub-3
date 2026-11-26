@@ -2,9 +2,31 @@
 
 ## Application foundation
 
-`src/lib/server/intelligence/` contains the shared service, decision definitions, validators and disabled, mock and Jev providers. The server entry point creates one instance per process. There are no application route or PocketBase callers yet. The registered development decision accepts only fixed synthetic descriptions, including the ordinary test and unfamiliar dependency fixtures. Adding CSV mapping requires a new decision definition and task-specific runtime input validation.
+`src/lib/server/intelligence/` contains the shared service, decision definitions, validators and disabled, mock and Jev providers. The server entry point creates one instance per process. At the original foundation checkpoint there were no application route or PocketBase callers.
+The later JAI development interfaces provide protected offline synthetic application callers.
+Persistent domain integration remains deferred. The registered development decision accepts only fixed synthetic descriptions, including the ordinary test and unfamiliar dependency fixtures. Adding CSV mapping requires a new decision definition and task-specific runtime input validation.
 
 A future application caller resolves actor and organization membership on the server, checks authorization, applies deterministic rules and sends only a minimized, validated decision input. The service returns a suggestion, abstention, unavailable outcome or disabled outcome. The caller retains the manual or deterministic workflow on all fallback outcomes. Before committing a confirmed suggestion, the domain operation rechecks authorization and validates the action. Existing PocketBase rules and domain operations remain authoritative.
+
+## Embedded application intelligence
+
+Application intelligence follows
+[Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITECTURE.md).
+
+FliHub owns structured workflow progression, context
+construction, eligibility, validation and authoritative
+execution. Jev supplies optional contextual recommendations.
+
+Keep provider decisions separate from domain authorization.
+Reuse appropriate deterministic services and exact review
+contracts across conventional and intelligence-assisted paths.
+
+The protected workspace remains a development-only
+synthetic acceptance surface.
+
+These application architecture decisions do not change
+engineering worker qualification, provider limits,
+approval boundaries or existing acceptance gates.
 
 ## Configuration and limits
 

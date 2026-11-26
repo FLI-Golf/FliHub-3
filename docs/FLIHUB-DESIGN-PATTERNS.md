@@ -283,6 +283,37 @@ Conventions:
 The initial development intelligence playground demonstrates
 these conventions without live provider billing integration.
 
+## DP-14 — Embedded contextual intelligence
+
+Present optional intelligence assistance within the
+relevant existing screen or structured workflow step.
+
+Conventions:
+
+- Prefer focused actions with descriptive labels.
+- Use recognizable Lucide lightbulb icons for suggestions.
+- Use amber for relevant recommendations and attention.
+- Keep conventional controls visible and usable.
+- Show the context and limitations of a recommendation.
+- Distinguish unknown information from verified facts.
+- Distinguish suggestions from applied draft selections.
+- Require explicit user action before applying suggestions.
+- Preserve deterministic validation and workflow dependencies.
+- Invalidate stale recommendations and consequential reviews.
+- Do not initiate provider requests through navigation.
+- Do not repeat requests during historical retrieval.
+- Preserve disabled, unavailable and abstention fallback.
+- Use registered application components.
+- Preserve keyboard accessibility and responsive layouts.
+
+Intelligence must not directly mutate authoritative state,
+grant permission or render provider-generated executable code.
+
+See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITECTURE.md).
+
+This is an architectural presentation requirement,
+not a claim of completed component implementation.
+
 ## Verification
 
 Future design changes should verify:

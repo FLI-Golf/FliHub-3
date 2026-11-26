@@ -4,9 +4,13 @@ Date: November 25, 2026.
 
 ## Status
 
-JAI-5A architecture specification and JAI-5B implementation checkpoint.
+JAI-5A architecture specification with JAI-5B and JAI-5C local implementation and acceptance checkpoints.
 
-The protected workspace foundation has completed scoped local acceptance. JAI-5C objective resolution and advisory integration remain pending.
+The protected workspace foundation has completed scoped
+local acceptance. JAI-5C objective resolution and advisory
+integration have completed local implementation and acceptance.
+
+JAI-5D exact operation review remains unimplemented.
 
 The verified starting checkpoint is `bc11b87`,
 Complete controlled application operation acceptance.
@@ -45,6 +49,20 @@ remains separate from the executable operation.
 
 No real organization data or persistent application
 mutations are authorized.
+
+## Role within FliHub
+
+The protected workspace is a development, demonstration,
+diagnostic and acceptance surface.
+
+It is not the primary interface for ordinary application
+workflows. Embedded contextual intelligence within existing
+guided workflows is the preferred future integration strategy.
+
+See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITECTURE.md).
+
+Preserve the existing natural-language assessment capability
+and all development-only, offline and synthetic boundaries.
 
 ## Existing architecture
 
@@ -319,6 +337,15 @@ approval controls.
 
 Cancellation must not change authoritative state.
 
+Exact review should reuse server-owned contracts that are
+independent of natural-language input and provider responses.
+
+Workspace-specific session ownership and simulated actor
+restrictions remain mandatory for this integration.
+
+This architectural direction does not authorize persistent
+operations or alter existing conventional form contracts.
+
 ## Approval and execution
 
 Require an explicit user confirmation action.
@@ -461,7 +488,7 @@ No executable operation endpoint is enabled.
 - Present context, recommendations and clarification.
 - Preserve advisory-only behavior.
 
-### JAI-5D — Exact operation review
+### JAI-5D — Reusable exact operation review
 
 - Resolve eligible registered operations.
 - Prepare immutable server-owned execution plans.
@@ -524,9 +551,12 @@ No merge or deployment is authorized.
 
 ## Deferred requirements
 
-JAI-6 persistent application integration.
+JAI-6 embedded contextual intelligence and controlled application integration.
 
-JAI-7 multi-step intelligent orchestration.
+JAI-7 intelligence-assisted structured workflow coordination.
+
+General conversational multi-step orchestration remains
+a separately approved future candidate.
 
 JAI-8 production readiness.
 
@@ -552,7 +582,10 @@ Existing roadmaps and AGENTS.md remain authoritative.
 This specification is based on inspected source
 and the recorded JAI-4 acceptance checkpoint.
 
-JAI-5 security controls remain authoritative requirements. Only the JAI-5B controls identified in the local acceptance record are implemented and locally verified. Subsequent phase controls remain requirements.
+JAI-5 security controls remain authoritative requirements.
+Only the JAI-5B and JAI-5C controls identified in their
+local acceptance records are implemented and locally verified.
+Subsequent phase controls remain requirements.
 
 The initial route, configuration names, session
 limits and workspace sections are architectural

@@ -12,6 +12,14 @@
 - Start the local stack manually with `npm run dev:all`. Use `npm run dev:status` for inspection and `npm run dev:stop` for managed shutdown. Service startup must remain independent of workflow creation or resumption. Keep persistent data and workflow records intact.
 - Use `npm run jev:develop` for the offline operator console. Real Codex subprocesses may propose closed fixture changes inside the isolated engineering exercise. The host must validate the scope and proposal, and collect independent test and build evidence before review export. Keep repository-writing workers disabled until independently enforceable read, write and execution boundaries are verified.
 
+## Application intelligence architecture
+
+- Follow [docs/INTELLIGENCE-WORKFLOW-ARCHITECTURE.md](docs/INTELLIGENCE-WORKFLOW-ARCHITECTURE.md) for application intelligence development.
+- Preserve structured workflows and deterministic domain services. FliHub owns progression, dependencies, validation, authorization and execution.
+- Prefer optional embedded contextual intelligence over conversational orchestration. Preserve manual fallback and keep natural-language input optional.
+- Keep exact operation review reusable independently of provider responses and workspace presentation.
+- Preserve the protected development workspace and all existing synthetic-only, provider, engineering and charity acceptance gates.
+
 ## Development authority
 
 - Within an owner-assigned scope, manually authorized Codex development may make implementation decisions, run and repair verification, update documentation, create appropriate feature branches, stage and commit verified changes, and push to the appropriate feature branch. Open pull requests when the assignment calls for them. Monitor and repair GitHub CI within scope. Preserve meaningful checkpoints with concise commit subjects and bodies that explain changes, rationale and verification.

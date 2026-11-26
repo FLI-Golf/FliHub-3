@@ -5,10 +5,15 @@
 Make Jev a reusable, optional intelligence capability
 throughout FliHub.
 
-Allow authorized users to express objectives naturally
-and receive intelligent assistance with application
-navigation, preparation, planning, recommendations,
-and eventually controlled workflow execution.
+Embed focused intelligence within existing manual
+interfaces and structured guided workflows.
+
+Allow authorized users to receive contextual assistance
+with preparation, planning, readiness and recommendations.
+Natural-language objectives remain optional.
+
+FliHub owns workflow progression and authoritative execution.
+See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITECTURE.md).
 
 Jev provides intelligence.
 FliHub provides authoritative execution.
@@ -44,16 +49,16 @@ CE-3D, or existing security and acceptance requirements.
 
 ## Development sequence
 
-| Phase | Scope                                        | Status   |
-| ----- | -------------------------------------------- | -------- |
-| JAI-1 | Discovery and architecture                   | Complete |
-| JAI-2 | Offline application intelligence foundation  | Complete |
-| JAI-3 | Authorized live read-only demonstration      | Complete |
-| JAI-4 | Controlled disposable application operations | Complete |
-| JAI-5 | Application intelligence interface           | Up next  |
-| JAI-6 | Persistent application integration           | Pending  |
-| JAI-7 | Multi-step intelligent orchestration         | Pending  |
-| JAI-8 | Production readiness and acceptance          | Pending  |
+| Phase | Scope                                                                   | Status      |
+| ----- | ----------------------------------------------------------------------- | ----------- |
+| JAI-1 | Discovery and architecture                                              | Complete    |
+| JAI-2 | Offline application intelligence foundation                             | Complete    |
+| JAI-3 | Authorized live read-only demonstration                                 | Complete    |
+| JAI-4 | Controlled disposable application operations                            | Complete    |
+| JAI-5 | Protected application intelligence workspace                            | In progress |
+| JAI-6 | Embedded contextual intelligence and controlled application integration | Pending     |
+| JAI-7 | Intelligence-assisted structured workflow coordination                  | Pending     |
+| JAI-8 | Production readiness and acceptance                                     | Pending     |
 
 ## JAI-1 — Discovery and architecture
 
@@ -845,12 +850,12 @@ from the completed JAI-4 checkpoint `bc11b87`.
 Implementation sequence:
 
 - JAI-5B: Protected workspace foundation — implemented; scoped local acceptance completed.
-- JAI-5C: Objective resolution and advisory guidance.
-- JAI-5D: Exact operation review.
+- JAI-5C: Objective resolution and advisory guidance — implemented; local acceptance completed.
+- JAI-5D: Reusable exact operation review.
 - JAI-5E: Protected synthetic execution.
 - JAI-5F: Results, history, audit and visual polish.
 - JAI-5G: Browser and security acceptance.
-- JAI-5H: Final documentation and checkpoint.
+- JAI-5H: Protected workspace closeout and checkpoint.
 
 The workspace remains offline, synthetic-only,
 development-restricted and disabled by default.
@@ -866,7 +871,24 @@ live provider dispatch, merge or deployment.
 - Preserve existing manual application workflows.
 - Keep intelligence optional and disabled by default.
 
-## JAI-6 — Persistent application integration
+The protected workspace is a development, demonstration
+and acceptance surface, not the primary end-user interface.
+
+JAI-5D review contracts should remain reusable independently
+of natural-language objective entry and provider responses.
+
+Preserve all existing exact review, approval, execution
+and security requirements.
+
+## JAI-6 — Embedded contextual intelligence and controlled application integration
+
+- Select an explicitly approved embedded intelligence pilot.
+- Preserve existing structured workflow progression.
+- Construct focused, registered requests on the server.
+- Keep intelligence optional and advisory.
+- Preserve deterministic and manual fallback.
+- Reuse appropriate exact review and authorization contracts.
+- Introduce persistent integration only after applicable gates.
 
 - Resolve authenticated actors on the server.
 - Resolve organization scope on the server.
@@ -880,7 +902,13 @@ live provider dispatch, merge or deployment.
 No persistent integration may begin until its
 applicable existing roadmap gates are satisfied.
 
-## JAI-7 — Multi-step intelligent orchestration
+## JAI-7 — Intelligence-assisted structured workflow coordination
+
+FliHub owns workflow state, dependencies and transitions.
+Jev may recommend eligible next actions within those bounds.
+
+General conversational multi-step orchestration is deferred
+as a future candidate requiring separate approval.
 
 - Maintain bounded workflow state.
 - Select eligible operations based on current evidence.
@@ -982,6 +1010,12 @@ mandatory prerequisites or authorization.
 See FLIHUB-DESIGN-PATTERNS.md for presentation conventions
 and APPLICATION-CAPABILITY-CATALOG.md for the initial
 application capability inventory.
+
+The primary integration strategy is embedded contextual
+intelligence within existing structured workflows.
+
+Natural-language assistance remains complementary.
+See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITECTURE.md).
 
 ## Multi-activity development strategy
 
