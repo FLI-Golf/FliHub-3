@@ -9,14 +9,35 @@ export const workspaceLimits = Object.freeze({
 	requestReadMs: 5000,
 	admissionWindowMs: 60000,
 	maxStartsPerUserPerWindow: 4,
-	maxStartsPerWindow: 32
+	maxStartsPerWindow: 32,
+	maxConcurrentAssessmentsPerSession: 1,
+	maxAssessmentsPerUserPerWindow: 10,
+	maxAssessmentsPerWindow: 320,
+	maxAssessmentHistory: 50
 });
+
+export type WorkspaceAssessmentOutcome = 'advised' | 'clarification' | 'rejected' | 'unavailable';
+
+export type WorkspaceAssessmentRecord = {
+	readonly sequence: number;
+	readonly startedAt: number;
+	readonly completedAt: number;
+	readonly outcome: WorkspaceAssessmentOutcome;
+};
+
+type AssessmentTicket = {
+	readonly sequence: number;
+	readonly startedAt: number;
+};
 
 type Session = {
 	id: string;
 	owner: string;
 	createdAt: number;
 	lastActivityAt: number;
+	assessmentSequence: number;
+	activeAssessment: AssessmentTicket | null;
+	assessmentHistory: WorkspaceAssessmentRecord[];
 };
 
 export type WorkspaceSessionView = {
@@ -30,6 +51,16 @@ const sessionIdPattern = /^[a-f0-9]{64}$/;
 export function createWorkspaceSessions(now: () => number = Date.now) {
 	const sessions = new Map<string, Session>();
 	const admissions: { owner: string; time: number }[] = [];
+	const assessmentAdmissions: { owner: string; time: number }[] = [];
+
+	function cleanupAssessmentAdmissions(time: number) {
+		while (
+			assessmentAdmissions.length > 0 &&
+			time - assessmentAdmissions[0].time >= workspaceLimits.admissionWindowMs
+		) {
+			assessmentAdmissions.shift();
+		}
+	}
 
 	function cleanupAdmissions(time: number) {
 		while (
@@ -41,6 +72,7 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 	}
 
 	function cleanup(time: number) {
+		cleanupAssessmentAdmissions(time);
 		for (const [id, session] of sessions) {
 			if (
 				time >= session.createdAt + workspaceLimits.absoluteMs ||
@@ -69,6 +101,92 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 	}
 
 	return {
+		beginAssessment(owner: string, id: string | undefined) {
+			const time = now();
+			cleanup(time);
+
+			const session = owned(owner, id);
+
+			if (!session) {
+				return { status: 'missing_session' } as const;
+			}
+
+			if (session.activeAssessment) {
+				return { status: 'busy' } as const;
+			}
+
+			const ownerAdmissions = assessmentAdmissions.filter(
+				(admission) => admission.owner === owner
+			).length;
+
+			if (
+				ownerAdmissions >= workspaceLimits.maxAssessmentsPerUserPerWindow ||
+				assessmentAdmissions.length >= workspaceLimits.maxAssessmentsPerWindow
+			) {
+				return { status: 'rate_limited' } as const;
+			}
+
+			const ticket: AssessmentTicket = {
+				sequence: ++session.assessmentSequence,
+				startedAt: time
+			};
+
+			session.activeAssessment = ticket;
+			session.lastActivityAt = time;
+			assessmentAdmissions.push({ owner, time });
+
+			// The ticket and completion function remain server-side.
+			// Object identity prevents stale or replayed completion.
+			const finish = (outcome: WorkspaceAssessmentOutcome): boolean => {
+				const completedAt = now();
+				cleanup(completedAt);
+
+				const current = owned(owner, id);
+
+				if (current !== session || current.activeAssessment !== ticket) {
+					return false;
+				}
+
+				if (
+					outcome !== 'advised' &&
+					outcome !== 'clarification' &&
+					outcome !== 'rejected' &&
+					outcome !== 'unavailable'
+				) {
+					outcome = 'unavailable';
+				}
+
+				current.activeAssessment = null;
+				current.lastActivityAt = completedAt;
+
+				current.assessmentHistory.push({
+					sequence: ticket.sequence,
+					startedAt: ticket.startedAt,
+					completedAt,
+					outcome
+				});
+
+				if (current.assessmentHistory.length > workspaceLimits.maxAssessmentHistory) {
+					current.assessmentHistory.shift();
+				}
+
+				return true;
+			};
+
+			return {
+				status: 'admitted',
+				finish
+			} as const;
+		},
+
+		readAssessmentHistory(owner: string, id: string | undefined) {
+			cleanup(now());
+
+			const session = owned(owner, id);
+
+			return session ? session.assessmentHistory.map((record) => ({ ...record })) : null;
+		},
+
 		revokeOwner(owner: string) {
 			let removed = 0;
 
@@ -139,7 +257,10 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				id,
 				owner,
 				createdAt: time,
-				lastActivityAt: time
+				lastActivityAt: time,
+				assessmentSequence: 0,
+				activeAssessment: null,
+				assessmentHistory: []
 			};
 
 			sessions.set(id, session);

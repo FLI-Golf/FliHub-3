@@ -1920,3 +1920,52 @@ Objective resolution and workspace advisory integration remain pending.
 
 Exact operation review, operation execution, persistent application
 integration and production release remain deferred.
+
+## JAI-5C — Completion checkpoint
+
+Status: COMPLETE — local implementation and acceptance.
+
+Completed capabilities:
+
+- Registered and bounded natural-language objective resolution.
+- Conservative rejection of unsupported objectives.
+- Protected offline mock advisory orchestration.
+- Synthetic scenario and simulated operator selection.
+- Server-owned assessment admission, resource limits and history.
+- Native Svelte workspace assessment interface.
+- Safe recommendation, clarification and abstention presentation.
+- Qualitative readiness with explicit unknown-information handling.
+- Session history, usage and capability visibility.
+- Responsive layout, keyboard interaction and hydration protection.
+
+Acceptance completed:
+
+- Type checking, linting and production build.
+- Workspace, application intelligence and core intelligence regression.
+- Disposable HTTP and automated browser acceptance.
+- Chunked, oversized and stalled request handling.
+- Authentication failure before admission and publication.
+- Concurrent logout during pending assessment publication.
+- Session isolation, revocation and selector replay protection.
+- Manual preparation, readiness, missing-information and unsupported
+  objective assessments.
+- Manual history and usage verification: four retained assessments,
+  three advisory responses, one unsupported assessment, zero paid
+  provider requests and $0.00 paid provider cost.
+
+Refresh persistence and session closure passed automated browser
+acceptance; separate manual confirmation was not recorded.
+
+Development verification was hardened to handle idle PocketBase
+database connections. An idle-connection regression confirmed that
+verification reopens a database descriptor without replacing the
+database or restarting managed services.
+
+No live provider experiment, persistent operation, production
+deployment or merge was performed.
+
+Next: JAI-5D — Exact operation review.
+
+JAI-5D and subsequent execution phases remain unimplemented.
+Full legacy browser regression, GitHub CI verification and production
+readiness requirements remain outstanding.

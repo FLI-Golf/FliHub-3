@@ -677,3 +677,74 @@ execution remain disabled in the protected workspace.
 No additional paid Jev experiment is authorized.
 
 Jev supplies intelligence. FliHub retains control.
+
+## JAI-5C — Offline objective assessment implementation
+
+The protected workspace supports registered objectives and conservative
+natural-language resolution for tournament preparation and readiness.
+
+The advisory service explicitly uses the offline mock provider.
+External transport is blocked. Real application records are not used
+as assessment inputs and cannot be mutated through this interface.
+
+The actual authenticated account and simulated operator remain separate.
+Simulated roles grant no real FliHub permissions.
+
+### Assessment resource boundaries
+
+- Maximum objective length: 256 characters.
+- Maximum concurrent assessments: one per session.
+- Maximum assessments: ten per user per minute.
+- Process-local global admission limit: 320 per minute.
+- Maximum retained assessment history: 50 records per session.
+- Existing idle and absolute session limits remain unchanged.
+
+History retains bounded outcome and timing metadata, not raw objectives
+or complete advisory responses. Closing or expiring a session discards
+its history.
+
+Assessment publication requires renewed authentication and a valid
+server-owned session. Logout revocation prevents pending assessments
+from publishing. Workspace revocation is not global PocketBase token
+revocation.
+
+Request handling enforces origin, method, content type, bounded body
+size, read deadline and strict field validation. Stalled transport
+acceptance permits a bounded connection reset when the server rejects
+the stalled request and subsequent valid requests remain functional.
+
+### Verification and limitations
+
+Local automated HTTP, browser, security and regression acceptance
+passed. Manual assessment results confirmed correct preparation,
+participant readiness, unknown-information clarification and unsupported
+objective rejection.
+
+Manual history and usage displayed four completed assessments,
+four retained records, three advisory responses, one unsupported
+assessment, zero paid requests and $0.00 paid provider cost.
+
+Refresh persistence and session closure were verified by automated
+browser acceptance.
+
+The browser acceptance helper is invoked by the disposable HTTP
+harness rather than discovered as a standalone legacy browser spec.
+
+Navigation and assessment controls are hydration-aware. Native session
+start and close remain available without assessment JavaScript.
+
+Development database identity verification now performs a bounded
+read-only request before checking the managed PocketBase process's
+database descriptors. Idle-connection regression passed without
+database replacement or managed-service restart.
+
+Resource limits and session storage remain process-local. Distributed
+coordination, durable transactions, persistent audit, production
+tenant isolation and provider billing reconciliation are deferred.
+
+Minor presentation follow-up: remove redundant recommendation text
+where the next-step label is repeated.
+
+Operation review, approval and execution are not enabled by JAI-5C.
+
+Jev supplies intelligence. FliHub retains control.

@@ -274,6 +274,21 @@ export async function verify(directory = runtime) {
 		const record = metadata.pocketbase;
 
 		if (owned(record)) {
+			// PocketBase may close idle SQLite connections.
+			// Issue a bounded read-only request before inspecting
+			// descriptors. A successful request alone is not proof
+			// of database identity.
+			const response = await fetch(loopback + '8090/api/collections/users/records?perPage=1', {
+				signal: AbortSignal.timeout(5000),
+				redirect: 'error'
+			});
+
+			await response.body?.cancel();
+
+			if (!owned(record)) {
+				throw new Error('PocketBase process identity changed.');
+			}
+
 			const descriptors = '/proc/' + record.pid + '/fd';
 
 			for (const fd of readdirSync(descriptors)) {
@@ -284,7 +299,8 @@ export async function verify(directory = runtime) {
 					if (
 						actual === expected &&
 						actualStat.dev === expectedStat.dev &&
-						actualStat.ino === expectedStat.ino
+						actualStat.ino === expectedStat.ino &&
+						owned(record)
 					) {
 						databaseVerified = true;
 						break;

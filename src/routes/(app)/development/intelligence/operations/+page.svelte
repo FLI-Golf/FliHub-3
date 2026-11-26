@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import {
 		BrainCircuit,
 		ShieldCheck,
@@ -16,7 +18,20 @@
 		Plus,
 		LogOut,
 		ArrowLeft,
-		ChevronDown
+		ChevronDown,
+		Sparkles,
+		MessageSquare,
+		Users,
+		MapPin,
+		LoaderCircle,
+		CircleHelp,
+		Lightbulb,
+		Gauge,
+		CalendarDays,
+		Network,
+		ClipboardList,
+		AlertTriangle,
+		Info
 	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -34,6 +49,82 @@
 
 	let activeTab = $state<(typeof tabs)[number]['label']>('Workspace');
 
+	const objectives = [
+		{ id: 'prepare_tournament', label: 'Prepare a tournament' },
+		{ id: 'assess_readiness', label: 'Assess tournament readiness' }
+	] as const;
+
+	const scenarios = [
+		{ id: 'spring_invitational', label: 'Spring Invitational' },
+		{ id: 'participants_missing', label: 'Participants Missing' },
+		{ id: 'groups_prepared', label: 'Groups Prepared' },
+		{ id: 'preparation_review', label: 'Preparation Review' },
+		{ id: 'venue_missing', label: 'Venue Missing' },
+		{ id: 'information_missing', label: 'Information Missing' }
+	] as const;
+
+	const actors = [
+		{ id: 'synthetic-actor-owner', label: 'Organization owner' },
+		{ id: 'synthetic-actor-admin', label: 'Organization admin' },
+		{ id: 'synthetic-actor-scorekeeper', label: 'Scorekeeper' },
+		{ id: 'synthetic-actor-viewer', label: 'Viewer' },
+		{ id: 'synthetic-actor-outsider', label: 'Outside organization owner' },
+		{ id: 'synthetic-actor-inactive', label: 'Inactive administrator' }
+	] as const;
+
+	const objectiveLimit = 256;
+
+	let mode = $state<'natural' | 'registered'>('natural');
+	let naturalObjective = $state('');
+	let registeredObjective = $state('prepare_tournament');
+	let selectedScenario = $state('spring_invitational');
+	let selectedActor = $state('synthetic-actor-owner');
+	let busy = $state(false);
+	let hydrated = $state(false);
+
+	onMount(() => {
+		hydrated = true;
+	});
+
+	let assessment = $derived(
+		data.session && !busy && form && 'assessment' in form ? form.assessment : undefined
+	);
+
+	function assignment(value: boolean | null, positive: string, negative: string) {
+		return value === null ? 'Unknown' : value ? positive : negative;
+	}
+
+	function count(value: number | null) {
+		return value === null ? 'Unknown' : String(value);
+	}
+
+	const assessmentSummary = $derived(data.session ? data.assessmentSummary : null);
+
+	const historyRecords = $derived([...(assessmentSummary?.history ?? [])].reverse());
+
+	const outcomePresentation = {
+		advised: {
+			label: 'Advisory response',
+			icon: ClipboardCheck
+		},
+		clarification: {
+			label: 'Clarification required',
+			icon: CircleHelp
+		},
+		rejected: {
+			label: 'Unsupported assessment',
+			icon: AlertTriangle
+		},
+		unavailable: {
+			label: 'Assessment unavailable',
+			icon: AlertTriangle
+		}
+	} as const;
+
+	function formatTimestamp(value: number) {
+		return new Date(value).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+	}
+
 	const restrictions = [
 		{ label: 'External provider access', value: 'Disabled', icon: WifiOff },
 		{ label: 'Persistent mutations', value: 'Disabled', icon: Database },
@@ -47,7 +138,7 @@
 	<title>Controlled Intelligence Workspace | FliHub</title>
 </svelte:head>
 
-<div class="mx-auto max-w-3xl space-y-5">
+<div class="mx-auto max-w-3xl min-w-0 space-y-4 sm:space-y-5">
 	<a
 		href={resolve('/(app)/development/intelligence')}
 		class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:underline"
@@ -59,7 +150,7 @@
 	<header class="flex flex-wrap items-start justify-between gap-3">
 		<div class="space-y-1">
 			<p class="text-sm text-muted-foreground">Development workspace</p>
-			<h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
+			<h1 class="flex items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl">
 				<BrainCircuit size={26} aria-hidden="true" />
 				Jev Application Intelligence
 			</h1>
@@ -68,7 +159,7 @@
 		<Badge variant="secondary">Offline mock</Badge>
 	</header>
 
-	<section class="space-y-4 rounded-lg border bg-card p-4">
+	<section class="min-w-0 space-y-4 rounded-lg border bg-card p-3 sm:p-4">
 		<nav aria-label="Controlled intelligence workspace" class="flex flex-wrap gap-2 border-b pb-3">
 			{#each tabs as tab (tab.label)}
 				{@const TabIcon = tab.icon}
@@ -77,6 +168,7 @@
 					size="sm"
 					variant={activeTab === tab.label ? 'default' : 'outline'}
 					aria-pressed={activeTab === tab.label}
+					disabled={!hydrated || busy}
 					onclick={() => (activeTab = tab.label)}
 				>
 					<TabIcon size={16} aria-hidden="true" />
@@ -86,11 +178,18 @@
 		</nav>
 
 		{#if form?.message}
-			<p role="status" class="rounded-md border p-3 text-sm">{form.message}</p>
+			<p
+				role="status"
+				aria-live="polite"
+				aria-atomic="true"
+				class="rounded-md border p-3 text-sm break-words"
+			>
+				{form.message}
+			</p>
 		{/if}
 
 		{#if activeTab === 'Workspace'}
-			<div class="space-y-4 rounded-md border p-4">
+			<div class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
 				<div class="flex items-center gap-3">
 					<ShieldCheck size={24} aria-hidden="true" />
 					<div>
@@ -122,7 +221,7 @@
 					</div>
 
 					<form method="POST" action="?/close">
-						<Button type="submit" variant="outline">
+						<Button type="submit" variant="outline" disabled={busy}>
 							<LogOut size={16} aria-hidden="true" />
 							End synthetic session
 						</Button>
@@ -142,37 +241,796 @@
 					</div>
 				{/if}
 			</div>
-		{:else if activeTab === 'Usage'}
-			<div class="grid grid-cols-2 gap-3">
-				{#each [{ label: 'Paid provider cost', value: '$0.00' }, { label: 'External requests', value: '0' }, { label: 'Operations executed', value: '0' }, { label: 'Your current session', value: data.session ? '1' : '0' }] as metric (metric.label)}
-					<div class="space-y-2 rounded-md border p-3">
-						<p class="text-xs text-muted-foreground">{metric.label}</p>
-						<p class="text-2xl font-bold tabular-nums">{metric.value}</p>
+
+			{#if data.session}
+				<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
+					<div class="flex flex-wrap items-start justify-between gap-2">
+						<div class="space-y-1">
+							<h2 class="flex items-center gap-2 text-lg font-semibold">
+								<Sparkles size={21} aria-hidden="true" />
+								What would you like to accomplish?
+							</h2>
+							<p class="text-sm text-muted-foreground">
+								Describe a supported objective using a synthetic event scenario.
+							</p>
+						</div>
+						<Badge variant="secondary">Recommendation only</Badge>
 					</div>
-				{/each}
-			</div>
-			<p class="text-xs text-muted-foreground">
-				Initial workspace restrictions, not provider billing or global server statistics.
-			</p>
-		{:else if activeTab === 'Capabilities'}
-			<div class="overflow-hidden rounded-md border">
-				{#each ['Prepare an event', 'Assess event readiness', 'Create synthetic group assignments'] as capability, index (capability)}
-					<div
-						class="flex items-center justify-between gap-2 p-3 text-sm {index % 2 === 0
-							? 'bg-muted/40'
-							: ''}"
+
+					<noscript>
+						<div class="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+							<p class="font-semibold">JavaScript required for assessments</p>
+							<p class="mt-1 text-xs text-muted-foreground">
+								Enable JavaScript and reload this page to select objectives, submit assessments and
+								view workspace tabs. Starting and ending a synthetic session remain available.
+							</p>
+						</div>
+					</noscript>
+
+					<form
+						method="POST"
+						action="?/assess"
+						aria-busy={busy}
+						enctype="application/x-www-form-urlencoded"
+						class="space-y-4"
+						use:enhance={({ cancel }) => {
+							if (!hydrated || busy || !data.session) {
+								cancel();
+								return;
+							}
+
+							busy = true;
+
+							return async ({ update }) => {
+								try {
+									await update({
+										reset: false,
+										refreshAll: true
+									});
+								} finally {
+									busy = false;
+								}
+							};
+						}}
 					>
-						<span class="font-semibold">{capability}</span>
-						<Badge variant="outline">Not enabled</Badge>
+						<fieldset disabled={!hydrated || busy} class="min-w-0 space-y-4">
+							<legend class="mb-2 text-sm font-semibold">Objective input mode</legend>
+
+							<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+								<label
+									class="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm"
+									class:bg-muted={mode === 'natural'}
+								>
+									<input type="radio" name="mode" value="natural" bind:group={mode} />
+									<MessageSquare size={16} aria-hidden="true" />
+									Natural language
+								</label>
+
+								<label
+									class="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm"
+									class:bg-muted={mode === 'registered'}
+								>
+									<input type="radio" name="mode" value="registered" bind:group={mode} />
+									<ClipboardCheck size={16} aria-hidden="true" />
+									Registered objective
+								</label>
+							</div>
+
+							{#if mode === 'natural'}
+								<div class="space-y-2">
+									<label for="workspace-objective" class="text-sm font-semibold">
+										Your objective
+									</label>
+
+									<textarea
+										id="workspace-objective"
+										name="objective"
+										rows={3}
+										maxlength={objectiveLimit}
+										bind:value={naturalObjective}
+										autocomplete="off"
+										aria-describedby="objective-help objective-count"
+										placeholder="Help me prepare our next tournament."
+										class="w-full resize-y rounded-md border bg-background p-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+									></textarea>
+
+									<div class="flex flex-wrap items-center justify-between gap-2">
+										<p id="objective-help" class="text-xs text-muted-foreground">
+											Supported objectives only. Do not enter private or real event information.
+										</p>
+										<span id="objective-count" class="text-xs text-muted-foreground tabular-nums">
+											{naturalObjective.length}/{objectiveLimit}
+										</span>
+									</div>
+
+									<div class="space-y-2 rounded-md bg-muted/40 p-3">
+										<p class="flex items-center gap-2 text-xs font-semibold">
+											<CircleHelp size={15} aria-hidden="true" />
+											Try a supported objective
+										</p>
+										<div class="flex flex-wrap gap-2">
+											<Button
+												type="button"
+												size="sm"
+												variant="outline"
+												onclick={() => (naturalObjective = 'Help me prepare our next tournament.')}
+											>
+												Prepare tournament
+											</Button>
+											<Button
+												type="button"
+												size="sm"
+												variant="outline"
+												onclick={() => (naturalObjective = 'How prepared is our next tournament?')}
+											>
+												Assess readiness
+											</Button>
+										</div>
+									</div>
+								</div>
+							{:else}
+								<div class="space-y-2">
+									<label for="registered-objective" class="text-sm font-semibold">
+										Registered objective
+									</label>
+									<select
+										id="registered-objective"
+										name="objective"
+										bind:value={registeredObjective}
+										class="w-full rounded-md border bg-background p-2.5 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+									>
+										{#each objectives as objective (objective.id)}
+											<option value={objective.id}>{objective.label}</option>
+										{/each}
+									</select>
+								</div>
+							{/if}
+
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<div class="min-w-0 space-y-2">
+									<label
+										for="workspace-scenario"
+										class="flex items-center gap-2 text-sm font-semibold"
+									>
+										<MapPin size={16} aria-hidden="true" />
+										Synthetic scenario
+									</label>
+									<select
+										id="workspace-scenario"
+										name="fixtureId"
+										bind:value={selectedScenario}
+										class="w-full rounded-md border bg-background p-2.5 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+									>
+										{#each scenarios as scenario (scenario.id)}
+											<option value={scenario.id}>{scenario.label}</option>
+										{/each}
+									</select>
+								</div>
+
+								<div class="min-w-0 space-y-2">
+									<label
+										for="workspace-actor"
+										class="flex items-center gap-2 text-sm font-semibold"
+									>
+										<Users size={16} aria-hidden="true" />
+										Simulated operator
+									</label>
+									<select
+										id="workspace-actor"
+										name="actorId"
+										bind:value={selectedActor}
+										aria-describedby="actor-help"
+										class="w-full rounded-md border bg-background p-2.5 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+									>
+										{#each actors as actor (actor.id)}
+											<option value={actor.id}>{actor.label}</option>
+										{/each}
+									</select>
+								</div>
+							</div>
+
+							<p id="actor-help" class="text-xs text-muted-foreground">
+								Simulated roles do not change your actual FliHub permissions.
+							</p>
+						</fieldset>
+
+						<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+							<p class="flex items-center gap-2 text-sm font-semibold">
+								<ShieldCheck size={16} aria-hidden="true" />
+								Advisory assessment only
+							</p>
+							<p class="text-xs text-muted-foreground">
+								No real application records will change. No operations will execute. No external
+								intelligence provider will be contacted.
+							</p>
+						</div>
+
+						<Button type="submit" disabled={!hydrated || busy} class="w-full sm:w-auto">
+							{#if busy}
+								<LoaderCircle size={16} aria-hidden="true" class="animate-spin" />
+								Assessing objective...
+							{:else}
+								<Sparkles size={16} aria-hidden="true" />
+								Assess objective
+							{/if}
+						</Button>
+
+						{#if busy}
+							<p role="status" class="text-xs text-muted-foreground">
+								Generating an offline advisory assessment.
+							</p>
+						{/if}
+					</form>
+				</section>
+			{/if}
+
+			{#if assessment}
+				<section
+					aria-labelledby="assessment-results-heading"
+					aria-live="polite"
+					class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4"
+				>
+					<div class="flex flex-wrap items-start justify-between gap-2">
+						<div class="space-y-1">
+							<h2
+								id="assessment-results-heading"
+								class="flex items-center gap-2 text-lg font-semibold"
+							>
+								<BrainCircuit size={22} aria-hidden="true" />
+								Assessment results
+							</h2>
+							<p class="text-xs text-muted-foreground">
+								Most recent server response. Changing the objective or scenario does not reassess
+								it. Session validity is checked on subsequent server requests.
+							</p>
+						</div>
+						<Badge variant="secondary">Offline mock</Badge>
 					</div>
-				{/each}
-			</div>
+
+					{#if assessment.status === 'advised'}
+						{@const result = assessment}
+
+						<div class="overflow-hidden rounded-md border">
+							{#each [{ label: 'Resolved objective', value: result.objective }, { label: 'Synthetic scenario', value: result.scenario }, { label: 'Simulated operator', value: result.actor }] as item, index (item.label)}
+								<div
+									class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm {index %
+										2 ===
+									0
+										? 'bg-muted/40'
+										: ''}"
+								>
+									<span class="font-semibold">{item.label}</span>
+									<span>{item.value}</span>
+								</div>
+							{/each}
+						</div>
+
+						<div class="flex flex-wrap gap-2">
+							<Badge variant="secondary">
+								{result.decision === 'recommended'
+									? 'Recommendation available'
+									: result.decision === 'clarification'
+										? 'Clarification required'
+										: 'Assessment abstained'}
+							</Badge>
+							<Badge variant="outline">Recommendation only</Badge>
+							<Badge variant="outline">
+								<Lock size={12} aria-hidden="true" />
+								Execution disabled
+							</Badge>
+						</div>
+
+						<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-4">
+							<h3 class="flex items-center gap-2 font-semibold">
+								<Lightbulb
+									size={21}
+									aria-hidden="true"
+									class="shrink-0 text-amber-600 dark:text-amber-400"
+								/>
+								{result.explanation.heading}
+							</h3>
+
+							<p class="text-sm">{result.explanation.summary}</p>
+
+							{#if result.nextStep}
+								<div class="space-y-2 border-t pt-3">
+									<p class="text-xs font-semibold text-muted-foreground">Recommended next step</p>
+									<p class="text-lg font-semibold">
+										{result.nextStep.label}
+									</p>
+									<p class="text-sm">
+										{result.nextStep.description}
+									</p>
+								</div>
+							{:else}
+								<p class="text-sm font-medium">No next-step recommendation is available.</p>
+							{/if}
+
+							{#if result.explanation.recommendation}
+								<p class="text-sm">
+									{result.explanation.recommendation}
+								</p>
+							{/if}
+						</div>
+
+						{#if result.prerequisiteReviewSuggested}
+							<div
+								class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3"
+							>
+								<AlertTriangle
+									size={19}
+									aria-hidden="true"
+									class="shrink-0 text-amber-600 dark:text-amber-400"
+								/>
+								<div class="space-y-1">
+									<p class="text-sm font-semibold">Prerequisite review suggested</p>
+									<p class="text-xs text-muted-foreground">
+										Review event prerequisites before proceeding.
+									</p>
+								</div>
+							</div>
+						{/if}
+
+						<section class="space-y-3">
+							<h3 class="flex items-center gap-2 font-semibold">
+								<ClipboardCheck size={18} aria-hidden="true" />
+								Synthetic event context
+							</h3>
+
+							<dl class="overflow-hidden rounded-md border">
+								{#each [{ label: 'Event date', value: assignment(result.context.dateAssigned, 'Assigned', 'Not assigned'), icon: CalendarDays, attention: result.context.dateAssigned !== true }, { label: 'Venue', value: assignment(result.context.venueAssigned, 'Assigned', 'Not assigned'), icon: MapPin, attention: result.context.venueAssigned !== true }, { label: 'Participants', value: count(result.context.participantCount), icon: Users, attention: result.context.participantCount === null || result.context.participantCount === 0 }, { label: 'Groups', value: count(result.context.groupCount), icon: Network, attention: result.context.groupCount === null || result.context.groupCount === 0 }, { label: 'Scoring', value: assignment(result.context.scoringConfigured, 'Configured', 'Not configured'), icon: ClipboardList, attention: result.context.scoringConfigured !== true }] as item, index (item.label)}
+									{@const ItemIcon = item.icon}
+
+									<div
+										class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm {index %
+											2 ===
+										0
+											? 'bg-muted/40'
+											: ''}"
+									>
+										<dt class="flex items-center gap-2 font-semibold">
+											<ItemIcon size={16} aria-hidden="true" />
+											{item.label}
+										</dt>
+										<dd class="font-medium tabular-nums">
+											{#if item.attention}
+												<span class="text-amber-700 dark:text-amber-400">
+													{item.value}
+												</span>
+											{:else}
+												{item.value}
+											{/if}
+										</dd>
+									</div>
+								{/each}
+							</dl>
+
+							<p class="text-xs text-muted-foreground">
+								Synthetic data only. Unknown information is not treated as zero.
+							</p>
+						</section>
+
+						<section class="space-y-3 rounded-md border p-3">
+							<h3 class="flex items-center gap-2 font-semibold">
+								<Gauge size={20} aria-hidden="true" />
+								Qualitative readiness
+							</h3>
+
+							{#if result.readiness}
+								<div class="flex items-center justify-between gap-3">
+									<span class="text-2xl font-bold tabular-nums">
+										{result.readiness.score.toFixed(2)}
+										<span class="text-sm font-normal text-muted-foreground">
+											/ {result.readiness.maximum}
+										</span>
+									</span>
+									<Badge variant="outline">Qualitative only</Badge>
+								</div>
+							{:else}
+								<p class="text-sm font-medium">Not available</p>
+							{/if}
+
+							{#if result.explanation.readiness}
+								<p class="text-sm text-muted-foreground">
+									{result.explanation.readiness}
+								</p>
+							{/if}
+
+							<p class="text-xs text-muted-foreground">
+								Not a probability, completion percentage or authorization to proceed.
+							</p>
+						</section>
+
+						<details class="group overflow-hidden rounded-md border">
+							<summary
+								class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold"
+							>
+								<span class="flex items-center gap-2">
+									<ListChecks size={18} aria-hidden="true" />
+									Assessment reasoning
+								</span>
+								<ChevronDown
+									size={18}
+									aria-hidden="true"
+									class="shrink-0 transition-transform group-open:rotate-180"
+								/>
+							</summary>
+							<div class="border-t p-3 text-sm">
+								{result.explanation.reasoning}
+							</div>
+						</details>
+
+						{#if result.explanation.alternatives.length > 0}
+							<details class="group overflow-hidden rounded-md border">
+								<summary
+									class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold"
+								>
+									<span class="flex items-center gap-2">
+										<Layers size={18} aria-hidden="true" />
+										Alternative recommendations
+									</span>
+									<ChevronDown
+										size={18}
+										aria-hidden="true"
+										class="shrink-0 transition-transform group-open:rotate-180"
+									/>
+								</summary>
+								<ul class="border-t">
+									{#each result.explanation.alternatives as alternative, index (index)}
+										<li class="p-3 text-sm {index % 2 === 0 ? 'bg-muted/40' : ''}">
+											{alternative}
+										</li>
+									{/each}
+								</ul>
+							</details>
+						{/if}
+
+						{#if result.explanation.notices.length > 0}
+							<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+								<h3 class="flex items-center gap-2 text-sm font-semibold">
+									<Info size={17} aria-hidden="true" />
+									Assessment notices
+								</h3>
+								<ul class="list-disc space-y-1 pl-5 text-sm">
+									{#each result.explanation.notices as notice, index (index)}
+										<li>{notice}</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+
+						<div class="space-y-2 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+							<p>{result.manualFallback}</p>
+							<p>{result.explanation.disclaimer}</p>
+						</div>
+					{:else}
+						<div class="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-4">
+							<h3 class="flex items-center gap-2 font-semibold">
+								{#if assessment.status === 'clarification'}
+									<CircleHelp size={20} aria-hidden="true" />
+									Clarification required
+								{:else if assessment.status === 'rejected'}
+									<AlertTriangle size={20} aria-hidden="true" />
+									Unsupported assessment
+								{:else}
+									<AlertTriangle size={20} aria-hidden="true" />
+									Assessment unavailable
+								{/if}
+							</h3>
+							<p class="text-sm">{assessment.message}</p>
+							<p class="text-xs text-muted-foreground">
+								Revise your objective or continue with manual review.
+							</p>
+						</div>
+					{/if}
+
+					<p class="flex items-start gap-2 text-xs text-muted-foreground">
+						<ShieldCheck size={16} aria-hidden="true" class="shrink-0" />
+						Advisory guidance only. No real application records have been modified.
+					</p>
+				</section>
+			{/if}
+		{:else if activeTab === 'History'}
+			<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<div class="space-y-1">
+						<h2 class="flex items-center gap-2 text-lg font-semibold">
+							<History size={22} aria-hidden="true" />
+							Assessment history
+						</h2>
+						<p class="text-xs text-muted-foreground">Server-owned assessment history</p>
+					</div>
+
+					{#if assessmentSummary}
+						<Badge variant="secondary">
+							{historyRecords.length}
+							{historyRecords.length === 1 ? 'record' : 'records'}
+						</Badge>
+					{/if}
+				</div>
+
+				{#if !assessmentSummary}
+					<div class="space-y-3 rounded-md border border-dashed p-6 text-center">
+						<Lock size={28} aria-hidden="true" class="mx-auto text-muted-foreground" />
+						<p class="font-semibold">No active workspace session</p>
+						<p class="text-sm text-muted-foreground">
+							Start a protected session to view assessment history.
+						</p>
+						<Button type="button" onclick={() => (activeTab = 'Workspace')}>
+							<ClipboardCheck size={16} aria-hidden="true" />
+							Go to Workspace
+						</Button>
+					</div>
+				{:else if historyRecords.length === 0}
+					<div class="space-y-3 rounded-md border border-dashed p-6 text-center">
+						<History size={28} aria-hidden="true" class="mx-auto text-muted-foreground" />
+						<p class="font-semibold">No assessments yet</p>
+						<p class="text-sm text-muted-foreground">
+							Complete an assessment to begin building your session history.
+						</p>
+						<Button type="button" onclick={() => (activeTab = 'Workspace')}>
+							<Sparkles size={16} aria-hidden="true" />
+							Assess an objective
+						</Button>
+					</div>
+				{:else}
+					<div class="overflow-hidden rounded-md border">
+						{#each historyRecords as record, index (record.sequence)}
+							{@const presentation = outcomePresentation[record.outcome]}
+							{@const OutcomeIcon = presentation.icon}
+
+							<details
+								class="group border-b last:border-b-0 {index % 2 === 0 ? 'bg-muted/40' : ''}"
+							>
+								<summary
+									class="flex cursor-pointer list-none items-center justify-between gap-3 p-3"
+								>
+									<div class="min-w-0 space-y-2">
+										<p class="flex items-center gap-2 text-sm font-semibold">
+											<OutcomeIcon
+												size={18}
+												aria-hidden="true"
+												class={record.outcome === 'advised'
+													? 'shrink-0 text-muted-foreground'
+													: 'shrink-0 text-amber-600 dark:text-amber-400'}
+											/>
+											Assessment #{record.sequence}
+										</p>
+
+										<Badge variant="outline">
+											{presentation.label}
+										</Badge>
+
+										<p class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+											<Clock size={13} aria-hidden="true" />
+											{formatTimestamp(record.completedAt)}
+										</p>
+									</div>
+
+									<ChevronDown
+										size={18}
+										aria-hidden="true"
+										class="shrink-0 transition-transform group-open:rotate-180"
+									/>
+								</summary>
+
+								<dl class="space-y-2 px-3 pb-3 text-xs">
+									<div class="flex flex-wrap justify-between gap-2">
+										<dt class="font-semibold">Started</dt>
+										<dd>{formatTimestamp(record.startedAt)}</dd>
+									</div>
+									<div class="flex flex-wrap justify-between gap-2">
+										<dt class="font-semibold">Completed</dt>
+										<dd>{formatTimestamp(record.completedAt)}</dd>
+									</div>
+									<div class="flex flex-wrap justify-between gap-2">
+										<dt class="font-semibold">Elapsed time</dt>
+										<dd class="tabular-nums">
+											{Math.max(0, record.completedAt - record.startedAt)} ms
+										</dd>
+									</div>
+								</dl>
+							</details>
+						{/each}
+					</div>
+				{/if}
+
+				<div
+					class="flex items-start gap-2 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground"
+				>
+					<ShieldCheck size={17} aria-hidden="true" class="shrink-0" />
+					<div class="space-y-1">
+						<p>
+							Temporary session metadata only. Maximum {data.limits.maxAssessmentHistory}
+							retained records.
+						</p>
+						<p>
+							History survives a page refresh while the session remains valid. Closing or expiring
+							the session discards its records.
+						</p>
+						<p>Raw objectives and full assessment responses are not retained in history.</p>
+					</div>
+				</div>
+			</section>
+		{:else if activeTab === 'Usage'}
+			<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<h2 class="flex items-center gap-2 text-lg font-semibold">
+						<BarChart3 size={22} aria-hidden="true" />
+						Session usage
+					</h2>
+					<Badge variant="secondary">Offline mock</Badge>
+				</div>
+
+				{#if assessmentSummary}
+					<dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+						{#each [{ label: 'Completed assessments', value: String(assessmentSummary.usage.completedAssessments), icon: ClipboardCheck }, { label: 'Retained records', value: `${assessmentSummary.usage.retainedAssessments} / ${data.limits.maxAssessmentHistory}`, icon: History }, { label: 'Paid provider requests', value: String(assessmentSummary.usage.paidProviderRequests), icon: WifiOff }, { label: 'Paid provider cost', value: `$${assessmentSummary.usage.paidProviderCost.toFixed(2)}`, icon: Wallet }] as metric (metric.label)}
+							{@const MetricIcon = metric.icon}
+
+							<div class="min-w-0 space-y-2 rounded-md border p-3">
+								<MetricIcon size={23} aria-hidden="true" class="text-muted-foreground" />
+								<dt class="text-xs font-medium text-muted-foreground">
+									{metric.label}
+								</dt>
+								<dd class="text-2xl font-bold tabular-nums">
+									{metric.value}
+								</dd>
+							</div>
+						{/each}
+					</dl>
+
+					<section class="space-y-3">
+						<h3 class="flex items-center gap-2 text-sm font-semibold">
+							<History size={18} aria-hidden="true" />
+							Retained outcome breakdown
+						</h3>
+
+						<dl class="overflow-hidden rounded-md border">
+							{#each ['advised', 'clarification', 'rejected', 'unavailable'] as outcome, index (outcome)}
+								{@const presentation =
+									outcomePresentation[outcome as keyof typeof outcomePresentation]}
+								{@const OutcomeIcon = presentation.icon}
+
+								<div
+									class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm {index %
+										2 ===
+									0
+										? 'bg-muted/40'
+										: ''}"
+								>
+									<dt class="flex items-center gap-2 font-semibold">
+										<OutcomeIcon size={16} aria-hidden="true" />
+										{presentation.label}
+									</dt>
+									<dd class="font-semibold tabular-nums">
+										{historyRecords.filter((record) => record.outcome === outcome).length}
+									</dd>
+								</div>
+							{/each}
+						</dl>
+
+						<p class="text-xs text-muted-foreground">
+							Breakdown includes retained history only, not discarded older records.
+						</p>
+					</section>
+				{:else}
+					<div class="space-y-2 rounded-md border border-dashed p-4">
+						<p class="flex items-center gap-2 font-semibold">
+							<Lock size={18} aria-hidden="true" />
+							No active session
+						</p>
+						<p class="text-sm text-muted-foreground">
+							Session usage becomes available after starting a protected workspace.
+						</p>
+					</div>
+				{/if}
+
+				<section class="space-y-3">
+					<h3 class="flex items-center gap-2 text-sm font-semibold">
+						<Layers size={18} aria-hidden="true" />
+						Configured resource limits
+					</h3>
+
+					<dl class="overflow-hidden rounded-md border">
+						{#each [{ label: 'Assessments per user per minute', value: data.limits.maxAssessmentsPerUserPerWindow }, { label: 'Concurrent assessments per session', value: data.limits.maxConcurrentAssessmentsPerSession }, { label: 'Retained history capacity', value: data.limits.maxAssessmentHistory }, { label: 'Idle session limit', value: `${data.limits.idleMs / 60000} minutes` }, { label: 'Absolute session limit', value: `${data.limits.absoluteMs / 60000} minutes` }, { label: 'Operation executions', value: 'Disabled' }] as metric, index (metric.label)}
+							<div
+								class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm {index % 2 ===
+								0
+									? 'bg-muted/40'
+									: ''}"
+							>
+								<dt class="font-semibold">{metric.label}</dt>
+								<dd class="font-medium tabular-nums">{metric.value}</dd>
+							</div>
+						{/each}
+					</dl>
+				</section>
+
+				<div
+					class="flex items-start gap-2 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground"
+				>
+					<Info size={17} aria-hidden="true" class="shrink-0" />
+					<p>
+						Usage reflects the current server-owned workspace session at the last server response.
+						These are not global server statistics or provider billing records.
+					</p>
+				</div>
+			</section>
+		{:else if activeTab === 'Capabilities'}
+			<section class="space-y-4 rounded-md border p-3 sm:p-4">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<h2 class="flex items-center gap-2 text-lg font-semibold">
+						<Layers size={22} aria-hidden="true" />
+						Workspace capabilities
+					</h2>
+					<Badge variant="secondary">Offline mock</Badge>
+				</div>
+
+				<p class="text-sm text-muted-foreground">
+					Registered advisory objectives and controlled operation availability.
+				</p>
+
+				<div class="overflow-hidden rounded-md border">
+					{#each [{ label: 'Prepare a tournament', description: 'Review synthetic event context and recommend a preparation step.', enabled: true, icon: ClipboardCheck }, { label: 'Assess tournament readiness', description: 'Review known prerequisites and qualitative readiness.', enabled: true, icon: Gauge }, { label: 'Create synthetic group assignments', description: 'Protected operation review and execution remain deferred.', enabled: false, icon: Network }] as capability, index (capability.label)}
+						{@const CapabilityIcon = capability.icon}
+
+						<details class="group border-b last:border-b-0 {index % 2 === 0 ? 'bg-muted/40' : ''}">
+							<summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-3">
+								<div class="min-w-0 space-y-2">
+									<p class="flex items-center gap-2 text-sm font-semibold">
+										<CapabilityIcon size={18} aria-hidden="true" class="shrink-0" />
+										{capability.label}
+									</p>
+
+									<Badge variant={capability.enabled ? 'secondary' : 'outline'}>
+										{capability.enabled ? 'Advisory available' : 'Not enabled'}
+									</Badge>
+								</div>
+
+								<ChevronDown
+									size={18}
+									aria-hidden="true"
+									class="shrink-0 transition-transform group-open:rotate-180"
+								/>
+							</summary>
+
+							<div class="space-y-3 px-3 pb-3">
+								<p class="text-sm">{capability.description}</p>
+
+								<Badge variant="outline">
+									<Lock size={12} aria-hidden="true" />
+									Execution disabled
+								</Badge>
+							</div>
+						</details>
+					{/each}
+				</div>
+
+				{#if data.session}
+					<Button type="button" variant="outline" onclick={() => (activeTab = 'Workspace')}>
+						<Sparkles size={16} aria-hidden="true" />
+						Assess an objective
+					</Button>
+				{:else}
+					<p class="text-xs text-muted-foreground">
+						Start a protected workspace session to use advisory capabilities.
+					</p>
+				{/if}
+
+				<div
+					class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3"
+				>
+					<ShieldCheck size={18} aria-hidden="true" class="shrink-0" />
+					<p class="text-xs text-muted-foreground">
+						Advisory availability does not grant application permissions, approve an operation or
+						authorize execution.
+					</p>
+				</div>
+			</section>
 		{:else}
 			<div class="flex flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center">
 				<Lock size={32} aria-hidden="true" class="text-muted-foreground" />
-				<h2 class="font-semibold">
-					{activeTab === 'Operations' ? 'Operation execution disabled' : 'History not enabled'}
-				</h2>
+				<h2 class="font-semibold">Operation execution disabled</h2>
 				<p class="text-sm text-muted-foreground">
 					This capability will be introduced in a subsequent implementation phase.
 				</p>
