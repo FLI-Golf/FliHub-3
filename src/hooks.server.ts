@@ -56,7 +56,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// Apply the playground cache policy to the final response,
 	// regardless of action response format.
-	if (event.route.id === '/(app)/development/intelligence') {
+	if (
+		event.route.id === '/(app)/development/intelligence' ||
+		event.route.id === '/(app)/development/intelligence/operations'
+	) {
 		response.headers.set('cache-control', 'no-store');
 	}
 

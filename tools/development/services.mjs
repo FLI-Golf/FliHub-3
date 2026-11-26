@@ -6,6 +6,9 @@ import {
 	mkdirSync,
 	openSync,
 	readFileSync,
+	readdirSync,
+	realpathSync,
+	statSync,
 	renameSync,
 	writeFileSync
 } from 'node:fs';
@@ -243,6 +246,95 @@ export async function start(directory = runtime, definitions = services, readine
 	}
 }
 
+// Verify the actual running development environment.
+// Never print process environment contents or authentication credentials.
+export async function verify(directory = runtime) {
+	const metadata = records(directory);
+	const failures = [];
+
+	const report = (name, passed) => {
+		console.log(`${passed ? 'PASS' : 'FAIL'} | ${name}`);
+		if (!passed) failures.push(name);
+	};
+
+	console.log('\nFLIHUB DEVELOPMENT ENVIRONMENT');
+	console.log('────────────────────────────────────────');
+
+	for (const service of services) {
+		report(service.name + ' process ownership', Boolean(owned(metadata[service.name])));
+		report(service.name + ' health', await health(service));
+	}
+
+	const database = join(root, 'pocketbase/pb_data/data.db');
+	let databaseVerified = false;
+
+	try {
+		const expected = realpathSync(database);
+		const expectedStat = statSync(expected);
+		const record = metadata.pocketbase;
+
+		if (owned(record)) {
+			const descriptors = '/proc/' + record.pid + '/fd';
+
+			for (const fd of readdirSync(descriptors)) {
+				try {
+					const actual = realpathSync(join(descriptors, fd));
+					const actualStat = statSync(join(descriptors, fd));
+
+					if (
+						actual === expected &&
+						actualStat.dev === expectedStat.dev &&
+						actualStat.ino === expectedStat.ino
+					) {
+						databaseVerified = true;
+						break;
+					}
+				} catch {
+					// A descriptor may close during inspection.
+				}
+			}
+		}
+	} catch {
+		// Missing or inaccessible database identity fails verification.
+	}
+
+	report('Persistent PocketBase database identity', databaseVerified);
+
+	let frontendVerified = false;
+
+	try {
+		const record = metadata.vite;
+
+		if (owned(record)) {
+			const environment = readFileSync('/proc/' + record.pid + '/environ', 'utf8').split('\0');
+
+			const values = environment.filter((entry) => entry.startsWith('POCKETBASE_URL='));
+
+			frontendVerified =
+				values.length === 1 && values[0] === 'POCKETBASE_URL=http://127.0.0.1:8090';
+		}
+	} catch {
+		// Missing or inaccessible configuration fails verification.
+	}
+
+	report('Vite PocketBase configuration', frontendVerified);
+
+	for (const port of [8098, 8099, 8198, 5174, 5274, 5275, 8125, 8126]) {
+		report('Temporary test port ' + port + ' clear', !(await connected(port)));
+	}
+
+	report(
+		'Managed process identities unchanged',
+		services.every((service) => Boolean(owned(metadata[service.name])))
+	);
+
+	if (failures.length) {
+		throw new Error('Development verification failed: ' + failures.length + ' check(s).');
+	}
+
+	console.log('\nDEVELOPMENT ENVIRONMENT VERIFIED');
+}
+
 const terminate = `
 import os, signal, sys
 pid, start, boot = sys.argv[1:]
@@ -284,7 +376,8 @@ if (import.meta.main) {
 	try {
 		const action = process.argv[2];
 		if (action === 'status') console.log(JSON.stringify(await status(), null, 2));
-		else if ((action === 'start' || action === 'stop') && process.argv[3] !== '--locked') {
+		else if (action === 'verify') await verify();
+		else if (['start', 'stop', 'restart'].includes(action) && process.argv[3] !== '--locked') {
 			if (
 				action === 'stop' &&
 				(!privateDirectory(serviceState, false) || !privateDirectory(runtime, false))
@@ -314,11 +407,28 @@ if (import.meta.main) {
 						'Managed service operation failed. Check the startup or shutdown message.'
 					);
 			}
-		} else if (action === 'start' || action === 'stop') {
-			if (action === 'start') await start();
-			else await stop();
+		} else if (['start', 'stop', 'restart'].includes(action)) {
+			if (action === 'restart') {
+				await stop();
+
+				for (const service of services) {
+					if ((await Promise.all(service.ports.map(connected))).some(Boolean)) {
+						throw new Error(
+							service.name + ' still has an active listener. Restart stopped safely.'
+						);
+					}
+				}
+
+				await start();
+				await verify();
+			} else if (action === 'start') {
+				await start();
+			} else {
+				await stop();
+			}
+
 			console.log(JSON.stringify(await status(), null, 2));
-		} else throw new Error('Expected start, status or stop.');
+		} else throw new Error('Expected start, status, stop, restart or verify.');
 	} catch (error) {
 		console.error(error.message);
 		process.exitCode = 1;

@@ -4,9 +4,9 @@ Date: November 25, 2026.
 
 ## Status
 
-JAI-5A architecture specification.
+JAI-5A architecture specification and JAI-5B implementation checkpoint.
 
-Implementation begins in JAI-5B.
+The protected workspace foundation has completed scoped local acceptance. JAI-5C objective resolution and advisory integration remain pending.
 
 The verified starting checkpoint is `bc11b87`,
 Complete controlled application operation acceptance.
@@ -552,8 +552,7 @@ Existing roadmaps and AGENTS.md remain authoritative.
 This specification is based on inspected source
 and the recorded JAI-4 acceptance checkpoint.
 
-JAI-5 security controls are requirements, not
-implemented or verified capabilities.
+JAI-5 security controls remain authoritative requirements. Only the JAI-5B controls identified in the local acceptance record are implemented and locally verified. Subsequent phase controls remain requirements.
 
 The initial route, configuration names, session
 limits and workspace sections are architectural
@@ -561,3 +560,120 @@ decisions subject to scoped implementation review.
 
 Any changes must preserve or strengthen the
 documented security boundaries.
+
+## JAI-5B implementation and local acceptance
+
+### Implemented foundation
+
+- Disabled-by-default development-only workspace access.
+- Explicit authenticated-user allowlisting.
+- Fresh PocketBase authentication.
+- Server-owned disposable sessions and account isolation.
+- Session ownership, expiration and admission controls.
+- Protected request validation.
+- Explicit session creation and closure.
+- Logout-associated workspace revocation.
+- Browser-safe session status presentation.
+- Workspace, Operations, History, Capabilities and Usage sections.
+
+Workspace revocation is distinct from global PocketBase token revocation.
+
+### Resource limits
+
+| Resource                         | Limit      |
+| -------------------------------- | ---------- |
+| Active sessions per user         | 2          |
+| Active sessions globally         | 32         |
+| Idle lifetime                    | 15 minutes |
+| Absolute lifetime                | 60 minutes |
+| Request body                     | 8 KiB      |
+| Body read deadline               | 5 seconds  |
+| New sessions per user per minute | 4          |
+| New sessions globally per minute | 32         |
+
+Session reads do not renew idle expiration.
+Closing or revoking sessions does not reset admission limits.
+These controls are process-local, not distributed production guarantees.
+
+### Recorded acceptance evidence
+
+- 36 workspace unit tests.
+- 22 automated HTTP acceptance checks.
+- Eight manual browser acceptance checks.
+- Final reported regression invocation: 710 passing tests,
+  zero failures, zero cancellations and zero skipped tests.
+- Successful TypeScript and Svelte verification.
+- Successful repository formatting and lint.
+- Successful production build.
+- Successful managed development environment verification.
+- Persistent development database identity preserved.
+- Zero paid provider requests.
+
+These counts describe recorded test invocations and must not be
+combined into an aggregate test total.
+
+### Manual browser acceptance
+
+1. Opened the protected workspace.
+2. Created a disposable session.
+3. Observed active session status.
+4. Refreshed without losing the session.
+5. Manually ended the session.
+6. Created another session.
+7. Signed out while the session was active.
+8. Signed back in and confirmed the session was closed.
+
+HTTP acceptance also covered logout-associated revocation,
+old workspace selectors, fresh authentication and account isolation.
+
+### Development environment
+
+Managed commands include:
+
+- `npm run dev:all`
+- `npm run dev:status`
+- `npm run dev:stop`
+- `npm run dev:restart`
+- `npm run dev:verify`
+
+The persistent development database remains
+`pocketbase/pb_data/data.db`.
+
+Automated HTTP acceptance uses disposable infrastructure.
+Workspace enablement and allowlisting must be explicitly configured.
+
+### Outstanding limitations
+
+- Full legacy browser regression.
+- GitHub CI verification.
+- Complete responsive and keyboard acceptance.
+- Actual HTTP stalled-body and oversized chunked-body acceptance.
+- Complete cache-policy verification for framework-level early rejection.
+- Expanded development service tooling regression.
+- Distributed resource controls and session ownership.
+- Distributed replay protection.
+- Durable transactions and audit.
+- Production tenant isolation.
+- Provider confidence calibration and recommendation quality.
+- Actual provider invoice reconciliation.
+- Production release.
+
+The SvelteKit alias deprecation warning remains a separate maintenance item.
+
+### Deferred functionality
+
+Natural-language objective submission and advisory orchestration
+remain pending for JAI-5C.
+
+Exact operation review, approval receipts, operation execution
+and persistent application integration remain deferred.
+
+The existing advisory playground and controlled synthetic
+operation engine are preserved.
+
+External provider access, persistent mutations and operation
+execution remain disabled in the protected workspace.
+
+No additional paid Jev experiment is authorized.
+
+Jev supplies intelligence. FliHub retains control.

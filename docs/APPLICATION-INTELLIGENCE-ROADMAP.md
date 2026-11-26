@@ -844,7 +844,7 @@ from the completed JAI-4 checkpoint `bc11b87`.
 
 Implementation sequence:
 
-- JAI-5B: Protected workspace foundation.
+- JAI-5B: Protected workspace foundation — implemented; scoped local acceptance completed.
 - JAI-5C: Objective resolution and advisory guidance.
 - JAI-5D: Exact operation review.
 - JAI-5E: Protected synthetic execution.
@@ -1893,3 +1893,30 @@ JAI-4 is not authorized to operate on real organization data.
 
 No additional paid provider requests, merge or deployment are
 authorized by this closeout.
+
+## JAI-5B implementation and local acceptance
+
+The protected workspace foundation has completed scoped local acceptance.
+
+Recorded evidence includes 36 workspace unit tests, 22 HTTP acceptance
+checks, eight manual browser checks and a final reported regression
+invocation with 710 passing tests and zero failures.
+
+TypeScript and Svelte verification, repository formatting and lint,
+production build and managed development environment verification
+were successful during the recorded acceptance process.
+
+The persistent development database was preserved.
+No paid provider requests were performed.
+
+See [Application Intelligence Workspace](APPLICATION-INTELLIGENCE-WORKSPACE.md)
+for implementation details, resource limits, acceptance evidence
+and outstanding limitations.
+
+GitHub CI and full legacy browser regression remain outstanding.
+
+JAI-5C is the next implementation phase.
+Objective resolution and workspace advisory integration remain pending.
+
+Exact operation review, operation execution, persistent application
+integration and production release remain deferred.
