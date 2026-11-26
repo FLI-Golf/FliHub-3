@@ -973,7 +973,8 @@ Refresh and lost-response recovery read retained state only.
 
 ### Supervisor acceptance walkthrough
 
-Use an authorized disposable development environment. Start a fresh workspace
+Use an authorized development environment and a disposable synthetic workspace.
+Start a fresh workspace
 and assess **Prepare a tournament** with **Spring Invitational** and the
 simulated organization owner. Prepare and inspect the exact review, then
 explicitly approve and execute. Inspect the published group, team and athlete
@@ -983,5 +984,18 @@ concluded and conflicting controls are unavailable. End the synthetic session
 from Workspace and confirm that the result is cleared and the start control is
 available.
 
-Supervisor browser acceptance is pending. JAI-5G integrated acceptance and
-JAI-5H branch closeout remain separate.
+### Supervisor acceptance record
+
+On November 26, 2026, the supervisor completed the walkthrough on the
+temporarily enabled managed Codespaces development stack. The session and
+execution remained disposable and synthetic-only. The supervisor matched all
+six published groups to the approved review, inspected the verification and
+audit disclosures, confirmed refresh and terminal behavior, then ended the
+session and saw the result clear. The managed stack was restored to its
+disabled baseline. The browser displayed `404 — Workspace access unavailable`
+after restoration. Independent service and effective-configuration checks and
+the scope of the manual evidence are recorded in the
+[JAI-5F roadmap closeout](APPLICATION-INTELLIGENCE-ROADMAP.md#supervisor-browser-acceptance--november-26-2026).
+
+JAI-5F local acceptance is complete. JAI-5G integrated acceptance, JAI-5H branch
+closeout, full legacy browser regression and GitHub CI remain open.

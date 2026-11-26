@@ -2195,7 +2195,7 @@ The architectural checkpoint independently verified the four effective Vite
 settings and all 17 managed environment checks, including persistent
 PocketBase identity.
 
-### Next implementation priority — JAI-5F
+### JAI-5F requirements recorded at the JAI-5E checkpoint
 
 Results, history, audit and visual polish remain next, subject to separate
 authorization. Replace stale preparation messages after execution. Clearly
@@ -2217,7 +2217,7 @@ and observed review and execution milestones. The terminal result supersedes
 stale review notices and removes contradictory reassessment prompts.
 
 The [workspace architecture and supervisor walkthrough](APPLICATION-INTELLIGENCE-WORKSPACE.md#jai-5f--verified-results-and-disposable-history)
-describe the evidence boundary and pending supervisor browser acceptance.
+describe the evidence boundary and walkthrough procedure.
 JAI-5G integrated browser and security acceptance and JAI-5H closeout remain
 outstanding.
 
@@ -2239,3 +2239,77 @@ Automated verification passed:
   The four effective managed Vite settings matched the disabled baseline.
 
 Full legacy browser regression and remote GitHub CI remain separate evidence.
+
+### Supervisor browser acceptance — November 26, 2026
+
+The supervisor used an existing authenticated organization owner account on the
+managed Codespaces development stack with temporary explicit enablement. The
+workspace session and its operation were disposable and synthetic-only. The
+workspace displayed the offline mock provider, external provider access and
+persistent mutations disabled, and explicit execution approval required.
+
+Assessment #2 resolved `Help me prepare our next tournament.` to
+**Prepare a tournament** for Spring Invitational with the simulated organization
+owner. It completed at 20:14:00 UTC in 5 ms and recommended **Plan group
+assignments**, with **Create synthetic group assignments** as the controlled
+operation. The initial state was revision 0 with 12 teams, 24 athletes and
+zero groups. Assessment #1 remained visible as clarification required. The
+successful input leaves the cause of the earlier empty-objective observation
+unresolved.
+
+The exact review was prepared at 20:15:20 UTC with review identity
+`a4fef283-b649-4fcb-8eaa-791ef59a35b9` and plan digest
+`80ac8196bd0015c18265d84083882a2e02eda58057e5c7271dfd1e3a44101bbd`.
+The supervisor expanded all six groups, confirmed that each team and athlete
+appeared once, and inspected the same assignments in the published result.
+
+| Synthetic group | First team and athletes | Second team and athletes |
+| --------------- | ----------------------- | ------------------------ |
+| 1               | Team 9 · 17, 18         | Team 8 · 15, 16          |
+| 2               | Team 1 · 1, 2           | Team 6 · 11, 12          |
+| 3               | Team 4 · 7, 8           | Team 12 · 23, 24         |
+| 4               | Team 10 · 19, 20        | Team 3 · 5, 6            |
+| 5               | Team 7 · 13, 14         | Team 11 · 21, 22         |
+| 6               | Team 2 · 3, 4           | Team 5 · 9, 10           |
+
+After explicit approval, execution was admitted at 20:17:25 UTC. The browser
+showed publication completed, revision 0 to 1, six groups created, twelve teams
+and twenty-four athletes assigned, and independent verification passed. It
+reported no persistent application mutations, zero paid provider requests and
+$0.00. The execution and verification disclosures showed exact assignment
+checking, uniqueness, completeness, revision transition and unchanged records
+outside the synthetic operation scope. The stale review-ready message cleared
+and the concluded scenario directed the operator to end the workspace before
+starting another.
+
+History showed the registered objective and recommended capability, followed
+by review preparation, confirmation and execution admission, approval issuance,
+independent verification, publication and conclusion. Synthetic publication audit
+record #1 showed a published outcome, verification passed, revision 0 to 1 and
+synthetic state changed. The UI described history and audit as temporary and
+disposable.
+
+Refresh recovered assignments, history, audit and concluded status with further
+operation controls unavailable. On ending the session, the supervisor saw
+**Workspace session closed**, status **Not started**, the result cleared and
+the start control available. Automated verification recorded above covers
+terminal cleanup. The manual observation covers the immediate closure view.
+
+### Environment restoration and acceptance status
+
+The supervisor stopped the temporarily enabled managed stack and separately
+restarted it with default disabled settings. The closeout independently verified
+Mailpit PID 108687, PocketBase PID 108700 and Vite PID 108710, all 17 managed
+environment checks, and all four effective Vite settings. Intelligence was
+disabled, the provider was mock, the workspace was disabled and its allowlist
+was empty. Persistent PocketBase device and inode remained `1796:1442566`.
+This verifies database identity. Database content comparison was outside the check.
+
+The supervisor observed **404 — Workspace access unavailable** in the restored
+browser session. Raw HTTP status and response headers were outside that
+observation. No new implementation defects were reported.
+
+JAI-5F local acceptance is complete with the automated evidence above and the
+supervisor browser walkthrough. JAI-5G integrated browser and security
+acceptance, JAI-5H branch closeout, full legacy browser regression and GitHub
+CI remain outstanding. Production readiness remains a separate gate.
