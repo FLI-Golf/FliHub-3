@@ -26,8 +26,9 @@ function prepare(session) {
 	return result.plan;
 }
 
-function confirmation(plan) {
+function confirmation(session, plan) {
 	return {
+		...session.getReview(),
 		action: 'approve-exact-plan',
 		planDigest: plan.digest
 	};
@@ -47,7 +48,7 @@ for (const role of ['owner', 'admin']) {
 		assert.equal(session.getStatus(), 'review');
 		assert.equal(session.getApproval(), null);
 
-		const result = session.approve(confirmation(plan));
+		const result = session.approve(confirmation(session, plan));
 
 		assert.equal(result.status, 'approved');
 		assert.equal(session.getStatus(), 'approved');
@@ -106,6 +107,7 @@ test('cannot approve before preparing a plan', () => {
 
 	assert.deepEqual(
 		session.approve({
+			...session.getReview(),
 			action: 'approve-exact-plan',
 			planDigest: '0'.repeat(64)
 		}),
@@ -123,6 +125,7 @@ test('rejects incorrect plan digest', () => {
 
 	assert.deepEqual(
 		session.approve({
+			...session.getReview(),
 			action: 'approve-exact-plan',
 			planDigest: '0'.repeat(64)
 		}),
@@ -146,19 +149,20 @@ test('requires explicit confirmation action', () => {
 		{ approved: true },
 		{ planDigest: plan.digest },
 		{
+			...session.getReview(),
 			action: 'review',
 			planDigest: plan.digest
 		},
 		{
-			...confirmation(plan),
+			...confirmation(session, plan),
 			approved: true
 		},
 		{
-			...confirmation(plan),
+			...confirmation(session, plan),
 			actorId: syntheticActorIds.owner
 		},
 		{
-			...confirmation(plan),
+			...confirmation(session, plan),
 			operationId: 'execute_sql'
 		}
 	]) {
@@ -178,6 +182,7 @@ test('rejects accessor confirmation without invoking getter', () => {
 	let invoked = false;
 
 	const input = {
+		...session.getReview(),
 		action: 'approve-exact-plan',
 		get planDigest() {
 			invoked = true;
@@ -195,7 +200,7 @@ test('rejects hidden and symbolic confirmation properties', () => {
 	const session = createSession();
 	const plan = prepare(session);
 
-	const hidden = confirmation(plan);
+	const hidden = confirmation(session, plan);
 
 	Object.defineProperty(hidden, 'extra', {
 		value: true,
@@ -203,7 +208,7 @@ test('rejects hidden and symbolic confirmation properties', () => {
 	});
 
 	const symbolic = {
-		...confirmation(plan),
+		...confirmation(session, plan),
 		[Symbol('extra')]: true
 	};
 
@@ -227,7 +232,7 @@ test('session state cannot be modified externally', () => {
 
 	const plan = prepare(session);
 
-	assert.equal(session.approve(confirmation(plan)).status, 'approved');
+	assert.equal(session.approve(confirmation(session, plan)).status, 'approved');
 });
 
 test('session retains an immutable reviewed plan', () => {
@@ -238,14 +243,14 @@ test('session retains an immutable reviewed plan', () => {
 		plan.body.proposal.groups.length = 0;
 	}, TypeError);
 
-	assert.equal(session.approve(confirmation(plan)).status, 'approved');
+	assert.equal(session.approve(confirmation(session, plan)).status, 'approved');
 });
 
 test('approval receipts cannot modify private authority', () => {
 	const session = createSession();
 	const plan = prepare(session);
 
-	const result = session.approve(confirmation(plan));
+	const result = session.approve(confirmation(session, plan));
 
 	assert.equal(result.status, 'approved');
 
@@ -276,7 +281,7 @@ test('identical plans do not share session approval authority', () => {
 
 	assert.notEqual(first.sessionId, second.sessionId);
 
-	const result = first.approve(confirmation(firstPlan));
+	const result = first.approve(confirmation(first, firstPlan));
 
 	assert.equal(result.status, 'approved');
 
@@ -292,11 +297,11 @@ test('rejects repeated approval in the same session', () => {
 	const session = createSession();
 	const plan = prepare(session);
 
-	assert.equal(session.approve(confirmation(plan)).status, 'approved');
+	assert.equal(session.approve(confirmation(session, plan)).status, 'approved');
 
 	const before = session.getApproval();
 
-	assert.deepEqual(session.approve(confirmation(plan)), {
+	assert.deepEqual(session.approve(confirmation(session, plan)), {
 		status: 'rejected',
 		reason: 'already_approved'
 	});
@@ -308,7 +313,7 @@ test('approved session cannot replace its reviewed plan', () => {
 	const session = createSession();
 	const plan = prepare(session);
 
-	session.approve(confirmation(plan));
+	session.approve(confirmation(session, plan));
 
 	assert.equal(session.prepare(request()).status, 'rejected');
 
@@ -329,7 +334,7 @@ test('failed preparation invalidates previous review', () => {
 
 	assert.equal(session.getStatus(), 'open');
 
-	assert.deepEqual(session.approve(confirmation(plan)), {
+	assert.deepEqual(session.approve(confirmation(session, plan)), {
 		status: 'rejected',
 		reason: 'plan_required'
 	});
@@ -344,7 +349,7 @@ test('cancellation invalidates a pending review', () => {
 	assert.equal(session.getStatus(), 'cancelled');
 	assert.equal(session.getApproval(), null);
 
-	assert.deepEqual(session.approve(confirmation(plan)), {
+	assert.deepEqual(session.approve(confirmation(session, plan)), {
 		status: 'rejected',
 		reason: 'session_closed'
 	});
@@ -356,7 +361,7 @@ test('cancellation invalidates an existing approval', () => {
 	const session = createSession();
 	const plan = prepare(session);
 
-	session.approve(confirmation(plan));
+	session.approve(confirmation(session, plan));
 
 	assert.notEqual(session.getApproval(), null);
 

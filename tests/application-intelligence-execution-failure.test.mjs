@@ -24,6 +24,7 @@ function approve(session) {
 	assert.equal(prepared.status, 'prepared');
 
 	const approved = session.approve({
+		...session.getReview(),
 		action: 'approve-exact-plan',
 		planDigest: prepared.plan.digest
 	});
@@ -98,6 +99,7 @@ for (const failurePoint of [1, 2]) {
 
 		assert.equal(
 			session.approve({
+				...session.getReview(),
 				action: 'approve-exact-plan',
 				planDigest: plan.digest
 			}).status,

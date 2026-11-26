@@ -98,6 +98,7 @@ test('proxy confirmation cannot reenter approval', () => {
 	const plan = prepare(session);
 
 	const confirmation = {
+		...session.getReview(),
 		action: 'approve-exact-plan',
 		planDigest: plan.digest
 	};
@@ -123,6 +124,7 @@ test('proxy receipt cannot reenter consumption', () => {
 	const plan = prepare(session);
 
 	const approved = session.approve({
+		...session.getReview(),
 		action: 'approve-exact-plan',
 		planDigest: plan.digest
 	});

@@ -30,6 +30,7 @@ function approve(session) {
 	const plan = prepare(session);
 
 	const result = session.approve({
+		...session.getReview(),
 		action: 'approve-exact-plan',
 		planDigest: plan.digest
 	});
@@ -105,6 +106,7 @@ test('consumed session cannot prepare or approve again', () => {
 
 	assert.equal(
 		session.approve({
+			...session.getReview(),
 			action: 'approve-exact-plan',
 			planDigest: plan.digest
 		}).status,

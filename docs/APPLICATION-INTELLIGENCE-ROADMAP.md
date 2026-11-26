@@ -564,7 +564,57 @@ Limitations:
 
 ### JAI-4F — Independent verification and audit
 
-Status: Up next.
+Status: Complete.
+
+Acceptance evidence:
+
+- Independent verification validates exact approved assignments,
+  organization scope, complete roster coverage, unique identities,
+  revision advancement and preservation of unrelated state.
+- Explicit confirmation binds the exact session, fresh review
+  identity and canonical execution plan digest.
+- Cross-session confirmation, stale reviews, modified receipts
+  and replay attempts are rejected.
+- Failed preparation invalidates previous reviews.
+- Registered deterministic handlers construct isolated candidates.
+- Publication requires independent verification and immediate
+  state integrity revalidation.
+- Verified state and its success audit are committed through
+  one synchronous process-local snapshot replacement.
+- Handler, verification and audit construction failures
+  prevent authoritative state publication.
+- Sanitized audit history retains the most recent 100 publication
+  attempts per session with monotonically increasing sequences.
+- Audit metadata originates from private session records,
+  not caller-supplied receipts.
+- Returned state and audit snapshots cannot mutate authoritative
+  session state through returned references.
+- Successful demonstration: six groups, twelve teams,
+  twenty-four athletes, revision zero to revision one.
+- Missing approval and replay attempts preserve application state.
+- Consolidated offline acceptance: 806 tests passed,
+  zero failures, cancellations or skipped tests.
+- Svelte and TypeScript checks, lint and production build passed.
+- Live Jev release lock remains disabled.
+- Private experiment evidence and engineering stash preserved.
+
+Limitations:
+
+- Synthetic actor selection is simulated, not production
+  authentication or authorization.
+- Publication is restricted to disposable in-memory synthetic
+  state and one registered operation.
+- Approval and replay protection are process-local.
+- Audit history is bounded and is not a durable, distributed
+  or tamper-evident production audit ledger.
+- Audit coverage is limited to publication attempts.
+- Complete audit construction failure blocks publication,
+  but recording that failure cannot be guaranteed.
+- No persistent application mutation, provider dispatch,
+  deployment or automated engineering authority introduced.
+- Interactive operator confirmation remains part of JAI-4G.
+- Existing SvelteKit config.alias deprecation is deferred
+  as separate maintenance work.
 
 - Verify resulting state independently of handler success.
 - Verify six groups and complete fixture roster coverage.
@@ -577,7 +627,7 @@ Status: Up next.
 
 ### JAI-4G — Interactive terminal demonstration
 
-Status: Pending.
+Status: Up next.
 
 - Use the existing offline mock intelligence pipeline.
 - Display the recommendation and exact proposed changes.
