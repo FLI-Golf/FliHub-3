@@ -344,3 +344,115 @@ test('generation rejects stale requests across concurrent and replacement sessio
 
 	assert.equal(repeated.review.reviewId, prepared.review.reviewId);
 });
+
+async function executionSetup() {
+	const env = setup();
+	await env.assess();
+	const { review } = env.prepare();
+	return {
+		...env,
+		confirmation: {
+			confirmation: 'approve-and-execute',
+			generation: env.sessions.readCurrentRecommendation(owner, env.id).generation,
+			reviewId: review.reviewId,
+			planDigest: review.planDigest
+		}
+	};
+}
+
+test('execution admission binds all confirmation fields, owner and session', async () => {
+	const { sessions, id, confirmation } = await executionSetup();
+	const second = sessions.start(owner);
+	assert.equal(sessions.readExecution(owner, id), null);
+	for (const field of Object.keys(confirmation)) {
+		assert.equal(
+			sessions.executeReview(owner, id, { ...confirmation, [field]: '' }).status,
+			'stale_confirmation'
+		);
+	}
+	assert.equal(sessions.executeReview(other, id, confirmation).status, 'missing_session');
+	assert.equal(sessions.executeReview(owner, second.id, confirmation).status, 'stale_confirmation');
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'completed');
+	const outcome = sessions.readExecution(owner, id);
+	assert.deepEqual(outcome, {
+		status: 'published',
+		revisionBefore: 0,
+		revisionAfter: 1,
+		groupsCreated: 6,
+		teamsAssigned: 12,
+		athletesAssigned: 24,
+		verification: 'passed',
+		persistentMutation: false,
+		paidProviderRequests: 0,
+		paidProviderCost: 0
+	});
+	assert.ok(Object.isFrozen(outcome));
+	assert.deepEqual(sessions.readExecution(owner, id), outcome);
+	assert.equal(sessions.readExecution(other, id), null);
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'concluded');
+	assert.equal(sessions.beginAssessment(owner, id).status, 'concluded');
+	assert.equal(sessions.prepareReview(owner, id, confirmation.generation).status, 'concluded');
+	assert.equal(sessions.cancelReview(owner, id, confirmation.reviewId).status, 'concluded');
+	assert.deepEqual(sessions.readExecution(owner, id), outcome);
+	assert.equal(sessions.close(owner, id), true);
+	assert.equal(sessions.readExecution(owner, id), null);
+});
+
+for (const boundary of ['candidate', 'verification']) {
+	test(`admitted ${boundary} failure is sanitized and terminal`, async (t) => {
+		const { sessions, id, confirmation } = await executionSetup();
+		const clone = globalThis.structuredClone;
+		const mock = t.mock.method(globalThis, 'structuredClone', (value, options) => {
+			if (boundary === 'candidate') throw new Error('private test evidence');
+			const copy = clone(value, options);
+			if (copy?.source === 'synthetic') copy.teams[0].name = 'Changed by test';
+			return copy;
+		});
+		try {
+			assert.equal(sessions.executeReview(owner, id, confirmation).status, 'completed');
+		} finally {
+			mock.mock.restore();
+		}
+		const outcome = sessions.readExecution(owner, id);
+		assert.deepEqual(outcome, { status: 'failed' });
+		assert.ok(Object.isFrozen(outcome));
+		assert.equal(sessions.executeReview(owner, id, confirmation).status, 'concluded');
+		assert.equal(sessions.beginAssessment(owner, id).status, 'concluded');
+	});
+}
+
+for (const end of ['expire', 'revoke']) {
+	test(`${end} discards retained terminal outcomes and prevents execution`, async () => {
+		const { sessions, id, confirmation, advance } = await executionSetup();
+		assert.equal(sessions.executeReview(owner, id, confirmation).status, 'completed');
+		if (end === 'expire') advance(workspaceLimits.idleMs);
+		else sessions.revokeOwner(owner);
+		assert.equal(sessions.readExecution(owner, id), null);
+		assert.equal(sessions.executeReview(owner, id, confirmation).status, 'missing_session');
+	});
+}
+
+test('assessment and cancellation invalidate execution when admitted first', async () => {
+	const { sessions, id, confirmation, cancel } = await executionSetup();
+	assert.equal(cancel(confirmation.reviewId).status, 'cancelled');
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'stale_confirmation');
+	const assessment = sessions.beginAssessment(owner, id);
+	assert.equal(assessment.status, 'admitted');
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'busy');
+	assert.equal(sessions.readExecution(owner, id), null);
+});
+
+test('a failed outcome projection cannot change a published scenario', async (t) => {
+	const { sessions, id, confirmation } = await executionSetup();
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'completed');
+	const freeze = t.mock.method(Object, 'freeze', () => {
+		throw new Error('Presentation failed');
+	});
+	try {
+		assert.throws(() => sessions.readExecution(owner, id), /Presentation failed/);
+	} finally {
+		freeze.mock.restore();
+	}
+	assert.equal(sessions.executeReview(owner, id, confirmation).status, 'concluded');
+	assert.equal(sessions.readExecution(owner, id).status, 'published');
+});

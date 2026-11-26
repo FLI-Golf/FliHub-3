@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 
 	import { onMount } from 'svelte';
 	import {
@@ -84,7 +85,28 @@
 	let selectedActor = $state('synthetic-actor-owner');
 	let busy = $state(false);
 	let hydrated = $state(false);
-	let reviewBusy = $state<'prepare' | 'cancel' | null>(null);
+	let reviewBusy = $state<'prepare' | 'cancel' | 'execute' | null>(null);
+	let confirmedReview = $state<string | null>(null);
+
+	const submitExecution: SubmitFunction = ({ cancel }) => {
+		if (!hydrated || busy || reviewBusy || !review || confirmedReview !== review.reviewId) {
+			cancel();
+			return;
+		}
+
+		confirmedReview = null;
+		reviewBusy = 'execute';
+
+		return async ({ update }) => {
+			try {
+				// Recover the retained outcome even when the action response is lost.
+				await invalidateAll();
+				if (!data.execution) await update({ reset: false, invalidateAll: false });
+			} finally {
+				reviewBusy = null;
+			}
+		};
+	};
 
 	let review = $derived(data.session && !busy && !reviewBusy ? data.review : null);
 
@@ -171,7 +193,7 @@
 	const restrictions = [
 		{ label: 'External provider access', value: 'Disabled', icon: WifiOff },
 		{ label: 'Persistent mutations', value: 'Disabled', icon: Database },
-		{ label: 'Operation execution', value: 'Disabled', icon: Lock },
+		{ label: 'Synthetic execution', value: 'Explicit approval required', icon: Lock },
 		{ label: 'Data source', value: 'Synthetic only', icon: ShieldCheck },
 		{ label: 'Paid provider cost', value: '$0.00', icon: Wallet }
 	];
@@ -219,6 +241,31 @@
 				</Button>
 			{/each}
 		</nav>
+
+		{#if data.execution}
+			<section aria-label="Synthetic execution outcome" class="space-y-2 rounded-md border p-4">
+				{#if data.execution.status === 'published'}
+					<h2 class="flex items-center gap-2 font-semibold">
+						<ShieldCheck size={20} aria-hidden="true" />
+						Synthetic publication completed
+					</h2>
+					<dl class="grid gap-2 text-sm sm:grid-cols-2">
+						{#each [{ label: 'Synthetic revision', value: `${data.execution.revisionBefore} → ${data.execution.revisionAfter}` }, { label: 'Groups created', value: data.execution.groupsCreated }, { label: 'Teams assigned', value: data.execution.teamsAssigned }, { label: 'Athletes assigned', value: data.execution.athletesAssigned }, { label: 'Independent verification', value: data.execution.verification }, { label: 'Persistent application mutations', value: 'None' }, { label: 'Paid provider requests', value: data.execution.paidProviderRequests }, { label: 'Paid provider cost', value: data.execution.paidProviderCost.toLocaleString( 'en-US', { style: 'currency', currency: 'USD' } ) }] as item (item.label)}
+							<div class="flex justify-between gap-3 rounded bg-muted/50 px-3 py-2">
+								<dt class="font-semibold">{item.label}</dt>
+								<dd>{item.value}</dd>
+							</div>
+						{/each}
+					</dl>
+				{:else}
+					<h2 class="font-semibold">Synthetic execution failed</h2>
+					<p class="text-sm">The original synthetic state was retained.</p>
+				{/if}
+				<p class="text-sm">
+					The scenario has concluded. A new workspace is required to begin another scenario.
+				</p>
+			</section>
+		{/if}
 
 		{#if form?.message}
 			<p
@@ -354,6 +401,10 @@
 						assessment is required before preparing another review.
 					</p>
 				</section>
+			{:else if data.session && data.execution}
+				<p class="text-sm">
+					This scenario has concluded. Close the workspace to start another scenario.
+				</p>
 			{:else if data.session && !reviewBusy}
 				<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
 					<div class="flex flex-wrap items-start justify-between gap-2">
@@ -633,7 +684,7 @@
 							<Badge variant="outline">Recommendation only</Badge>
 							<Badge variant="outline">
 								<Lock size={12} aria-hidden="true" />
-								Execution disabled
+								Persistent execution disabled
 							</Badge>
 						</div>
 
@@ -1091,7 +1142,7 @@
 					</h3>
 
 					<dl class="overflow-hidden rounded-md border">
-						{#each [{ label: 'Assessments per user per minute', value: data.limits.maxAssessmentsPerUserPerWindow }, { label: 'Concurrent assessments per session', value: data.limits.maxConcurrentAssessmentsPerSession }, { label: 'Retained history capacity', value: data.limits.maxAssessmentHistory }, { label: 'Idle session limit', value: `${data.limits.idleMs / 60000} minutes` }, { label: 'Absolute session limit', value: `${data.limits.absoluteMs / 60000} minutes` }, { label: 'Operation executions', value: 'Disabled' }] as metric, index (metric.label)}
+						{#each [{ label: 'Assessments per user per minute', value: data.limits.maxAssessmentsPerUserPerWindow }, { label: 'Concurrent assessments per session', value: data.limits.maxConcurrentAssessmentsPerSession }, { label: 'Retained history capacity', value: data.limits.maxAssessmentHistory }, { label: 'Idle session limit', value: `${data.limits.idleMs / 60000} minutes` }, { label: 'Absolute session limit', value: `${data.limits.absoluteMs / 60000} minutes` }, { label: 'Synthetic executions per session', value: 1 }] as metric, index (metric.label)}
 							<div
 								class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm {index % 2 ===
 								0
@@ -1130,7 +1181,7 @@
 				</p>
 
 				<div class="overflow-hidden rounded-md border">
-					{#each [{ label: 'Prepare a tournament', description: 'Review synthetic event context and recommend a preparation step.', availability: 'Advisory available', icon: ClipboardCheck }, { label: 'Assess tournament readiness', description: 'Review known prerequisites and qualitative readiness.', availability: 'Advisory available', icon: Gauge }, { label: 'Create synthetic group assignments', description: 'Exact synthetic operation review is available after an eligible assessment. Approval and execution remain disabled.', availability: 'Review only', icon: Network }] as capability, index (capability.label)}
+					{#each [{ label: 'Prepare a tournament', description: 'Review synthetic event context and recommend a preparation step.', availability: 'Advisory available', icon: ClipboardCheck }, { label: 'Assess tournament readiness', description: 'Review known prerequisites and qualitative readiness.', availability: 'Advisory available', icon: Gauge }, { label: 'Create synthetic group assignments', description: 'Exact synthetic operation review is available after an eligible assessment. Confirmed synthetic execution is available for eligible reviews.', availability: 'Controlled synthetic execution', icon: Network }] as capability, index (capability.label)}
 						{@const CapabilityIcon = capability.icon}
 
 						<details class="group border-b last:border-b-0 {index % 2 === 0 ? 'bg-muted/40' : ''}">
@@ -1162,7 +1213,7 @@
 
 								<Badge variant="outline">
 									<Lock size={12} aria-hidden="true" />
-									Execution disabled
+									Persistent execution disabled
 								</Badge>
 							</div>
 						</details>
@@ -1204,13 +1255,17 @@
 						</h2>
 						<p class="text-xs text-muted-foreground">Server-owned synthetic operation proposal.</p>
 					</div>
-					<Badge variant="outline">Review only</Badge>
+					<Badge variant="outline">Synthetic only</Badge>
 				</div>
 
 				{#if reviewBusy}
 					<p role="status" class="flex items-center gap-2 text-sm">
 						<LoaderCircle size={16} aria-hidden="true" class="animate-spin" />
-						{reviewBusy === 'cancel' ? 'Cancelling review...' : 'Preparing review...'}
+						{reviewBusy === 'execute'
+							? 'Executing and verifying synthetic assignments...'
+							: reviewBusy === 'cancel'
+								? 'Cancelling review...'
+								: 'Preparing review...'}
 					</p>
 				{:else if review}
 					<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
@@ -1365,18 +1420,57 @@
 						</ul>
 					</details>
 
-					<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
-						<h3 class="flex items-center gap-2 font-semibold">
-							<Lock size={19} aria-hidden="true" class="text-amber-600 dark:text-amber-400" />
-							Approval and execution disabled
-						</h3>
-						<p class="text-sm">Approval required: Yes</p>
-						<p class="text-sm">Approval granted: No</p>
-						<p class="text-xs text-muted-foreground">
-							No persistent records will change. No external provider will be contacted. This review
-							is valid only within its protected synthetic session.
-						</p>
-					</div>
+					{#key review.reviewId}
+						<form
+							method="POST"
+							action="?/executeReview"
+							enctype="application/x-www-form-urlencoded"
+							use:enhance={submitExecution}
+							class="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3"
+						>
+							<h3 class="flex items-center gap-2 font-semibold">
+								<Lock size={19} aria-hidden="true" class="text-amber-600 dark:text-amber-400" />
+								Confirm synthetic execution
+							</h3>
+							<p class="text-sm">
+								Approve {review.operation.label} for {review.event.name} as {review.operator.role}.
+								This creates {review.summary.groupsAfter - review.summary.groupsBefore} groups with the
+								reviewed assignments for {review.summary.teamsAssigned} teams and
+								{review.summary.athletesAssigned} athletes.
+							</p>
+							<p class="text-sm">
+								No persistent application records will change. No external provider will be
+								contacted. Each workspace allows one admitted execution attempt. Execution concludes
+								the scenario.
+							</p>
+							<input type="hidden" name="generation" value={data.reviewGeneration} />
+							<input type="hidden" name="reviewId" value={review.reviewId} />
+							<input type="hidden" name="planDigest" value={review.planDigest} />
+							<label class="flex items-start gap-2 text-sm font-semibold">
+								<input
+									type="checkbox"
+									name="confirmation"
+									value="approve-and-execute"
+									checked={confirmedReview === review.reviewId}
+									onchange={(event) => {
+										confirmedReview = event.currentTarget.checked ? review.reviewId : null;
+									}}
+									disabled={!hydrated || busy || reviewBusy !== null}
+									required
+								/>
+								I approve the exact reviewed assignments.
+							</label>
+							<Button
+								type="submit"
+								disabled={!hydrated ||
+									busy ||
+									reviewBusy !== null ||
+									confirmedReview !== review.reviewId}
+							>
+								Approve and execute
+							</Button>
+						</form>
+					{/key}
 
 					<form
 						method="POST"
@@ -1421,7 +1515,8 @@
 
 				<p class="flex items-start gap-2 text-xs text-muted-foreground">
 					<Lock size={16} aria-hidden="true" class="shrink-0" />
-					Operation execution remains disabled. Session validity is checked on subsequent server requests.
+					Persistent application execution remains disabled. Session validity is checked on subsequent
+					server requests.
 				</p>
 			</section>
 		{/if}

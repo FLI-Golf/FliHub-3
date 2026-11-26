@@ -5,20 +5,66 @@ type RequestFailure = {
 	readonly code: 400 | 403 | 405 | 408 | 413 | 415;
 };
 
+type ExecuteInput = {
+	readonly action: 'execute';
+	readonly confirmation: 'approve-and-execute';
+	readonly generation: string;
+	readonly reviewId: string;
+	readonly planDigest: string;
+};
+
 type ReviewRequestResult =
 	| RequestFailure
 	| {
 			readonly status: 'valid';
 			readonly input:
 				| { readonly action: 'prepare'; readonly generation: string }
-				| { readonly action: 'cancel'; readonly reviewId: string };
+				| { readonly action: 'cancel'; readonly reviewId: string }
+				| ExecuteInput;
 	  };
 
 function invalid(code: RequestFailure['code']): RequestFailure {
 	return { status: 'invalid', code };
 }
 
-function parseFields(body: string, action: 'prepare' | 'cancel'): ReviewRequestResult {
+function parseFields(body: string, action: 'prepare' | 'cancel' | 'execute'): ReviewRequestResult {
+	if (action === 'execute') {
+		const fields = new Map<string, string>();
+		try {
+			for (const pair of body.split('&')) {
+				const separator = pair.indexOf('=');
+				if (separator < 1) return invalid(400);
+				const name = decodeURIComponent(pair.slice(0, separator).replace(/\+/g, ' '));
+				const value = decodeURIComponent(pair.slice(separator + 1).replace(/\+/g, ' '));
+				if (fields.has(name)) return invalid(400);
+				fields.set(name, value);
+			}
+		} catch {
+			return invalid(400);
+		}
+
+		const confirmation = fields.get('confirmation');
+		const generation = fields.get('generation');
+		const reviewId = fields.get('reviewId');
+		const planDigest = fields.get('planDigest');
+		if (
+			fields.size !== 4 ||
+			confirmation !== 'approve-and-execute' ||
+			!generation ||
+			!/^[a-f0-9]{64}$/.test(generation) ||
+			!reviewId ||
+			!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(reviewId) ||
+			!planDigest ||
+			!/^[a-f0-9]{64}$/.test(planDigest)
+		)
+			return invalid(400);
+
+		return {
+			status: 'valid',
+			input: Object.freeze({ action, confirmation, generation, reviewId, planDigest })
+		};
+	}
+
 	const expected = action === 'prepare' ? 'generation' : 'reviewId';
 
 	// Exactly one field. No duplicates or additional instructions.
@@ -62,7 +108,7 @@ function parseFields(body: string, action: 'prepare' | 'cancel'): ReviewRequestR
 export async function parseWorkspaceReviewRequest(
 	request: Request,
 	expectedOrigin: string,
-	action: 'prepare' | 'cancel',
+	action: 'prepare' | 'cancel' | 'execute',
 	readDeadlineMs: number = workspaceLimits.requestReadMs
 ): Promise<ReviewRequestResult> {
 	if (request.method !== 'POST') return invalid(405);

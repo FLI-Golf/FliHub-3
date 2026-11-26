@@ -14,6 +14,7 @@ const root = process.cwd();
 const pbUrl = 'http://127.0.0.1:8198';
 const devUrl = 'http://127.0.0.1:5274';
 const authProxyUrl = 'http://127.0.0.1:8199';
+const mailUrl = 'http://127.0.0.1:8126/api/v1/messages';
 
 let authProxy;
 let refreshFailure = null;
@@ -352,12 +353,12 @@ async function requestHttp(url, options = {}) {
 	});
 }
 
-async function postChunkedAssessment(base, cookie, chunks, stalled = false) {
+async function postChunkedAssessment(base, cookie, chunks, stalled = false, action = 'assess') {
 	return new Promise((resolve, reject) => {
 		const startedAt = Date.now();
 
 		const request = httpRequest(
-			`${base}${workspacePath}?/assess`,
+			`${base}${workspacePath}?/${action}`,
 			{
 				method: 'POST',
 				agent: false,
@@ -514,9 +515,17 @@ async function createUser(admin, name) {
 }
 
 try {
-	for (const port of [8198, 8199, 5274, 5275]) {
+	for (const port of [8198, 8199, 5274, 5275, 8126, 1126]) {
 		await checkPort(port);
 	}
+
+	const mail = start(resolve(root, 'pocketbase/mailpit'), [
+		'--listen',
+		'127.0.0.1:8126',
+		'--smtp',
+		'127.0.0.1:1126'
+	]);
+	await waitFor(mailUrl, mail);
 
 	const pbBin = resolve(root, 'pocketbase/pocketbase');
 
@@ -545,6 +554,9 @@ try {
 
 	const admin = new PocketBase(pbUrl);
 	await admin.collection('_superusers').authWithPassword(adminEmail, password);
+	await admin.settings.update({
+		smtp: { enabled: true, host: '127.0.0.1', port: 1126, tls: false }
+	});
 
 	const owner = await createUser(admin, 'workspace-owner');
 	const other = await createUser(admin, 'workspace-other');
@@ -562,6 +574,10 @@ try {
 	await waitFor(devUrl, app);
 
 	let response = await get(devUrl, ownerCookie);
+	assert.equal(response.status, 404);
+	assertNoStore(response);
+
+	response = await post(devUrl, 'executeReview', ownerCookie);
 	assert.equal(response.status, 404);
 	assertNoStore(response);
 
@@ -1612,6 +1628,92 @@ try {
 
 		assert.ok(replacementReview);
 
+		const execution = new URLSearchParams({
+			confirmation: 'approve-and-execute',
+			generation: replacementContext.generation,
+			reviewId: replacementReview.reviewId,
+			planDigest: replacementReview.planDigest
+		}).toString();
+
+		const execute = (cookie, body, status, headers) =>
+			reviewAction('executeReview', cookie, body, status, headers);
+
+		for (const body of [
+			execution.replace('approve-and-execute', 'yes'),
+			`${execution}&confirmation=approve-and-execute`,
+			`${execution}&receipt=unexpected`,
+			execution.replace(replacementReview.planDigest, 'invalid')
+		])
+			await execute(replacement.cookie, body, 400);
+
+		await execute(replacement.cookie, execution, 403, { origin: 'https://untrusted.example' });
+		await execute(replacement.cookie, execution, 415, { 'content-type': 'text/plain' });
+		await execute(replacement.cookie, 'x'.repeat(8193), 413);
+		const stalled = await postChunkedAssessment(
+			devUrl,
+			replacement.cookie,
+			[execution],
+			true,
+			'executeReview'
+		);
+		assert.ok(stalled.status === 408 || stalled.transportClosed);
+		assert.ok(stalled.elapsedMs >= 4500 && stalled.elapsedMs < 15000);
+		if (stalled.status === 408) assert.match(stalled.cacheControl, /no-store/i);
+		await execute(second.cookie, execution, 409);
+		await execute(`${deniedCookie}; ${replacement.selector}`, execution, 403);
+		await execute(`${otherCookie}; ${replacement.selector}`, execution, 409);
+		assert.equal((await readConcurrentWorkspace(replacement.cookie)).execution, null);
+		pass(
+			'HTTP execution admits only exact, bounded, same-origin confirmation for the owning session'
+		);
+
+		const applicationCollections = (await admin.collections.getFullList())
+			.filter((collection) => collection.type === 'base' && !collection.system)
+			.map((collection) => collection.name);
+		const snapshotRecords = () =>
+			Promise.all(
+				applicationCollections.map((name) => admin.collection(name).getFullList({ sort: 'id' }))
+			);
+		const recordsBefore = await snapshotRecords();
+
+		const submissions = await Promise.all([
+			post(devUrl, 'executeReview', replacement.cookie, { body: execution }),
+			post(devUrl, 'executeReview', replacement.cookie, { body: execution })
+		]);
+		assert.deepEqual(submissions.map((result) => result.status).sort(), [200, 409]);
+		for (const result of submissions) {
+			assertNoStore(result);
+			const body = await result.text();
+			assert.doesNotMatch(
+				body,
+				/synthetic-approval-receipt|approvalId|originalStateDigest|publishedStateDigest/
+			);
+		}
+
+		const published = {
+			status: 'published',
+			revisionBefore: 0,
+			revisionAfter: 1,
+			groupsCreated: 6,
+			teamsAssigned: 12,
+			athletesAssigned: 24,
+			verification: 'passed',
+			persistentMutation: false,
+			paidProviderRequests: 0,
+			paidProviderCost: 0
+		};
+		assert.deepEqual((await readConcurrentWorkspace(replacement.cookie)).execution, published);
+		await execute(replacement.cookie, execution, 409);
+		await cancel(replacement.cookie, replacementReview.reviewId, 409);
+		assert.equal((await assess(replacement.cookie)).status, 409);
+		assert.deepEqual((await readConcurrentWorkspace(replacement.cookie)).execution, published);
+		assert.equal((await readConcurrentWorkspace(second.cookie)).execution, null);
+		assert.deepEqual(await snapshotRecords(), recordsBefore);
+		pass('HTTP execution leaves disposable persistent application records unchanged');
+		pass(
+			'HTTP concurrent execution publishes once and supports read-only retained outcome recovery'
+		);
+
 		await closeReviewSession(replacement.cookie);
 
 		await prepare(replacement.cookie, replacementContext.generation, 409);
@@ -1623,8 +1725,29 @@ try {
 		assert.equal(closed.session, null);
 		assert.equal(closed.review, null);
 		assert.equal(closed.reviewAvailability, null);
+		assert.equal(closed.execution, null);
 
 		pass('Closed and replacement sessions reject stale review requests');
+
+		const secondReview = (await readConcurrentWorkspace(second.cookie)).review;
+		await prepare(second.cookie, secondContext.generation);
+		const freshReview = secondReview ?? (await readConcurrentWorkspace(second.cookie)).review;
+		const freshBody = new URLSearchParams({
+			confirmation: 'approve-and-execute',
+			generation: secondContext.generation,
+			reviewId: freshReview.reviewId,
+			planDigest: freshReview.planDigest
+		}).toString();
+		const failure = armRefreshFailure(2);
+		try {
+			await execute(second.cookie, freshBody, 403);
+			assert.equal(failure.injected, true);
+		} finally {
+			refreshFailure = null;
+		}
+		assert.equal((await readConcurrentWorkspace(second.cookie)).execution, null);
+		await execute(second.cookie, freshBody, 409);
+		pass('HTTP execution independently refreshes authentication before admission');
 
 		await closeReviewSession(second.cookie);
 	}
@@ -1661,7 +1784,16 @@ try {
 	assert.equal(response.status, 404);
 	assert.equal(getWorkspaceCookie(response), undefined);
 
+	response = await post(previewUrl, 'executeReview', ownerCookie);
+	assert.equal(response.status, 404);
+	assertNoStore(response);
+
 	pass('Production rejects workspace even with explicit enablement');
+
+	const capturedMail = await requestHttp(mailUrl);
+	assert.equal(capturedMail.status, 200);
+	assert.deepEqual(JSON.parse(await capturedMail.text()).messages, []);
+	pass('Disposable mail capture records no execution email');
 
 	console.log(`\nHTTP acceptance checks passed: ${passed}`);
 } finally {

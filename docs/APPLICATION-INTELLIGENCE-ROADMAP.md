@@ -2089,7 +2089,7 @@ $0.00. No persistent application operation was executed.
 - Unsubmitted edits in another browser tab are not observable by the
   server. An admitted new assessment invalidates the existing review.
 
-### Next development phase
+### Next development phase at the JAI-5D checkpoint
 
 JAI-5E — Protected synthetic operation execution.
 
@@ -2104,3 +2104,61 @@ multi-step orchestration.
 Continue to follow `INTELLIGENCE-WORKFLOW-ARCHITECTURE.md`.
 
 **FliHub guides the process. Jev helps improve the decisions.**
+
+## JAI-5E — Protected synthetic execution
+
+Implemented an explicit approval-and-execution transition for the current
+exact synthetic review. FliHub refreshes authentication and binds confirmation
+to the server-owned workspace, assessment generation, review identity and
+canonical digest. The existing engine keeps the approval receipt private and
+independently verifies candidate changes before publishing state and audit.
+
+Each disposable workspace admits one attempt. Static-fixture assessments
+stop after admission to avoid reconstructing revision-zero state. An admitted
+failure concludes the workspace with the original state retained. Read-only
+load retrieves the bounded terminal outcome after refresh or a lost response.
+See the [workspace architecture](APPLICATION-INTELLIGENCE-WORKSPACE.md#jai-5e--protected-synthetic-execution)
+for the request contract and concurrency boundaries.
+
+The execution state is local to the application process. Durable production
+transaction processing and persistent application execution remain deferred.
+The next phase after JAI-5E acceptance is JAI-5F — Results, history, audit and
+visual polish.
+
+### Verification
+
+- `node tests/intelligence.test.mjs` passed 11 tests.
+- `node --test --test-isolation=none tests/application-intelligence*.test.mjs tests/application-workspace*.test.mjs`
+  passed 962 tests on the host, including the isolated operation, terminal,
+  and workspace lifecycle tests.
+- `node tests/application-workspace-http.mjs` passed 97 checks with disposable
+  PocketBase and Mailpit, including 25 Chromium checks. Acceptance verified
+  fresh authentication, exact admission, concurrent requests, replay rejection,
+  unchanged persistent application records, and read-only recovery after
+  dropping a successful execution response.
+- `npm run check`, `npm run lint`, `npm run build`, and `git diff --check`
+  passed. Svelte reported zero errors and zero warnings.
+- `npm run test:integration` passed 215 tests against disposable PocketBase
+  and Mailpit.
+- `E2E_SKIP_BUILD=1 npm run test:e2e -- phase1a` passed the focused legacy
+  sign-in and organization access browser regression with 19 checks.
+- Host `npm run dev:verify` passed all 17 checks including persistent PocketBase
+  descriptor identity and unchanged managed process identities. The disabled
+  managed execution action returned HTTP 404 with `no-store`.
+
+### Managed workspace verification and remaining gates
+
+In the normal managed Codespaces development stack, the supervisor opened
+`/development/intelligence/operations` in an existing signed-in organization owner
+session. The page displayed `404` and `Workspace access unavailable` while the
+authenticated header remained visible. The workspace stayed disabled. The
+supervisor captured the rendered denial, without raw HTTP status or headers.
+
+The separate disposable suite verified raw authenticated HTTP responses,
+including 404 and no-store for disabled development and production preview
+access. That suite covers the HTTP acceptance requirement. The managed browser
+observation covers effective disablement in the running development environment.
+
+JAI-5E local acceptance is complete. Full legacy browser regression and remote
+GitHub CI remain outstanding. JAI-5F and subsequent phases remain separately
+gated.

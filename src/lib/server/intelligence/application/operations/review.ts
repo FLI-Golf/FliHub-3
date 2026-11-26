@@ -1,4 +1,8 @@
-import { createSyntheticApprovalSession, type SyntheticApprovalSession } from './approval.ts';
+import {
+	createSyntheticApprovalSession,
+	type SyntheticApprovalSession,
+	type SyntheticPublicationOutcome
+} from './approval.ts';
 
 import { validateSyntheticExecutionPlan } from './execution-plan.ts';
 import { authorizeSyntheticOperation } from './authorization.ts';
@@ -148,17 +152,42 @@ function projectReview(session: SyntheticApprovalSession, plan: SyntheticExecuti
 
 export type ExactOperationReview = ReturnType<typeof projectReview>;
 
-/**
- * Review-only facade over the existing deterministic
- * operation engine.
- *
- * The underlying operation session remains private.
- * No approval or execution methods are exposed.
- *
- * Workspace ownership and expiration are enforced by
- * the protected workspace integration.
- */
+export const failedExecution = Object.freeze({ status: 'failed' } as const);
+
+export type ProtectedExecutionOutcome =
+	typeof failedExecution | Extract<SyntheticPublicationOutcome, { status: 'published' }>;
+
+export function projectExecutionOutcome(outcome: ProtectedExecutionOutcome) {
+	if (outcome.status === 'failed') return outcome;
+
+	return Object.freeze({
+		status: 'published',
+		revisionBefore: outcome.revisionBefore,
+		revisionAfter: outcome.revisionAfter,
+		groupsCreated: outcome.groupsCreated,
+		teamsAssigned: outcome.teamsAssigned,
+		athletesAssigned: outcome.athletesAssigned,
+		verification: 'passed',
+		persistentMutation: false,
+		paidProviderRequests: 0,
+		paidProviderCost: 0
+	} as const);
+}
+
+/** Keep the original review-only handle free of execution authority. */
 export function prepareExactOperationReview(
+	fixtureId: unknown,
+	actorId: unknown,
+	operationId: unknown
+) {
+	const result = prepareProtectedOperationReview(fixtureId, actorId, operationId);
+	return result.status === 'prepared'
+		? ({ status: 'prepared', handle: result.handle } as const)
+		: result;
+}
+
+/** Prepare a review and a separate execution capability for the protected workspace. */
+export function prepareProtectedOperationReview(
 	fixtureId: unknown,
 	actorId: unknown,
 	operationId: unknown
@@ -193,8 +222,19 @@ export function prepareExactOperationReview(
 
 		const review = projectReview(session, prepared.plan);
 
+		const identity = session.getReview();
+		if (!identity) throw new Error('Review unavailable');
+
 		return {
 			status: 'prepared',
+			execute(): ProtectedExecutionOutcome {
+				const approval = session.approve({ action: 'approve-exact-plan', ...identity });
+				if (approval.status !== 'approved') return failedExecution;
+
+				const result = session.executeAndPublishApprovedOperation(approval.receipt);
+				// Preserve the engine's committed result before shaping any response.
+				return result.status === 'published' ? result : failedExecution;
+			},
 			handle: Object.freeze({
 				read(): ExactOperationReview | null {
 					if (session.getStatus() !== 'review') {

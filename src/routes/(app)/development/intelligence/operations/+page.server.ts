@@ -38,10 +38,7 @@ function requireAccess(locals: App.Locals) {
  * Revalidate the request's authenticated identity against PocketBase.
  * Never trust an identity supplied by an assessment form.
  */
-async function refreshAssessmentAccess(
-	locals: App.Locals,
-	expectedOwner: string
-): Promise<boolean> {
+async function refreshWorkspaceAccess(locals: App.Locals, expectedOwner: string): Promise<boolean> {
 	const pb = locals.pb;
 
 	locals.sessionVerified = false;
@@ -88,6 +85,9 @@ export const load: PageServerLoad = ({ locals, cookies }) => {
 		session: workspaceSessions.read(owner, cookies.get(cookieName)),
 		assessmentSummary: workspaceAssessment.readSummary(owner, cookies.get(cookieName)),
 		review: workspaceSessions.readReview(owner, cookies.get(cookieName)),
+		reviewGeneration: workspaceSessions.readCurrentRecommendation(owner, cookies.get(cookieName))
+			?.generation,
+		execution: workspaceSessions.readExecution(owner, cookies.get(cookieName)),
 		reviewAvailability: workspaceSessions.readReviewAvailability(owner, cookies.get(cookieName)),
 		limits: workspaceLimits
 	};
@@ -115,7 +115,7 @@ export const actions = {
 			});
 		}
 
-		if (!(await refreshAssessmentAccess(locals, owner))) {
+		if (!(await refreshWorkspaceAccess(locals, owner))) {
 			return fail(403, {
 				message: 'Workspace assessment access unavailable.'
 			});
@@ -130,7 +130,7 @@ export const actions = {
 			objective,
 			fixtureId,
 			actorId,
-			() => refreshAssessmentAccess(locals, owner)
+			() => refreshWorkspaceAccess(locals, owner)
 		);
 
 		switch (response.status) {
@@ -138,6 +138,9 @@ export const actions = {
 				return fail(409, {
 					message: 'The workspace session is no longer active.'
 				});
+
+			case 'concluded':
+				return fail(409, { message: 'Start a new workspace to begin another scenario.' });
 
 			case 'busy':
 				return fail(409, {
@@ -201,7 +204,7 @@ export const actions = {
 			});
 		}
 
-		if (!(await refreshAssessmentAccess(locals, owner))) {
+		if (!(await refreshWorkspaceAccess(locals, owner))) {
 			return fail(403, {
 				message: 'Workspace review access unavailable.'
 			});
@@ -220,6 +223,9 @@ export const actions = {
 					message: 'The workspace session is no longer active.'
 				});
 
+			case 'concluded':
+				return fail(409, { message: 'Start a new workspace to begin another scenario.' });
+
 			case 'busy':
 				return fail(409, {
 					message: 'An assessment is already running.'
@@ -237,6 +243,26 @@ export const actions = {
 					message: 'No eligible operation review is available.'
 				});
 		}
+	},
+
+	executeReview: async ({ locals, cookies, request, url }) => {
+		const owner = requireAccess(locals);
+		const parsed = await parseWorkspaceReviewRequest(request, url.origin, 'execute');
+		if (parsed.status !== 'valid') {
+			return fail(parsed.code, { message: 'Invalid workspace execution request.' });
+		}
+		if (parsed.input.action !== 'execute') {
+			return fail(400, { message: 'Invalid workspace execution request.' });
+		}
+		if (!(await refreshWorkspaceAccess(locals, owner))) {
+			return fail(403, { message: 'Workspace execution access unavailable.' });
+		}
+
+		const result = workspaceSessions.executeReview(owner, cookies.get(cookieName), parsed.input);
+		if (result.status !== 'completed') {
+			return fail(409, { message: 'Execution confirmation is no longer available.' });
+		}
+		return { message: 'The execution attempt has concluded.' };
 	},
 
 	cancelReview: async ({ locals, cookies, request, url }) => {
@@ -264,7 +290,7 @@ export const actions = {
 			});
 		}
 
-		if (!(await refreshAssessmentAccess(locals, owner))) {
+		if (!(await refreshWorkspaceAccess(locals, owner))) {
 			return fail(403, {
 				message: 'Workspace review access unavailable.'
 			});

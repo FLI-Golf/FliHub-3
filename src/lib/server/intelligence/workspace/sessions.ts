@@ -2,18 +2,22 @@ import { randomBytes } from 'node:crypto';
 import type { ApplicationCapabilityId } from '../application/contracts.ts';
 import { operationsForRecommendation } from '../application/operations/registry.ts';
 import {
-	prepareExactOperationReview,
+	failedExecution,
+	prepareProtectedOperationReview,
+	projectExecutionOutcome,
+	type ProtectedExecutionOutcome,
 	type ExactOperationReview
 } from '../application/operations/review.ts';
 
-type ReviewHandle = Extract<
-	ReturnType<typeof prepareExactOperationReview>,
+type ProtectedReview = Extract<
+	ReturnType<typeof prepareProtectedOperationReview>,
 	{ status: 'prepared' }
->['handle'];
+>;
 
 type ActiveReview = {
 	readonly generation: string;
-	readonly handle: ReviewHandle;
+	readonly handle: ProtectedReview['handle'];
+	readonly execute: ProtectedReview['execute'];
 };
 
 export const workspaceLimits = Object.freeze({
@@ -69,6 +73,7 @@ type Session = {
 	currentRecommendation: WorkspaceCurrentRecommendation | null;
 	activeReview: ActiveReview | null;
 	reviewAttempted: boolean;
+	execution: ProtectedExecutionOutcome | 'admitted' | null;
 };
 
 export type WorkspaceSessionView = {
@@ -152,6 +157,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			if (!session) {
 				return { status: 'missing_session' } as const;
 			}
+
+			if (session.execution) return { status: 'concluded' } as const;
 
 			if (session.activeAssessment) {
 				return { status: 'busy' } as const;
@@ -244,7 +251,7 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 
 			const session = owned(owner, id);
 
-			if (!session || session.activeAssessment) return null;
+			if (!session || session.execution || session.activeAssessment) return null;
 
 			return session.currentRecommendation;
 		},
@@ -254,7 +261,7 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 
 			const session = owned(owner, id);
 
-			if (!session || session.activeAssessment || !session.activeReview) {
+			if (!session || session.execution || session.activeAssessment || !session.activeReview) {
 				return null;
 			}
 
@@ -271,7 +278,12 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 
 			const session = owned(owner, id);
 
-			if (!session || session.activeAssessment || !session.currentRecommendation) {
+			if (
+				!session ||
+				session.execution ||
+				session.activeAssessment ||
+				!session.currentRecommendation
+			) {
 				return null;
 			}
 
@@ -301,6 +313,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			if (!session) {
 				return { status: 'missing_session' } as const;
 			}
+
+			if (session.execution) return { status: 'concluded' } as const;
 
 			if (session.activeAssessment) {
 				return { status: 'busy' } as const;
@@ -344,7 +358,7 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			session.reviewAttempted = true;
 
 			try {
-				const result = prepareExactOperationReview(
+				const result = prepareProtectedOperationReview(
 					context.fixtureId,
 					context.actorId,
 					operations[0].id
@@ -363,7 +377,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 
 				session.activeReview = {
 					generation: context.generation,
-					handle: result.handle
+					handle: result.handle,
+					execute: result.execute
 				};
 
 				session.lastActivityAt = time;
@@ -375,6 +390,53 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			}
 		},
 
+		readExecution(owner: string, id: string | undefined) {
+			cleanup(now());
+			const outcome = owned(owner, id)?.execution;
+			return outcome && outcome !== 'admitted' ? projectExecutionOutcome(outcome) : null;
+		},
+
+		executeReview(
+			owner: string,
+			id: string | undefined,
+			input: {
+				confirmation: unknown;
+				generation: unknown;
+				reviewId: unknown;
+				planDigest: unknown;
+			}
+		) {
+			const time = now();
+			cleanup(time);
+
+			const session = owned(owner, id);
+			if (!session) return { status: 'missing_session' } as const;
+			if (session.execution) return { status: 'concluded' } as const;
+			if (session.activeAssessment) return { status: 'busy' } as const;
+
+			const retained = session.activeReview;
+			const review = retained?.handle.read();
+			if (
+				input.confirmation !== 'approve-and-execute' ||
+				!retained ||
+				!review ||
+				retained.generation !== session.currentRecommendation?.generation ||
+				input.generation !== retained.generation ||
+				input.reviewId !== review.reviewId ||
+				input.planDigest !== review.planDigest
+			)
+				return { status: 'stale_confirmation' } as const;
+
+			session.execution = 'admitted';
+			session.lastActivityAt = time;
+			try {
+				session.execution = retained.execute();
+			} catch {
+				session.execution = failedExecution;
+			}
+			return { status: 'completed' } as const;
+		},
+
 		cancelReview(owner: string, id: string | undefined, expectedReviewId: unknown) {
 			const time = now();
 			cleanup(time);
@@ -384,6 +446,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			if (!session) {
 				return { status: 'missing_session' } as const;
 			}
+
+			if (session.execution) return { status: 'concluded' } as const;
 
 			const review = session.activeReview?.handle.read();
 
@@ -481,7 +545,8 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				assessmentHistory: [],
 				currentRecommendation: null,
 				activeReview: null,
-				reviewAttempted: false
+				reviewAttempted: false,
+				execution: null
 			};
 
 			sessions.set(id, session);

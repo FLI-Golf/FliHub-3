@@ -10,7 +10,7 @@ The protected workspace foundation has completed scoped
 local acceptance. JAI-5C objective resolution and advisory
 integration have completed local implementation and acceptance.
 
-JAI-5D exact operation review has completed local implementation and acceptance. JAI-5E protected synthetic approval and execution remain unimplemented in the workspace.
+JAI-5D exact operation review completed local acceptance. JAI-5E adds confirmation and controlled synthetic execution to the protected workspace.
 
 The verified starting checkpoint is `bc11b87`,
 Complete controlled application operation acceptance.
@@ -362,8 +362,9 @@ references to the browser.
 
 Serialize state-changing work per session.
 
-Acquire the session guard before asynchronous
-work and recheck validity before publication.
+Parse the request and refresh authentication before admission. Check workspace
+validity and exact review bindings synchronously at admission, then keep the
+transition through approval and publication synchronous.
 
 Use the existing single-use approval consumption,
 candidate construction, independent verification
@@ -382,8 +383,7 @@ as successful rollback of a completed publication.
 
 Retain completed results for bounded inspection.
 
-Any new exercise must be an explicit reset or
-new disposable session, not an implicit replay.
+Closing the workspace and opening a new session starts a new exercise.
 
 ## Response contracts
 
@@ -852,7 +852,7 @@ environment verification passed.
 Persistent database identity and private experiment evidence were
 preserved. The live experiment release lock remained disabled.
 
-### Current security boundaries
+### JAI-5D security boundaries
 
 | Boundary                         | Status                              |
 | -------------------------------- | ----------------------------------- |
@@ -866,7 +866,7 @@ preserved. The live experiment release lock remained disabled.
 | Persistent application mutations | Disabled                            |
 | Production workspace access      | Disabled                            |
 
-### Outstanding work
+### Work outstanding at the JAI-5D checkpoint
 
 JAI-5E will introduce the protected synthetic approval and execution
 transition. JAI-5F through JAI-5H remain outstanding.
@@ -878,3 +878,65 @@ The workspace remains a development and acceptance environment,
 not the required primary interface for future embedded intelligence.
 
 Conventional guided workflows must remain functional without Jev.
+
+## JAI-5E — Protected synthetic execution
+
+The disposable workspace can admit one execution attempt per session.
+Assessments read registered static fixtures. Continuing assessment after
+execution could reconstruct stale revision-zero context, so an admitted
+attempt concludes the entire scenario. Close the workspace and start a new
+session to begin another scenario. Requests rejected before admission leave
+the execution opportunity available.
+
+The protected review factory creates two capabilities over the same engine
+session. The reusable review-only handle can read or cancel the immutable
+review. The workspace also retains a dedicated execution closure bound to the
+same review identity and plan. The closure issues an approval using engine
+identifiers captured on the server, then passes the receipt directly to the
+existing JAI-4 engine. Engine authorization, prerequisites, single-use
+consumption, candidate construction, independent verification, and atomic
+state and audit publication remain authoritative.
+
+Submit a same-origin URL-encoded POST to `?/executeReview` with exactly these
+four fields.
+
+| Field          | Required value                               |
+| -------------- | -------------------------------------------- |
+| `confirmation` | `approve-and-execute`                        |
+| `generation`   | Current assessment generation, 64 hex digits |
+| `reviewId`     | Current server-issued review UUID            |
+| `planDigest`   | Current canonical plan digest, 64 hex digits |
+
+The request uses the protected workspace cookie and the freshly refreshed,
+allowlisted PocketBase identity. Existing request size, read deadline, and
+session limits apply. After authentication, the server synchronously checks
+ownership, expiration, generation, review identity, digest, confirmation and
+transition state. Approval, candidate verification and publication run in the
+same synchronous transition. An assessment or cancellation that invalidates
+the review first prevents admission. Once admitted, another execution,
+assessment, review preparation or cancellation cannot change the scenario.
+
+The protected no-store workspace load returns an optional `execution` outcome.
+A published result includes `status: 'published'`, before and after revisions,
+verified group, team and athlete counts, `verification: 'passed'`,
+`persistentMutation: false`, and zero paid provider requests and cost.
+An admitted failure returns only `status: 'failed'`. A failed candidate or
+verification preserves the original synthetic state. Refresh and a read after
+a lost response use the retained outcome. Private engine session identifiers,
+plans, receipts, state digests, and executable handles stay server-side.
+
+Closure, expiration, revocation, and process termination discard the
+retained state and outcome. Publication is process-local and disposable.
+This design provides no durable production transaction processing or
+cross-process recovery. Persistent application execution and production
+workspace access remain disabled. JAI-5F covers results, history, audit and
+visual polish, subject to JAI-5E acceptance.
+
+The supervisor verified the disabled workspace in the normal managed stack using
+an existing authenticated organization owner session. The browser displayed
+`404` and `Workspace access unavailable`, with the authenticated header visible.
+Raw status and headers for that managed request were outside the observation.
+Disposable authenticated HTTP tests verified status and cache behavior separately.
+
+The [JAI-5E roadmap checkpoint](APPLICATION-INTELLIGENCE-ROADMAP.md#jai-5e--protected-synthetic-execution)
+records verification commands, results, and outstanding acceptance requirements.

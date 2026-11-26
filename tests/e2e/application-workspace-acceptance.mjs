@@ -250,8 +250,8 @@ export async function runWorkspaceBrowserAcceptance({
 						value: 'Disabled'
 					},
 					{
-						label: 'Operation execution',
-						value: 'Disabled'
+						label: 'Synthetic execution',
+						value: 'Explicit approval required'
 					},
 					{
 						label: 'Data source',
@@ -590,6 +590,16 @@ export async function runWorkspaceBrowserAcceptance({
 				'Mobile exact review must not overflow horizontally'
 			);
 
+			const confirmation = page.getByRole('checkbox', {
+				name: 'I approve the exact reviewed assignments.'
+			});
+			const execute = page.getByRole('button', { name: 'Approve and execute', exact: true });
+			assert.equal(await confirmation.isChecked(), false);
+			assert.equal(await execute.isDisabled(), true);
+			await confirmation.check();
+			assert.equal(await execute.isEnabled(), true);
+			pass('Browser requires explicit confirmation on the mobile exact review');
+
 			pass('Browser prepares an exact synthetic review on mobile');
 
 			await tab('Workspace');
@@ -654,9 +664,71 @@ export async function runWorkspaceBrowserAcceptance({
 			assert.notEqual(secondReviewId, firstReviewId);
 
 			pass('Browser new assessment creates a distinct exact review identity');
+			assert.equal(await confirmation.isChecked(), false);
+			assert.equal(await execute.isDisabled(), true);
 
+			await page.setViewportSize({ width: 1280, height: 900 });
+			assert.ok(
+				await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+			);
+			const executionUrl = `${workspaceUrl}?/executeReview`;
+			let release;
+			const executionGate = new Promise((resolve) => {
+				release = resolve;
+			});
+			let executionRequests = 0;
+			const actionStatus = page.waitForEvent('requestfailed', {
+				predicate: (request) => request.url() === executionUrl
+			});
+			await page.route(executionUrl, async (route) => {
+				executionRequests++;
+				await executionGate;
+				const result = await route.fetch({ maxRetries: 0, maxRedirects: 0 });
+				await route.abort('failed');
+				assert.equal(result.status(), 200);
+				assert.doesNotMatch(
+					await result.text(),
+					/synthetic-approval-receipt|approvalId|publishedStateDigest/
+				);
+			});
+			try {
+				await confirmation.check();
+				await execute.click();
+				await visible(page.getByText('Executing and verifying synthetic assignments...'));
+				assert.equal(await execute.count(), 0);
+				assert.equal(await reviewForm.count(), 0);
+				assert.equal(
+					await page.getByRole('button', { name: 'Workspace', exact: true }).isDisabled(),
+					true
+				);
+				pass('Browser prevents conflicting controls while execution is pending');
+			} finally {
+				release();
+			}
+
+			const outcome = page.getByRole('region', { name: 'Synthetic execution outcome' });
+			await actionStatus;
+			await visible(outcome.getByRole('heading', { name: 'Synthetic publication completed' }));
+			assert.equal(executionRequests, 1);
+			pass('Browser recovers a lost execution response using read-only load');
+			assert.deepEqual(await outcome.locator('dd').allTextContents(), [
+				'0 → 1',
+				'6',
+				'12',
+				'24',
+				'passed',
+				'None',
+				'0',
+				'$0.00'
+			]);
+			await page.reload();
+			await visible(outcome);
 			await tab('Workspace');
-			await visible(protectedInputs);
+			assert.equal(await page.locator('form[action="?/assess"]').count(), 0);
+			assert.equal(await prepareReview.count(), 0);
+			assert.equal(await execute.count(), 0);
+			assert.equal(executionRequests, 1);
+			pass('Browser refresh recovers the verified outcome and keeps the scenario concluded');
 
 			await page.getByRole('button', { name: 'End synthetic session' }).click();
 
@@ -672,7 +744,8 @@ export async function runWorkspaceBrowserAcceptance({
 
 			await visible(page.getByRole('button', { name: 'Start synthetic session' }));
 
-			pass('Browser session closure discards active review across refresh');
+			assert.equal(await outcome.count(), 0);
+			pass('Browser session closure discards the scenario across refresh');
 
 			// Establish a fresh session for the existing logout-revocation test.
 			await page.getByRole('button', { name: 'Start synthetic session' }).click();
