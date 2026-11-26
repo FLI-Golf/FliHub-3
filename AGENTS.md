@@ -25,3 +25,12 @@
 - Within an owner-assigned scope, manually authorized Codex development may make implementation decisions, run and repair verification, update documentation, create appropriate feature branches, stage and commit verified changes, and push to the appropriate feature branch. Open pull requests when the assignment calls for them. Monitor and repair GitHub CI within scope. Preserve meaningful checkpoints with concise commit subjects and bodies that explain changes, rationale and verification.
 - Merge and deployment require explicit assignment-level authorization. Privileged infrastructure, credentials, billing, destructive database operations and authenticated engineering dispatch retain their separate authorization requirements. Treat the public deployment as test production and preserve its existing safety boundaries.
 - This development authority applies to the manually authorized session. Automated Jev engineering workers remain constrained by the independently enforced authorization, isolation, tool, usage and evidence requirements above.
+
+## Platform development roadmap
+
+- Consult [docs/PLATFORM-DEVELOPMENT-ROADMAP.md](docs/PLATFORM-DEVELOPMENT-ROADMAP.md) for cross-track development priorities and deferred initiatives.
+- Capture newly identified platform requirements without automatically interrupting active implementation.
+- Branding and activity catalog expansion remain deferred initiatives governed by their respective roadmaps.
+- Preserve optional embedded intelligence, deterministic configuration and manual fallback in future platform capabilities.
+- Do not activate unsupported activities or implement deferred initiatives without applicable authorization.
+- Individual development roadmaps and existing acceptance gates remain authoritative.

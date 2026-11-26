@@ -407,3 +407,41 @@ The live experiment lock and private evidence remain intact.
 - APPLICATION-CAPABILITY-CATALOG.md
 - CHARITY-EVENT-ROADMAP.md
 - AGENTS.md
+
+## Future platform intelligence consumers
+
+Branding and activity configuration are identified
+as future consumers of embedded contextual intelligence.
+
+Potential branding assistance includes contextual
+questions, visual identity recommendations, inheritance
+explanations and eligible sponsorship placement suggestions.
+
+Potential activity assistance includes contextual
+configuration questions, competition format recommendations
+and explanations of compatible scoring choices.
+
+FliHub remains authoritative for supported questions,
+permitted answers, inheritance resolution, compatibility,
+authorization and execution.
+
+These future consumers reinforce the need for reusable,
+registered, context-specific intelligence contracts.
+
+Do not couple the shared intelligence architecture
+exclusively to event preparation or group assignment.
+
+Do not introduce speculative abstractions or implement
+these deferred domains during JAI-5D.
+
+Complete the current protected workspace acceptance
+before selecting subsequent platform implementation priorities.
+
+See:
+
+- [Platform Development Roadmap](PLATFORM-DEVELOPMENT-ROADMAP.md)
+- [Branding Roadmap](BRANDING-ROADMAP.md)
+- [Activity Catalog Roadmap](ACTIVITY-CATALOG-ROADMAP.md)
+
+These references capture future requirements without
+authorizing implementation or expanding provider access.
