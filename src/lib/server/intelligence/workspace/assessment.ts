@@ -1,6 +1,12 @@
 import { workspaceAdvisory, type WorkspaceAdvisoryResult } from './advisory.ts';
 
-import { workspaceSessions, type createWorkspaceSessions } from './sessions.ts';
+import {
+	workspaceSessions,
+	type createWorkspaceSessions,
+	type WorkspaceRecommendationContext
+} from './sessions.ts';
+
+import { getApplicationCapability } from '../application/capabilities.ts';
 
 import { syntheticActorIds } from '../application/operations/fixtures.ts';
 
@@ -162,12 +168,42 @@ export function createWorkspaceAssessment(
 			}
 
 			let result: WorkspacePublicAdvisory;
+			let recommendation: WorkspaceRecommendationContext | null = null;
 
 			try {
 				const internal = await advisory.assess(mode, objective, fixtureId, actorId);
 
 				result = projectWorkspaceAdvisory(internal);
+
+				if (
+					internal.status === 'advised' &&
+					result.status === 'advised' &&
+					result.decision === 'recommended'
+				) {
+					const { plan } = internal.advisory;
+
+					if (
+						plan.decision.status === 'recommended' &&
+						plan.nextStep &&
+						plan.nextStep.effect === 'recommendation-only' &&
+						plan.nextStep.capability === plan.decision.capability &&
+						internal.fixtureId === fixtureId &&
+						internal.actorId === actorId
+					) {
+						const capability = getApplicationCapability(plan.nextStep.capability);
+
+						if (capability) {
+							recommendation = {
+								objectiveId: internal.objectiveId,
+								fixtureId: internal.fixtureId,
+								actorId: internal.actorId,
+								capability: capability.id
+							};
+						}
+					}
+				}
 			} catch {
+				recommendation = null;
 				result = unavailable();
 			}
 
@@ -181,7 +217,14 @@ export function createWorkspaceAssessment(
 				return { status: 'discarded' } as const;
 			}
 
-			if (!admission.finish(result.status)) {
+			if (
+				!admission.finish(
+					result.status === 'advised' && result.decision === 'clarification'
+						? 'clarification'
+						: result.status,
+					recommendation
+				)
+			) {
 				return { status: 'discarded' } as const;
 			}
 

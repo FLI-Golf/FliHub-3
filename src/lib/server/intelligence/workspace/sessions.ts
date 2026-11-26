@@ -1,4 +1,20 @@
 import { randomBytes } from 'node:crypto';
+import type { ApplicationCapabilityId } from '../application/contracts.ts';
+import { operationsForRecommendation } from '../application/operations/registry.ts';
+import {
+	prepareExactOperationReview,
+	type ExactOperationReview
+} from '../application/operations/review.ts';
+
+type ReviewHandle = Extract<
+	ReturnType<typeof prepareExactOperationReview>,
+	{ status: 'prepared' }
+>['handle'];
+
+type ActiveReview = {
+	readonly generation: string;
+	readonly handle: ReviewHandle;
+};
 
 export const workspaceLimits = Object.freeze({
 	maxSessionsPerUser: 2,
@@ -25,6 +41,18 @@ export type WorkspaceAssessmentRecord = {
 	readonly outcome: WorkspaceAssessmentOutcome;
 };
 
+export type WorkspaceRecommendationContext = {
+	readonly objectiveId: string;
+	readonly fixtureId: string;
+	readonly actorId: string;
+	readonly capability: ApplicationCapabilityId;
+};
+
+export type WorkspaceCurrentRecommendation = WorkspaceRecommendationContext & {
+	readonly sequence: number;
+	readonly generation: string;
+};
+
 type AssessmentTicket = {
 	readonly sequence: number;
 	readonly startedAt: number;
@@ -38,6 +66,9 @@ type Session = {
 	assessmentSequence: number;
 	activeAssessment: AssessmentTicket | null;
 	assessmentHistory: WorkspaceAssessmentRecord[];
+	currentRecommendation: WorkspaceCurrentRecommendation | null;
+	activeReview: ActiveReview | null;
+	reviewAttempted: boolean;
 };
 
 export type WorkspaceSessionView = {
@@ -71,14 +102,25 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 		}
 	}
 
+	function invalidateReview(session: Session): void {
+		session.activeReview?.handle.cancel();
+		session.activeReview = null;
+	}
+
+	function discardSession(session: Session): boolean {
+		invalidateReview(session);
+		session.currentRecommendation = null;
+		return sessions.delete(session.id);
+	}
+
 	function cleanup(time: number) {
 		cleanupAssessmentAdmissions(time);
-		for (const [id, session] of sessions) {
+		for (const session of sessions.values()) {
 			if (
 				time >= session.createdAt + workspaceLimits.absoluteMs ||
 				time >= session.lastActivityAt + workspaceLimits.idleMs
 			) {
-				sessions.delete(id);
+				discardSession(session);
 			}
 		}
 	}
@@ -131,13 +173,19 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				startedAt: time
 			};
 
+			invalidateReview(session);
+			session.reviewAttempted = false;
+			session.currentRecommendation = null;
 			session.activeAssessment = ticket;
 			session.lastActivityAt = time;
 			assessmentAdmissions.push({ owner, time });
 
 			// The ticket and completion function remain server-side.
 			// Object identity prevents stale or replayed completion.
-			const finish = (outcome: WorkspaceAssessmentOutcome): boolean => {
+			const finish = (
+				outcome: WorkspaceAssessmentOutcome,
+				recommendation: WorkspaceRecommendationContext | null = null
+			): boolean => {
 				const completedAt = now();
 				cleanup(completedAt);
 
@@ -155,6 +203,18 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				) {
 					outcome = 'unavailable';
 				}
+
+				current.currentRecommendation =
+					outcome === 'advised' && recommendation
+						? Object.freeze({
+								objectiveId: recommendation.objectiveId,
+								fixtureId: recommendation.fixtureId,
+								actorId: recommendation.actorId,
+								capability: recommendation.capability,
+								sequence: ticket.sequence,
+								generation: randomBytes(32).toString('hex')
+							})
+						: null;
 
 				current.activeAssessment = null;
 				current.lastActivityAt = completedAt;
@@ -179,6 +239,164 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 			} as const;
 		},
 
+		readCurrentRecommendation(owner: string, id: string | undefined) {
+			cleanup(now());
+
+			const session = owned(owner, id);
+
+			if (!session || session.activeAssessment) return null;
+
+			return session.currentRecommendation;
+		},
+
+		readReview(owner: string, id: string | undefined): ExactOperationReview | null {
+			cleanup(now());
+
+			const session = owned(owner, id);
+
+			if (!session || session.activeAssessment || !session.activeReview) {
+				return null;
+			}
+
+			if (session.activeReview.generation !== session.currentRecommendation?.generation) {
+				invalidateReview(session);
+				return null;
+			}
+
+			return session.activeReview.handle.read();
+		},
+
+		readReviewAvailability(owner: string, id: string | undefined) {
+			cleanup(now());
+
+			const session = owned(owner, id);
+
+			if (!session || session.activeAssessment || !session.currentRecommendation) {
+				return null;
+			}
+
+			const context = session.currentRecommendation;
+
+			const operations = operationsForRecommendation(context.capability).filter(
+				(operation) => operation.scope === 'synthetic-only'
+			);
+
+			if (operations.length !== 1 || session.reviewAttempted || session.activeReview) {
+				return null;
+			}
+
+			return Object.freeze({
+				sequence: context.sequence,
+				generation: context.generation,
+				label: operations[0].label
+			});
+		},
+
+		prepareReview(owner: string, id: string | undefined, expectedGeneration: unknown) {
+			const time = now();
+			cleanup(time);
+
+			const session = owned(owner, id);
+
+			if (!session) {
+				return { status: 'missing_session' } as const;
+			}
+
+			if (session.activeAssessment) {
+				return { status: 'busy' } as const;
+			}
+
+			const context = session.currentRecommendation;
+
+			if (
+				!context ||
+				typeof expectedGeneration !== 'string' ||
+				!/^[a-f0-9]{64}$/.test(expectedGeneration) ||
+				expectedGeneration !== context.generation
+			) {
+				return { status: 'stale_context' } as const;
+			}
+
+			if (session.activeReview) {
+				const review = session.activeReview.handle.read();
+
+				if (review && session.activeReview.generation === context.generation) {
+					return { status: 'prepared', review } as const;
+				}
+
+				invalidateReview(session);
+			}
+
+			if (session.reviewAttempted) {
+				return { status: 'review_consumed' } as const;
+			}
+
+			const operations = operationsForRecommendation(context.capability).filter(
+				(operation) => operation.scope === 'synthetic-only'
+			);
+
+			if (operations.length !== 1) {
+				return { status: 'no_operation' } as const;
+			}
+
+			// At most one preparation attempt per admitted assessment.
+			// No client-supplied actor, fixture, operation or plan.
+			session.reviewAttempted = true;
+
+			try {
+				const result = prepareExactOperationReview(
+					context.fixtureId,
+					context.actorId,
+					operations[0].id
+				);
+
+				if (result.status !== 'prepared') {
+					return { status: 'review_rejected' } as const;
+				}
+
+				const review = result.handle.read();
+
+				if (!review) {
+					result.handle.cancel();
+					return { status: 'review_rejected' } as const;
+				}
+
+				session.activeReview = {
+					generation: context.generation,
+					handle: result.handle
+				};
+
+				session.lastActivityAt = time;
+
+				return { status: 'prepared', review } as const;
+			} catch {
+				invalidateReview(session);
+				return { status: 'review_rejected' } as const;
+			}
+		},
+
+		cancelReview(owner: string, id: string | undefined, expectedReviewId: unknown) {
+			const time = now();
+			cleanup(time);
+
+			const session = owned(owner, id);
+
+			if (!session) {
+				return { status: 'missing_session' } as const;
+			}
+
+			const review = session.activeReview?.handle.read();
+
+			if (!review || typeof expectedReviewId !== 'string' || expectedReviewId !== review.reviewId) {
+				return { status: 'stale_review' } as const;
+			}
+
+			invalidateReview(session);
+			session.lastActivityAt = time;
+
+			return { status: 'cancelled' } as const;
+		},
+
 		readAssessmentHistory(owner: string, id: string | undefined) {
 			cleanup(now());
 
@@ -190,9 +408,9 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 		revokeOwner(owner: string) {
 			let removed = 0;
 
-			for (const [id, session] of sessions) {
+			for (const session of sessions.values()) {
 				if (session.owner === owner) {
-					sessions.delete(id);
+					discardSession(session);
 					removed++;
 				}
 			}
@@ -203,9 +421,9 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 		revokeExcept(allowedOwners: ReadonlySet<string>) {
 			let removed = 0;
 
-			for (const [id, session] of sessions) {
+			for (const session of sessions.values()) {
 				if (!allowedOwners.has(session.owner)) {
-					sessions.delete(id);
+					discardSession(session);
 					removed++;
 				}
 			}
@@ -260,7 +478,10 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 				lastActivityAt: time,
 				assessmentSequence: 0,
 				activeAssessment: null,
-				assessmentHistory: []
+				assessmentHistory: [],
+				currentRecommendation: null,
+				activeReview: null,
+				reviewAttempted: false
 			};
 
 			sessions.set(id, session);
@@ -271,7 +492,7 @@ export function createWorkspaceSessions(now: () => number = Date.now) {
 		close(owner: string, id: string | undefined) {
 			cleanup(now());
 			const session = owned(owner, id);
-			return session ? sessions.delete(session.id) : false;
+			return session ? discardSession(session) : false;
 		}
 	};
 }

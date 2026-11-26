@@ -5,6 +5,7 @@ import { workspaceSessions, workspaceLimits } from '$lib/server/intelligence/wor
 import { validateWorkspaceRequest } from '$lib/server/intelligence/workspace/requests';
 import { parseWorkspaceAssessmentRequest } from '$lib/server/intelligence/workspace/assessment-request';
 import { workspaceAssessment } from '$lib/server/intelligence/workspace/assessment';
+import { parseWorkspaceReviewRequest } from '$lib/server/intelligence/workspace/review-request';
 import type { Actions, PageServerLoad } from './$types';
 
 const cookieName = 'flihub_application_workspace';
@@ -86,6 +87,8 @@ export const load: PageServerLoad = ({ locals, cookies }) => {
 	return {
 		session: workspaceSessions.read(owner, cookies.get(cookieName)),
 		assessmentSummary: workspaceAssessment.readSummary(owner, cookies.get(cookieName)),
+		review: workspaceSessions.readReview(owner, cookies.get(cookieName)),
+		reviewAvailability: workspaceSessions.readReviewAvailability(owner, cookies.get(cookieName)),
 		limits: workspaceLimits
 	};
 };
@@ -171,6 +174,113 @@ export const actions = {
 					assessment: response.result
 				};
 		}
+	},
+
+	prepareReview: async ({ locals, cookies, request, url }) => {
+		const owner = requireAccess(locals);
+
+		const parsed = await parseWorkspaceReviewRequest(request, url.origin, 'prepare');
+
+		if (parsed.status !== 'valid') {
+			return fail(parsed.code, {
+				message: 'Invalid workspace review request.'
+			});
+		}
+
+		if (parsed.input.action !== 'prepare') {
+			return fail(400, {
+				message: 'Invalid workspace review request.'
+			});
+		}
+
+		const sessionId = cookies.get(cookieName);
+
+		if (!workspaceSessions.read(owner, sessionId)) {
+			return fail(409, {
+				message: 'The workspace session is no longer active.'
+			});
+		}
+
+		if (!(await refreshAssessmentAccess(locals, owner))) {
+			return fail(403, {
+				message: 'Workspace review access unavailable.'
+			});
+		}
+
+		const result = workspaceSessions.prepareReview(owner, sessionId, parsed.input.generation);
+
+		switch (result.status) {
+			case 'prepared':
+				return {
+					message: 'Exact synthetic operation review ready.'
+				};
+
+			case 'missing_session':
+				return fail(409, {
+					message: 'The workspace session is no longer active.'
+				});
+
+			case 'busy':
+				return fail(409, {
+					message: 'An assessment is already running.'
+				});
+
+			case 'stale_context':
+			case 'review_consumed':
+				return fail(409, {
+					message: 'Complete a new assessment before preparing a review.'
+				});
+
+			case 'no_operation':
+			case 'review_rejected':
+				return fail(400, {
+					message: 'No eligible operation review is available.'
+				});
+		}
+	},
+
+	cancelReview: async ({ locals, cookies, request, url }) => {
+		const owner = requireAccess(locals);
+
+		const parsed = await parseWorkspaceReviewRequest(request, url.origin, 'cancel');
+
+		if (parsed.status !== 'valid') {
+			return fail(parsed.code, {
+				message: 'Invalid workspace review request.'
+			});
+		}
+
+		if (parsed.input.action !== 'cancel') {
+			return fail(400, {
+				message: 'Invalid workspace review request.'
+			});
+		}
+
+		const sessionId = cookies.get(cookieName);
+
+		if (!workspaceSessions.read(owner, sessionId)) {
+			return fail(409, {
+				message: 'The workspace session is no longer active.'
+			});
+		}
+
+		if (!(await refreshAssessmentAccess(locals, owner))) {
+			return fail(403, {
+				message: 'Workspace review access unavailable.'
+			});
+		}
+
+		const result = workspaceSessions.cancelReview(owner, sessionId, parsed.input.reviewId);
+
+		if (result.status !== 'cancelled') {
+			return fail(409, {
+				message: 'The requested review is no longer current.'
+			});
+		}
+
+		return {
+			message: 'Operation review cancelled. No changes were made.'
+		};
 	},
 
 	start: async ({ locals, cookies, request, url }) => {

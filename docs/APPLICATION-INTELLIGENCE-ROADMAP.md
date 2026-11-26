@@ -1998,8 +1998,109 @@ database or restarting managed services.
 No live provider experiment, persistent operation, production
 deployment or merge was performed.
 
-Next: JAI-5D — Exact operation review.
+Next at the JAI-5C checkpoint: JAI-5D — Exact operation review.
 
-JAI-5D and subsequent execution phases remain unimplemented.
+At the JAI-5C checkpoint, JAI-5D and subsequent execution phases remained unimplemented. JAI-5D has since completed local acceptance as documented below. JAI-5E is the next development phase.
 Full legacy browser regression, GitHub CI verification and production
 readiness requirements remain outstanding.
+
+## JAI-5D — Exact operation review completion
+
+**Status:** Local implementation and acceptance complete.
+**Verification date:** 2026-11-26.
+**Development branch:** `feature/application-intelligence`.
+
+### Completed implementation
+
+- Established a reusable server-owned exact operation review foundation.
+- Reused the existing deterministic synthetic operation planner,
+  authorization, prerequisite validation and canonical plan verification.
+- Introduced an immutable review-only projection without exposing an
+  approval or execution interface.
+- Bound review preparation to the current server-owned recommendation
+  and a cryptographically generated assessment generation identifier.
+- Protected review preparation against stale assessment, concurrent
+  session and replacement session requests.
+- Integrated authenticated review preparation and cancellation actions
+  into the protected development workspace.
+- Presented exact synthetic group assignments, reviewed operation,
+  organization, event, simulated operator, revision, plan digest,
+  expected changes and unchanged application boundaries.
+- Protected assessment editing while an exact review is active.
+- Required server-side cancellation before restoring assessment editing
+  through the normal workspace interface.
+- Preserved server-side invalidation when a new assessment is admitted.
+- Preserved review identity across browser refresh.
+- Prevented cancelled reviews from being restored through replay.
+- Discarded reviews when their workspace session closes, expires or
+  is revoked.
+
+### Acceptance evidence
+
+The Spring Invitational synthetic fixture produced an exact review
+containing six proposed groups, twelve unique team assignments and
+twenty-four unique athlete assignments.
+
+The reviewed synthetic state remained at revision zero. Approval
+was required but not granted. Operation execution remained disabled.
+
+Local verification completed successfully:
+
+- Offline intelligence foundation regression.
+- Application intelligence and operation regression tests.
+- Protected workspace regression tests.
+- Exact review projection and immutability tests.
+- Current recommendation binding tests.
+- Review lifecycle and request validation tests.
+- Manual authenticated browser acceptance.
+- Automated disposable browser acceptance.
+- Authenticated direct HTTP security acceptance.
+- TypeScript checks, lint and production build.
+- Managed development environment verification.
+- Persistent database identity preservation.
+- Private experiment evidence integrity verification.
+- Preservation of the disabled live experiment release lock.
+
+The direct HTTP acceptance suite verified generation isolation,
+tampering rejection, strict request fields, cross-account protection,
+simulated operator authorization, repeated preparation, cancellation,
+reassessment invalidation and closed-session replay rejection.
+
+Paid provider requests remained zero. Paid provider cost remained
+$0.00. No persistent application operation was executed.
+
+### Remaining requirements and limitations
+
+- JAI-5E approval and controlled synthetic execution are not implemented
+  in the protected workspace.
+- JAI-5F execution results, history, audit presentation and polish
+  remain outstanding.
+- JAI-5G integrated acceptance and JAI-5H documentation closeout
+  remain outstanding.
+- Full legacy application browser regression and remote GitHub CI
+  verification are not claimed by this checkpoint.
+- Workspace sessions and review state remain process-local and
+  disposable.
+- Production enablement, persistent operation integration, durable
+  transaction and audit requirements, and distributed coordination
+  remain deferred.
+- Client-side editing protection is a workflow safeguard, not an
+  authorization boundary. The server remains authoritative.
+- Unsubmitted edits in another browser tab are not observable by the
+  server. An admitted new assessment invalidates the existing review.
+
+### Next development phase
+
+JAI-5E — Protected synthetic operation execution.
+
+Reuse the existing controlled synthetic operation engine and establish
+an explicit server-owned approval transition bound to the exact
+reviewed operation.
+
+Do not introduce persistent application mutations, external provider
+requests, automatic execution, production enablement or conversational
+multi-step orchestration.
+
+Continue to follow `INTELLIGENCE-WORKFLOW-ARCHITECTURE.md`.
+
+**FliHub guides the process. Jev helps improve the decisions.**

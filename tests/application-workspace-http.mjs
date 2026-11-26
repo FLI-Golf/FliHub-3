@@ -1353,6 +1353,291 @@ try {
 
 	pass('Server restart discards process-local workspace state');
 
+	// JAI-5D: isolated authenticated exact-review security acceptance.
+	{
+		async function startReviewSession() {
+			const started = await post(devUrl, 'start', ownerCookie);
+
+			assert.equal(started.status, 200);
+			assertNoStore(started);
+
+			const issued = getWorkspaceCookie(started);
+			assert.ok(issued);
+
+			const selector = issued.split(';')[0];
+
+			return {
+				selector,
+				cookie: `${ownerCookie}; ${selector}`
+			};
+		}
+
+		async function reviewAction(action, cookie, body, status, headers = {}) {
+			const result = await post(devUrl, action, cookie, { body, headers });
+
+			assert.equal(result.status, status, `Unexpected status for ${action}`);
+
+			assertNoStore(result);
+
+			return result;
+		}
+
+		async function recommend(cookie, patch = {}) {
+			const result = await assess(cookie, patch);
+
+			assert.equal(result.status, 200);
+			assertNoStore(result);
+
+			const workspace = await readConcurrentWorkspace(cookie);
+
+			assert.ok(workspace.reviewAvailability);
+			assert.match(workspace.reviewAvailability.generation, /^[a-f0-9]{64}$/);
+
+			return workspace.reviewAvailability;
+		}
+
+		async function prepare(cookie, generation, status = 200) {
+			return reviewAction('prepareReview', cookie, `generation=${generation}`, status);
+		}
+
+		async function cancel(cookie, reviewId, status = 200) {
+			return reviewAction('cancelReview', cookie, `reviewId=${reviewId}`, status);
+		}
+
+		async function closeReviewSession(cookie) {
+			const result = await post(devUrl, 'close', cookie);
+			assert.equal(result.status, 200);
+			assertNoStore(result);
+		}
+
+		const first = await startReviewSession();
+		const second = await startReviewSession();
+
+		const firstContext = await recommend(first.cookie);
+		const secondContext = await recommend(second.cookie);
+
+		assert.equal(firstContext.sequence, 1);
+		assert.equal(secondContext.sequence, 1);
+		assert.notEqual(firstContext.generation, secondContext.generation);
+
+		assert.notEqual(firstContext.generation, first.selector.split('=')[1]);
+
+		await prepare(second.cookie, firstContext.generation, 409);
+		await prepare(first.cookie, secondContext.generation, 409);
+
+		assert.equal((await readConcurrentWorkspace(first.cookie)).review, null);
+
+		assert.equal((await readConcurrentWorkspace(second.cookie)).review, null);
+
+		pass('HTTP rejects cross-session generations with identical assessment sequences');
+
+		const generation = firstContext.generation;
+		const validBody = `generation=${generation}`;
+
+		const tampered = (generation[0] === 'a' ? 'b' : 'a') + generation.slice(1);
+
+		await prepare(first.cookie, tampered, 409);
+
+		for (const body of [
+			'sequence=1',
+			'generation=',
+			'generation=invalid',
+			`${validBody}&generation=${generation}`,
+			`${validBody}&approval=true`,
+			`${validBody}&execute=true`,
+			`${validBody}&plan=unexpected`,
+			`${validBody}&operationId=create_synthetic_group_assignments`,
+			`${validBody}&actorId=synthetic-actor-owner`,
+			`${validBody}&sessionId=unexpected`,
+			`${validBody}&owner=unexpected`
+		]) {
+			await reviewAction('prepareReview', first.cookie, body, 400);
+		}
+
+		await reviewAction('prepareReview', first.cookie, 'x'.repeat(8193), 413);
+
+		await reviewAction('prepareReview', first.cookie, validBody, 403, {
+			origin: 'https://untrusted.example'
+		});
+
+		assert.equal((await readConcurrentWorkspace(first.cookie)).review, null);
+
+		pass('HTTP rejects tampered generations and client-supplied execution instructions');
+
+		await prepare(first.cookie, generation);
+
+		const prepared = await readConcurrentWorkspace(first.cookie);
+		const exact = prepared.review;
+
+		assert.ok(exact);
+		assert.equal(exact.kind, 'exact-operation-review');
+		assert.equal(exact.scope, 'synthetic-only');
+		assert.equal(exact.stateRevision, 0);
+
+		assert.equal(exact.summary.groupsBefore, 0);
+		assert.equal(exact.summary.groupsAfter, 6);
+		assert.equal(exact.summary.teamsAssigned, 12);
+		assert.equal(exact.summary.athletesAssigned, 24);
+
+		assert.equal(exact.groups.length, 6);
+
+		const teams = exact.groups.flatMap((group) => group.teams);
+		const athletes = teams.flatMap((team) => team.athletes);
+
+		assert.equal(teams.length, 12);
+		assert.equal(athletes.length, 24);
+		assert.equal(new Set(teams.map((team) => team.teamId)).size, 12);
+		assert.equal(new Set(athletes.map((athlete) => athlete.id)).size, 24);
+
+		assert.equal(exact.boundaries.approvalRequired, true);
+		assert.equal(exact.boundaries.approvalGranted, false);
+		assert.equal(exact.boundaries.execution, 'disabled');
+		assert.equal(exact.boundaries.persistentMutation, false);
+		assert.equal(exact.boundaries.externalProviderAccess, false);
+
+		assert.equal(Object.hasOwn(exact, 'sessionId'), false);
+		assert.equal(Object.hasOwn(exact, 'approvalReceipt'), false);
+
+		pass('HTTP publishes exact synthetic assignments without approval or execution');
+
+		await prepare(first.cookie, generation);
+
+		assert.deepEqual((await readConcurrentWorkspace(first.cookie)).review, exact);
+
+		pass('Repeated HTTP preparation preserves the exact reviewed plan');
+
+		const foreignCookie = `${otherCookie}; ${first.selector}`;
+
+		await prepare(foreignCookie, generation, 409);
+		await cancel(foreignCookie, exact.reviewId, 409);
+
+		const foreignWorkspace = await readConcurrentWorkspace(foreignCookie);
+
+		assert.equal(foreignWorkspace.session, null);
+		assert.equal(foreignWorkspace.review, null);
+		assert.equal(foreignWorkspace.reviewAvailability, null);
+
+		await prepare(`${deniedCookie}; ${first.selector}`, generation, 403);
+
+		assert.deepEqual((await readConcurrentWorkspace(first.cookie)).review, exact);
+
+		pass('Foreign and non-allowlisted accounts cannot access or cancel exact reviews');
+
+		await cancel(first.cookie, 'incorrect-review-identity', 409);
+
+		await reviewAction(
+			'cancelReview',
+			first.cookie,
+			`reviewId=${exact.reviewId}&approval=true`,
+			400
+		);
+
+		await reviewAction('cancelReview', first.cookie, `reviewId=${exact.reviewId}`, 403, {
+			origin: 'https://untrusted.example'
+		});
+
+		assert.deepEqual((await readConcurrentWorkspace(first.cookie)).review, exact);
+
+		pass('Invalid cancellation requests preserve the active exact review');
+
+		// Direct HTTP reassessment deliberately bypasses the UI editing lock.
+		const nextContext = await recommend(first.cookie);
+
+		assert.equal(nextContext.sequence, 2);
+		assert.notEqual(nextContext.generation, generation);
+
+		assert.equal((await readConcurrentWorkspace(first.cookie)).review, null);
+
+		await prepare(first.cookie, generation, 409);
+		await cancel(first.cookie, exact.reviewId, 409);
+
+		await prepare(first.cookie, nextContext.generation);
+
+		const nextReview = (await readConcurrentWorkspace(first.cookie)).review;
+
+		assert.ok(nextReview);
+		assert.notEqual(nextReview.reviewId, exact.reviewId);
+
+		await cancel(first.cookie, exact.reviewId, 409);
+
+		assert.deepEqual((await readConcurrentWorkspace(first.cookie)).review, nextReview);
+
+		pass('Direct HTTP reassessment invalidates old generations and review identities');
+
+		await cancel(first.cookie, nextReview.reviewId);
+
+		const cancelled = await readConcurrentWorkspace(first.cookie);
+
+		assert.equal(cancelled.review, null);
+		assert.equal(cancelled.reviewAvailability, null);
+
+		await prepare(first.cookie, nextContext.generation, 409);
+		await cancel(first.cookie, nextReview.reviewId, 409);
+
+		pass('Cancelled reviews cannot be restored by replaying preparation');
+
+		const unauthorized = await recommend(first.cookie, {
+			actorId: 'synthetic-actor-viewer'
+		});
+
+		await prepare(first.cookie, unauthorized.generation, 400);
+
+		assert.equal((await readConcurrentWorkspace(first.cookie)).review, null);
+
+		pass('HTTP review preparation independently enforces simulated operator authorization');
+
+		const accounting = await readConcurrentWorkspace(first.cookie);
+
+		assert.equal(accounting.assessmentSummary.usage.completedAssessments, 3);
+		assert.equal(accounting.assessmentSummary.usage.paidProviderRequests, 0);
+		assert.equal(accounting.assessmentSummary.usage.paidProviderCost, 0);
+
+		pass('Review requests do not create extra assessment records or paid usage');
+
+		await closeReviewSession(first.cookie);
+
+		await prepare(first.cookie, unauthorized.generation, 409);
+
+		const replacement = await startReviewSession();
+		const replacementContext = await recommend(replacement.cookie);
+
+		assert.equal(replacementContext.sequence, 1);
+		assert.notEqual(replacementContext.generation, generation);
+
+		await prepare(replacement.cookie, generation, 409);
+		await prepare(replacement.cookie, secondContext.generation, 409);
+		await prepare(replacement.cookie, replacementContext.generation);
+
+		const replacementReview = (await readConcurrentWorkspace(replacement.cookie)).review;
+
+		assert.ok(replacementReview);
+
+		await closeReviewSession(replacement.cookie);
+
+		await prepare(replacement.cookie, replacementContext.generation, 409);
+
+		await cancel(replacement.cookie, replacementReview.reviewId, 409);
+
+		const closed = await readConcurrentWorkspace(replacement.cookie);
+
+		assert.equal(closed.session, null);
+		assert.equal(closed.review, null);
+		assert.equal(closed.reviewAvailability, null);
+
+		pass('Closed and replacement sessions reject stale review requests');
+
+		await closeReviewSession(second.cookie);
+	}
+
+	// Reset only the disposable application process so the existing browser
+	// acceptance starts with independent session and admission budgets.
+	await stop(app);
+
+	app = startApp('dev', 'true', ids);
+	await waitFor(devUrl, app);
+
+	pass('Disposable application restarted before browser acceptance');
+
 	await runWorkspaceBrowserAcceptance({
 		base: devUrl,
 		workspacePath,

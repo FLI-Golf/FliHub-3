@@ -544,6 +544,148 @@ export async function runWorkspaceBrowserAcceptance({
 				await noScript.close();
 			}
 
+			// JAI-5D: exact review and protected editing lifecycle.
+			await tab('Workspace');
+
+			const prepareReview = page.getByRole('button', {
+				name: 'Prepare exact operation review',
+				exact: true
+			});
+
+			const protectedInputs = page.getByRole('heading', {
+				name: 'Assessment inputs protected',
+				exact: true
+			});
+
+			const discardReview = page.getByRole('button', {
+				name: 'Discard review and edit assessment',
+				exact: true
+			});
+
+			const exactReview = page.getByRole('heading', {
+				name: 'Exact operation review',
+				exact: true
+			});
+
+			const reviewForm = page.locator('form[action="?/cancelReview"]');
+
+			await visible(prepareReview);
+			await prepareReview.click();
+			await visible(exactReview);
+
+			const firstReviewId = await reviewForm.locator('input[name="reviewId"]').inputValue();
+
+			assert.match(firstReviewId, /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
+
+			await visible(
+				page
+					.getByText('Synthetic Team 9', { exact: true })
+					.first()
+					.locator('xpath=ancestor::details[1]')
+					.locator('summary')
+			);
+
+			assert.ok(
+				await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+				'Mobile exact review must not overflow horizontally'
+			);
+
+			pass('Browser prepares an exact synthetic review on mobile');
+
+			await tab('Workspace');
+			await visible(protectedInputs);
+
+			assert.equal(await page.locator('form[action="?/assess"]').count(), 0);
+
+			await visible(discardReview);
+
+			pass('Browser protects assessment inputs during exact review');
+
+			await page.reload();
+			await visible(exactReview);
+
+			assert.equal(await reviewForm.locator('input[name="reviewId"]').inputValue(), firstReviewId);
+
+			await tab('Workspace');
+			await visible(protectedInputs);
+
+			assert.equal(await page.locator('form[action="?/assess"]').count(), 0);
+
+			pass('Browser refresh preserves exact review identity and input protection');
+
+			await discardReview.click();
+
+			await visible(
+				page.getByRole('button', {
+					name: 'Assess objective',
+					exact: true
+				})
+			);
+
+			assert.equal(await protectedInputs.count(), 0);
+			assert.equal(await prepareReview.count(), 0);
+
+			await tab('Operations');
+
+			await visible(page.getByText('No active operation review', { exact: true }));
+
+			pass('Browser discard transition cancels review before restoring editing');
+
+			await tab('Workspace');
+
+			await page
+				.getByRole('button', {
+					name: 'Prepare tournament',
+					exact: true
+				})
+				.click();
+
+			await page.locator('#workspace-scenario').selectOption('spring_invitational');
+			await page.locator('#workspace-actor').selectOption('synthetic-actor-owner');
+
+			await submitAssessment();
+
+			await visible(prepareReview);
+			await prepareReview.click();
+			await visible(exactReview);
+
+			const secondReviewId = await reviewForm.locator('input[name="reviewId"]').inputValue();
+
+			assert.notEqual(secondReviewId, firstReviewId);
+
+			pass('Browser new assessment creates a distinct exact review identity');
+
+			await tab('Workspace');
+			await visible(protectedInputs);
+
+			await page.getByRole('button', { name: 'End synthetic session' }).click();
+
+			await visible(page.getByRole('button', { name: 'Start synthetic session' }));
+
+			await tab('Operations');
+
+			await visible(page.getByText('No active operation review', { exact: true }));
+
+			await page.reload();
+
+			await tab('Workspace');
+
+			await visible(page.getByRole('button', { name: 'Start synthetic session' }));
+
+			pass('Browser session closure discards active review across refresh');
+
+			// Establish a fresh session for the existing logout-revocation test.
+			await page.getByRole('button', { name: 'Start synthetic session' }).click();
+
+			await visible(page.getByText('Active at last server response', { exact: true }));
+
+			const replacementCookies = await context.cookies(workspaceUrl);
+			const replacementSelector = replacementCookies.find(
+				(cookie) => cookie.name === workspaceCookie
+			);
+
+			assert.ok(replacementSelector);
+
 			const logout = await context.request.post(`${base}/logout`, {
 				headers: {
 					origin: base,
@@ -557,7 +699,7 @@ export async function runWorkspaceBrowserAcceptance({
 
 			// Restore the original disposable authentication and old selector
 			// deliberately to verify server-side revocation, not just cookie deletion.
-			await context.addCookies([auth, selector]);
+			await context.addCookies([auth, replacementSelector]);
 
 			await page.goto(workspaceUrl);
 

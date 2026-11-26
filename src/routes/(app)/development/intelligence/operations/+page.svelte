@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
+
 	import { onMount } from 'svelte';
 	import {
 		BrainCircuit,
@@ -36,6 +37,8 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import type { PageProps } from './$types';
+
+	type SubmitFunction = NonNullable<Parameters<typeof enhance>[1]>;
 
 	let { data, form }: PageProps = $props();
 
@@ -81,9 +84,49 @@
 	let selectedActor = $state('synthetic-actor-owner');
 	let busy = $state(false);
 	let hydrated = $state(false);
+	let reviewBusy = $state<'prepare' | 'cancel' | null>(null);
+
+	let review = $derived(data.session && !busy && !reviewBusy ? data.review : null);
+
+	let reviewAvailability = $derived(
+		data.session && !busy && !reviewBusy ? data.reviewAvailability : null
+	);
+
+	const submitReview =
+		(
+			action: 'prepare' | 'cancel',
+			destination: 'Workspace' | 'Operations' = 'Operations'
+		): SubmitFunction =>
+		({ cancel }) => {
+			if (!hydrated || busy || reviewBusy || !data.session) {
+				cancel();
+				return;
+			}
+
+			reviewBusy = action;
+
+			return async ({ result, update }) => {
+				try {
+					await update({
+						reset: false,
+						invalidateAll: true
+					});
+
+					if (result.type === 'success') {
+						activeTab = destination;
+					}
+				} finally {
+					reviewBusy = null;
+				}
+			};
+		};
 
 	onMount(() => {
 		hydrated = true;
+
+		if (data.session && data.review) {
+			activeTab = 'Operations';
+		}
 	});
 
 	let assessment = $derived(
@@ -168,7 +211,7 @@
 					size="sm"
 					variant={activeTab === tab.label ? 'default' : 'outline'}
 					aria-pressed={activeTab === tab.label}
-					disabled={!hydrated || busy}
+					disabled={!hydrated || busy || reviewBusy !== null}
 					onclick={() => (activeTab = tab.label)}
 				>
 					<TabIcon size={16} aria-hidden="true" />
@@ -221,7 +264,7 @@
 					</div>
 
 					<form method="POST" action="?/close">
-						<Button type="submit" variant="outline" disabled={busy}>
+						<Button type="submit" variant="outline" disabled={busy || reviewBusy !== null}>
 							<LogOut size={16} aria-hidden="true" />
 							End synthetic session
 						</Button>
@@ -242,7 +285,76 @@
 				{/if}
 			</div>
 
-			{#if data.session}
+			{#if data.session && data.review}
+				<section
+					aria-labelledby="protected-assessment-heading"
+					class="min-w-0 space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 sm:p-4"
+				>
+					<h2 id="protected-assessment-heading" class="flex items-center gap-2 font-semibold">
+						<Lock size={20} aria-hidden="true" class="text-amber-600 dark:text-amber-400" />
+						Assessment inputs protected
+					</h2>
+
+					<p class="text-sm">
+						An exact operation review is active. Discard the current review before changing the
+						objective, scenario or simulated operator.
+					</p>
+
+					<dl class="overflow-hidden rounded-md border bg-card">
+						<div class="space-y-1 bg-muted/40 p-3 text-sm">
+							<dt class="text-xs font-semibold text-muted-foreground">Reviewed event</dt>
+							<dd class="font-semibold">{data.review.event.name}</dd>
+						</div>
+						<div class="space-y-1 p-3 text-sm">
+							<dt class="text-xs font-semibold text-muted-foreground">Operation</dt>
+							<dd class="font-semibold">{data.review.operation.label}</dd>
+						</div>
+						<div class="space-y-1 bg-muted/40 p-3 text-sm">
+							<dt class="text-xs font-semibold text-muted-foreground">Simulated operator</dt>
+							<dd>{data.review.operator.role}</dd>
+						</div>
+					</dl>
+
+					<div class="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							disabled={!hydrated || busy || reviewBusy !== null}
+							onclick={() => (activeTab = 'Operations')}
+						>
+							<ClipboardCheck size={16} aria-hidden="true" />
+							View exact operation review
+						</Button>
+
+						<form
+							method="POST"
+							action="?/cancelReview"
+							enctype="application/x-www-form-urlencoded"
+							use:enhance={submitReview('cancel', 'Workspace')}
+						>
+							<input type="hidden" name="reviewId" value={data.review.reviewId} />
+							<Button
+								type="submit"
+								variant="outline"
+								disabled={!hydrated || busy || reviewBusy !== null}
+							>
+								{#if reviewBusy === 'cancel'}
+									<LoaderCircle size={16} aria-hidden="true" class="animate-spin" />
+									Discarding review...
+								{:else}
+									<ClipboardList size={16} aria-hidden="true" />
+									Discard review and edit assessment
+								{/if}
+							</Button>
+						</form>
+					</div>
+
+					<p class="text-xs text-muted-foreground">
+						Discarding the review does not execute an operation or change application records. A new
+						assessment is required before preparing another review.
+					</p>
+				</section>
+			{:else if data.session && !reviewBusy}
 				<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
 					<div class="flex flex-wrap items-start justify-between gap-2">
 						<div class="space-y-1">
@@ -274,7 +386,7 @@
 						enctype="application/x-www-form-urlencoded"
 						class="space-y-4"
 						use:enhance={({ cancel }) => {
-							if (!hydrated || busy || !data.session) {
+							if (!hydrated || busy || reviewBusy || !data.session || data.review) {
 								cancel();
 								return;
 							}
@@ -285,7 +397,7 @@
 								try {
 									await update({
 										reset: false,
-										refreshAll: true
+										invalidateAll: true
 									});
 								} finally {
 									busy = false;
@@ -293,7 +405,7 @@
 							};
 						}}
 					>
-						<fieldset disabled={!hydrated || busy} class="min-w-0 space-y-4">
+						<fieldset disabled={!hydrated || busy || reviewBusy !== null} class="min-w-0 space-y-4">
 							<legend class="mb-2 text-sm font-semibold">Objective input mode</legend>
 
 							<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -445,7 +557,11 @@
 							</p>
 						</div>
 
-						<Button type="submit" disabled={!hydrated || busy} class="w-full sm:w-auto">
+						<Button
+							type="submit"
+							disabled={!hydrated || busy || reviewBusy !== null}
+							class="w-full sm:w-auto"
+						>
 							{#if busy}
 								<LoaderCircle size={16} aria-hidden="true" class="animate-spin" />
 								Assessing objective...
@@ -480,8 +596,9 @@
 								Assessment results
 							</h2>
 							<p class="text-xs text-muted-foreground">
-								Most recent server response. Changing the objective or scenario does not reassess
-								it. Session validity is checked on subsequent server requests.
+								Most recent server response. Draft input changes do not reassess it. An active exact
+								review must be discarded before editing. Session validity is checked on subsequent
+								server requests.
 							</p>
 						</div>
 						<Badge variant="secondary">Offline mock</Badge>
@@ -546,7 +663,7 @@
 								<p class="text-sm font-medium">No next-step recommendation is available.</p>
 							{/if}
 
-							{#if result.explanation.recommendation}
+							{#if result.explanation.recommendation && result.explanation.recommendation !== result.nextStep?.label}
 								<p class="text-sm">
 									{result.explanation.recommendation}
 								</p>
@@ -729,6 +846,48 @@
 						Advisory guidance only. No real application records have been modified.
 					</p>
 				</section>
+			{/if}
+
+			{#if reviewAvailability && !data.review}
+				<section class="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 sm:p-4">
+					<h2 class="flex items-center gap-2 font-semibold">
+						<ClipboardList
+							size={20}
+							aria-hidden="true"
+							class="text-amber-600 dark:text-amber-400"
+						/>
+						Controlled operation review
+					</h2>
+
+					{#if reviewAvailability}
+						<p class="text-sm font-semibold">
+							{reviewAvailability.label}
+						</p>
+						<p class="text-xs text-muted-foreground">
+							Candidate from assessment #{reviewAvailability.sequence}. Preparation requires
+							server-side authorization and prerequisite checks. This is not approval to execute.
+						</p>
+						<form
+							method="POST"
+							action="?/prepareReview"
+							enctype="application/x-www-form-urlencoded"
+							use:enhance={submitReview('prepare')}
+						>
+							<input type="hidden" name="generation" value={reviewAvailability.generation} />
+							<Button type="submit" disabled={!hydrated || busy || reviewBusy !== null}>
+								<ClipboardList size={16} aria-hidden="true" />
+								Prepare exact operation review
+							</Button>
+						</form>
+					{/if}
+				</section>
+			{/if}
+
+			{#if reviewBusy === 'prepare'}
+				<p role="status" class="flex items-center gap-2 text-sm text-muted-foreground">
+					<LoaderCircle size={16} aria-hidden="true" class="animate-spin" />
+					Preparing exact synthetic operation review...
+				</p>
 			{/if}
 		{:else if activeTab === 'History'}
 			<section class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4">
@@ -971,7 +1130,7 @@
 				</p>
 
 				<div class="overflow-hidden rounded-md border">
-					{#each [{ label: 'Prepare a tournament', description: 'Review synthetic event context and recommend a preparation step.', enabled: true, icon: ClipboardCheck }, { label: 'Assess tournament readiness', description: 'Review known prerequisites and qualitative readiness.', enabled: true, icon: Gauge }, { label: 'Create synthetic group assignments', description: 'Protected operation review and execution remain deferred.', enabled: false, icon: Network }] as capability, index (capability.label)}
+					{#each [{ label: 'Prepare a tournament', description: 'Review synthetic event context and recommend a preparation step.', availability: 'Advisory available', icon: ClipboardCheck }, { label: 'Assess tournament readiness', description: 'Review known prerequisites and qualitative readiness.', availability: 'Advisory available', icon: Gauge }, { label: 'Create synthetic group assignments', description: 'Exact synthetic operation review is available after an eligible assessment. Approval and execution remain disabled.', availability: 'Review only', icon: Network }] as capability, index (capability.label)}
 						{@const CapabilityIcon = capability.icon}
 
 						<details class="group border-b last:border-b-0 {index % 2 === 0 ? 'bg-muted/40' : ''}">
@@ -982,8 +1141,12 @@
 										{capability.label}
 									</p>
 
-									<Badge variant={capability.enabled ? 'secondary' : 'outline'}>
-										{capability.enabled ? 'Advisory available' : 'Not enabled'}
+									<Badge
+										variant={capability.availability === 'Advisory available'
+											? 'secondary'
+											: 'outline'}
+									>
+										{capability.availability}
 									</Badge>
 								</div>
 
@@ -1027,14 +1190,240 @@
 					</p>
 				</div>
 			</section>
-		{:else}
-			<div class="flex flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center">
-				<Lock size={32} aria-hidden="true" class="text-muted-foreground" />
-				<h2 class="font-semibold">Operation execution disabled</h2>
-				<p class="text-sm text-muted-foreground">
-					This capability will be introduced in a subsequent implementation phase.
+		{:else if activeTab === 'Operations'}
+			<section
+				aria-labelledby="operation-review-heading"
+				aria-busy={reviewBusy !== null}
+				class="min-w-0 space-y-4 rounded-md border p-3 sm:p-4"
+			>
+				<div class="flex flex-wrap items-start justify-between gap-2">
+					<div class="space-y-1">
+						<h2 id="operation-review-heading" class="flex items-center gap-2 text-lg font-semibold">
+							<ClipboardCheck size={22} aria-hidden="true" />
+							Exact operation review
+						</h2>
+						<p class="text-xs text-muted-foreground">Server-owned synthetic operation proposal.</p>
+					</div>
+					<Badge variant="outline">Review only</Badge>
+				</div>
+
+				{#if reviewBusy}
+					<p role="status" class="flex items-center gap-2 text-sm">
+						<LoaderCircle size={16} aria-hidden="true" class="animate-spin" />
+						{reviewBusy === 'cancel' ? 'Cancelling review...' : 'Preparing review...'}
+					</p>
+				{:else if review}
+					<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+						<h3 class="flex items-center gap-2 font-semibold">
+							<Network size={20} aria-hidden="true" class="text-amber-600 dark:text-amber-400" />
+							{review.operation.label}
+						</h3>
+						<p class="text-sm">{review.operation.description}</p>
+						<p class="text-xs text-muted-foreground">
+							Proposed changes only. No operation has been executed.
+						</p>
+					</div>
+
+					<dl class="overflow-hidden rounded-md border">
+						{#each [{ label: 'Organization', value: review.organization.name, icon: ShieldCheck }, { label: 'Event', value: review.event.name, icon: CalendarDays }, { label: 'Simulated operator', value: review.operator.role, icon: Users }, { label: 'State revision', value: String(review.stateRevision), icon: History }, { label: 'Scope', value: 'Synthetic only', icon: Database }] as item, index (item.label)}
+							{@const ItemIcon = item.icon}
+							<div
+								class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm {index % 2 ===
+								0
+									? 'bg-muted/40'
+									: ''}"
+							>
+								<dt class="flex items-center gap-2 font-semibold">
+									<ItemIcon size={16} aria-hidden="true" />
+									{item.label}
+								</dt>
+								<dd class="break-words">{item.value}</dd>
+							</div>
+						{/each}
+					</dl>
+
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+						{#each [{ label: 'Groups', value: `${review.summary.groupsBefore} → ${review.summary.groupsAfter}`, icon: Network }, { label: 'Teams assigned', value: String(review.summary.teamsAssigned), icon: Users }, { label: 'Athletes assigned', value: String(review.summary.athletesAssigned), icon: Users }] as metric (metric.label)}
+							{@const MetricIcon = metric.icon}
+							<div class="min-w-0 space-y-1 rounded-md border bg-muted/30 p-3">
+								<MetricIcon size={19} aria-hidden="true" class="text-muted-foreground" />
+								<p class="text-xs font-semibold text-muted-foreground">{metric.label}</p>
+								<p class="text-xl font-bold text-amber-700 tabular-nums dark:text-amber-400">
+									{metric.value}
+								</p>
+							</div>
+						{/each}
+					</div>
+
+					<section class="space-y-3">
+						<h3 class="flex items-center gap-2 font-semibold">
+							<Network size={19} aria-hidden="true" />
+							Proposed group assignments
+						</h3>
+						<p class="text-xs text-muted-foreground">
+							Expand each group to inspect the exact teams and athletes.
+						</p>
+
+						{#key review.reviewId}
+							<div class="overflow-hidden rounded-md border">
+								{#each review.groups as group, index (group.id)}
+									<details
+										class="group border-b last:border-b-0 {index % 2 === 0 ? 'bg-muted/40' : ''}"
+									>
+										<summary
+											class="flex cursor-pointer list-none items-center justify-between gap-3 p-3"
+										>
+											<div class="min-w-0 space-y-1">
+												<p class="flex items-center gap-2 text-sm font-semibold">
+													<Users size={17} aria-hidden="true" />
+													{group.name}
+												</p>
+												<p class="text-xs text-muted-foreground">
+													{group.teams.length} teams ·
+													{group.teams.reduce((total, team) => total + team.athletes.length, 0)} athletes
+												</p>
+											</div>
+											<ChevronDown
+												size={18}
+												aria-hidden="true"
+												class="shrink-0 transition-transform group-open:rotate-180"
+											/>
+										</summary>
+
+										<div class="space-y-2 border-t p-3">
+											{#each group.teams as team (team.entryId)}
+												<div class="space-y-2 rounded-md border bg-background p-3">
+													<p class="text-sm font-semibold">{team.name}</p>
+													<ul class="space-y-1">
+														{#each team.athletes as athlete (athlete.id)}
+															<li class="flex items-center gap-2 text-sm">
+																<Users size={14} aria-hidden="true" class="text-muted-foreground" />
+																{athlete.name}
+															</li>
+														{/each}
+													</ul>
+												</div>
+											{/each}
+										</div>
+									</details>
+								{/each}
+							</div>
+						{/key}
+					</section>
+
+					<details class="group overflow-hidden rounded-md border">
+						<summary
+							class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold"
+						>
+							<span class="flex items-center gap-2">
+								<ShieldCheck size={18} aria-hidden="true" />
+								Review identity and integrity
+							</span>
+							<ChevronDown
+								size={18}
+								aria-hidden="true"
+								class="shrink-0 transition-transform group-open:rotate-180"
+							/>
+						</summary>
+						<dl class="space-y-3 border-t p-3 text-xs">
+							{#each [{ label: 'Review identity', value: review.reviewId }, { label: 'Plan digest', value: review.planDigest }, { label: 'Operation identity', value: review.operation.id }, { label: 'Organization identity', value: review.organization.id }, { label: 'Event identity', value: review.event.id }, { label: 'Simulated operator identity', value: review.operator.id }, { label: 'Operation effect', value: review.operation.effect }] as item (item.label)}
+								<div class="space-y-1">
+									<dt class="font-semibold">{item.label}</dt>
+									<dd class="font-mono break-all text-muted-foreground">{item.value}</dd>
+								</div>
+							{/each}
+						</dl>
+					</details>
+
+					<details class="group overflow-hidden rounded-md border">
+						<summary
+							class="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-semibold"
+						>
+							<span class="flex items-center gap-2">
+								<ShieldCheck size={18} aria-hidden="true" />
+								Records that remain unchanged
+							</span>
+							<ChevronDown
+								size={18}
+								aria-hidden="true"
+								class="shrink-0 transition-transform group-open:rotate-180"
+							/>
+						</summary>
+						<ul class="border-t">
+							{#each review.boundaries.unchanged as item, index (item)}
+								<li
+									class="flex items-center gap-2 p-3 text-sm {index % 2 === 0 ? 'bg-muted/40' : ''}"
+								>
+									<ShieldCheck
+										size={16}
+										aria-hidden="true"
+										class="shrink-0 text-muted-foreground"
+									/>
+									{item}
+								</li>
+							{/each}
+						</ul>
+					</details>
+
+					<div class="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+						<h3 class="flex items-center gap-2 font-semibold">
+							<Lock size={19} aria-hidden="true" class="text-amber-600 dark:text-amber-400" />
+							Approval and execution disabled
+						</h3>
+						<p class="text-sm">Approval required: Yes</p>
+						<p class="text-sm">Approval granted: No</p>
+						<p class="text-xs text-muted-foreground">
+							No persistent records will change. No external provider will be contacted. This review
+							is valid only within its protected synthetic session.
+						</p>
+					</div>
+
+					<form
+						method="POST"
+						action="?/cancelReview"
+						enctype="application/x-www-form-urlencoded"
+						use:enhance={submitReview('cancel')}
+						class="flex flex-wrap items-center gap-3"
+					>
+						<input type="hidden" name="reviewId" value={review.reviewId} />
+						<Button
+							type="submit"
+							variant="outline"
+							disabled={!hydrated || busy || reviewBusy !== null}
+						>
+							<ClipboardList size={16} aria-hidden="true" />
+							Cancel review
+						</Button>
+						<p class="text-xs text-muted-foreground">
+							Cancellation discards the proposal. A new assessment is required to prepare another
+							review.
+						</p>
+					</form>
+				{:else}
+					<div class="space-y-3 rounded-md border border-dashed p-6 text-center">
+						<ClipboardList size={30} aria-hidden="true" class="mx-auto text-muted-foreground" />
+						<p class="font-semibold">No active operation review</p>
+						<p class="text-sm text-muted-foreground">
+							Complete an eligible assessment in the Workspace tab to prepare an exact synthetic
+							operation review.
+						</p>
+						<Button
+							type="button"
+							variant="outline"
+							disabled={!hydrated || busy || reviewBusy !== null}
+							onclick={() => (activeTab = 'Workspace')}
+						>
+							<ArrowLeft size={16} aria-hidden="true" />
+							Go to Workspace
+						</Button>
+					</div>
+				{/if}
+
+				<p class="flex items-start gap-2 text-xs text-muted-foreground">
+					<Lock size={16} aria-hidden="true" class="shrink-0" />
+					Operation execution remains disabled. Session validity is checked on subsequent server requests.
 				</p>
-			</div>
+			</section>
 		{/if}
 	</section>
 

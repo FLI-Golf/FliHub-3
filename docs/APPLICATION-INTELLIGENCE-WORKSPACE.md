@@ -10,7 +10,7 @@ The protected workspace foundation has completed scoped
 local acceptance. JAI-5C objective resolution and advisory
 integration have completed local implementation and acceptance.
 
-JAI-5D exact operation review remains unimplemented.
+JAI-5D exact operation review has completed local implementation and acceptance. JAI-5E protected synthetic approval and execution remain unimplemented in the workspace.
 
 The verified starting checkpoint is `bc11b87`,
 Complete controlled application operation acceptance.
@@ -781,3 +781,100 @@ where the next-step label is repeated.
 Operation review, approval and execution are not enabled by JAI-5C.
 
 Jev supplies intelligence. FliHub retains control.
+
+## JAI-5D — Exact operation review completion
+
+**Status:** Local implementation and acceptance complete.
+**Verification date:** 2026-11-26.
+
+### Workspace behavior
+
+An eligible offline advisory assessment can expose a registered
+synthetic operation candidate. The candidate is not authorization
+or approval.
+
+Preparing an exact review requires the current assessment generation,
+a valid authenticated workspace session, an authorized simulated
+operator and successful deterministic prerequisite checks.
+
+The Operations tab displays the immutable reviewed proposal.
+For the Spring Invitational fixture, the proposal contains six groups,
+twelve teams and twenty-four athletes.
+
+The Workspace tab protects assessment inputs while an exact review
+exists. The user may view the review or select
+**Discard review and edit assessment**.
+
+Discarding uses the existing authenticated server-side cancellation
+action. The assessment form is restored after the server confirms
+the updated workspace state.
+
+A cancelled review cannot be restored by replaying its preparation
+request. A new assessment is required.
+
+### Server ownership and request boundaries
+
+- Assessment generations are server-generated, session-bound and
+  distinct from workspace cookie selectors.
+- Preparation accepts only the current generation identifier.
+- Cancellation accepts only the current review identifier.
+- Both actions require protected workspace access, same-origin
+  requests and bounded request validation.
+- Client-supplied plans, actor overrides, operation overrides,
+  approval fields and execution instructions are rejected.
+- Repeated valid preparation returns the existing exact review.
+- New admitted assessments invalidate previous review state.
+- Session closure, expiration and revocation discard review state.
+- Foreign accounts cannot read, prepare or cancel another account's
+  review.
+
+The review-only facade exposes reading and cancellation, not approval
+or execution. Review preparation does not mutate synthetic event state
+or persistent application records.
+
+### Acceptance
+
+Manual browser, automated browser, direct authenticated HTTP,
+workspace regression and operation regression acceptance passed.
+
+The automated browser exercise verified mobile review presentation,
+protected editing, refresh persistence, cancellation, reassessment
+and session closure.
+
+The HTTP exercise verified cross-session generations, stale requests,
+tampering, strict request fields, exact assignment integrity,
+cross-account isolation, authorization and cancellation replay
+protection.
+
+TypeScript checks, lint, production build and managed development
+environment verification passed.
+
+Persistent database identity and private experiment evidence were
+preserved. The live experiment release lock remained disabled.
+
+### Current security boundaries
+
+| Boundary                         | Status                              |
+| -------------------------------- | ----------------------------------- |
+| Data source                      | Disposable synthetic fixtures       |
+| External provider access         | Disabled                            |
+| Paid provider requests           | 0                                   |
+| Paid provider cost               | $0.00                               |
+| Exact operation review           | Available after eligible assessment |
+| Operation approval               | Not implemented in workspace        |
+| Operation execution              | Disabled                            |
+| Persistent application mutations | Disabled                            |
+| Production workspace access      | Disabled                            |
+
+### Outstanding work
+
+JAI-5E will introduce the protected synthetic approval and execution
+transition. JAI-5F through JAI-5H remain outstanding.
+
+Full legacy browser regression and remote GitHub CI are not claimed
+as completed by JAI-5D.
+
+The workspace remains a development and acceptance environment,
+not the required primary interface for future embedded intelligence.
+
+Conventional guided workflows must remain functional without Jev.
