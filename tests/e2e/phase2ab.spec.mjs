@@ -5,13 +5,13 @@
  * verified in real browsers: the lobby shows six approved seats, the owner
  * starts the draft, the on-the-clock manager picks from the live board, a
  * timeout auto-pick lands while watching (the room's own clock drives the
- * server tick), a reconnecting manager sees the identical server-owned
- * state, the completed draft shows six final rosters at exactly 2 MPO + 2
- * FPO with the snake reversal visible in the log, and a designated event
- * substitution is applied from the room while preserving the original pick.
+ * server tick), a reconnecting manager sees the same saved picks, the
+ * completed draft shows six final rosters at exactly 2 MPO + 2 FPO, and
+ * a designated event substitution preserves the original pick. The saved
+ * pick order verifies the snake reversal.
  * A second draft checks both full-division cases in round 3 and both missing
  * divisions in round 4: ineligible rows are absent, eligible rows are
- * selectable, and browser picks persist without hiding history or rosters.
+ * selectable, and browser picks persist with all six rosters visible.
  *
  * Run via `npm run test:e2e` (the orchestrator runs every *.spec.mjs; the
  * stack sets FLIHUB_FANTASY_DEMO_CLOCK=1, though this spec uses the normal
@@ -88,7 +88,7 @@ async function signIn(browser, person) {
 	await page.fill('input[name="email"]', person.email);
 	await page.fill('input[name="password"]', PASS);
 	await page.click('button[type="submit"]');
-	await page.waitForURL(/\/organizations/, { timeout: 20000 });
+	await page.waitForURL(/\/(?:organizations|account)(?:[/?#]|$)/, { timeout: 20000 });
 	return { ctx, page };
 }
 
@@ -244,13 +244,34 @@ try {
 	// The first manager signs in BEFORE the clock starts.
 	const { page: managerPage } = await signIn(browser, personByUser.get(order[0]));
 	await managerPage.goto(`${APP}/organizations/${org.id}/fantasy/${league.id}/draft/${draft.id}`);
-	await managerPage.waitForSelector('[data-testid="draft-status"]');
+	if (order[0] === owner.record.id) {
+		await managerPage.locator('[data-testid="start-draft"]').waitFor();
+	} else {
+		await managerPage
+			.getByText('Waiting for the commissioner to start the draft.', { exact: true })
+			.waitFor();
+
+		expect(
+			(await managerPage.locator('[data-testid="start-draft"]').count()) === 0,
+			'a non-commissioner cannot start the draft'
+		);
+	}
+
+	expect(
+		(await managerPage.locator('[data-testid="draft-clock"]').count()) === 0,
+		'the pick clock has not started before commissioner authorization'
+	);
 
 	console.log('Step 3: start, then the on-the-clock manager picks from the live board');
 	await ownerPage.click('[data-testid="start-draft"]');
 	await ownerPage.waitForSelector('[data-testid="draft-turn"]');
 	const turnText = await ownerPage.locator('[data-testid="draft-turn"]').innerText();
-	expect(turnText.includes('Round 1 · Pick 1'), 'the draft opens at Round 1 · Pick 1');
+	expect(
+		(await ownerPage.locator('[data-testid="draft-focus"]').innerText()).includes(
+			'Round 1 · Pick 1'
+		),
+		'the draft opens at Round 1 · Pick 1'
+	);
 	expect(
 		turnText.includes(personByUser.get(order[0]).name),
 		'the first manager in the saved order is on the clock'
@@ -259,28 +280,66 @@ try {
 	expect(true, 'the pick clock is running');
 	await managerPage.reload();
 	await managerPage.waitForSelector('[data-testid="your-turn"]');
-	await managerPage.locator('[data-testid="pick-button"]').first().click();
-	await managerPage.waitForSelector('[data-testid="pick-log-row"]');
-	expect(true, 'the manual pick lands in the pick log');
-	const rosterText = await managerPage
-		.locator('[data-testid="roster-tile"]', { hasText: personByUser.get(order[0]).name })
-		.innerText();
-	expect(rosterText.includes('1 of 4 drafted'), 'the roster tile shows 1 of 4 drafted');
+	const roster = (page, user) =>
+		page.getByTestId('roster-tile').filter({
+			has: page.getByRole('rowheader').getByText(personByUser.get(user).name, { exact: true })
+		});
+	const pool = managerPage.getByTestId('pool-athlete');
+	const available = await pool
+		.getByTestId('pick-button')
+		.evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label')));
+	expect(
+		available.length > 0 && available.every((label) => label?.includes('2AB Team')),
+		'every available athlete names their real event team in the pick control'
+	);
+	const manualRow = pool.first();
+	const manualAthlete = await manualRow.getAttribute('data-athlete');
+	await manualRow.getByTestId('pick-button').click();
+	const manualSlot = roster(managerPage, order[0]).getByTestId('roster-slot');
+	await manualSlot.waitFor();
+	const manualBoard = await api(`/api/flihub/fantasy/drafts/${draft.id}/board`, {
+		method: 'GET',
+		token: owner.token
+	});
+	const manualPick = manualBoard.picks[0];
+	expect(
+		manualPick?.athlete === manualAthlete &&
+			manualPick.manager === order[0] &&
+			!manualPick.auto &&
+			(await manualSlot.innerText()) === manualPick.athleteName,
+		'the exact manual selection appears in the first manager’s roster'
+	);
 
 	console.log('Step 4: a timeout auto-pick lands while watching (7-second clock)');
-	await ownerPage.waitForSelector('[data-testid="pick-log-row"] >> text=Auto', { timeout: 20000 });
-	expect(true, 'the next pick times out and the auto-pick is labeled in the log');
+	const timeoutSlot = roster(ownerPage, order[1]).getByTestId('roster-slot');
+	await timeoutSlot.waitFor({ timeout: 20000 });
+	const timeoutBoard = await api(`/api/flihub/fantasy/drafts/${draft.id}/board`, {
+		method: 'GET',
+		token: owner.token
+	});
+	const timeoutPick = timeoutBoard.picks[1];
+	expect(
+		timeoutPick?.auto &&
+			timeoutPick.manager === order[1] &&
+			(await timeoutSlot.innerText()) === timeoutPick.athleteName,
+		'the timeout selection appears in the next manager’s roster and is recorded as automatic'
+	);
 
 	console.log('Step 5: a reconnecting manager sees the same server-owned board');
 	const reconnectPerson = personByUser.get(order[2]);
 	const { page: reconnectPage } = await signIn(browser, reconnectPerson);
 	await reconnectPage.goto(`${APP}/organizations/${org.id}/fantasy/${league.id}/draft/${draft.id}`);
-	await reconnectPage.waitForSelector('[data-testid="pick-log-row"]');
-	const ownerPicks = await ownerPage.locator('[data-testid="pick-log-row"]').count();
-	const reconnectPicks = await reconnectPage.locator('[data-testid="pick-log-row"]').count();
+	for (const pick of [manualPick, timeoutPick]) {
+		for (const page of [ownerPage, reconnectPage]) {
+			await roster(page, pick.manager)
+				.getByTestId('roster-slot')
+				.getByText(pick.athleteName, { exact: true })
+				.waitFor();
+		}
+	}
 	expect(
-		Math.abs(ownerPicks - reconnectPicks) <= 1,
-		`reconnect shows the shared board (${ownerPicks} vs ${reconnectPicks} picks within one poll)`
+		(await reconnectPage.getByTestId('roster-tile').count()) === 6,
+		'reconnect shows all six rosters with the same manual and automatic selections'
 	);
 
 	console.log('Step 6: the draft completes; six final rosters at exactly 2 MPO + 2 FPO');
@@ -307,7 +366,7 @@ try {
 		});
 	}
 	expect(boardState.draft.status === 'complete', 'all 24 picks complete the draft');
-	// Snake reversal visible in the completed log: picks 6/7 and 12/13 share
+	// The persisted pick sequence shows snake reversal: picks 6/7 and 12/13 share
 	// a manager.
 	const byNumber = new Map(boardState.picks.map((p) => [p.pickNumber, p.manager]));
 	expect(byNumber.get(6) === byNumber.get(7), 'picks 6 and 7 belong to the same manager');
@@ -316,18 +375,31 @@ try {
 	await ownerPage.waitForSelector('text=Final rosters', { timeout: 15000 });
 	const tiles = ownerPage.locator('[data-testid="roster-tile"]');
 	expect((await tiles.count()) === 6, 'six final rosters render');
-	for (let i = 0; i < 6; i++) {
-		const text = (await tiles.nth(i).innerText()).replace(/\s+/g, ' ');
+	const headers = await ownerPage
+		.getByTestId('roster-table')
+		.getByRole('columnheader')
+		.allTextContents();
+	expect(
+		headers
+			.slice(1)
+			.map((heading) => heading.trim())
+			.join(', ') === 'MPO 1, MPO 2, FPO 1, FPO 2',
+		'final roster columns identify two MPO and two FPO slots'
+	);
+	for (const finalRoster of boardState.rosters) {
+		const cells = roster(ownerPage, finalRoster.user).getByRole('cell');
+		const expected = ['male', 'female'].flatMap((gender) =>
+			finalRoster.athletes
+				.filter((athlete) => athlete.gender === gender)
+				.map((athlete) => athlete.name)
+		);
 		expect(
-			text.includes('4 of 4 drafted · 2 MPO / 2 FPO'),
-			`roster ${i + 1} holds exactly 2 MPO and 2 FPO`
+			finalRoster.maleCount === 2 &&
+				finalRoster.femaleCount === 2 &&
+				(await cells.allInnerTexts()).join('|') === expected.join('|'),
+			`${finalRoster.name} displays exactly two MPO and two FPO selections in the corresponding columns`
 		);
 	}
-	const poolRows = await ownerPage.locator('[data-testid="pool-athlete"]').allInnerTexts();
-	expect(
-		poolRows.every((row) => row.includes('2AB Team')),
-		'every eligible athlete shows their real event team'
-	);
 
 	console.log('Step 7: a designated event substitution is applied from the room');
 	const femalePick = boardState.picks.find((p) => {
@@ -449,9 +521,9 @@ try {
 					);
 				}
 				expect(
-					(await page.locator('[data-testid="pick-log-row"]').count()) === n - 1 &&
+					(await page.locator('[data-testid="roster-slot"]').count()) === n - 1 &&
 						(await page.locator('[data-testid="roster-tile"]').count()) === 6,
-					`pick ${n}: pick history and all rosters remain visible`
+					`pick ${n}: previous selections and all rosters remain visible`
 				);
 				await page
 					.locator(
@@ -459,7 +531,7 @@ try {
 					)
 					.click();
 				await page.waitForFunction(
-					(count) => document.querySelectorAll('[data-testid="pick-log-row"]').length === count,
+					(count) => document.querySelectorAll('[data-testid="roster-slot"]').length === count,
 					n
 				);
 				const after = await api(`/api/flihub/fantasy/drafts/${filteredDraft.id}/board`, {
@@ -486,6 +558,7 @@ try {
 	});
 	expect(
 		filteredDone.draft.status === 'complete' &&
+			filteredDone.rosters.length === 6 &&
 			filteredDone.rosters.every((r) => r.maleCount === 2 && r.femaleCount === 2),
 		'filtered draft completes with six 2 MPO + 2 FPO rosters'
 	);

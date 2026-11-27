@@ -17,6 +17,7 @@
 	import RostersManager from '$lib/components/RostersManager.svelte';
 	import CompetitionsManager from '$lib/components/CompetitionsManager.svelte';
 	import EventsManager from '$lib/components/EventsManager.svelte';
+	import AdvancedEventCreation from '$lib/components/AdvancedEventCreation.svelte';
 	import GuidedEventSetup from '$lib/components/GuidedEventSetup.svelte';
 	import EventOpsManager from '$lib/components/EventOpsManager.svelte';
 	import CoursesManager from '$lib/components/CoursesManager.svelte';
@@ -299,6 +300,9 @@
 					/>
 				</div>
 			</details>
+		{/if}
+		{#if data.canManage}
+			<AdvancedEventCreation seasons={data.eventsData.seasons} {form} />
 		{/if}
 		<div class="flex flex-wrap gap-2" role="group" aria-label="Event view">
 			<Button

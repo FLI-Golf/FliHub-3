@@ -562,7 +562,10 @@ try {
 	const other = await createUser(admin, 'workspace-other');
 	const denied = await createUser(admin, 'workspace-denied');
 
-	const ids = `${owner.authStore.record.id},${other.authStore.record.id}`;
+	const revoked = await createUser(admin, 'workspace-revoked');
+	const revokedCookie = authCookie(revoked);
+	const ids = `${owner.authStore.record.id},${other.authStore.record.id},${revoked.authStore.record.id}`;
+	await admin.collection('users').delete(revoked.authStore.record.id);
 
 	const ownerCookie = authCookie(owner);
 	const otherCookie = authCookie(other);
@@ -600,6 +603,27 @@ try {
 	assertNoStore(response);
 
 	pass('Unauthenticated session creation rejected');
+
+	const invalidAuth = new PocketBase(pbUrl);
+	invalidAuth.authStore.save('invalid-token', owner.authStore.record);
+	const expiredAuth = new PocketBase(pbUrl);
+	// An inert expired token envelope exercises local expiry without waiting or
+	// altering the disposable collection's token lifetime.
+	const expiredPayload = Buffer.from(JSON.stringify({ exp: 1 })).toString('base64url');
+	expiredAuth.authStore.save(`e30.${expiredPayload}.fixture`, owner.authStore.record);
+	assert.equal(expiredAuth.authStore.isValid, false);
+
+	for (const [label, cookie] of [
+		['Invalid token', authCookie(invalidAuth)],
+		['Expired token envelope', authCookie(expiredAuth)],
+		['Token of a deleted disposable account', revokedCookie]
+	]) {
+		const rejected = await post(devUrl, 'start', cookie);
+		assert.equal(rejected.status, 401);
+		assert.equal(getWorkspaceCookie(rejected), undefined);
+		assertNoStore(rejected);
+		pass(`${label} cannot create a workspace`);
+	}
 
 	response = await get(devUrl, deniedCookie);
 	assert.equal(response.status, 403);
@@ -1371,8 +1395,8 @@ try {
 
 	// JAI-5D: isolated authenticated exact-review security acceptance.
 	{
-		async function startReviewSession() {
-			const started = await post(devUrl, 'start', ownerCookie);
+		async function startReviewSession(accountCookie = ownerCookie) {
+			const started = await post(devUrl, 'start', accountCookie);
 
 			assert.equal(started.status, 200);
 			assertNoStore(started);
@@ -1384,7 +1408,7 @@ try {
 
 			return {
 				selector,
-				cookie: `${ownerCookie}; ${selector}`
+				cookie: `${accountCookie}; ${selector}`
 			};
 		}
 
@@ -1775,6 +1799,40 @@ try {
 		pass('HTTP execution independently refreshes authentication before admission');
 
 		await closeReviewSession(second.cookie);
+
+		const adminSession = await startReviewSession(otherCookie);
+		const adminContext = await recommend(adminSession.cookie, { actorId: 'synthetic-actor-admin' });
+		await prepare(adminSession.cookie, adminContext.generation);
+		const adminReview = (await readConcurrentWorkspace(adminSession.cookie)).review;
+		assert.equal(adminReview.operator.role, 'admin');
+		const adminExecution = new URLSearchParams({
+			confirmation: 'approve-and-execute',
+			generation: adminContext.generation,
+			reviewId: adminReview.reviewId,
+			planDigest: adminReview.planDigest
+		}).toString();
+
+		const unsupported = await requestHttp(`${devUrl}${workspacePath}?/executeReview`, {
+			method: 'PUT',
+			headers: {
+				cookie: adminSession.cookie,
+				origin: devUrl,
+				'content-type': 'application/x-www-form-urlencoded'
+			},
+			body: adminExecution
+		});
+		assert.equal(unsupported.status, 405);
+		assertNoStore(unsupported);
+		assert.equal((await readConcurrentWorkspace(adminSession.cookie)).execution, null);
+		pass('Unsupported method cannot admit execution');
+
+		await execute(adminSession.cookie, adminExecution, 200);
+		const adminResult = await readConcurrentWorkspace(adminSession.cookie);
+		assert.deepEqual(adminResult.execution, published);
+		assert.equal(adminResult.executionEvidence.publication.operator, 'admin');
+		assert.deepEqual(await snapshotRecords(), recordsBefore);
+		await closeReviewSession(adminSession.cookie);
+		pass('Allowlisted account independently executes the exact simulated administrator review');
 	}
 
 	// Reset only the disposable application process so the existing browser

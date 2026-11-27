@@ -854,8 +854,8 @@ Implementation sequence:
 - JAI-5D: Reusable exact operation review — local acceptance completed.
 - JAI-5E: Protected synthetic execution — local acceptance completed.
 - JAI-5F: Results, history, audit and visual polish.
-- JAI-5G: Browser and security acceptance.
-- JAI-5H: Protected workspace closeout and checkpoint.
+- JAI-5G: Integrated browser and security acceptance complete locally.
+- JAI-5H: Protected workspace local closeout. Remote CI and release gates remain separate.
 
 The workspace remains offline, synthetic-only,
 development-restricted and disabled by default.
@@ -2313,3 +2313,94 @@ JAI-5F local acceptance is complete with the automated evidence above and the
 supervisor browser walkthrough. JAI-5G integrated browser and security
 acceptance, JAI-5H branch closeout, full legacy browser regression and GitHub
 CI remain outstanding. Production readiness remains a separate gate.
+
+## JAI-5G — Integrated local acceptance evidence
+
+JAI-5G local acceptance is complete. Step 46 ran all 16 legacy browser specs
+in one unfiltered invocation using a verified production build, disposable
+PocketBase and Mailpit. The runner exited 0. Closeout reran the protected
+workspace harness against a fresh disposable environment.
+
+### Browser and security evidence
+
+- `node tests/application-workspace-http.mjs` passed 105 checks, including
+  27 Chromium checks. The harness covered disabled and production-mode denial,
+  authenticated origin and request-size enforcement, refresh and session
+  isolation, invalid and expired token envelopes, an account deleted from the
+  disposable database, unsupported methods, exact review binding, and
+  duplicate and concurrent execution controls. A separate allowlisted
+  account executed an exact simulated admin review. The owner browser flow
+  covered confirmation, verified assignments, keyboard disclosures, desktop
+  and mobile layout, audit, refresh, lost-response recovery, and closure.
+  Disposable application records were unchanged.
+- `node tests/intelligence.test.mjs` passed 11 checks.
+- `node --test --test-isolation=none tests/application-intelligence*.test.mjs tests/application-workspace*.test.mjs`
+  passed 963 tests, including expiry, advisory-only and ambiguous contexts,
+  immutable reviews, terminal and playground compatibility, candidate
+  verification failures, and atomic publication.
+- Step 46 `npm run test:integration` passed 215 tests on disposable services.
+- Managed environment verification passed all 17 checks before and after
+  testing. Intelligence stayed disabled with the mock provider and the
+  workspace stayed disabled with an empty allowlist. Protected activation
+  was confined to the disposable acceptance harness. The persistent
+  development application database was preserved.
+
+### Legacy browser recovery
+
+The initial unfiltered run stopped at Phase 1B after five passing specs.
+The updated spec follows account activity selection and guided League
+creation. It checks stored defaults, editable capability settings,
+dependency closure, disabled guidance, and Viewer denial in the browser and
+via the API. API coverage preserves canonical Race/Event and Custom defaults
+for the compatibility endpoint. The browser checks custom distance
+persistence, working Sponsorships navigation, and mobile guided review.
+
+The next unfiltered run stopped in Phase 1D because the Advanced event
+creation controls had been removed in `05a4ebe`. The Events page again offers
+managers a disclosure for independent or date-time planning alongside guided
+setup. The restored form uses the existing `createEvent` server action,
+organization scope, season validation, and PocketBase write rules. The
+closeout refinement isolates its validation messages from other event
+actions. The focused Phase 1D rerun verifies independent and season-linked
+creation, invalid date handling, and Viewer denial.
+
+The recovered specs also follow the current roster, course, event group,
+and video controls. Phase 1G verifies hole entry, review, incomplete
+submission blocking, automatic round advancement, per-group locking,
+reopening, and change history. The scorecard UI now uses the server-computed
+[D15 event-wide scoring grant](DECISIONS.md#d15--phase-1g-mobile-scorekeeping-2026-11-06-approved-by-dustin)
+while retaining the Draft gate. Active assignment and the Scorekeeper role
+are both required for ordinary score entry. Viewer and cross-event
+restrictions remain enforced by the server and PocketBase.
+
+Phase 1H verifies that the published v1 total of 108 remains official while
+the owner corrects a hole, reapproves, and stages v2. Publishing v2 makes 110
+official and preserves v1 in version history. Phase 2AB verifies manual and
+timeout picks in roster slots, reconnect consistency, snake reversal, six
+rosters of two MPO and two FPO athletes, substitution, and rounds 3–4
+eligibility.
+
+## JAI-5H — Local closeout
+
+The local checkpoint includes the recovered legacy browser evidence, the
+fresh protected HTTP and Chromium acceptance, and passing Svelte,
+TypeScript, formatting, lint, production build, and diff checks. The
+protected workspace remains development-only, explicitly allowlisted, and
+synthetic-only.
+
+GitHub CI remains a separate gate. The workflow listens to pull requests and
+pushes to `main`. A feature-branch push alone leaves CI pending. Merge and
+deployment require separate authorization.
+
+JAI-6 embedded contextual intelligence, JAI-7 assisted structured workflow
+coordination, JAI-8 production readiness, and any controlled application
+activation remain deferred and retain their existing gates. Distributed
+session ownership and replay protection, production tenant isolation and
+privacy acceptance, AI-1F engineering qualification, AI-2, and the charity
+roadmap requirements remain open.
+
+[Assisted Development Mode](INTELLIGENCE-ARCHITECTURE.md#engineering-operating-modes)
+is the next separately authorized engineering initiative. Start with the
+offline Development Assignment Builder using read-only checkpoint and
+instruction discovery, human review, and versioned text export. Native
+authorization continues to govern manually started Codex sessions.

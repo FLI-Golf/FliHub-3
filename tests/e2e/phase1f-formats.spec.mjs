@@ -23,6 +23,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { createOrganizationWithCapabilities, openSection } from './helpers/onboarding.mjs';
 
 const APP = process.env.FLIHUB_E2E_APP_URL;
 const MAILPIT = process.env.FLIHUB_E2E_MAILPIT_URL;
@@ -72,6 +73,26 @@ async function api(pathname, { method = 'POST', body, token } = {}) {
 	return data;
 }
 
+// Open native disclosures through their visible summary controls.
+async function reveal(target) {
+	await target.waitFor({ state: 'attached' });
+	const ancestors = target.locator('xpath=ancestor::details');
+	for (const section of await ancestors.all()) {
+		if (!(await section.evaluate((element) => element.open))) {
+			await section.locator(':scope > summary').click();
+		}
+	}
+	await target.waitFor({ state: 'visible' });
+}
+
+async function expandSection(page, selector) {
+	const section = page.locator(selector);
+	await reveal(section.locator(':scope > summary'));
+	if (!(await section.evaluate((element) => element.open))) {
+		await section.locator(':scope > summary').click();
+	}
+}
+
 const browser = await chromium.launch();
 try {
 	const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -94,27 +115,21 @@ try {
 	await p.fill('input[name="email"]', OWNER.email);
 	await p.fill('input[name="password"]', PASS);
 	await p.click('button[type="submit"]');
-	await p.waitForURL(/\/organizations/, { timeout: 15000 });
-	await p.fill('#org-name', 'Single Round Club');
-	await p.click('input[name="template"][value="custom"]');
-	for (const cap of ['events', 'venues-courses']) {
-		await p.check(`input[name="capability"][value="${cap}"]`);
-	}
-	await p.click('button:has-text("Create organization")');
-	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
-	const orgUrlA = p.url();
+	const orgUrlA = await createOrganizationWithCapabilities(p, 'Single Round Club', [
+		'events',
+		'venues-courses'
+	]);
 	expect(true, 'organization created with events + venues-courses only');
 
 	console.log('Step A1: nine named holes with one chosen position each (UI)');
 	const nav = () => p.locator('nav[aria-label="Organization sections"]');
 	await p.waitForSelector('nav[aria-label="Organization sections"]');
-	await nav()
-		.getByRole('link', { name: /Venues & courses/ })
-		.click();
+	await nav().locator('a[href$="/cap/venues-courses"]').click();
 	await p.waitForURL(/\/cap\/venues-courses/, { timeout: 15000 });
+	await reveal(p.locator('#course-name'));
 	await p.fill('#course-name', 'Riverbend Nine');
 	await p.click('button:has-text("Create course")');
-	await p.waitForSelector('form[action="?/addHole"]', { timeout: 15000 });
+	await reveal(p.locator('form[action="?/addHole"]'));
 	const holeNames = [
 		'The Willow',
 		'Long Meadow',
@@ -128,9 +143,11 @@ try {
 	];
 	for (let i = 1; i <= 9; i++) {
 		const holeForm = p.locator('form[action="?/addHole"]');
+		await reveal(holeForm);
 		await holeForm.locator('input[name="number"]').fill(String(i));
 		await holeForm.locator('input[name="name"]').fill(holeNames[i - 1]);
 		await holeForm.locator('button[type="submit"]').click();
+		await reveal(p.locator('form[action="?/addHole"]'));
 		await p.waitForSelector(`text=Hole ${i} — ${holeNames[i - 1]}`, { timeout: 15000 });
 		const posForm = p
 			.locator('div.rounded-md.border.p-2', { hasText: `Hole ${i} — ${holeNames[i - 1]}` })
@@ -138,6 +155,7 @@ try {
 		await posForm.locator('input[name="label"]').fill('standard');
 		await posForm.locator('input[name="distance"]').fill(String(240 + i * 12));
 		await posForm.locator('button[type="submit"]').click();
+		await reveal(p.locator('form[action="?/addHole"]'));
 		await p.waitForSelector(`text=${240 + i * 12} feet`, { timeout: 15000 });
 	}
 	const mainText = await p.innerText('main');
@@ -154,6 +172,7 @@ try {
 	await longForm.locator('input[name="label"]').fill('long');
 	await longForm.locator('input[name="distance"]').fill('410');
 	await longForm.locator('button[type="submit"]').click();
+	await reveal(p.locator('form[action="?/addHole"]'));
 	await p.waitForSelector('text=410 feet', { timeout: 15000 });
 
 	console.log('Step A2: one event, exactly one round, no intermission');
@@ -161,11 +180,13 @@ try {
 		.getByRole('link', { name: /Events/ })
 		.click();
 	await p.waitForURL(/\/cap\/events/, { timeout: 15000 });
+	await openSection(p, 'Advanced event creation');
 	await p.fill('#event-name', 'Riverbend Open');
 	// Independent event: rounds do not require a season.
 	await p.click('button:has-text("Add event")');
-	await p.waitForSelector('#ops-event', { timeout: 15000 });
+	await reveal(p.locator('#ops-event'));
 	const roundForm = p.locator('form[action="?/addRound"]');
+	await reveal(roundForm);
 	await roundForm.locator('input[name="number"]').fill('1');
 	await roundForm.locator('select[name="course"]').selectOption({ label: 'Riverbend Nine' });
 	const positionOptions = await roundForm
@@ -178,14 +199,24 @@ try {
 	const longOption = roundForm.locator('select[name="positionLabel"] option', {
 		hasText: 'long'
 	});
+	const longLabel = (await longOption.innerText()).replace(/\s+/g, ' ').trim();
+	const longDisabled = await longOption.isDisabled();
+	console.log(
+		'  Position coverage:',
+		JSON.stringify({
+			label: longLabel,
+			disabled: longDisabled
+		})
+	);
 	expect(
-		(await longOption.innerText()).includes('1/9 holes') &&
-			(await longOption.innerText()).includes('missing hole 2, 3, 4, 5, 6, 7, 8, 9') &&
-			(await longOption.isDisabled()),
+		longLabel.includes('1/9 holes') &&
+			longLabel.includes('missing hole 2, 3, 4, 5, 6, 7, 8, 9') &&
+			longDisabled,
 		'incomplete position shows its coverage and missing holes, and cannot be selected'
 	);
 	await roundForm.locator('select[name="positionLabel"]').selectOption('standard');
 	await roundForm.locator('button[type="submit"]').click();
+	await expandSection(p, '#event-rounds');
 	await p.waitForSelector('text=standard positions', { timeout: 15000 });
 	const opsText = await p
 		.locator('[data-slot="card"]', { hasText: 'Rounds — Riverbend Open' })
@@ -448,10 +479,11 @@ try {
 
 	console.log('Step B2: organizer view shows both rounds, the break, and the groups');
 	await p.goto(`${APP}/organizations/${org.id}/cap/events`);
-	await p.waitForSelector('#ops-event', { timeout: 15000 });
+	await reveal(p.locator('#ops-event'));
 	const roundsCard = p.locator('[data-slot="card"]', {
 		hasText: 'Rounds — FLI Demonstration Event'
 	});
+	await expandSection(p, '#event-rounds');
 	const roundsText = await roundsCard.innerText();
 	expect(
 		roundsText.includes('Round 1') &&
@@ -463,7 +495,7 @@ try {
 	);
 	// Count on the round rows themselves (the add-round form's course select
 	// also contains the course name in its options).
-	const roundRowTexts = await roundsCard.locator('div.rounded-md.border').allInnerTexts();
+	const roundRowTexts = await roundsCard.locator('div.rounded-xl.border-l-4').allInnerTexts();
 	expect(
 		roundRowTexts.filter((t) => t.includes('FLI Nine')).length === 2,
 		'both rounds display the same course'
@@ -471,6 +503,12 @@ try {
 	const groupsCard = p.locator('[data-slot="card"]', {
 		hasText: 'Groups — FLI Demonstration Event'
 	});
+	await expandSection(p, '#event-groups');
+	for (const section of await p.locator('details[class~="group/lineup"]').all()) {
+		if (!(await section.evaluate((element) => element.open))) {
+			await section.locator(':scope > summary').click();
+		}
+	}
 	const groupsText = await groupsCard.innerText();
 	expect(
 		[1, 2, 3, 4, 5, 6].every((n) => groupsText.includes(`Group ${n}`)),
@@ -480,7 +518,9 @@ try {
 		(groupsText.match(new RegExp(SCOREKEEPER.name, 'g')) ?? []).length >= 6,
 		'every group shows its assigned scorekeeper'
 	);
-	const groupOne = groupsCard.locator('div.rounded-md.border', { hasText: 'Group 1' }).first();
+	const groupOne = groupsCard.locator('details[class~="group/lineup"]').filter({
+		has: p.locator('summary').filter({ hasText: /^\s*Group 1\b/ })
+	});
 	const groupOneText = await groupOne.innerText();
 	expect(
 		groupOneText.includes('Team 01') &&
@@ -493,7 +533,12 @@ try {
 	);
 	await p.screenshot({ path: path.join(OUT, '1f-fmt-B-demo-event.png'), fullPage: true });
 	await p.goto(`${APP}/organizations/${org.id}/cap/venues-courses`);
-	await p.waitForSelector('text=FLI Nine', { timeout: 15000 });
+	await expandSection(p, 'details[class~="group/course-list"]');
+	await expandSection(p, 'details[class~="group/course"]');
+	await p
+		.locator('details[class~="group/course"] > summary')
+		.getByText('FLI Nine', { exact: true })
+		.waitFor({ state: 'visible', timeout: 15000 });
 	const courseText = await p.innerText('main');
 	expect(
 		courseText.includes('Hole 8 (demo name — final content TBD)'),

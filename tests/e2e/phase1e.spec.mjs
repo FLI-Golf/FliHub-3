@@ -11,6 +11,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { createOrganizationWithCapabilities, openSection } from './helpers/onboarding.mjs';
 
 const APP = process.env.FLIHUB_E2E_APP_URL;
 const MAILPIT = process.env.FLIHUB_E2E_MAILPIT_URL;
@@ -69,16 +70,12 @@ try {
 	await p.fill('input[name="email"]', OWNER.email);
 	await p.fill('input[name="password"]', PASS);
 	await p.click('button[type="submit"]');
-	await p.waitForURL(/\/organizations/, { timeout: 15000 });
-	await p.fill('#org-name', 'E Roster Org');
-	await p.click('input[name="template"][value="custom"]');
-	await p.check('input[name="capability"][value="athletes"]');
-	await p.check('input[name="capability"][value="teams"]');
-	await p.check('input[name="capability"][value="leagues-seasons"]');
-	await p.check('input[name="capability"][value="events"]');
-	await p.click('button:has-text("Create organization")');
-	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
-	const orgUrl = p.url();
+	const orgUrl = await createOrganizationWithCapabilities(p, 'E Roster Org', [
+		'athletes',
+		'teams',
+		'leagues-seasons',
+		'events'
+	]);
 	const orgId = orgUrl.split('/').pop();
 	expect(true, 'organization created with roster capabilities enabled');
 
@@ -89,17 +86,20 @@ try {
 		.getByRole('link', { name: /Leagues & seasons/ })
 		.click();
 	await p.waitForURL(/\/cap\/leagues-seasons/, { timeout: 15000 });
-	await p.fill('#league-name', 'Harbor League');
-	await p.click('button:has-text("Add league")');
-	await p.waitForSelector('text=Leagues (1)', { timeout: 15000 });
-	await p.selectOption('#season-league', { label: 'Harbor League' });
-	await p.fill('#season-name', 'Summer 2026');
-	await p.click('button:has-text("Add season")');
-	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await p.getByRole('heading', { name: 'Set up a league and season', exact: true }).waitFor();
+	await p.getByLabel('League name', { exact: true }).fill('Harbor League');
+	await p.getByRole('button', { name: 'Next', exact: true }).click();
+	await p.getByLabel('Season name', { exact: true }).fill('Summer 2026');
+	await p.getByLabel('Start date (optional)', { exact: true }).fill('2026-07-01');
+	await p.getByLabel('End date (optional)', { exact: true }).fill('2026-09-30');
+	await p.getByRole('button', { name: 'Review', exact: true }).click();
+	await p.getByRole('button', { name: 'Create league and season', exact: true }).click();
+	await p.getByText(/Saved: Harbor League → Summer 2026/).waitFor();
 	await nav()
 		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
+	await openSection(p, 'Add a team');
 	await p.fill('#team-name', 'Blue Heron Flyers');
 	await p.click('button:has-text("Add team")');
 	await p.waitForSelector('text=Teams (1)', { timeout: 15000 });
@@ -107,19 +107,29 @@ try {
 		.getByRole('link', { name: /Leagues & seasons/ })
 		.click();
 	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
-	const seasonSection = p.locator('section', { hasText: 'Summer 2026' });
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Summer 2026');
+	const seasonSection = p.locator('details[data-season]').filter({ hasText: 'Summer 2026' });
 	const addEntry = seasonSection.locator('form[action="?/addEntry"]');
 	await addEntry.locator('select[name="team"]').selectOption({ label: 'Blue Heron Flyers' });
 	await addEntry.locator('button[type="submit"]').click();
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Summer 2026');
 	await p.waitForSelector('text=Team entries (1)', { timeout: 15000 });
 	await nav()
 		.getByRole('link', { name: /Events/ })
 		.click();
 	await p.waitForURL(/\/cap\/events/, { timeout: 15000 });
-	await p.fill('#event-name', 'Week 1');
-	await p.selectOption('#event-season', { label: 'Summer 2026' });
-	await p.click('button:has-text("Add event")');
-	await p.waitForSelector('text=Events (1)', { timeout: 15000 });
+	await openSection(p, 'Advanced event creation');
+	const creation = p.locator('form[action="?/createEvent"]');
+	await creation.locator('#event-name').fill('Week 1');
+	await creation.locator('#event-season').selectOption({ label: 'Summer 2026' });
+	await creation.locator('#event-starts').fill('2026-07-07T18:00');
+	await creation.getByRole('button', { name: 'Add event', exact: true }).click();
+	const eventCard = p.locator('details[class~="group/event"]').filter({
+		has: p.locator('summary').getByText('Week 1', { exact: true })
+	});
+	await eventCard.locator('summary').getByText('Summer 2026', { exact: true }).waitFor();
 	expect(true, 'league, season, team entry, and season-linked event ready');
 
 	console.log('Step 3: three athletes (identity only)');
@@ -128,11 +138,21 @@ try {
 		.click();
 	await p.waitForURL(/\/cap\/athletes/, { timeout: 15000 });
 	const addAthlete = async (first, last, gender) => {
+		const disclosure = p.locator('details[class~="group/add-athlete"]');
+		await disclosure.waitFor();
+		if (!(await disclosure.evaluate((element) => element.open))) {
+			await disclosure.locator(':scope > summary').click();
+		}
 		await p.fill('#firstName', first);
 		await p.fill('#lastName', last);
 		await p.selectOption('#gender', gender);
 		await p.click('button:has-text("Add athlete")');
-		await p.waitForSelector(`text=${first} ${last}`, { timeout: 15000 });
+		const directory = p.locator('details[class~="group/athlete-list"]');
+		await directory.waitFor();
+		if (!(await directory.evaluate((element) => element.open))) {
+			await directory.locator(':scope > summary').click();
+		}
+		await directory.getByText(`${first} ${last}`, { exact: true }).waitFor();
 	};
 	await addAthlete('Ava', 'Stone', 'female');
 	await addAthlete('Ben', 'Reed', 'male');
@@ -144,20 +164,36 @@ try {
 		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
-	await p.waitForSelector('text=Season roster — Summer 2026', { timeout: 15000 });
+	await openSection(p, 'Season roster — Summer 2026');
+	const rosterCard = p.locator('details').filter({
+		has: p.locator('summary').filter({ hasText: /^\s*Season roster — Summer 2026\s*$/ })
+	});
+	const reserveCard = p.locator('details').filter({
+		has: p.locator('summary').filter({ hasText: /^\s*Reserve pools — Summer 2026\s*$/ })
+	});
 	const entryBlock = p
 		.locator('form[action="?/addRosterMember"]')
 		.locator('xpath=ancestor::div[contains(@class, "rounded-md")][1]');
 	await entryBlock.locator('select[name="athlete"]').selectOption({ label: 'Ava Stone' });
 	await entryBlock.locator('button:has-text("Add to roster")').click();
-	await p.waitForSelector('text=Ava Stone', { timeout: 15000 });
+	await openSection(p, 'Season roster — Summer 2026');
+
+	await rosterCard
+		.locator('span')
+		.filter({ hasText: /^Ava Stone$/ })
+		.waitFor();
 	expect(true, 'Ava Stone on the Blue Heron Flyers season roster');
 
 	console.log('Step 5: gender-restricted reserve pool (pilot configuration)');
+	await openSection(p, 'Reserve pools — Summer 2026');
 	await p.fill('#pool-name', "Men's Reserve");
 	await p.selectOption('#pool-gender', 'male');
 	await p.click('button:has-text("Create pool")');
-	await p.waitForSelector('text=male only', { timeout: 15000 });
+	await openSection(p, 'Reserve pools — Summer 2026');
+	await reserveCard
+		.locator('[data-slot="badge"]')
+		.filter({ hasText: /^male only$/ })
+		.waitFor();
 	expect(true, 'reserve pool created with a male-only restriction');
 	const poolBlock = p
 		.locator('form[action="?/addReserveMember"]')
@@ -171,7 +207,11 @@ try {
 	);
 	await poolBlock.locator('select[name="athlete"]').selectOption({ label: 'Ben Reed' });
 	await poolBlock.locator('button:has-text("Add to pool")').click();
-	await p.waitForSelector('text=Ben Reed', { timeout: 15000 });
+	await openSection(p, 'Reserve pools — Summer 2026');
+	await reserveCard
+		.locator('span')
+		.filter({ hasText: /^Ben Reed$/ })
+		.waitFor();
 	expect(true, 'Ben Reed in the reserve pool');
 
 	console.log('Step 6: substitution — event-scoped, roster left intact');
@@ -193,7 +233,13 @@ try {
 	);
 	// Roster and pool are untouched: Ava still holds her active spot (no
 	// "Past member" badge anywhere), Ben is still a reserve member.
-	const rosterCard = p.locator('[data-slot="card"]', { hasText: 'Season roster — Summer 2026' });
+	await openSection(p, 'Season roster — Summer 2026');
+	await openSection(p, 'Reserve pools — Summer 2026');
+	expect(
+		(await reserveCard.locator('form[action="?/removeReserveMember"]').count()) === 1 &&
+			(await reserveCard.innerText()).includes('Ben Reed'),
+		'Ben Reed remains an active reserve member after substitution'
+	);
 	expect(
 		(await rosterCard.innerText()).includes('Ava Stone'),
 		'season roster still lists Ava Stone after the substitution'
@@ -205,8 +251,9 @@ try {
 	await p.screenshot({ path: path.join(OUT, '1e-06-substitution.png') });
 
 	console.log('Step 7: removal preserves participation history');
-	await p.locator('form[action="?/removeRosterMember"] button[type="submit"]').first().click();
-	await p.waitForSelector('text=Past member', { timeout: 15000 });
+	await rosterCard.locator('form[action="?/removeRosterMember"] button[type="submit"]').click();
+	await openSection(p, 'Season roster — Summer 2026');
+	await rosterCard.getByText('Past member', { exact: true }).waitFor();
 	expect(
 		(await rosterCard.innerText()).includes('Ava Stone'),
 		'removed athlete stays listed as a past member (history preserved)'
@@ -263,9 +310,16 @@ try {
 	await v.click('button[type="submit"]');
 	await v.waitForURL(/\/organizations/, { timeout: 15000 });
 	await v.goto(`${orgUrl}/cap/teams`);
-	await v.waitForSelector('text=Season roster — Summer 2026', { timeout: 15000 });
+	await openSection(v, 'Season roster — Summer 2026');
+	await openSection(v, 'Reserve pools — Summer 2026');
+	const viewerRoster = v.locator('details').filter({
+		has: v.locator('summary').filter({ hasText: /^\s*Season roster — Summer 2026\s*$/ })
+	});
+	await viewerRoster.getByText('Past member', { exact: true }).waitFor();
 	expect(
-		(await v.innerText('main')).includes('Ava Stone'),
+		(await viewerRoster.innerText()).includes('Ava Stone') &&
+			(await v.innerText('main')).includes('Ben Reed') &&
+			(await v.innerText('main')).includes('Travel conflict'),
 		'viewer reads the roster, pools, and substitutions'
 	);
 	expect((await v.$('form[action="?/addRosterMember"]')) === null, 'viewer has no roster form');
@@ -293,7 +347,15 @@ try {
 	await m.click('button[type="submit"]');
 	await m.waitForURL(/\/organizations/, { timeout: 15000 });
 	await m.goto(`${orgUrl}/cap/teams`);
-	await m.waitForSelector('text=Season roster — Summer 2026', { timeout: 15000 });
+	await openSection(m, 'Season roster — Summer 2026');
+	await openSection(m, 'Reserve pools — Summer 2026');
+	await m
+		.locator('details')
+		.filter({
+			has: m.locator('summary').filter({ hasText: /^\s*Season roster — Summer 2026\s*$/ })
+		})
+		.getByText('Past member', { exact: true })
+		.waitFor();
 	expect(true, 'roster page usable at 375px');
 	await m.screenshot({ path: path.join(OUT, '1e-09-mobile.png') });
 

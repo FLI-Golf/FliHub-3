@@ -997,5 +997,35 @@ after restoration. Independent service and effective-configuration checks and
 the scope of the manual evidence are recorded in the
 [JAI-5F roadmap closeout](APPLICATION-INTELLIGENCE-ROADMAP.md#supervisor-browser-acceptance--november-26-2026).
 
-JAI-5F local acceptance is complete. JAI-5G integrated acceptance, JAI-5H branch
-closeout, full legacy browser regression and GitHub CI remain open.
+JAI-5F local acceptance is complete. The integrated and closeout results
+below record the subsequent checkpoints.
+
+## JAI-5G — Integrated acceptance status
+
+Local acceptance is complete. The disposable workspace harness passed 105
+checks, including 27 Chromium checks, on the closeout candidate. The
+unfiltered legacy browser suite passed all 16 specifications in Step 46.
+A focused Phase 1D rerun covered the closeout's isolated event creation
+validation feedback. The
+[roadmap evidence](APPLICATION-INTELLIGENCE-ROADMAP.md#jai-5g--integrated-local-acceptance-evidence)
+records the commands, regression recovery, and authorization findings.
+
+The managed workspace stayed disabled with an empty allowlist. Intelligence
+stayed disabled with the mock provider. Temporary workspace activation was
+limited to the disposable harness. Production denial, no-store responses,
+explicit review binding, simulated identities, and process-local retention
+continue to govern the workspace.
+
+## JAI-5H — Local closeout status
+
+The local checkpoint records browser and security acceptance and passes
+repository static verification. Remote CI, merge authorization, and release
+acceptance remain independent gates. GitHub CI requires a pull request for
+the feature branch. The protected workspace remains a development surface
+for synthetic data.
+
+JAI-6, JAI-7, JAI-8, production and charity activation, and independently
+governed engineering qualification remain deferred. Assisted Development Mode
+starts only with separate authorization. Its initial scope is the offline,
+human-reviewed Development Assignment Builder described in the
+[engineering architecture](INTELLIGENCE-ARCHITECTURE.md#development-assignment-builder).

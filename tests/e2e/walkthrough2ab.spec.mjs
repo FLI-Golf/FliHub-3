@@ -10,20 +10,30 @@ try {
 		['live', 'Live Draft & Roster Rules']
 	]) {
 		await page.goto(APP);
-		const button = page.getByRole('link', { name: `Watch ${title}`, exact: true });
-		await button.waitFor();
+		const button = page.getByRole('link', {
+			name: `Watch ${title}`,
+			exact: true,
+			includeHidden: true
+		});
+		await button.waitFor({ state: 'attached' });
+		for (const disclosure of await button.locator('xpath=ancestor::details').all()) {
+			if (!(await disclosure.evaluate((el) => el.open))) {
+				await disclosure.locator(':scope > summary').click();
+			}
+		}
+		await button.waitFor({ state: 'visible' });
 		if ((await button.getAttribute('href')) !== `/walkthroughs/phase2ab-${kind}`)
 			throw new Error('Incorrect walkthrough button destination');
 		await button.click();
 		await page.waitForURL(`${APP}/walkthroughs/phase2ab-${kind}`);
 		const response = await page.request.get(page.url());
 		if (!response.ok()) throw new Error(`${kind} playback page failed`);
-		await page.getByRole('heading', { name: title, exact: true }).waitFor();
+		await page.getByRole('heading', { name: title, exact: true, includeHidden: true }).waitFor();
 		const video = page.locator('video');
 		await video.waitFor();
 		if (!(await video.getAttribute('src')).endsWith(`phase2ab-${kind}-walkthrough-narrated.mp4`))
 			throw new Error('Watch button did not open narrated MP4');
-		await page.getByText('Narrated walkthrough', { exact: true }).waitFor();
+		await page.getByText('Narrated walkthrough', { exact: true, includeHidden: true }).waitFor();
 		const playback = await video.evaluate(async (el) => {
 			await new Promise((resolve, reject) => {
 				if (el.readyState >= 1) return resolve();

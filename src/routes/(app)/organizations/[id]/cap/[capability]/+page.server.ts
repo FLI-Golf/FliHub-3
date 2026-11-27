@@ -2586,7 +2586,8 @@ export const actions: Actions = {
 
 	// --- Phase 1D: events (D12: one optional season; empty = independent) -----
 	createEvent: async ({ locals, request, params }) => {
-		if (!locals.pb || !locals.user) return fail(503, { message: 'PocketBase is not configured.' });
+		if (!locals.pb || !locals.user)
+			return fail(503, { eventCreationMessage: 'PocketBase is not configured.' });
 		const form = await request.formData();
 		try {
 			const seasonId = String(form.get('season') ?? '');
@@ -2595,7 +2596,7 @@ export const actions: Actions = {
 				? await locals.pb.collection('seasons').getOne(seasonId)
 				: null;
 			if (selectedSeason && selectedSeason.organization !== params.id) {
-				return fail(400, { message: 'Choose a season in this organization.' });
+				return fail(400, { eventCreationMessage: 'Choose a season in this organization.' });
 			}
 			const dateMessage = eventDateMessage(
 				startsAt,
@@ -2606,14 +2607,14 @@ export const actions: Actions = {
 						}
 					: null
 			);
-			if (dateMessage) return fail(400, { message: dateMessage });
+			if (dateMessage) return fail(400, { eventCreationMessage: dateMessage });
 
 			const multiDay = form.get('multiDay') === 'yes';
 			const endsAt = multiDay ? String(form.get('endsAt') ?? '') : '';
 			if (multiDay) {
 				if (!startsAt || !endsAt) {
 					return fail(400, {
-						message: 'Multi-day events require a start and end.'
+						eventCreationMessage: 'Multi-day events require a start and end.'
 					});
 				}
 				const endMessage = eventDateMessage(
@@ -2625,10 +2626,10 @@ export const actions: Actions = {
 							}
 						: null
 				);
-				if (endMessage) return fail(400, { message: endMessage });
+				if (endMessage) return fail(400, { eventCreationMessage: endMessage });
 				if (new Date(endsAt + 'Z').getTime() <= new Date(startsAt + 'Z').getTime()) {
 					return fail(400, {
-						message: 'The event end must be after its start.'
+						eventCreationMessage: 'The event end must be after its start.'
 					});
 				}
 			}
@@ -2646,7 +2647,7 @@ export const actions: Actions = {
 				endsAt: endsAt ? new Date(endsAt + 'Z').toISOString() : null
 			});
 		} catch (err) {
-			return fail(pbErrorStatus(err), { message: pbErrorMessage(err) });
+			return fail(pbErrorStatus(err), { eventCreationMessage: pbErrorMessage(err) });
 		}
 		return { created: true };
 	},
