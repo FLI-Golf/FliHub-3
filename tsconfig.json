@@ -8,5 +8,12 @@
 			"$lib/*": ["./src/lib/*"]
 		}
 	},
-	"include": ["src", "vite.config.ts", "prettier.config.js", "eslint.config.js"]
+	"include": [
+		"src",
+		"tools/intelligence",
+		"tools/application/**/*.ts",
+		"vite.config.ts",
+		"prettier.config.js",
+		"eslint.config.js"
+	]
 }

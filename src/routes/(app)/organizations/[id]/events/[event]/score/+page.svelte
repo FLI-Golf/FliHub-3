@@ -121,11 +121,7 @@
 	);
 	const teeSlot = $derived(round?.teeSchedule?.slots.find((slot) => slot.group === group?.id));
 	const isDraft = $derived(!scorecard || scorecard.status === 'draft');
-	const editable = $derived(
-		isDraft &&
-			(data.canManage ||
-				(data.myRole === 'scorekeeper' && group?.scorekeeper === data.currentUserId))
-	);
+	const editable = $derived(isDraft && data.canScore);
 
 	const strokesFor = (athleteId: string, holeId: string) =>
 		round

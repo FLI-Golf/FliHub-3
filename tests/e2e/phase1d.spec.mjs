@@ -9,6 +9,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { createOrganizationWithCapabilities, openSection } from './helpers/onboarding.mjs';
 
 const APP = process.env.FLIHUB_E2E_APP_URL;
 const MAILPIT = process.env.FLIHUB_E2E_MAILPIT_URL;
@@ -67,18 +68,12 @@ try {
 	await p.fill('input[name="email"]', OWNER.email);
 	await p.fill('input[name="password"]', PASS);
 	await p.click('button[type="submit"]');
-	await p.waitForURL(/\/organizations/, { timeout: 15000 });
-	// Org creation lives on the /organizations page itself (no /new route).
-	await p.fill('#org-name', 'D Competition Org');
-	await p.click('input[name="template"][value="custom"]');
-	// teams depends on athletes (dependency closure is enforced server-side).
-	await p.check('input[name="capability"][value="athletes"]');
-	await p.check('input[name="capability"][value="teams"]');
-	await p.check('input[name="capability"][value="leagues-seasons"]');
-	await p.check('input[name="capability"][value="events"]');
-	await p.click('button:has-text("Create organization")');
-	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
-	const orgUrl = p.url();
+	const orgUrl = await createOrganizationWithCapabilities(p, 'D Competition Org', [
+		'athletes',
+		'teams',
+		'leagues-seasons',
+		'events'
+	]);
 	const orgId = orgUrl.split('/').pop();
 	expect(true, 'organization created with teams, leagues-seasons, events enabled');
 
@@ -89,30 +84,27 @@ try {
 		.getByRole('link', { name: /Leagues & seasons/ })
 		.click();
 	await p.waitForURL(/\/cap\/leagues-seasons/, { timeout: 15000 });
-	await p.waitForSelector('text=Leagues (0)');
-	expect(
-		(await p.$('#league-name')) !== null,
-		'leagues-seasons page is a working manager (available, not planned)'
-	);
-	await p.fill('#league-name', 'Tuesday Night League');
-	await p.click('button:has-text("Add league")');
-	await p.waitForSelector('text=Leagues (1)', { timeout: 15000 });
-	expect(true, 'league created');
-	await p.selectOption('#season-league', { label: 'Tuesday Night League' });
-	await p.fill('#season-name', 'Spring 2026');
-	await p.fill('#season-starts', '2026-04-01');
-	await p.fill('#season-ends', '2026-06-30');
-	await p.click('button:has-text("Add season")');
-	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await p.getByRole('heading', { name: 'Set up a league and season', exact: true }).waitFor();
+	await p.getByLabel('League name', { exact: true }).fill('Tuesday Night League');
+	await p.getByRole('button', { name: 'Next', exact: true }).click();
+	await p.getByLabel('Season name', { exact: true }).fill('Spring 2026');
+	await p.getByLabel('Start date (optional)', { exact: true }).fill('2026-04-01');
+	await p.getByLabel('End date (optional)', { exact: true }).fill('2026-06-30');
+	await p.getByRole('button', { name: 'Review', exact: true }).click();
+	await p.getByRole('button', { name: 'Create league and season', exact: true }).click();
+	await p.getByText(/Saved: Tuesday Night League → Spring 2026/).waitFor();
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Spring 2026');
 	await p.waitForSelector('text=No divisions — this season runs division-less');
-	expect(true, 'division-less season created with schedule dates');
-	const seasonSection = p.locator('section', { hasText: 'Spring 2026' });
+	expect(true, 'guided setup saved the league and the division-less season');
+	const seasonSection = p.locator('details[data-season]').filter({ hasText: 'Spring 2026' });
 
 	console.log('Step 3: team entered directly into the season (no division yet)');
 	await nav()
 		.getByRole('link', { name: /Teams, rosters & substitutions/ })
 		.click();
 	await p.waitForURL(/\/cap\/teams/, { timeout: 15000 });
+	await openSection(p, 'Add a team');
 	await p.fill('#team-name', 'Basket Cases');
 	await p.click('button:has-text("Add team")');
 	await p.waitForSelector('text=Teams (1)', { timeout: 15000 });
@@ -120,34 +112,43 @@ try {
 	await nav()
 		.getByRole('link', { name: /Leagues & seasons/ })
 		.click();
-	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Spring 2026');
 	const addEntry = seasonSection.locator('form[action="?/addEntry"]');
 	await addEntry.locator('select[name="team"]').selectOption({ label: 'Basket Cases' });
 	await addEntry.locator('button[type="submit"]').click();
+	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Spring 2026');
 	await p.waitForSelector('text=Team entries (1)', { timeout: 15000 });
-	await p.waitForSelector('text=No division assigned');
+	expect(
+		(await seasonSection.getByLabel('Assign division').inputValue()) === '',
+		'entry starts without a division'
+	);
 	expect(true, 'team entered before divisions are finalized (D12)');
 
 	console.log('Step 4: division finalized later, then assigned to the entry');
 	const addDivision = seasonSection.locator('form[action="?/createDivision"]');
 	await addDivision.locator('input[name="name"]').fill('Open');
 	await addDivision.locator('button[type="submit"]').click();
+	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Spring 2026');
 	await p.waitForSelector('text=Divisions (1)', { timeout: 15000 });
 	const assign = seasonSection.locator('form[action="?/assignEntryDivision"]');
 	await assign.locator('select[name="division"]').selectOption({ label: 'Open' });
 	await assign.locator('button[type="submit"]').click();
-	// Wait for the entry row's "No division assigned" badge to disappear (that
-	// text is unique to the unassigned state; the row's select also contains an
-	// "Open" option, so text=Open alone is ambiguous).
+	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Spring 2026');
 	const entryRow = seasonSection.locator('div.rounded-md.border.p-2', { hasText: 'Basket Cases' });
 	await entryRow
-		.locator('text=No division assigned')
-		.waitFor({ state: 'detached', timeout: 15000 });
-	const entryBadge = await entryRow.locator('[data-slot="badge"]').first().innerText();
-	expect(entryBadge === 'Open', 'division assigned after entry (D12)');
+		.locator('[data-slot="badge"]')
+		.filter({ hasText: /^Open$/ })
+		.waitFor();
 	expect(
-		!(await entryRow.innerText()).includes('No division assigned'),
-		'unassigned badge cleared'
+		(await entryRow.getByLabel('Assign division').inputValue()) !== '',
+		'division selection persists on the assigned entry'
 	);
 
 	console.log('Step 5: independent and season-linked events');
@@ -155,31 +156,78 @@ try {
 		.getByRole('link', { name: /Events/ })
 		.click();
 	await p.waitForURL(/\/cap\/events/, { timeout: 15000 });
-	await p.waitForSelector('text=Events (0)');
-	await p.fill('#event-name', 'Charity Scramble');
-	// Season select left on "Independent (no season)".
-	await p.click('button:has-text("Add event")');
-	await p.waitForSelector('text=Events (1)', { timeout: 15000 });
-	await p.waitForSelector('text=Independent');
-	expect(true, 'standalone event created (no season)');
-	await p.fill('#event-name', 'Week 1');
-	await p.selectOption('#event-season', { label: 'Spring 2026' });
-	await p.fill('#event-starts', '2026-04-07T18:00');
-	await p.click('button:has-text("Add event")');
-	await p.waitForSelector('text=Events (2)', { timeout: 15000 });
-	const linkedRow = p.locator('div.rounded-md.border', { hasText: 'Week 1' }).last();
+	await p.getByText('No current or upcoming events yet.', { exact: true }).waitFor();
+	const advanced = p
+		.locator('details')
+		.filter({
+			has: p.locator('summary').filter({ hasText: /^Advanced event creation/ })
+		})
+		.filter({ has: p.locator('form[action="?/createEvent"]') });
+	const creation = advanced.locator('form[action="?/createEvent"]');
+
+	async function openAdvancedCreation() {
+		await advanced.waitFor();
+		if (!(await advanced.evaluate((element) => element.open))) {
+			await advanced.locator(':scope > summary').click();
+		}
+		await creation.waitFor({ state: 'visible' });
+	}
+
+	const eventCard = (name) =>
+		p.locator('details[class~="group/event"]').filter({
+			has: p.locator('summary').getByText(name, { exact: true })
+		});
+
+	await openAdvancedCreation();
+	await creation.getByLabel('Event name', { exact: true }).fill('Invalid event dates');
+	await creation.getByLabel('Multi-day event').check();
+	await creation.getByLabel('Starts at (optional)').fill('2026-04-08T18:00');
+	await creation.getByLabel('Ends at', { exact: true }).fill('2026-04-07T18:00');
+	await creation.getByRole('button', { name: 'Add event', exact: true }).click();
+	const dateError = 'The event end must be after its start.';
+	await advanced.getByRole('alert').filter({ hasText: dateError }).waitFor();
 	expect(
-		(await linkedRow.innerText()).includes('Spring 2026'),
-		'season-linked event shows its season'
+		(await p.getByText(dateError, { exact: true }).count()) === 1 &&
+			(await eventCard('Invalid event dates').count()) === 0,
+		'an invalid date range stays in the advanced form and creates no event'
 	);
+	await p.goto(`${orgUrl}/cap/events`);
+
+	await openAdvancedCreation();
+	await creation.locator('#event-name').fill('Charity Scramble');
+	expect(
+		(await creation.locator('#event-season').inputValue()) === '',
+		'independent creation defaults to no season'
+	);
+	await creation.getByRole('button', { name: 'Add event', exact: true }).click();
+	const independent = eventCard('Charity Scramble');
+	await independent.locator('summary').getByText('Independent', { exact: true }).waitFor();
+	expect(true, 'standalone event created (no season)');
+
+	await openAdvancedCreation();
+	await creation.locator('#event-name').fill('Week 1');
+	await creation.locator('#event-season').selectOption({ label: 'Spring 2026' });
+	await creation.locator('#event-starts').fill('2026-04-07T18:00');
+	await creation.getByRole('button', { name: 'Add event', exact: true }).click();
+	const linkedRow = eventCard('Week 1');
+	await linkedRow.locator('summary').getByText('Spring 2026', { exact: true }).waitFor();
+	expect(true, 'season-linked event shows its season');
 
 	console.log('Step 6: archive preserves records and relationships');
 	await nav()
 		.getByRole('link', { name: /Leagues & seasons/ })
 		.click();
 	await p.waitForSelector('text=Seasons (1)', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await openSection(p, 'Spring 2026');
 	await seasonSection.locator('form[action="?/archiveSeason"] button[type="submit"]').click();
-	await p.waitForSelector('section:has-text("Spring 2026") >> text=archived', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await p
+		.getByRole('group', { name: 'Season view' })
+		.getByRole('button', { name: 'Past seasons (1)', exact: true })
+		.click();
+	await openSection(p, 'Spring 2026');
+	await seasonSection.locator('summary').getByText('archived', { exact: true }).waitFor();
 	const archivedEntry = seasonSection.locator('div.rounded-md.border.p-2', {
 		hasText: 'Basket Cases'
 	});
@@ -189,8 +237,22 @@ try {
 	await nav()
 		.getByRole('link', { name: /Events/ })
 		.click();
-	const weekOne = p.locator('div.rounded-md.border', { hasText: 'Week 1' }).last();
-	const weekOneBadge = await weekOne.locator('[data-slot="badge"]').first().innerText();
+	const eventView = p.getByRole('group', { name: 'Event view' });
+	await eventView
+		.getByRole('button', {
+			name: 'Current & upcoming (1)',
+			exact: true
+		})
+		.waitFor();
+	await eventView
+		.getByRole('button', {
+			name: 'Past events (1)',
+			exact: true
+		})
+		.click();
+	const weekOne = eventCard('Week 1');
+	await weekOne.locator('summary').waitFor();
+	const weekOneBadge = await weekOne.locator('summary [data-slot="badge"]').first().innerText();
 	expect(
 		weekOneBadge === 'Spring 2026',
 		'event keeps its season link while the season is archived'
@@ -199,10 +261,33 @@ try {
 	await nav()
 		.getByRole('link', { name: /Leagues & seasons/ })
 		.click();
+	await openSection(p, 'Seasons (1)');
+	await p
+		.getByRole('group', { name: 'Season view' })
+		.getByRole('button', { name: 'Past seasons (1)', exact: true })
+		.click();
+	await openSection(p, 'Spring 2026');
 	await seasonSection.locator('form[action="?/unarchiveSeason"] button[type="submit"]').click();
-	await p.waitForSelector('section:has-text("Spring 2026") >> text=planned', { timeout: 15000 });
+	await openSection(p, 'Seasons (1)');
+	await p
+		.getByRole('group', { name: 'Season view' })
+		.getByRole('button', { name: 'Current & upcoming (1)', exact: true })
+		.click();
+	await openSection(p, 'Spring 2026');
+	await seasonSection.locator('summary').getByText('planned', { exact: true }).waitFor();
 	expect(true, 'season restored to planned');
 	await p.screenshot({ path: path.join(OUT, '1d-06-competition.png') });
+	await nav()
+		.getByRole('link', { name: /Events/ })
+		.click();
+	await eventView
+		.getByRole('button', {
+			name: 'Current & upcoming (2)',
+			exact: true
+		})
+		.click();
+	await eventCard('Week 1').locator('summary').getByText('Spring 2026', { exact: true }).waitFor();
+	expect(true, 'restored season event returns to current events');
 
 	console.log('Step 7: viewer is read-only across all three workflows');
 	const ownerAuth = await fetch(`${PB}/api/collections/users/auth-with-password`, {
@@ -256,16 +341,62 @@ try {
 	await v.waitForURL(/\/organizations/, { timeout: 15000 });
 
 	await v.goto(`${orgUrl}/cap/leagues-seasons`);
-	await v.waitForSelector('text=Tuesday Night League', { timeout: 15000 });
-	await v.waitForSelector('text=Basket Cases');
+	await openSection(v, 'Leagues (1)');
+	await v
+		.locator('span.font-medium:not([data-slot="badge"])')
+		.getByText('Tuesday Night League', { exact: true })
+		.waitFor();
+	await openSection(v, 'Seasons (1)');
+	await openSection(v, 'Spring 2026');
+	await v
+		.locator('details[data-season] div.rounded-md.border.p-2')
+		.getByText('Basket Cases', { exact: true })
+		.waitFor({ state: 'visible' });
 	expect((await v.$('#league-name')) === null, 'viewer has no league form');
+	expect(
+		(await v
+			.getByRole('heading', {
+				name: 'Set up a league and season',
+				exact: true
+			})
+			.count()) === 0,
+		'viewer has no guided league and season setup'
+	);
 	expect((await v.$('form[action="?/addEntry"]')) === null, 'viewer has no entry form');
 	await v.goto(`${orgUrl}/cap/teams`);
-	await v.waitForSelector('text=Basket Cases');
+	await openSection(v, 'Teams (1)');
+	await v
+		.locator('details[class~="group/team-list"]')
+		.getByText('Basket Cases', { exact: true })
+		.waitFor({ state: 'visible' });
 	expect((await v.$('#team-name')) === null, 'viewer has no team form');
 	await v.goto(`${orgUrl}/cap/events`);
-	await v.waitForSelector('text=Charity Scramble');
+	await v
+		.locator('details[class~="group/event"] > summary')
+		.getByText('Charity Scramble', { exact: true })
+		.waitFor({ state: 'visible' });
 	expect((await v.$('#event-name')) === null, 'viewer has no event form');
+	expect(
+		(await v.locator('form[action="?/createEvent"]').count()) === 0,
+		'viewer has no advanced event creation form'
+	);
+
+	const deniedEvent = await fetch(`${PB}/api/collections/events/records`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: viewerAuth.token
+		},
+		body: JSON.stringify({
+			organization: orgId,
+			name: 'Unauthorized viewer event',
+			status: 'planned'
+		})
+	});
+	expect(
+		deniedEvent.status === 400 || deniedEvent.status === 403,
+		`viewer direct event API write denied (${deniedEvent.status})`
+	);
 	const denied = await v.evaluate(
 		async ({ pbUrl, oid, token: tok }) => {
 			const res = await fetch(`${pbUrl}/api/collections/teams/records`, {
@@ -288,7 +419,12 @@ try {
 	await m.click('button[type="submit"]');
 	await m.waitForURL(/\/organizations/, { timeout: 15000 });
 	await m.goto(`${orgUrl}/cap/leagues-seasons`);
-	await m.waitForSelector('text=Spring 2026', { timeout: 15000 });
+	await openSection(m, 'Seasons (1)');
+	await openSection(m, 'Spring 2026');
+	await m
+		.locator('details[data-season] div.rounded-md.border.p-2')
+		.getByText('Basket Cases', { exact: true })
+		.waitFor({ state: 'visible' });
 	expect(true, 'competition page usable at 375px');
 	await m.screenshot({ path: path.join(OUT, '1d-08-mobile.png') });
 

@@ -1,3 +1,4 @@
+import { enterScore } from './helpers/score-entry.mjs';
 /**
  * Phase 1H browser acceptance flow: official results and corrections (D16)
  * on the disposable preview stack — the FLI demo's submitted scorecards
@@ -313,7 +314,7 @@ try {
 	await o.click('button:has-text("Publish")');
 	await o.waitForTimeout(1500);
 	await o.goto(resultsUrl);
-	await o.waitForSelector('text=Published · v1', { timeout: 15000 });
+	await o.waitForSelector('text=Published — complete · v1', { timeout: 15000 });
 	const publishedText = await o.locator('main').innerText();
 	expect(
 		publishedText.includes('published') && publishedText.includes(OWNER.name),
@@ -385,16 +386,17 @@ try {
 	await o.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
 	await o.fill('input[aria-label="Reason for reopening"]', 'Correcting hole 1');
 	await o.click('button:has-text("Reopen to draft")');
-	await o.waitForTimeout(1500);
-	await o.goto(scoreUrl);
-	await o.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
-	const cell = o.locator('input[aria-label="Strokes for Ava Stone on hole 1"]');
-	await cell.fill('5');
-	await cell.dispatchEvent('change');
-	await o.waitForTimeout(1500);
-	await o.goto(scoreUrl);
-	await o.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
-	await o.click('button:has-text("Submit scorecard")');
+	await o.getByRole('button', { name: 'Back to hole entry' }).waitFor();
+	await o.getByRole('button', { name: 'Edit hole 1', exact: true }).click();
+	await enterScore(o, 1, 'Ava Stone', 5);
+	await o.getByRole('button', { name: 'View scorecard', exact: true }).click();
+	await o.click('button:has-text("Submit Round 1 scorecard")');
+
+	await o.getByText(/Round 1.*submitted\. All rounds for this group are submitted\./).waitFor();
+	await o
+		.locator('[data-testid="round-picker"]')
+		.getByRole('button', { name: /Round 1 · 9 holes/ })
+		.click();
 	await o.waitForSelector('text=Submitted — locked', { timeout: 15000 });
 	expect(true, 'hole 1 corrected (3 → 5) and the scorecard resubmitted');
 
@@ -411,8 +413,8 @@ try {
 
 	console.log('Step 8: reapprove — exactly one new version preserving the old one');
 	await o.goto(resultsUrl);
-	await o.waitForSelector('button:has-text("Reapprove (new version)")', { timeout: 15000 });
-	await o.click('button:has-text("Reapprove (new version)")');
+	await o.waitForSelector('button:has-text("Reapprove result · new version")', { timeout: 15000 });
+	await o.click('button:has-text("Reapprove result · new version")');
 	await o.waitForTimeout(1500);
 	await o.goto(resultsUrl);
 	await o.waitForSelector('text=Approved — not yet published · v2', { timeout: 15000 });
@@ -491,7 +493,7 @@ try {
 	await o.click('button:has-text("Publish")');
 	await o.waitForTimeout(1500);
 	await o.goto(resultsUrl);
-	await o.waitForSelector('text=Published · v2', { timeout: 15000 });
+	await o.waitForSelector('text=Published — complete · v2', { timeout: 15000 });
 	const finalText = await o.locator('main').innerText();
 	expect(
 		finalText.includes('approved v2') && finalText.includes('published v2'),

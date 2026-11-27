@@ -8,6 +8,11 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import {
+	createGuidedOrganization,
+	openOrganizationSetup,
+	completeGuidedSetup
+} from './helpers/onboarding.mjs';
 
 const APP = process.env.FLIHUB_E2E_APP_URL;
 const MAILPIT = process.env.FLIHUB_E2E_MAILPIT_URL;
@@ -60,7 +65,7 @@ async function registerVerifySignIn(page, who) {
 	await page.fill('input[name="email"]', who.email);
 	await page.fill('input[name="password"]', PASS);
 	await page.click('button[type="submit"]');
-	await page.waitForURL(/\/organizations/, { timeout: 15000 });
+	await page.waitForURL((url) => url.pathname === '/account', { timeout: 15000 });
 }
 
 try {
@@ -80,137 +85,142 @@ try {
 		.then((r) => r.json())
 		.then((d) => d.token);
 
-	// ---- League template onboarding ------------------------------------------
-	console.log('Step 2: League onboarding with editable defaults');
-	await p.fill('#org-name', 'B League Org');
-	await p.click('input[name="template"][value="league"]');
-	await p.waitForSelector('input[name="capability"][value="athletes"]');
-	expect(
-		await p.isChecked('input[name="capability"][value="teams"]'),
-		'league template pre-checks teams'
-	);
-	expect(
-		!(await p.isChecked('input[name="capability"][value="fantasy"]')),
-		'league template leaves fantasy unchecked'
-	);
-	// Defaults are editable: drop Venues & courses (nothing depends on it) and
-	// add Sponsorships (no dependencies) as the honestly-Upcoming capability —
-	// Standings (1I) and Fantasy (2A–2B) became working pages.
-	await p.uncheck('input[name="capability"][value="venues-courses"]');
-	await p.check('input[name="capability"][value="sponsorships"]');
-	await p.click('button:has-text("Create organization")');
-	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
-	await p.waitForSelector('text=Your role: Owner');
-	expect(true, 'league org created through onboarding');
-	const leagueUrl = p.url();
+	const capability = (id) => p.locator(`input[name="capability"][value="${id}"]`);
+	const save = async () => {
+		await p.getByRole('button', { name: 'Save settings', exact: true }).click();
+		await p.getByText('Settings saved', { exact: true }).waitFor();
+	};
+	const readOrganization = async (id) => {
+		const res = await fetch(`${PB}/api/collections/organizations/records/${id}`, {
+			headers: { Authorization: apiAuthToken }
+		});
+		expect(res.ok, 'owner can read saved organization configuration');
+		return res.json();
+	};
+	const createLegacyOrganization = async (name, template) => {
+		// The guided UI intentionally supports a narrower set of profiles.
+		// Exercise the documented legacy creation contract for these templates.
+		const res = await fetch(`${PB}/api/flihub/organizations`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: apiAuthToken },
+			body: JSON.stringify({ name, template })
+		});
+		expect(res.ok, `${template} template remains supported by the legacy creation endpoint`);
+		return (await res.json()).id;
+	};
 
-	// Settings link visible to owner; capability nav present with honest labels.
-	await p.waitForSelector('nav >> text=Settings');
+	console.log('Step 2: Guided League creation and editable configuration');
+	await openOrganizationSetup(p);
+	const leagueUrl = await createGuidedOrganization(p, 'B League Org');
+	const leagueId = new URL(leagueUrl).pathname.split('/').at(-1);
+	await p.getByText('Your role: Owner', { exact: true }).waitFor();
+	const league = await readOrganization(leagueId);
+	expect(league.template === 'league', 'guided disc golf stores the League template');
+	expect(league.capabilities.includes('teams'), 'League defaults enable teams');
+	expect(!league.capabilities.includes('fantasy'), 'League defaults leave fantasy disabled');
+
+	await p.getByRole('link', { name: /^Settings/ }).click();
+	await capability('venues-courses').uncheck();
+	await capability('sponsorships').check();
+	await save();
+	const customized = await readOrganization(leagueId);
 	expect(
-		(await p.$$('nav >> text=Upcoming')).length > 0,
-		'subnav shows Upcoming capability labels'
+		!customized.capabilities.includes('venues-courses'),
+		'disabled course capability persists'
 	);
+	expect(customized.capabilities.includes('sponsorships'), 'added sponsorship capability persists');
 	await p.screenshot({ path: path.join(OUT, '1b-02-league-org.png') });
 
-	// ---- Capability destination pages ----------------------------------------
-	// Athletes (1C), Teams/Leagues & seasons/Events (1D), Venues & courses
-	// (1F), Scoring (1G), Standings (1I), and Fantasy (2A–2B) became working
-	// workflows; Sponsorships stays deferred and must keep its honest panel
-	// with no fake CRUD.
-	console.log('Step 3: capability pages are honest, not fake CRUD');
-	await p.click('nav >> text=Sponsorships');
-	await p.waitForSelector('text=Upcoming');
-	const capText = await p.locator('main').innerText();
-	expect(capText.includes('Sponsorships'), 'sponsorships capability page reachable from nav');
+	console.log('Step 3: available and disabled capabilities reflect their actual status');
+	await p.getByRole('link', { name: /^Sponsorships/ }).click();
+	await p.getByText('Add sponsor', { exact: true }).first().waitFor();
+	expect(true, 'implemented sponsorship manager is reachable from capability navigation');
+	const disabled = await p.goto(`${leagueUrl}/cap/venues-courses`);
+	expect(disabled?.ok(), 'disabled capability URL resolves to an explanatory screen');
+	await p.getByText('Courses is not enabled', { exact: true }).waitFor();
 	expect(
-		!capText.includes('Add sponsor') && !capText.includes('Create sponsorship'),
-		'no fake CRUD controls on deferred page'
+		!(await p.getByRole('button', { name: /add course/i }).count()),
+		'disabled course workflow offers no create action'
 	);
-	// A capability that is NOT enabled rejects direct-URL access with an explanation.
-	await p.goto(`${leagueUrl}/cap/venues-courses`);
-	const disabledText = await p.locator('main').innerText();
-	expect(
-		disabledText.includes('not enabled') || disabledText.includes('Not enabled'),
-		'disabled capability rejects direct URL access with an explanation'
-	);
-	expect(true, 'no broken link or fake screen for disabled capability');
 
-	// ---- Settings: toggle off and on, persistence ------------------------------
-	console.log('Step 4: settings persistence');
+	console.log('Step 4: settings persistence and dependency closure');
 	await p.goto(`${leagueUrl}/settings`);
-	await p.waitForSelector('input[name="capability"][value="events"]');
-	await p.uncheck('input[name="capability"][value="events"]');
-	await p.click('button:has-text("Save")');
-	await p.waitForLoadState('networkidle');
-	const navTextAfterOff = await p.locator('header, main nav, nav').allInnerTexts();
+	await capability('events').uncheck();
+	await save();
 	expect(
-		!navTextAfterOff.some((t) => t.includes('Events')),
-		'disabled capability leaves the navigation'
+		!(await p.getByRole('link', { name: /^Events/ }).count()),
+		'disabled capability leaves navigation'
 	);
-	// Re-enable and confirm return (dependency closure adds scoring-results back too
-	// when events is re-enabled by the user choice below).
-	await p.check('input[name="capability"][value="events"]');
-	await p.check('input[name="capability"][value="scoring-results"]');
-	await p.click('button:has-text("Save")');
-	await p.waitForLoadState('networkidle');
-	const navTextAfterOn = (await p.locator('nav').allInnerTexts()).join('\n');
-	expect(navTextAfterOn.includes('Events'), 're-enabled capability returns to navigation');
+	const disabledEvents = await readOrganization(leagueId);
+	expect(
+		!disabledEvents.capabilities.some((id) =>
+			['events', 'scoring-results', 'standings'].includes(id)
+		),
+		'dependent scoring and standings are disabled with events'
+	);
+	await capability('scoring-results').check();
+	await save();
+	const enabledEvents = await readOrganization(leagueId);
+	expect(
+		enabledEvents.capabilities.includes('events') &&
+			enabledEvents.capabilities.includes('scoring-results'),
+		'enabling scoring restores its event dependency'
+	);
+	await p.getByRole('link', { name: /^Events/ }).waitFor();
 	await p.screenshot({ path: path.join(OUT, '1b-04-settings.png') });
 
-	// ---- Race/Event onboarding with distances ----------------------------------
-	console.log('Step 5: Race/Event onboarding with distances');
-	await p.goto(`${APP}/organizations`);
-	await p.waitForLoadState('networkidle');
-	await p.fill('#org-name', 'B Race Org');
-	await p.click('input[name="template"][value="race-event"]');
-	await p.waitForSelector('input[name="capability"][value="athletes"]');
-	await p.waitForSelector('text=Marathon');
-	expect(await p.isChecked('text=Marathon'), 'marathon preset checked by default');
-	await p.click('button:has-text("Add custom distance")');
-	await p.fill('input[placeholder="Label (e.g. 10K)"]', 'Charity 5 Miler');
-	await p.fill('input[placeholder="Distance"]', '5');
-	await p.selectOption('select', 'mi');
-	const submittedDistances = await p.locator('input[name="raceDistances"]').inputValue();
-	await p.click('button:has-text("Create organization")');
-	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
-	const raceUrl = p.url();
-	const raceOrgId = raceUrl.split('/').pop();
-	// Direct evidence of what the hook stored.
-	const stored = await fetch(`${PB}/api/collections/organizations/records/${raceOrgId}`, {
-		headers: { Authorization: apiAuthToken }
-	}).then((r) => r.json());
-	console.log(
-		'  stored template:',
-		stored.template,
-		'| distances:',
-		JSON.stringify(stored.race_distances)
+	console.log('Step 5: Race/Event defaults and custom distance persistence');
+	const raceId = await createLegacyOrganization('B Race Org', 'race-event');
+	const race = await readOrganization(raceId);
+	expect(
+		race.template === 'race-event' &&
+			race.race_distances.some(
+				(d) => d.label === 'Marathon' && d.distance === 42.195 && d.unit === 'km'
+			),
+		'Race/Event stores the canonical marathon by default'
 	);
-	await p.goto(`${raceUrl}/settings`);
-	await p.waitForLoadState('networkidle');
-	// Distances render as editable inputs — read input VALUES, not innerText.
-	const raceSettingsText = await p.locator('main').innerText();
-	expect(raceSettingsText.includes('Race distances'), 'race settings show the distances card');
-	const distanceValues = await p.$$eval('main input', (els) => els.map((el) => el.value));
-	if (!distanceValues.includes('Marathon') || !distanceValues.includes('Charity 5 Miler')) {
-		console.log('  distance input values:', JSON.stringify(distanceValues));
-		console.log('  submittedDistances were:', submittedDistances);
-	}
-	expect(distanceValues.includes('Marathon'), 'race settings list marathon');
-	expect(distanceValues.includes('Charity 5 Miler'), 'custom distance persisted');
-	const unitValues = await p.$$eval('main select', (els) => els.map((el) => el.value));
-	expect(unitValues.includes('mi'), 'explicit unit shown');
+	const raceSettings = `${APP}/organizations/${raceId}/settings`;
+	await p.goto(raceSettings);
+	await p.getByRole('button', { name: 'Add distance', exact: true }).click();
+	const custom = p.getByPlaceholder('Label (e.g. 10K)', { exact: true }).last();
+	await custom.fill('Charity 5 Miler');
+	const distanceRow = custom.locator('..');
+	await distanceRow.getByPlaceholder('Distance', { exact: true }).fill('5');
+	await distanceRow.locator('select').selectOption('mi');
+	await save();
+	const savedRace = await readOrganization(raceId);
+	expect(
+		savedRace.race_distances.some(
+			(d) => d.label === 'Charity 5 Miler' && d.distance === 5 && d.unit === 'mi'
+		),
+		'custom distance and explicit unit persisted'
+	);
+	await p.reload();
+	expect(
+		(await p.getByPlaceholder('Label (e.g. 10K)', { exact: true }).all()).length >= 2,
+		'race settings render persisted distances after reload'
+	);
+	expect(
+		(await p.getByPlaceholder('Label (e.g. 10K)', { exact: true }).last().inputValue()) ===
+			'Charity 5 Miler',
+		'custom distance remains editable in Settings'
+	);
 	await p.screenshot({ path: path.join(OUT, '1b-05-race-settings.png') });
 
-	// ---- Custom onboarding ------------------------------------------------------
 	console.log('Step 6: Custom template starts empty');
-	await p.goto(`${APP}/organizations`);
-	await p.fill('#org-name', 'B Custom Org');
-	await p.click('input[name="template"][value="custom"]');
-	const checked = await p.$$eval('input[name="capability"]:checked', (els) => els.length);
-	expect(checked === 0, 'custom template forces no capability assumptions');
-	await p.click('button:has-text("Create organization")');
-	await p.waitForURL(/\/organizations\/[a-z0-9]{15}/, { timeout: 15000 });
-	await p.waitForSelector('text=Your role: Owner');
+	const customId = await createLegacyOrganization('B Custom Org', 'custom');
+	const customOrg = await readOrganization(customId);
+	expect(
+		customOrg.template === 'custom' && customOrg.capabilities.length === 0,
+		'Custom stores no assumed capabilities'
+	);
+	await p.goto(`${APP}/organizations/${customId}`);
+	await p.getByText('Your role: Owner', { exact: true }).waitFor();
+	await p.goto(`${APP}/organizations/${customId}/settings`);
+	expect(
+		!(await p.locator('input[name="capability"]:checked').count()),
+		'Custom settings show an empty capability selection'
+	);
 
 	// ---- Viewer boundaries -------------------------------------------------------
 	console.log('Step 7: viewer cannot reach configuration');
@@ -262,7 +272,7 @@ try {
 	await v.fill('input[name="email"]', VIEWER.email);
 	await v.fill('input[name="password"]', PASS);
 	await v.click('button[type="submit"]');
-	await v.waitForURL(/\/organizations/, { timeout: 15000 });
+	await v.waitForURL((url) => url.pathname === '/organizations', { timeout: 15000 });
 	await v.goto(`${leagueUrl}`);
 	const viewerNav = (await v.locator('nav').allInnerTexts()).join('\n');
 	expect(!viewerNav.includes('Settings'), 'viewer does not see Settings navigation');
@@ -294,10 +304,15 @@ try {
 	await m.fill('input[name="email"]', OWNER.email);
 	await m.fill('input[name="password"]', PASS);
 	await m.click('button[type="submit"]');
-	await m.waitForURL(/\/organizations/, { timeout: 15000 });
-	await m.waitForSelector('#org-name');
-	await m.click('input[name="template"][value="league"]');
-	await m.waitForSelector('input[name="capability"][value="athletes"]');
+	await m.waitForURL((url) => url.pathname === '/organizations', { timeout: 15000 });
+	await m.getByRole('link', { name: 'Create an organization', exact: true }).click();
+	await m.waitForURL((url) => url.pathname === '/organizations/new', { timeout: 15000 });
+	await completeGuidedSetup(m, 'B Mobile Preview');
+	await m.getByRole('button', { name: 'Create organization', exact: true }).waitFor();
+	expect(
+		await m.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+		'guided review fits the mobile viewport'
+	);
 	await m.screenshot({ path: path.join(OUT, '1b-08-mobile-onboarding.png') });
 	expect(true, 'mobile onboarding form usable at 375px');
 

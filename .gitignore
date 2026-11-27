@@ -50,4 +50,7 @@ vite.config.ts.timestamp-*
 !/static/walkthroughs/*.webm
 
 # Unpublished walkthrough review previews (temporary, local only)
-/static/review/
+/static/review/\n\n# Private local intelligence experiment evidence\n/.flihub-intelligence/\n
+
+# Private local intelligence experiment evidence
+/.flihub-intelligence/

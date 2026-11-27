@@ -1,3 +1,4 @@
+import { enterScore, scoreCell } from './helpers/score-entry.mjs';
 /**
  * Phase 1G browser acceptance flow: mobile scorekeeping (D15) on the
  * disposable preview stack — a phone-sized scorecard resolved from the
@@ -279,7 +280,7 @@ try {
 	const picker = await k.locator('[data-testid="round-picker"]').innerText();
 	expect(
 		picker.includes('Round 1 · 9 holes · red') &&
-			picker.includes('— intermission —') &&
+			picker.includes('Intermission') &&
 			picker.includes('Round 2 · 9 holes · blue'),
 		'round picker shows Round 1 · 9 holes · Red, an intermission, Round 2 · 9 holes · Blue'
 	);
@@ -293,15 +294,13 @@ try {
 	);
 
 	console.log('Step 3: draft entry, save and resume, missing-never-zero');
-	const cell = (holeNo, athleteName) =>
-		k.locator(`input[aria-label="Strokes for ${athleteName} on hole ${holeNo}"]`);
-	await cell(1, 'Ava Stone').fill('3');
-	await cell(1, 'Ava Stone').dispatchEvent('change');
+	const cell = (holeNo, athleteName) => scoreCell(k, holeNo, athleteName);
+	await enterScore(k, 1, 'Ava Stone', 3);
 	await k.waitForTimeout(1500);
 	await k.goto(scoreUrl);
 	await k.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
 	expect(
-		(await cell(1, 'Ava Stone').inputValue()) === '3',
+		(await cell(1, 'Ava Stone').innerText()) === '3',
 		'draft score persisted and resumed after a fresh page load'
 	);
 	const missingAlert = await k.locator('main').innerText();
@@ -310,17 +309,30 @@ try {
 		'missing scores are visible and labeled never-zero'
 	);
 	expect(
-		await k.locator('button:has-text("Submit scorecard")').isDisabled(),
+		(await k.getByRole('button', { name: 'Submit Round 1 scorecard' }).count()) === 0,
+		'hole entry has no submit control'
+	);
+	await k.getByRole('button', { name: 'View scorecard', exact: true }).click();
+	expect(
+		await k.getByRole('button', { name: 'Submit Round 1 scorecard' }).isDisabled(),
 		'submission is blocked while scores are missing'
 	);
 
 	console.log('Step 4: labeled demo fill, then submit');
 	await k.click('button:has-text("Fill with demo scores (demo data")');
-	await k.waitForFunction(() => !document.body.innerText.match(/\d+ scores? missing/), {
-		timeout: 15000
-	});
+	await k.getByText('Scores complete', { exact: true }).waitFor({ timeout: 15000 });
 	expect(true, 'demo-fill control is explicitly labeled demo data and fills the draft');
-	await k.click('button:has-text("Submit scorecard")');
+	await k.click('button:has-text("Submit Round 1 scorecard")');
+	await k
+		.locator('[data-testid="round-picker"] button[aria-pressed="true"]')
+		.filter({ hasText: 'Round 2 · 9 holes' })
+		.waitFor({ state: 'visible', timeout: 15000 });
+
+	await k
+		.locator('[data-testid="round-picker"]')
+		.getByRole('button', { name: /Round 1 · 9 holes/ })
+		.click();
+
 	await k.waitForSelector('text=Submitted — locked', { timeout: 15000 });
 	expect(
 		(await k.locator('main').innerText()).includes('Submitted by G Keeper'),
@@ -334,28 +346,44 @@ try {
 	console.log('Step 5: cross-group entry within the assigned event');
 	await k.click('button:has-text("Group 2")');
 	await k.waitForSelector('text=River Otters', { timeout: 15000 });
-	await cell(1, 'Nora Vale').fill('4');
-	await cell(1, 'Nora Vale').dispatchEvent('change');
+	await k.getByRole('button', { name: 'Edit hole 1', exact: true }).click();
+	await enterScore(k, 1, 'Nora Vale', 4);
 	await k.waitForTimeout(1500);
 	await k.goto(scoreUrl);
 	await k.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
 	await k.click('button:has-text("Group 2")');
 	expect(
-		(await cell(1, 'Nora Vale').inputValue()) === '4',
+		(await cell(1, 'Nora Vale').innerText()) === '4',
 		'assigned scorekeeper enters scores for another group in the same event'
 	);
 
 	console.log('Step 6: second pass displays 10–18, keyed to round + physical hole');
-	await k.click('button:has-text("Round 2")');
-	await k.waitForSelector('text=Round 2 · Group', { timeout: 15000 });
+	expect(
+		await k
+			.locator('[data-testid="round-picker"]')
+			.getByRole('button', { name: /Round 2 · 9 holes/ })
+			.isDisabled(),
+		'Group 2 cannot enter Round 2 before submitting Round 1'
+	);
+
 	await k.click('button:has-text("Group 1")');
+
+	await k
+		.locator('[data-testid="round-picker"]')
+		.getByRole('button', { name: /Round 2 · 9 holes/ })
+		.click();
+
+	await k
+		.locator('[aria-label="Active round"]')
+		.getByRole('heading', { name: /Round 2 · 9 holes/ })
+		.waitFor({ state: 'visible', timeout: 15000 });
 	const round2Text = await k.locator('main').innerText();
 	expect(
 		round2Text.includes('10') && round2Text.includes('18') && round2Text.includes('Hole 1'),
 		'round 2 displays holes 10–18 while naming the physical holes'
 	);
-	await cell(10, 'Ava Stone').fill('5');
-	await cell(10, 'Ava Stone').dispatchEvent('change');
+	await k.getByRole('button', { name: 'Edit hole 10', exact: true }).click();
+	await enterScore(k, 10, 'Ava Stone', 5);
 	await k.waitForTimeout(1500);
 	const stored = await api(
 		`/api/collections/scores/records?perPage=5&filter=${encodeURIComponent(
@@ -393,7 +421,7 @@ try {
 		'viewer sees the explicit read-only explanation'
 	);
 	expect(
-		(await v.$$('input[name="strokes"]')).length === 0,
+		(await v.$$('form[action="?/enterScore"] [name="strokes"]')).length === 0,
 		'viewer gets no stroke inputs anywhere'
 	);
 	await v.click('button:has-text("Group 2")');
@@ -419,16 +447,26 @@ try {
 	const o = await signIn(ctxO, OWNER);
 	await o.goto(scoreUrl);
 	await o.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
+	await o
+		.locator('[data-testid="round-picker"]')
+		.getByRole('button', { name: /Round 1 · 9 holes/ })
+		.click();
+
 	await o.fill('input[aria-label="Reason for reopening"]', 'Checking hole 2 entry');
 	await o.click('button:has-text("Reopen to draft")');
-	await o.waitForSelector('text=Draft', { timeout: 15000 });
+	await o.locator('form[action="?/submitScorecard"]').waitFor({ state: 'visible', timeout: 15000 });
+	await o.getByRole('button', { name: 'Edit hole 1', exact: true }).click();
 	expect(
-		(await o.locator('input[aria-label="Strokes for Ava Stone on hole 1"]').inputValue()) === '3',
+		(await scoreCell(o, 1, 'Ava Stone').innerText()) === '3',
 		'reopened scorecard preserves the previously entered value'
 	);
-	const history = await o.locator('main').innerText();
+	const historyPanel = o.locator('details').filter({
+		has: o.locator('summary').filter({ hasText: 'Recent change history' })
+	});
+	await historyPanel.locator('summary').click();
+	const history = await historyPanel.innerText();
 	expect(
-		history.includes('Change history') &&
+		history.includes('Recent change history') &&
 			history.includes('G Keeper') &&
 			history.includes('submitted') &&
 			history.includes('reopened') &&
@@ -441,7 +479,8 @@ try {
 	await o.waitForSelector('[data-testid="round-picker"]', { timeout: 15000 });
 	const singlePicker = await o.locator('[data-testid="round-picker"]').innerText();
 	expect(
-		singlePicker.includes('Round 1 · 9 holes · red') && !singlePicker.includes('intermission'),
+		singlePicker.includes('Round 1 · 9 holes · red') &&
+			!singlePicker.toLowerCase().includes('intermission'),
 		'single-round event shows one nine-hole round and no intermission'
 	);
 

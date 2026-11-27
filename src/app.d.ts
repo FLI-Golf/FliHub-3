@@ -19,6 +19,11 @@ declare global {
 			 * `src/hooks.server.ts`, or `null` when signed out.
 			 */
 			user: RecordModel | null;
+			/**
+			 * True only when PocketBase successfully refreshed the
+			 * authenticated session during this request.
+			 */
+			sessionVerified: boolean;
 		}
 		// interface PageData {}
 		// interface PageState {}

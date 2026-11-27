@@ -22,6 +22,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const pb = createPocketBaseClient();
 	event.locals.pb = pb;
 	event.locals.user = null;
+	event.locals.sessionVerified = false;
 
 	if (pb) {
 		// Hydrate this request's auth store from the session cookie.
@@ -32,6 +33,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				// Server-side session validation: confirm the token and user
 				// record are still accepted by PocketBase.
 				await pb.collection('users').authRefresh();
+				event.locals.sessionVerified = true;
 			} catch (err) {
 				// Rejected/expired tokens (4xx) clear the session. Network or
 				// server errors keep the cookie so a PocketBase restart does
@@ -51,6 +53,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	const response = await resolve(event);
+
+	// Apply the playground cache policy to the final response,
+	// regardless of action response format.
+	if (
+		event.route.id === '/(app)/development/intelligence' ||
+		event.route.id === '/(app)/development/intelligence/operations'
+	) {
+		response.headers.set('cache-control', 'no-store');
+	}
 
 	if (pb) {
 		// Persist any auth-store change back to the hardened session cookie.

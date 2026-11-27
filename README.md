@@ -1,148 +1,88 @@
 # FliHub-3
 
-FliHub is a configurable sports organization management platform with connected
-fantasy competitions. This repository is a fresh, single-application rebuild
-using a new stack — see [docs/DECISIONS.md](docs/DECISIONS.md) for why and
-[docs/MIGRATION.md](docs/MIGRATION.md) for what still needs to be imported from
-the previous prototype.
+FliHub is a multi-tenant platform for managing sports organizations, leagues, events, fantasy competitions, sponsorships and charity events.
 
-> **Implemented:** Accounts, organizations, invitations, role permissions,
-> configurable capabilities, athletes, teams, competition structure, golf
-> scorekeeping, official-result publication and corrections, public standings,
-> private fantasy drafts, and per-event golf fantasy standings.
+## Platform
 
-**Current branch:** Guided multi-step competition setup is available as a
-preview. It separates organization, activity, format, competitors, and result
-method. The preview creates no records. Race timing, match scoring, judging,
-voting, awards, and animal/vehicle/exhibit entry workflows remain planned.
+- Organization management, membership and role-based permissions.
+- Leagues, seasons, teams, athletes and event scheduling.
+- Mobile scorekeeping, official results, standings and public pages.
+- Fantasy leagues, live drafts and competition results.
+- Sponsorship quotes, agreements, payments and funding conditions.
+- Expenses, reimbursements and receipt management.
+- Charity organization and participant management (in development).
 
-See [the roadmap](docs/ROADMAP.md),
-[the multi-event plan](docs/README-MULTI-EVENT-PLATFORM.md), and
-[the setup preview guide](docs/README-SETUP-PREVIEW.md) for scope and next steps.
+## Technology
 
-## Stack
+| Layer                   | Technology                  |
+| ----------------------- | --------------------------- |
+| Frontend                | SvelteKit, TypeScript       |
+| UI                      | Tailwind CSS, shadcn-svelte |
+| Backend and database    | PocketBase                  |
+| Development email       | Mailpit                     |
+| Intelligence            | Jev by TypeSafe AI          |
+| AI engineering          | OpenAI Codex                |
+| Development environment | GitHub Codespaces           |
 
-- [SvelteKit](https://svelte.dev/docs/kit) with Svelte 5 and strict TypeScript
-- [Tailwind CSS 4](https://tailwindcss.com) with
-  [shadcn-svelte](https://shadcn-svelte.com) components
-- [PocketBase](https://pocketbase.io) (JavaScript SDK) for authentication,
-  database, and file storage
-- npm with a committed `package-lock.json`
-- Single application repository (no monorepo)
+## Getting started
 
-## Prerequisites
+Use Node.js 24 and compatible PocketBase and Mailpit binaries in `pocketbase/`. Configure the local environment using `.env.example` as a reference.
 
-- Node.js 24 and npm 11
-- Optional: a local PocketBase instance (free, no account needed) — the app
-  starts without one and shows setup instructions
-
-## Quick start
-
-```sh
+```bash
 npm ci
-npm run dev
+npm run dev:all
 ```
 
-Open the printed local URL (default <http://localhost:5173>). Without a
-configured PocketBase instance the welcome page shows how to set one up.
+| Command               | Purpose                                  |
+| --------------------- | ---------------------------------------- |
+| `npm run dev:all`     | Start or recognize local services        |
+| `npm run dev:status`  | Check service and intelligence readiness |
+| `npm run jev:develop` | Open the development director            |
+| `npm run dev:stop`    | Stop managed development services        |
 
-## Scripts
+Local services: SvelteKit (`5173`), PocketBase (`8090`) and Mailpit (`8025`). Startup is manual and does not initiate AI requests or reset data.
 
-| Command                    | Purpose                                                          |
-| -------------------------- | ---------------------------------------------------------------- |
-| `npm run dev`              | Start the development server                                     |
-| `npm run pocketbase`       | Start the local PocketBase instance (migrations + hooks applied) |
-| `npm run check`            | Svelte + strict TypeScript checks                                |
-| `npm run lint`             | Prettier check and ESLint                                        |
-| `npm run format`           | Format all files with Prettier                                   |
-| `npm run build`            | Production build                                                 |
-| `npm run preview`          | Preview the production build                                     |
-| `npm run test`             | Integration + browser E2E tests                                  |
-| `npm run test:integration` | Access-control tests vs. disposable PocketBase + mailpit         |
-| `npm run test:e2e`         | Browser acceptance flow vs. a disposable full stack              |
+The development director also offers an offline isolated source exercise when the Linux Bubblewrap preflight passes. Use option 6 in `npm run jev:develop`. For its limits, authorization and review export, see the [intelligence architecture](docs/INTELLIGENCE-ARCHITECTURE.md#isolated-source-engineering-and-review).
 
-## Testing
+## AI-directed development
 
-Both suites are self-contained: they boot disposable PocketBase and mailpit
-instances in a temp directory and never touch `pocketbase/pb_data` or any
-running dev services. The E2E suite builds the app and serves the production
-build via `vite preview` (rather than a second dev server) so it runs reliably
-in memory-constrained containers.
+FliHub is developing a reusable intelligence architecture that combines human direction, structured AI decisions and automated engineering.
 
-```sh
-npm run test:integration   # API rules, hooks, roles, invitations, concurrency
-
-# One-time browser setup for the E2E suite:
-npx playwright install chromium            # browser binary
-sudo npx playwright install-deps chromium  # system libraries (Linux only)
-
-npm run test:e2e           # headless Chromium acceptance flow
+```mermaid
+flowchart TD
+    A[Product Owner] --> B[ChatGPT: Planning and Architecture]
+    B --> C[Jev: Development Director]
+    C <--> D[Orchestration and Guardrails]
+    D <--> E[Codex: Software Engineering]
+    E --> F[Independent Verification]
+    F --> D
 ```
 
-E2E screenshots are written to `tests/e2e/output/` (git-ignored).
+Jev selects authorized development actions, Codex performs engineering tasks, and deterministic controls enforce permissions, scope, budgets and acceptance criteria. Humans retain final authority.
 
-## PocketBase (local development)
+**Current status:** The repository owner accepted the offline FliHub tee-time pilot through option 7 in `npm run jev:develop`, including isolated verification and review-only patch export. The earlier live Jev exercise used Codex CLI against a synthetic endpoint. Authenticated Codex engineering and final AI-1F acceptance remain pending. The director defaults to offline operation. Live Jev use requires explicit authorization and a private `TYPESAFE_API_KEY`.
 
-PocketBase runs as a **separate, free local process** — nothing is embedded in
-this repository and no paid service is required:
+## Verification
 
-```sh
-# 1. Download PocketBase from https://pocketbase.io and put the binary in pocketbase/
-#    (do the same with a mailpit binary so verification emails are captured)
-npm run pocketbase
-./pocketbase/mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025
-
-# 2. In another terminal, configure the app and restart the dev server
-cp .env.example .env
-npm run dev
-```
-
-Migrations and trusted hooks apply automatically. mailpit captures auth emails
-at <http://127.0.0.1:8025>. Full details, including what is git-ignored and
-the rules around credentials, live in
-[pocketbase/README.md](pocketbase/README.md).
-
-## Environment variables
-
-Configuration is read from `.env` (git-ignored). `.env.example` documents every
-variable and contains no secrets.
-
-| Variable                    | Scope       | Purpose                                                    |
-| --------------------------- | ----------- | ---------------------------------------------------------- |
-| `POCKETBASE_URL`            | server-only | Base URL of the PocketBase instance                        |
-| `POCKETBASE_ADMIN_EMAIL`    | server-only | Superuser email, reserved for future trusted operations    |
-| `POCKETBASE_ADMIN_PASSWORD` | server-only | Superuser password, reserved for future trusted operations |
-
-Phase 1A enforcement runs inside PocketBase hooks and never uses superuser
-credentials; the admin variables are declared but not currently read by app
-code, and must never become the normal application identity.
-
-## Project structure
-
-```text
-src/
-  hooks.server.ts            Per-request PocketBase client + session cookie foundation
-  lib/
-    server/pocketbase.ts     Server-only PocketBase factory (never shipped to browsers)
-    components/ui/           shadcn-svelte components
-    data/planned-features.ts Planned capability list shown on the welcome page
-  routes/                    App shell and welcome page
-docs/                        Roadmap, decisions, migration notes
-pocketbase/                  Local PocketBase home (binary and data are git-ignored)
-.github/                     CI workflow and Copilot instructions
+```bash
+npm run check
+npm run lint
+node --test --test-isolation=none tests/*.test.mjs
+npm run test:integration
+npm run build
 ```
 
 ## Documentation
 
-- [docs/CTG-HANDOFF.md](docs/CTG-HANDOFF.md) — onboarding guide for CTG
-  developers (access, local/Codespace setup, fresh database, demo data)
-- [Milestones.md](Milestones.md) — product milestone plan (reference document)
-- [docs/ROADMAP.md](docs/ROADMAP.md) — planned phases and unresolved questions
-- [docs/DECISIONS.md](docs/DECISIONS.md) — architecture and policy decisions
-- [docs/MIGRATION.md](docs/MIGRATION.md) — exports still needed from the previous project
+- [Development instructions](AGENTS.md)
+- [Intelligence roadmap](docs/INTELLIGENCE-ROADMAP.md)
+- [Intelligence architecture](docs/INTELLIGENCE-ARCHITECTURE.md)
+- [Intelligence provider notes](docs/INTELLIGENCE-PROVIDER-EVALUATION.md)
+- [Charity event roadmap](docs/CHARITY-EVENT-ROADMAP.md)
+- [Funding roadmap](docs/FUNDING-ROADMAP.md)
 
-## Continuous integration
+## Development principles
 
-GitHub Actions (`.github/workflows/ci.yml`) runs install, Svelte/TypeScript
-checks, linting, and a production build on pushes to `main` and on pull
-requests.
+Security by design. Tenant isolation. Human authorization. Independent verification. Documented decisions. Incremental delivery.
+
+For the proposed real-project pilot and pending authenticated dispatch requirements, see the [AI-1F authenticated engineering checkpoint](docs/INTELLIGENCE-ARCHITECTURE.md#ai-1f-authenticated-engineering-checkpoint).

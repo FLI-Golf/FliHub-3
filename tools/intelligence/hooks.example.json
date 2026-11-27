@@ -1,0 +1,16 @@
+{
+	"hooks": {
+		"PreToolUse": [
+			{
+				"matcher": "^Bash$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node /absolute/path/to/tools/intelligence/hook.ts /absolute/path/to/isolated-fixture /absolute/private/audit-directory",
+						"timeout": 10
+					}
+				]
+			}
+		]
+	}
+}

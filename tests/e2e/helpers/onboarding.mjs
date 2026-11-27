@@ -63,6 +63,28 @@ export async function createGuidedOrganization(page, name) {
 	return page.url();
 }
 
+/** Create through the guided UI and configure the fixture's exact capabilities. */
+export async function createOrganizationWithCapabilities(page, name, capabilities) {
+	await openOrganizationSetup(page);
+	const organizationUrl = await createGuidedOrganization(page, name);
+	await page.goto(`${organizationUrl}/settings`);
+	await page.locator('input[name="template"][value="custom"]').check();
+	for (const capability of capabilities) {
+		await page.locator(`input[name="capability"][value="${capability}"]`).check();
+	}
+	await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+	await page.getByText('Settings saved', { exact: true }).waitFor();
+	await page.reload();
+	const selected = await page
+		.locator('input[name="capability"]:checked')
+		.evaluateAll((inputs) => inputs.map((input) => input.value));
+	if (JSON.stringify(selected.sort()) !== JSON.stringify([...capabilities].sort())) {
+		throw new Error('Fixture capability configuration did not persist exactly');
+	}
+	await page.goto(organizationUrl);
+	return organizationUrl;
+}
+
 /**
  * Open a native disclosure section through its visible summary.
  * Leave an already-open section unchanged.
