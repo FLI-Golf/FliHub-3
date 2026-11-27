@@ -17,7 +17,7 @@ const roadmapObjective = {
 };
 const digest = (text) => createHash('sha256').update(text).digest('hex');
 
-function git(root, args) {
+export function inspectLocalGit(root, args) {
 	const result = spawnSync(
 		'/usr/bin/git',
 		[
@@ -72,12 +72,18 @@ export function discoverAssignmentContext(directory, paths = []) {
 	} catch {
 		throw new Error('Repository directory is unavailable.');
 	}
-	if (git(root, ['rev-parse', '--show-toplevel']).output.trimEnd() !== root) {
+	if (inspectLocalGit(root, ['rev-parse', '--show-toplevel']).output.trimEnd() !== root) {
 		throw new Error(
 			'Run the builder from the FliHub repository root. Repository context unavailable.'
 		);
 	}
-	const origin = git(root, ['config', '--local', '--no-includes', '--get', 'remote.origin.url']);
+	const origin = inspectLocalGit(root, [
+		'config',
+		'--local',
+		'--no-includes',
+		'--get',
+		'remote.origin.url'
+	]);
 	const knownOrigin =
 		/^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)FLI-Golf\/FliHub-3(?:\.git)?\r?\n$/i;
 	if (!knownOrigin.test(origin.output)) {
@@ -86,8 +92,8 @@ export function discoverAssignmentContext(directory, paths = []) {
 		);
 	}
 
-	const commit = git(root, ['rev-parse', '--verify', 'HEAD^{commit}']).output.trim();
-	const branchResult = git(root, ['symbolic-ref', '--quiet', '--short', 'HEAD']);
+	const commit = inspectLocalGit(root, ['rev-parse', '--verify', 'HEAD^{commit}']).output.trim();
+	const branchResult = inspectLocalGit(root, ['symbolic-ref', '--quiet', '--short', 'HEAD']);
 	const branch = branchResult.output.trim();
 	if (!/^[a-f0-9]{40}$/.test(commit)) throw new Error('Exact HEAD is unavailable.');
 	if (branchResult.status !== 0 && branchResult.status !== 1)
@@ -96,7 +102,7 @@ export function discoverAssignmentContext(directory, paths = []) {
 		throw new Error('Branch name is unsupported.');
 
 	// Git may invoke a configured clean/process filter during status inspection.
-	const filters = git(root, ['config', '--name-only', '--get-regexp', '^filter\\.']);
+	const filters = inspectLocalGit(root, ['config', '--name-only', '--get-regexp', '^filter\\.']);
 	if (![0, 1].includes(filters.status)) throw new Error('Git filter configuration is unavailable.');
 	const drivers = new Set();
 	for (const key of filters.output.trimEnd().split('\n').filter(Boolean)) {
@@ -112,7 +118,7 @@ export function discoverAssignmentContext(directory, paths = []) {
 		'-c',
 		`filter.${name}.required=false`
 	]);
-	const status = git(root, [
+	const status = inspectLocalGit(root, [
 		...filterOverrides,
 		'status',
 		'--porcelain=v1',
@@ -122,9 +128,14 @@ export function discoverAssignmentContext(directory, paths = []) {
 	]);
 	if (status.status !== 0)
 		throw new Error('Working tree status is unavailable or exceeds the inspection limit.');
-	const tracking = git(root, ['rev-list', '--left-right', '--count', 'HEAD...@{upstream}']);
+	const tracking = inspectLocalGit(root, [
+		'rev-list',
+		'--left-right',
+		'--count',
+		'HEAD...@{upstream}'
+	]);
 	const trackingCounts = /^(\d+)\s+(\d+)\s*$/.exec(tracking.output);
-	const upstream = git(root, ['rev-parse', '--verify', '@{upstream}']);
+	const upstream = inspectLocalGit(root, ['rev-parse', '--verify', '@{upstream}']);
 	const directories = new Set(['.']);
 
 	for (const path of normalizePaths(paths)) {
@@ -169,7 +180,7 @@ function line(value, name, max = 1200) {
 	return value.trim();
 }
 
-function normalizePaths(paths) {
+export function normalizePaths(paths) {
 	if (!Array.isArray(paths) || paths.length > 8)
 		throw new Error('Specify up to eight scope paths.');
 	return [

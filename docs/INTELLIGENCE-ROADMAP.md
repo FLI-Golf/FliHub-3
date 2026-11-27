@@ -130,9 +130,30 @@ duplicate. The actual ADM-3 report was parsed separately because its
 matching assignment export was unavailable. Static checks and managed
 environment verification passed.
 
-Independent evidence review and development progress assessment remain
-ADM-5. Authenticated runner qualification and AI-1F remain independently
-gated.
+### ADM-5 local checkpoint
+
+Option 10 assesses an approved assignment, retained report and original
+completion report offline. It binds the supplied digests to exact source
+bytes and compares retained metadata with a fresh parse. Local Git
+observations verify checkpoints, ancestry, net changed paths, and declared
+path scope. The review distinguishes contradictions, path violations,
+incomplete requirements, missing evidence and unverified claims.
+
+The operator can record an explicit, digest-bound acknowledgment and a
+separate human observation. Private, versioned assessment records cannot
+replace earlier records. Recording a review leaves completion acceptance
+undetermined. The assessor does not replay commands, attest test results
+from worker text or look up live remote state.
+
+The real ADM-4 artifacts passed integrity and scope assessment. Seven
+reported files matched their net Git diff. The terminal exercise also
+covered cancellation, explicit private review of a synthetic case and
+duplicate refusal. Thirty focused tests and 47 offline engineering
+regressions passed, with five opt-in capsule cases skipped. Static checks,
+production build and managed environment verification passed.
+
+Optional live planning (ADM-6), authenticated runner qualification,
+AI-1F and later orchestration remain independently gated.
 
 ## Baseline and progress
 

@@ -108,6 +108,34 @@ JSON files under `/tmp/flihub-completion-reports-<uid>/`. The same assignment
 and report digest cannot be imported twice. Different report bytes create
 separate records. Temporary storage may be cleared by the system.
 
+### Assess completion evidence offline
+
+In `npm run jev:develop`, choose **10**. Supply the assignment ID,
+the approved assignment SHA-256, and the imported report SHA-256.
+The console checks the fixed local export, report, and retained import
+record against those digests and the original embedded report bytes.
+
+The assessment verifies locally available commit objects, ancestry, the
+net changed paths, and the report's exact bullet-list inventory. Scope
+covers named paths and descendants of directories present at the starting
+commit. A new path is matched exactly. The current worktree and tracking
+ref are observations made during assessment. Historical Git claims and
+live remote state are unverified. The diff excludes transient changes
+reverted between commits and does not interpret prose exclusions.
+
+Check the findings and enter an optional human observation. The prompt
+shows an exact `accept <SHA-256>` command to record acknowledgment of
+this assessment. Enter cancels. Acknowledgment does not determine
+completion or grant execution or publication authority. Worker claims,
+missing evidence, scope violations and contradictory inventory remain
+visible. Test results and execution claims require evidence outside
+this Git-only assessment and are never accepted from report text.
+
+A recorded review is a private, versioned JSON file under
+`/tmp/flihub-evidence-assessments-<uid>/`. Identical reviews cannot
+overwrite prior records. The console rechecks evidence and context
+before saving. Temporary storage may be cleared by the system.
+
 The development director also offers an offline isolated source exercise when the Linux Bubblewrap preflight passes. Use option 6 in `npm run jev:develop`. For its limits, authorization and review export, see the [intelligence architecture](docs/INTELLIGENCE-ARCHITECTURE.md#isolated-source-engineering-and-review).
 
 ## AI-directed development

@@ -213,6 +213,14 @@ Distinguish worker-reported claims, independently observed evidence, human-confi
 
 Treat imported reports and embedded references as untrusted data. Apply bounded input sizes and validation, preserve provenance, exclude credentials and sensitive payloads, and assess private storage, access and retention. Import never executes commands, follows instructions or grants authorization. The final report format, storage schema and retention policy remain open.
 
+The ADM-5 console implements a bounded offline assessment. Approved
+assignment and report digests select the artifacts. The assessor reparses
+their bytes, checks the retained import, and inspects local Git for the
+declared checkpoints and net path scope. Worker test and historical Git
+claims remain unverified. Review acknowledgment, optional human
+observations and completion acceptance are distinct. The receipt records
+the assessment and human review, with completion acceptance undetermined.
+
 ### Reuse and future Jev assistance
 
 Candidate reuse includes committed-blob context binding, scoped proposals, local human approval, durable checkpoint history, independent verifier evidence and reviewed export. Current implementations are bounded to their authorized catalogs, fixtures or sealed pilot. Future design must evaluate whether the underlying contracts can be reused without inheriting worker launch, resume or publication authority.

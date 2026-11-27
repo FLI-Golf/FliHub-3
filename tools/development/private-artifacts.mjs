@@ -1,4 +1,12 @@
-import { linkSync, lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+	linkSync,
+	lstatSync,
+	mkdtempSync,
+	mkdirSync,
+	realpathSync,
+	rmSync,
+	writeFileSync
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 
 export function requireSafeTmp() {
@@ -20,5 +28,19 @@ export function publishPrivateArtifact(destination, contents) {
 		linkSync(staged, destination);
 	} finally {
 		rmSync(scratch, { recursive: true, force: true });
+	}
+}
+
+export function requirePrivateDirectory(path, { create = false } = {}) {
+	if (create) {
+		try {
+			mkdirSync(path, { mode: 0o700 });
+		} catch (error) {
+			if (error.code !== 'EEXIST') throw error;
+		}
+	}
+	const info = lstatSync(path);
+	if (!info.isDirectory() || info.uid !== process.getuid() || (info.mode & 0o777) !== 0o700) {
+		throw new Error('Artifact storage must be an operator-owned private directory.');
 	}
 }

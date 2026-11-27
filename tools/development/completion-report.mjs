@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
-import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readSync } from 'node:fs';
-import { publishPrivateArtifact, requireSafeTmp } from './private-artifacts.mjs';
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync } from 'node:fs';
+import {
+	publishPrivateArtifact,
+	requirePrivateDirectory,
+	requireSafeTmp
+} from './private-artifacts.mjs';
 
 const assignmentId = /^[a-f0-9]{20}$/u;
 const commit = /^[a-f0-9]{40}$/u;
@@ -15,9 +19,9 @@ const sections = {
 	'Security outcomes': 'securityOutcomes',
 	'Remaining work': 'remainingWork'
 };
-const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+export const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-function readArtifact(path) {
+export function readArtifact(path, limit = maxBytes) {
 	let fd;
 	try {
 		const entry = lstatSync(path, { bigint: true });
@@ -29,9 +33,9 @@ function readArtifact(path) {
 		if (entry.dev !== before.dev || entry.ino !== before.ino || entry.ctimeNs !== before.ctimeNs) {
 			throw new Error('Artifact changed before inspection.');
 		}
-		if (!before.size || before.size > maxBytes)
-			throw new Error('Artifact must contain 1–65536 bytes.');
-		const buffer = Buffer.alloc(maxBytes + 1);
+		if (!before.size || before.size > limit)
+			throw new Error(`Artifact must contain 1–${limit} bytes.`);
+		const buffer = Buffer.alloc(limit + 1);
 		let size = 0;
 		while (size < buffer.length) {
 			const count = readSync(fd, buffer, size, buffer.length - size, null);
@@ -60,7 +64,7 @@ function readArtifact(path) {
 	}
 }
 
-function textOf(bytes) {
+export function textOf(bytes) {
 	let text;
 	try {
 		text = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replaceAll('\r\n', '\n');
@@ -94,7 +98,10 @@ function readAssignment(id) {
 	) {
 		throw new Error('Exported assignment identity, version or format is invalid.');
 	}
-	return { id, formatVersion: 1, path, sha256: hash(bytes), startingCheckpoint: fields[0][1] };
+	return {
+		text,
+		reference: { id, formatVersion: 1, path, sha256: hash(bytes), startingCheckpoint: fields[0][1] }
+	};
 }
 
 function collectSections(lines, headings) {
@@ -129,19 +136,23 @@ const legacyHeadings = new Set([
 	'Blockers'
 ]);
 
-export function parseCompletionReport(bytes) {
-	if (!bytes.length || bytes.length > maxBytes)
-		throw new Error('Artifact must contain 1–65536 bytes.');
-	const text = textOf(bytes);
+export function rejectSensitiveText(text) {
 	if (
 		/-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:gh[pousr]_|github_pat_|sk-(?:proj-)?)\w{20,}|\bAKIA[A-Z0-9]{16}\b|\b(?:TYPESAFE|OPENAI|ANTHROPIC)_API_KEY\s*[:=]\s*['"]?[A-Za-z0-9_-]{12,}/iu.test(
 			text
 		)
 	) {
 		throw new Error(
-			'Report contains a credential signature. Remove sensitive content before importing.'
+			'Text contains a credential signature. Remove sensitive content before retaining it.'
 		);
 	}
+}
+
+export function parseCompletionReport(bytes) {
+	if (!bytes.length || bytes.length > maxBytes)
+		throw new Error('Artifact must contain 1–65536 bytes.');
+	const text = textOf(bytes);
+	rejectSensitiveText(text);
 	const lines = text.split('\n');
 	const outcomes = Object.fromEntries(Object.values(sections).map((key) => [key, null]));
 	let id;
@@ -211,9 +222,10 @@ export function parseCompletionReport(bytes) {
 	};
 }
 
-function prepareImport(id) {
+export function prepareImport(id) {
+	if (!assignmentId.test(id)) throw new Error('Enter a valid assignment ID, without a path.');
 	requireSafeTmp();
-	const reference = readAssignment(id);
+	const { reference, text: assignmentText } = readAssignment(id);
 	const sourcePath = `/tmp/flihub-development-assignment-${id}-report.txt`;
 	const bytes = readArtifact(sourcePath);
 	const report = parseCompletionReport(bytes);
@@ -226,20 +238,12 @@ function prepareImport(id) {
 			'Report identity, format version or starting checkpoint does not match the exported assignment.'
 		);
 	}
-	return { reference, sourcePath, bytes, report, sha256: hash(bytes) };
+	return { reference, assignmentText, sourcePath, bytes, report, sha256: hash(bytes) };
 }
 
 function saveImport(draft) {
 	const directory = `/tmp/flihub-completion-reports-${process.getuid()}`;
-	try {
-		mkdirSync(directory, { mode: 0o700 });
-	} catch (error) {
-		if (error.code !== 'EEXIST') throw error;
-	}
-	const info = lstatSync(directory);
-	if (!info.isDirectory() || info.uid !== process.getuid() || (info.mode & 0o777) !== 0o700) {
-		throw new Error('Completion report storage must be an operator-owned private directory.');
-	}
+	requirePrivateDirectory(directory, { create: true });
 	const path = `${directory}/${draft.reference.id}-${draft.sha256}.json`;
 	const record = {
 		recordVersion: 1,
