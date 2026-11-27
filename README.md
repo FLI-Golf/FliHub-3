@@ -42,6 +42,23 @@ npm run dev:all
 
 Local services: SvelteKit (`5173`), PocketBase (`8090`) and Mailpit (`8025`). Startup is manual and does not initiate AI requests or reset data.
 
+Run `npm run jev:develop` from the FliHub repository root and choose **8**
+for the offline Development Assignment Builder. Select a custom objective
+or the registered roadmap milestone 3, then enter repository-relative
+scope paths, exclusions, acceptance checks and verification. Commit and
+push each default to excluded. Inspect the draft and enter `copy` to
+present the reviewed text, `revise` to re-enter the inputs, or Enter to
+cancel. Copy the reviewed text into a separately authorized manual Codex
+session. The builder does not launch a worker, contact a provider or save
+an assignment file.
+
+The builder recognizes the configured FliHub GitHub origin and reports
+local tracking comparisons. Live remote state is unverified. Governing
+file discovery covers root and named scope ancestors without following
+symlinks or reading file contents. Dirty file contents and submodule
+worktree changes are outside the inspection. Full review and file export
+remain milestone 3. See the [intelligence roadmap](docs/INTELLIGENCE-ROADMAP.md#adm-1-and-adm-2-local-checkpoint).
+
 The development director also offers an offline isolated source exercise when the Linux Bubblewrap preflight passes. Use option 6 in `npm run jev:develop`. For its limits, authorization and review export, see the [intelligence architecture](docs/INTELLIGENCE-ARCHITECTURE.md#isolated-source-engineering-and-review).
 
 ## AI-directed development

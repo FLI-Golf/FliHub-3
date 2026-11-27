@@ -1,3 +1,4 @@
+import { runAssignmentBuilder } from './assignment-builder.mjs';
 import { runPilotConsole } from './pilot-console.mjs';
 import { engineeringFiles } from '../intelligence/orchestration/contracts.ts';
 import { engineeringWorker } from '../intelligence/engineering/worker.ts';
@@ -48,7 +49,7 @@ if (!process.stdin.isTTY) {
 		while (true) {
 			const action = (
 				await io.question(
-					'\n1 New objective  2 Inspect or control  3 History  4 Usage  5 Exit  6 Isolated engineering exercise  7 Offline FliHub pilot\n> '
+					'\n1 New objective  2 Inspect or control  3 History  4 Usage  5 Exit  6 Isolated engineering exercise  7 Offline FliHub pilot  8 Development Assignment Builder\n> '
 				)
 			).trim();
 			if (action === '5') break;
@@ -66,7 +67,19 @@ if (!process.stdin.isTTY) {
 				);
 				continue;
 			}
-			if (action === '7') {
+			if (action === '8') {
+				active = new AbortController();
+				try {
+					await runAssignmentBuilder({
+						question: (prompt) => io.question(prompt, { signal: active.signal }),
+						print: console.log,
+						repository: process.cwd(),
+						signal: active.signal
+					});
+				} finally {
+					active = undefined;
+				}
+			} else if (action === '7') {
 				active = new AbortController();
 				try {
 					await runPilotConsole({

@@ -45,7 +45,7 @@ AI-3 onward are backlog candidates, not commitments or prerequisites for charity
 
 ## Proposed assisted development milestones
 
-[Assisted Development Mode and the Development Assignment Builder](INTELLIGENCE-ARCHITECTURE.md#engineering-operating-modes) are deferred reusable engineering capabilities. They would support manual development through offline assignment preparation and evidence review. Automated Development Mode continues under the existing AI-1F qualification and native authorization boundaries.
+[Assisted Development Mode and the Development Assignment Builder](INTELLIGENCE-ARCHITECTURE.md#engineering-operating-modes) support manual development through offline assignment preparation and eventual evidence review. Automated Development Mode continues under the existing AI-1F qualification and native authorization boundaries.
 
 1. Assess assisted development architecture and existing reusable capabilities.
 2. Design the Development Assignment Builder and read-only context boundaries.
@@ -56,7 +56,38 @@ AI-3 onward are backlog candidates, not commitments or prerequisites for charity
 7. Continue authenticated runner qualification under AI-1F and the existing provisioning gates.
 8. Integrate engineering orchestration after applicable authorization, isolation, verification and publication gates pass.
 
-These are proposed milestones. Existing phase identifiers and acceptance requirements remain authoritative. Milestones 6 and 7 have independent gates. Assisted Development Mode does not close AI-1F or authorize Assignment 12B, authenticated dispatch, AI-2 or charity resumption. Current application development remains JAI-5F, then JAI-5G and JAI-5H.
+These are proposed milestones. Existing phase identifiers and acceptance requirements remain authoritative. Milestones 6 and 7 have independent gates. Assisted Development Mode does not close AI-1F or authorize Assignment 12B, authenticated dispatch, AI-2 or charity resumption. PR #55 merged the accepted JAI-5H checkpoint, and CI passed on main.
+
+### ADM-1 and ADM-2 local checkpoint
+
+ADM-1 reconciles milestone 1 with the existing engineering architecture.
+The offline console already supports fixed synthetic objectives, a sealed
+fixture exercise and a fixed tee-time proposal pilot. Its committed source
+binding, human approval and verification evidence apply to that bounded
+pilot. Manual assignments use a separate text contract and reuse the
+terminal interaction and bounded read-only Git patterns.
+
+ADM-2 implements milestone 2 through option 8 of `npm run jev:develop`.
+The builder inspects local FliHub repository metadata and names applicable
+instruction files for the selected paths. It records scope, exclusions,
+acceptance, verification, separate commit and push declarations and the
+required completion report. It supports custom objectives and the fixed
+milestone 3 entry from this roadmap. It does not parse arbitrary roadmaps
+or consult the network.
+
+The terminal previews a versioned draft, allows cancellation or revision,
+and rechecks observed context before presenting reviewed text for manual
+copy. Milestone 3 retains the full review and file export workflow.
+Local acceptance covers both objective paths through a real terminal,
+deterministic text, cancellation, drift detection, and the Git and execution
+boundaries. Nine focused tests passed. The existing offline regression suite
+passed 47 tests, with five opt-in sealed capsule cases skipped. TypeScript,
+lint, formatting, and the production build passed.
+
+The next assignment should implement milestone 3 under separate
+authorization. Completion report import and independent evidence review
+remain milestones 4 and 5. Authenticated runner qualification and AI-1F
+remain independently gated.
 
 ## Baseline and progress
 
