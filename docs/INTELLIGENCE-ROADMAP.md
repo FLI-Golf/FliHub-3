@@ -84,10 +84,33 @@ boundaries. Nine focused tests passed. The existing offline regression suite
 passed 47 tests, with five opt-in sealed capsule cases skipped. TypeScript,
 lint, formatting, and the production build passed.
 
-The next assignment should implement milestone 3 under separate
-authorization. Completion report import and independent evidence review
-remain milestones 4 and 5. Authenticated runner qualification and AI-1F
-remain independently gated.
+### ADM-3 local checkpoint
+
+Option 8 now supports editable review of the complete draft. Revising
+retains unchanged inputs and clears the approval step. Export requires
+an explicit SHA-256 confirmation for the current text and a separate
+export choice. The builder rechecks its observed repository context
+immediately before export. The artifact is byte-identical to the preview,
+private, and published at a fixed assignment-derived path in `/tmp`
+without overwriting an existing entry. Manual copy and cancellation remain
+available.
+
+Approval and export apply to assignment preparation. They grant no
+provider, worker, or Git execution authority. The export is intended for
+a separately authorized manual Codex session. Live remote state and dirty
+file contents remain outside the observed checkpoint.
+
+Local acceptance passed 15 focused tests, 47 existing offline
+regression tests with five opt-in sealed capsule cases skipped, and
+the standalone 11-test intelligence foundation suite. The terminal
+exercise covered both objective paths, revision, cancellation, exact
+approval, byte-identical exports, and manual copy. Svelte and TypeScript,
+formatting, lint, production build, and the managed environment checks
+passed.
+
+The next separately authorized milestone is bounded completion report
+ingestion (ADM-4). Independent evidence review remains ADM-5, and
+authenticated runner qualification and AI-1F remain independently gated.
 
 ## Baseline and progress
 

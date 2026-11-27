@@ -46,18 +46,29 @@ Run `npm run jev:develop` from the FliHub repository root and choose **8**
 for the offline Development Assignment Builder. Select a custom objective
 or the registered roadmap milestone 3, then enter repository-relative
 scope paths, exclusions, acceptance checks and verification. Commit and
-push each default to excluded. Inspect the draft and enter `copy` to
-present the reviewed text, `revise` to re-enter the inputs, or Enter to
-cancel. Copy the reviewed text into a separately authorized manual Codex
-session. The builder does not launch a worker, contact a provider or save
-an assignment file.
+push each default to excluded for a new draft. Inspect the complete draft,
+then choose one of the following.
+
+- Enter `revise` to edit the inputs. Enter at a field keeps its existing
+  value. Git declarations can be explicitly changed with `yes` or `no`.
+  Review the revised draft and approve it again before export.
+- Enter `copy` to display the assignment for manual copy.
+- To export, enter the displayed `approve <SHA-256>` command for the
+  exact draft, then enter `export`. After checking the repository again,
+  the builder writes a private `/tmp/flihub-development-assignment-<id>.txt`
+  and displays its path and the `code` command. The filename is derived
+  from the assignment. An existing file or symlink blocks export.
+- Press Enter at either review prompt to cancel.
+
+Use the reviewed text in a separately authorized manual Codex session.
+The builder never launches a worker or contacts a provider.
 
 The builder recognizes the configured FliHub GitHub origin and reports
 local tracking comparisons. Live remote state is unverified. Governing
 file discovery covers root and named scope ancestors without following
 symlinks or reading file contents. Dirty file contents and submodule
-worktree changes are outside the inspection. Full review and file export
-remain milestone 3. See the [intelligence roadmap](docs/INTELLIGENCE-ROADMAP.md#adm-1-and-adm-2-local-checkpoint).
+worktree changes are outside the inspection. See the
+[intelligence roadmap](docs/INTELLIGENCE-ROADMAP.md#adm-3-local-checkpoint).
 
 The development director also offers an offline isolated source exercise when the Linux Bubblewrap preflight passes. Use option 6 in `npm run jev:develop`. For its limits, authorization and review export, see the [intelligence architecture](docs/INTELLIGENCE-ARCHITECTURE.md#isolated-source-engineering-and-review).
 

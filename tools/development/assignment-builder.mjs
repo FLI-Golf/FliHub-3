@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstatSync, realpathSync } from 'node:fs';
+import { linkSync, lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const repositoryId = 'FLI-Golf/FliHub-3';
@@ -293,7 +293,64 @@ ${marker}
 	return { id, context, paths: plan.paths, text };
 }
 
+function exportAssignment(draft) {
+	const directory = lstatSync('/tmp');
+	if (
+		!directory.isDirectory() ||
+		realpathSync('/tmp') !== '/tmp' ||
+		(directory.mode & 0o022 && !(directory.mode & 0o1000))
+	) {
+		throw new Error('The assignment export directory is unavailable or unsafe.');
+	}
+	// The identifier comes from prepareAssignment. Operator input never supplies a path.
+	const destination = `/tmp/flihub-development-assignment-${draft.id}.txt`;
+	const scratch = mkdtempSync('/tmp/flihub-assignment-export-');
+	const staged = join(scratch, 'assignment.txt');
+	try {
+		writeFileSync(staged, draft.text, { flag: 'wx', mode: 0o600 });
+		// Publish only the complete file. An existing entry, including a dangling
+		// symlink, prevents the link and leaves the entry untouched.
+		linkSync(staged, destination);
+	} catch (error) {
+		if (error.code === 'EEXIST') {
+			throw new Error(`Export refused because the destination already exists: ${destination}`, {
+				cause: error
+			});
+		}
+		throw new Error('Could not safely export the assignment.', { cause: error });
+	} finally {
+		rmSync(scratch, { recursive: true, force: true });
+	}
+	return destination;
+}
+
+async function assignmentInputs(question, kind, previous) {
+	const field = async (prompt, saved) => {
+		if (saved === undefined) return question(`${prompt}: `);
+		const answer = await question(`${prompt}: [Enter keeps previous] `);
+		return answer.trim() ? answer : saved;
+	};
+	return {
+		kind,
+		objective:
+			kind === 'custom'
+				? await field('Custom development objective', previous?.objective)
+				: undefined,
+		paths: (await field('Scope paths (comma-separated)', previous?.paths.join(','))).split(','),
+		scope: await field('Implementation scope', previous?.scope),
+		exclusions: await field(
+			'Additional exclusions (enter none if applicable)',
+			previous?.exclusions
+		),
+		acceptance: await field('Acceptance requirements', previous?.acceptance),
+		verification: await field('Required verification', previous?.verification),
+		commit: await declaration(question, 'Is a local commit in scope', previous?.commit),
+		push: await declaration(question, 'Is a push in scope', previous?.push)
+	};
+}
+
 export async function runAssignmentBuilder({ question, print, repository, signal }) {
+	let previous;
 	while (!signal.aborted) {
 		try {
 			const context = discoverAssignmentContext(repository);
@@ -307,32 +364,45 @@ export async function runAssignmentBuilder({ question, print, repository, signal
 			).trim();
 			if (!selection || signal.aborted) return;
 			if (selection !== '1' && selection !== '2') throw new Error('Select 1 or 2.');
-			const draft = prepareAssignment(repository, {
-				kind: selection === '1' ? 'custom' : 'roadmap',
-				objective: selection === '1' ? await question('Custom development objective: ') : undefined,
-				paths: (await question('Scope paths (comma-separated): ')).split(','),
-				scope: await question('Implementation scope: '),
-				exclusions: await question('Additional exclusions (enter none if applicable): '),
-				acceptance: await question('Acceptance requirements: '),
-				verification: await question('Required verification: '),
-				commit: await declaration(question, 'Is a local commit in scope'),
-				push: await declaration(question, 'Is a push in scope')
-			});
+			previous = await assignmentInputs(
+				question,
+				selection === '1' ? 'custom' : 'roadmap',
+				previous
+			);
+			const draft = prepareAssignment(repository, previous);
 			if (signal.aborted) return;
 			print(draft.text);
-			const review = (
+			const approval = `approve ${digest(draft.text)}`;
+			print(`To approve the exact text above for export, enter: ${approval}`);
+			let action = (
 				await question(
-					'Enter copy to display the reviewed assignment, revise to start again, or Enter to cancel: '
+					'Enter copy to display the reviewed assignment, revise to edit inputs, the exact approval above, or Enter to cancel: '
 				)
 			).trim();
-			if (review === 'revise' && !signal.aborted) continue;
-			if (review !== 'copy' || signal.aborted) return;
+			if (signal.aborted) return;
+			const approved = action === approval;
+			if (approved) {
+				action = (
+					await question('Exact text approved. Enter export, copy, revise, or Enter to cancel: ')
+				).trim();
+			}
+			if (signal.aborted || !action) return;
+			if (action === 'revise') continue;
+			if (action !== 'copy' && !(approved && action === 'export')) {
+				print('Assignment action refused. Export requires approval of the current exact text.');
+				return;
+			}
 			const current = discoverAssignmentContext(repository, draft.paths);
 			if (JSON.stringify(current) !== JSON.stringify(draft.context)) {
 				print('Repository checkpoint changed. Prepare and review a fresh assignment.');
 				continue;
 			}
-			print(draft.text);
+			if (action === 'copy') {
+				print(draft.text);
+			} else {
+				const path = exportAssignment(draft);
+				print(`Exported assignment: ${path}\nOpen in VS Code: code ${path}`);
+			}
 			return;
 		} catch (error) {
 			if (signal.aborted) return;
@@ -342,9 +412,11 @@ export async function runAssignmentBuilder({ question, print, repository, signal
 	}
 }
 
-async function declaration(question, prompt) {
-	const answer = (await question(`${prompt}? [yes/no, default no]: `)).trim();
+async function declaration(question, prompt, previous = false) {
+	const answer = (
+		await question(`${prompt}? [yes/no, default ${previous ? 'yes' : 'no'}]: `)
+	).trim();
 	if (!['yes', 'no', ''].includes(answer))
 		throw new Error('Enter yes or no for Git authorization.');
-	return answer === 'yes';
+	return answer ? answer === 'yes' : previous;
 }

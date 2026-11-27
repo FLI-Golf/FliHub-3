@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import childProcess, { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { syncBuiltinESMExports } from 'node:module';
 import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
 	readdirSync,
+	readFileSync,
+	lstatSync,
+	rmSync,
 	symlinkSync,
 	writeFileSync
 } from 'node:fs';
@@ -204,7 +208,7 @@ test('rejects malformed fields, traversal and terminal controls', (t) => {
 	assert.equal(existsSync(join(root, 'unexpected-execution')), false);
 });
 
-test('console allows cancellation and revision and copies only reviewed text without export or dispatch', async (t) => {
+test('console allows cancellation and revision and copies reviewed text without creating an artifact', async (t) => {
 	const { root, git } = fixture(t);
 	const before = readdirSync(root);
 	const drive = async (answers) => {
@@ -252,8 +256,10 @@ test('console refuses stale review when the working status changes', async (t) =
 	assert.ok(output.some((line) => line.includes('checkpoint changed')));
 });
 
-test('reviewed preparation starts only fixed Git inspections and makes no provider requests', async (t) => {
+test('review and export start only fixed Git inspections and makes no provider requests', async (t) => {
 	const { root } = fixture(t);
+	const draft = prepareAssignment(root, inputs);
+	const path = exportDestination(t, draft);
 	const realSpawn = childProcess.spawnSync;
 	const observed = [];
 	t.mock.method(childProcess, 'spawnSync', (program, args, options) => {
@@ -266,7 +272,7 @@ test('reviewed preparation starts only fixed Git inspections and makes no provid
 	t.mock.method(globalThis, 'fetch', () => assert.fail('Unexpected provider request'));
 	syncBuiltinESMExports();
 	try {
-		const answers = [...replies, 'copy'];
+		const answers = [...replies, approvalFor(draft), 'export'];
 		const output = [];
 		await runAssignmentBuilder({
 			question: async () => answers.shift() ?? '',
@@ -277,12 +283,129 @@ test('reviewed preparation starts only fixed Git inspections and makes no provid
 		assert.equal(answers.length, 0);
 		assert.equal(
 			output.filter((line) => line.startsWith('# FliHub development assignment')).length,
-			2
+			1
 		);
+		assert.equal(readFileSync(path, 'utf8'), draft.text);
 		assert.ok(observed.length > 0);
 		assert.ok(observed.every((args) => !args.includes(inputs.objective)));
 	} finally {
 		t.mock.restoreAll();
 		syncBuiltinESMExports();
 	}
+});
+
+const approvalFor = ({ text }) => `approve ${createHash('sha256').update(text).digest('hex')}`;
+
+function exportDestination(t, draft) {
+	const path = `/tmp/flihub-development-assignment-${draft.id}.txt`;
+	assert.throws(() => lstatSync(path), { code: 'ENOENT' });
+	t.after(() => rmSync(path, { force: true }));
+	return path;
+}
+
+async function reviewSession(root, answers, beforeAnswer = () => {}) {
+	const output = [];
+	await runAssignmentBuilder({
+		question: async (prompt) => {
+			beforeAnswer(prompt);
+			return answers.shift() ?? '';
+		},
+		print: (line) => output.push(line),
+		repository: root,
+		signal: new AbortController().signal
+	});
+	return output;
+}
+
+test('exports the exact approved bytes as a private file and prints the editor command', async (t) => {
+	const { root, git } = fixture(t);
+	const draft = prepareAssignment(root, inputs);
+	const path = exportDestination(t, draft);
+	const approval = approvalFor(draft);
+	const output = await reviewSession(root, [...replies, approval, 'export']);
+	assert.ok(output.some((line) => line.endsWith(approval)));
+	assert.equal(
+		output.find((line) => line.startsWith('# FliHub development assignment')),
+		draft.text
+	);
+	assert.deepEqual(readFileSync(path), Buffer.from(draft.text));
+	assert.equal(lstatSync(path).mode & 0o777, 0o600);
+	assert.ok(
+		output.includes(`Exported assignment: ${path}
+Open in VS Code: code ${path}`)
+	);
+	assert.equal(git('status', '--porcelain'), '');
+});
+
+test('requires exact approval and refuses unsafe export commands', async (t) => {
+	const { root } = fixture(t);
+	const draft = prepareAssignment(root, inputs);
+	const path = exportDestination(t, draft);
+	for (const commands of [
+		['export'],
+		['approve', 'export'],
+		[approvalFor(draft) + '0', 'export'],
+		[approvalFor(draft), 'export /tmp/../unapproved-assignment.txt']
+	]) {
+		const output = await reviewSession(root, [...replies, ...commands]);
+		assert.ok(output.some((line) => line.includes('Assignment action refused')));
+		assert.throws(() => lstatSync(path), { code: 'ENOENT' });
+	}
+});
+
+test('cancel after approving creates no artifact', async (t) => {
+	const { root } = fixture(t);
+	const draft = prepareAssignment(root, inputs);
+	const path = exportDestination(t, draft);
+	await reviewSession(root, [...replies, approvalFor(draft), '']);
+	assert.throws(() => lstatSync(path), { code: 'ENOENT' });
+});
+
+test('revision retains unchanged inputs and requires approval of the revised text', async (t) => {
+	const { root } = fixture(t);
+	const original = prepareAssignment(root, inputs);
+	const objective = 'Revised custom assignment';
+	const revised = prepareAssignment(root, { ...inputs, objective });
+	const originalPath = exportDestination(t, original);
+	const revisedPath = exportDestination(t, revised);
+	const edits = ['1', objective, '', '', '', '', '', '', ''];
+	const start = [...replies, approvalFor(original), 'revise', ...edits];
+	const refusal = await reviewSession(root, [...start, approvalFor(original), 'export']);
+	assert.ok(refusal.some((line) => line.includes('Assignment action refused')));
+	assert.throws(() => lstatSync(revisedPath), { code: 'ENOENT' });
+	await reviewSession(root, [...start, approvalFor(revised), 'export']);
+	assert.equal(readFileSync(revisedPath, 'utf8'), revised.text);
+	assert.throws(() => lstatSync(originalPath), { code: 'ENOENT' });
+});
+
+test('revalidates repository context after approval and before export', async (t) => {
+	const { root } = fixture(t);
+	const draft = prepareAssignment(root, inputs);
+	const path = exportDestination(t, draft);
+	const output = await reviewSession(root, [...replies, approvalFor(draft), 'export'], (prompt) => {
+		if (prompt.startsWith('Exact text approved')) {
+			writeFileSync(join(root, 'unreviewed-change'), 'fixture');
+		}
+	});
+	assert.ok(output.some((line) => line.includes('checkpoint changed')));
+	assert.throws(() => lstatSync(path), { code: 'ENOENT' });
+});
+
+test('refuses to overwrite either an existing file or a symlink', async (t) => {
+	const { root } = fixture(t);
+	const draft = prepareAssignment(root, inputs);
+	const path = exportDestination(t, draft);
+	const commands = [...replies, approvalFor(draft), 'export'];
+	writeFileSync(path, 'existing export', { flag: 'wx' });
+	const collision = await reviewSession(root, [...commands]);
+	assert.ok(collision.some((line) => line.includes('destination already exists')));
+	assert.equal(readFileSync(path, 'utf8'), 'existing export');
+	rmSync(path);
+
+	const target = join(root, 'absent-symlink-target');
+	symlinkSync(target, path);
+	const symlink = await reviewSession(root, [...commands]);
+	assert.ok(symlink.some((line) => line.includes('destination already exists')));
+	assert.ok(lstatSync(path).isSymbolicLink());
+	assert.equal(existsSync(target), false);
 });
