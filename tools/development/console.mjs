@@ -1,3 +1,4 @@
+import { runCompletionReportImport } from './completion-report.mjs';
 import { runAssignmentBuilder } from './assignment-builder.mjs';
 import { runPilotConsole } from './pilot-console.mjs';
 import { engineeringFiles } from '../intelligence/orchestration/contracts.ts';
@@ -49,7 +50,7 @@ if (!process.stdin.isTTY) {
 		while (true) {
 			const action = (
 				await io.question(
-					'\n1 New objective  2 Inspect or control  3 History  4 Usage  5 Exit  6 Isolated engineering exercise  7 Offline FliHub pilot  8 Development Assignment Builder\n> '
+					'\n1 New objective  2 Inspect or control  3 History  4 Usage  5 Exit  6 Isolated engineering exercise  7 Offline FliHub pilot  8 Development Assignment Builder  9 Import completion report\n> '
 				)
 			).trim();
 			if (action === '5') break;
@@ -67,10 +68,11 @@ if (!process.stdin.isTTY) {
 				);
 				continue;
 			}
-			if (action === '8') {
+			if (action === '8' || action === '9') {
 				active = new AbortController();
 				try {
-					await runAssignmentBuilder({
+					const runConsole = action === '8' ? runAssignmentBuilder : runCompletionReportImport;
+					await runConsole({
 						question: (prompt) => io.question(prompt, { signal: active.signal }),
 						print: console.log,
 						repository: process.cwd(),

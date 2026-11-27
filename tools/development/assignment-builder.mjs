@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { linkSync, lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { lstatSync, realpathSync } from 'node:fs';
+import { publishPrivateArtifact, requireSafeTmp } from './private-artifacts.mjs';
 import { dirname, join } from 'node:path';
 
 const repositoryId = 'FLI-Golf/FliHub-3';
@@ -284,6 +285,7 @@ Also run applicable repository-required checks and record exact commands, result
 
 ## Mandatory completion report
 Always save a complete report to ${report}, including when blocked. Include assignment ID and version, starting and ending checkpoints, changed files, completed and incomplete work, authorization and security outcomes, verification evidence, blockers and recommended next steps.
+Use the FliHub completion report format 1 documented in README.md for offline ingestion.
 After saving, automatically attempt to open it with:
 code ${report}
 If the editor launcher is unavailable, report the exact path and the same command for manual execution.
@@ -294,23 +296,10 @@ ${marker}
 }
 
 function exportAssignment(draft) {
-	const directory = lstatSync('/tmp');
-	if (
-		!directory.isDirectory() ||
-		realpathSync('/tmp') !== '/tmp' ||
-		(directory.mode & 0o022 && !(directory.mode & 0o1000))
-	) {
-		throw new Error('The assignment export directory is unavailable or unsafe.');
-	}
-	// The identifier comes from prepareAssignment. Operator input never supplies a path.
+	requireSafeTmp();
 	const destination = `/tmp/flihub-development-assignment-${draft.id}.txt`;
-	const scratch = mkdtempSync('/tmp/flihub-assignment-export-');
-	const staged = join(scratch, 'assignment.txt');
 	try {
-		writeFileSync(staged, draft.text, { flag: 'wx', mode: 0o600 });
-		// Publish only the complete file. An existing entry, including a dangling
-		// symlink, prevents the link and leaves the entry untouched.
-		linkSync(staged, destination);
+		publishPrivateArtifact(destination, draft.text);
 	} catch (error) {
 		if (error.code === 'EEXIST') {
 			throw new Error(`Export refused because the destination already exists: ${destination}`, {
@@ -318,8 +307,6 @@ function exportAssignment(draft) {
 			});
 		}
 		throw new Error('Could not safely export the assignment.', { cause: error });
-	} finally {
-		rmSync(scratch, { recursive: true, force: true });
 	}
 	return destination;
 }

@@ -70,6 +70,44 @@ symlinks or reading file contents. Dirty file contents and submodule
 worktree changes are outside the inspection. See the
 [intelligence roadmap](docs/INTELLIGENCE-ROADMAP.md#adm-3-local-checkpoint).
 
+### Import an offline completion report
+
+Save the report at the exact path specified by the assignment,
+`/tmp/flihub-development-assignment-<id>-report.txt`. Keep its matching
+assignment export in `/tmp`. Open `npm run jev:develop`, choose **9**, and
+enter the assignment ID. Review the reported outcomes and missing fields,
+then enter `import` to confirm or press Enter to cancel.
+
+Use UTF-8 source text and the following header. Substitute the assignment
+identifier and full Git commits. Use `unknown` for an unavailable ending
+checkpoint. Keep the blank line after the header.
+
+```text
+# FliHub completion report
+Report format version: 1
+Assignment ID: <20 lowercase hex characters>
+Assignment format version: 1
+Starting checkpoint: <40 lowercase hex characters>
+Ending checkpoint: unknown
+
+## Completed work
+Describe the work completed.
+```
+
+The supported sections are Changed files, Completed work, Incomplete work,
+Verification, Blockers, Git status, Security outcomes, and Remaining work.
+Use at least one `##` section. Omitted and empty sections display as missing.
+The earlier ADM-3 report layout is also supported when its matching export
+is available.
+
+Each input is limited to 64 KiB and must be an operator-owned regular file
+with one link. Exclude credentials and private payloads before confirming.
+Records retain original report bytes, SHA-256 digests, source path,
+timestamp, assignment reference, and unverified outcomes. They are private
+JSON files under `/tmp/flihub-completion-reports-<uid>/`. The same assignment
+and report digest cannot be imported twice. Different report bytes create
+separate records. Temporary storage may be cleared by the system.
+
 The development director also offers an offline isolated source exercise when the Linux Bubblewrap preflight passes. Use option 6 in `npm run jev:develop`. For its limits, authorization and review export, see the [intelligence architecture](docs/INTELLIGENCE-ARCHITECTURE.md#isolated-source-engineering-and-review).
 
 ## AI-directed development

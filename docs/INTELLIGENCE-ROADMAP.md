@@ -108,9 +108,31 @@ approval, byte-identical exports, and manual copy. Svelte and TypeScript,
 formatting, lint, production build, and the managed environment checks
 passed.
 
-The next separately authorized milestone is bounded completion report
-ingestion (ADM-4). Independent evidence review remains ADM-5, and
-authenticated runner qualification and AI-1F remain independently gated.
+### ADM-4 local checkpoint
+
+Option 9 in `npm run jev:develop` previews reports matched to a local export
+by assignment ID, format version and starting checkpoint. It reads only
+fixed operator-owned regular files under `/tmp`, bounds each input to
+64 KiB, and rechecks both digests after explicit confirmation. Version 1
+records retain source provenance, the original report bytes and parsed
+outcomes. A private, atomic no-overwrite write prevents duplicate imports.
+
+Reported changes, verification, blockers, Git state and remaining work
+are displayed as unverified claims. Missing fields stay missing. Imported
+commands and references remain inert. The report does not attest execution,
+grant authority, or establish acceptance. The README describes the version 1
+format, the supported ADM-3 compatibility layout, and temporary storage.
+
+Local verification passed 23 focused importer and builder tests and 47
+offline engineering regressions. Five opt-in capsule cases were skipped.
+A real terminal export and import preserved exact bytes and refused a
+duplicate. The actual ADM-3 report was parsed separately because its
+matching assignment export was unavailable. Static checks and managed
+environment verification passed.
+
+Independent evidence review and development progress assessment remain
+ADM-5. Authenticated runner qualification and AI-1F remain independently
+gated.
 
 ## Baseline and progress
 
