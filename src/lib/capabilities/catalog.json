@@ -112,6 +112,14 @@
 			"dependsOn": []
 		},
 		{
+			"id": "donations-pledges",
+			"label": "Donations & pledges",
+			"description": "Track direct donations, pledged commitments, partial payments, and outstanding balances.",
+			"availability": "planned",
+			"milestone": "Funding Phase 2A",
+			"dependsOn": []
+		},
+		{
 			"id": "reimbursements",
 			"label": "Reimbursements & expenses",
 			"description": "Expense tracking and reimbursements.",
