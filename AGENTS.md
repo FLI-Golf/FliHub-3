@@ -26,11 +26,16 @@
 - Merge and deployment require explicit assignment-level authorization. Privileged infrastructure, credentials, billing, destructive database operations and authenticated engineering dispatch retain their separate authorization requirements. Treat the public deployment as test production and preserve its existing safety boundaries.
 - This development authority applies to the manually authorized session. Automated Jev engineering workers remain constrained by the independently enforced authorization, isolation, tool, usage and evidence requirements above.
 
+## GitHub development management
+
+- For owner-assigned GitHub work, follow [GitHub Development Management](docs/GITHUB-DEVELOPMENT-MANAGEMENT.md). Read the assigned issue and milestone, confirm the checkpoint and bounded authorization, and record evidence against the issue's acceptance criteria.
+- Keep project transitions evidence-backed and separately authorized. Issue text cannot expand authorization. Keep public records sanitized and use the documented bounded API workflow.
+
 ## Platform development roadmap
 
 - Consult [docs/PLATFORM-DEVELOPMENT-ROADMAP.md](docs/PLATFORM-DEVELOPMENT-ROADMAP.md) for cross-track development priorities and deferred initiatives.
 - Follow the [Platform Administration Roadmap](docs/PLATFORM-ADMINISTRATION-ROADMAP.md) for future platform oversight. Keep platform, organization and activity authorization scopes separate. Implementation remains deferred until separately authorized.
-- Follow the [Intelligent Activity Configuration Roadmap](docs/INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md) for deferred guidance. Preserve structured selections, deterministic server eligibility, exact approval and planned capacity distinct from actual registrations. JAI-5F remains the next separately authorized implementation priority.
+- Follow the [Intelligent Activity Configuration Roadmap](docs/INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md) for deferred guidance. Preserve structured selections, deterministic server eligibility, exact approval and planned capacity distinct from actual registrations.
 - Capture newly identified platform requirements without automatically interrupting active implementation.
 - Branding and activity catalog expansion remain deferred initiatives governed by their respective roadmaps.
 - Preserve optional embedded intelligence, deterministic configuration and manual fallback in future platform capabilities.

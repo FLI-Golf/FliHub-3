@@ -1,6 +1,6 @@
 # FliHub — Intelligent Activity Configuration Roadmap
 
-Status: Approved architectural direction. Proposed implementation phases require separate authorization. JAI-5F remains the next development priority.
+Status: Approved architectural direction. Proposed implementation phases require separate authorization. The [Platform Development Roadmap](PLATFORM-DEVELOPMENT-ROADMAP.md) records cross-track priorities.
 
 ## Product direction
 

@@ -2,7 +2,7 @@
 
 Date: November 26, 2026.
 
-Status: Owner-directed development planning.
+Status: Owner-directed development planning. Priority references reconciled November 28, 2026.
 
 ## Purpose
 
@@ -12,6 +12,8 @@ future capabilities, dependencies and architectural priorities.
 This roadmap coordinates existing development roadmaps.
 It does not replace their requirements or authorize
 implementation, activation, spending, merge or deployment.
+
+For issue-driven assignments and lifecycle records, follow [GitHub Development Management](GITHUB-DEVELOPMENT-MANAGEMENT.md).
 
 ## Platform vision
 
@@ -44,7 +46,7 @@ See [Embedded Intelligence Workflow Architecture](INTELLIGENCE-WORKFLOW-ARCHITEC
 
 | Track                              | Current direction                                       |
 | ---------------------------------- | ------------------------------------------------------- |
-| Application intelligence           | Continue JAI-5F through JAI-5H                          |
+| Application intelligence           | JAI-5H baseline merged via PR #55                       |
 | Engineering intelligence           | Preserve outstanding AI-1F qualification gates          |
 | Intelligent Activity Configuration | Architecture documented. Implementation deferred.       |
 | Platform Administration            | Architecture documented. Implementation deferred.       |
@@ -64,18 +66,14 @@ implementation and acceptance status.
 
 ## Current development priority
 
-Continue application intelligence on
-`feature/application-intelligence`.
+PR #55 merged the accepted JAI-5H protected workspace baseline on November 27.
+The [Intelligence Roadmap](INTELLIGENCE-ROADMAP.md) records main CI for that merge.
+The protected workspace remains offline, synthetic-only, and development-restricted.
 
-JAI-5D exact operation review and JAI-5E protected synthetic execution completed local acceptance. The next implementation priority is **JAI-5F — Results, history, audit and visual polish**, followed by:
-
-- JAI-5G: Integrated browser and security acceptance.
-- JAI-5H: Protected workspace closeout.
-
-Preserve this sequence while documenting deferred platform initiatives.
-
-The current protected workspace remains offline,
-synthetic-only and development-restricted.
+GitHub Development Management is pending owner acceptance. ADM-6C is accepted
+at its feature checkpoint. ADM-6D is the next intelligence architecture
+preparation objective after development management closeout and separate
+authorization.
 
 ## Platform branding initiative
 
@@ -135,22 +133,15 @@ Plan activity-specific templates, structured guided requirements, deterministic
 capability eligibility and an adaptive event wizard. Initial architecture
 focuses on the established FLI disc golf format and charity run/walk under
 existing gates. Ticketing, activity catalog expansion and Intelligent
-Organization Configuration remain separate future work. This deferred
-initiative preserves the JAI-5F priority. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
+Organization Configuration remain separate future work. This initiative remains deferred. See [Intelligent Activity Configuration](INTELLIGENT-ACTIVITY-CONFIGURATION-ROADMAP.md).
 
 ## Assisted Development initiative
 
-The proposed Assisted Development Mode supports human-directed engineering
-with an offline Development Assignment Builder, reviewed export and evidence
-review. Automated engineering remains governed by the existing AI-1F
-qualification. Both the assisted implementation and any authenticated
-dispatch require separate authorization.
-
-Preserve JAI-5F through JAI-5H as the current implementation sequence and
-retain all existing deferred platform initiatives. This proposal establishes
-no new relative implementation priority.
+Assisted Development Mode has an accepted ADM-6C checkpoint for exact outbound
+disclosure review. Further advisory qualification and authenticated dispatch
+retain their separate gates. Automated engineering remains governed by AI-1F.
 See [Engineering operating modes](INTELLIGENCE-ARCHITECTURE.md#engineering-operating-modes)
-and [proposed assisted development milestones](INTELLIGENCE-ROADMAP.md#proposed-assisted-development-milestones).
+and [Assisted Development milestones](INTELLIGENCE-ROADMAP.md#proposed-assisted-development-milestones).
 
 ## Shared platform dependencies
 
