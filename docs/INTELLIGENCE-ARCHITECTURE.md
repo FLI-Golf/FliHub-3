@@ -287,6 +287,67 @@ qualification. Raw source, arbitrary prose, credentials, raw command output,
 financial and participant records, and private artifacts are excluded. Public
 classification does not grant permission for external disclosure.
 
+#### Offline dispatch authorization and redemption
+
+ADM-6E.2 exercises a local dispatch-authorization lifecycle. An operator first
+confirms the exact real-context disclosure, then separately authorizes the
+displayed dispatch binding. The simulated request is a distinct canonical UTF-8
+artifact with its own digest, fixture provider, in-process destination, protocol
+and configuration identity. It has no external transport. The ADM-6E.1 review
+envelope is neither this fixture request nor a qualified Jev wire request.
+Any future content transformation, destination or protocol requires its own
+exact review and separate authorization.
+
+The closed authorization binds a registered repository and objective, numeric
+GitHub operator identity, random review and grant IDs, context/disclosure/request
+digests, evidence pins digest, transport and limits, purpose, issuance and
+expiry. Exact equality to the locally issued canonical record rejects unknown
+or altered fields. Grant lifetime is at most 30 seconds and cannot outlast the
+60-second context window. A redemption attempt locks the grant before asynchronous
+revalidation. Success consumes it. Expired, invalidated and cancelled attempts
+remain terminal, including replay following failure. State is process-local.
+This supplies no restart-safe or distributed redemption guarantees. The receipt
+reports unavailable reservation admission, zero external requests and no
+provider or engineering authority.
+
+The qualified collector pins the owner-approved GitHub numeric account ID from
+the established authenticated operator account and checks the accepted comment
+author against it. It verifies the authenticated operator before and after each
+collection. It uses metadata-checked absolute Git/gh image executables, a
+reduced environment and explicit github.com, metadata-checked operator-owned
+CLI configuration locations, and an isolated temporary Git directory that
+excludes checkout config and replacement refs. Local objects must already be
+available. Local ancestry/divergence is corroborated by GitHub comparisons
+at exact SHAs, and roadmap bytes by their GitHub-pinned blob identity.
+An opening and closing query brackets the sequential evidence reads. This
+detects observed changes and does not create an atomic GitHub snapshot.
+The host image, same-user GitHub configuration, TLS trust and local process
+integrity remain environmental trust assumptions. Credential files are not
+read by the TypeScript workflow. The authenticated gh process uses its own
+stored session. The development checkout and trusted image must be operator
+controlled.
+
+From the original checkout on the supported Codespaces image, run in an
+interactive Bash terminal with the approved stored GitHub CLI session.
+
+```sh
+node tools/development/dispatch-authorization-preview.mjs qualification-prerequisite --include-engineering-qualification
+node tools/development/dispatch-authorization-preview.mjs funding-draft-reconciliation
+```
+
+Review both exact JSON lines and digests. Enter `APPROVE <disclosure-digest>`
+then the separately displayed `AUTHORIZE SIMULATION <binding-digest>` challenge.
+The redemption receipt shows zero external requests. Enter cancellation and
+wrong approval leave manual review available. Independent verification should
+hash the exact UTF-8 lines without a trailing newline, reproduce focused and
+restricted fixtures, and inspect the dependency boundary. This preview performs
+bounded authenticated GitHub reads. It never contacts an intelligence provider.
+
+ADM-6E.3 retains durable reservation and accounting responsibility. Offline
+integration and independent safety review follow, with any real transport
+activation separately authorized. Automated engineering and production
+activation remain separate gates.
+
 ### Completion report ingestion and evidence review
 
 Bind reports to an assignment identity and version, starting and ending commits, and changed-file inventory. Capture implementation summary, verification results, outstanding requirements, blockers and deviations, security checks, Git synchronization evidence and human acceptance status. Track progress and checkpoint history against the assignment and retain provenance for each evidence item.

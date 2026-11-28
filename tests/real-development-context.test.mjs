@@ -77,6 +77,8 @@ function fixture(options = {}) {
 			return JSON.stringify({
 				issue_url:
 					options.acceptanceIssue ?? 'https://api.github.com/repos/FLI-Golf/FliHub-3/issues/94',
+				author_id: options.author ?? 20407445,
+				author_type: 'User',
 				verified: options.accepted ?? true
 			});
 		if (target.includes('runs?head_sha')) {

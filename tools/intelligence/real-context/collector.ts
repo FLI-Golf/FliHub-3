@@ -44,9 +44,11 @@ function qualificationQuery(includeQualification: boolean) {
 	return `{repository(owner:"FLI-Golf",name:"FliHub-3"){${identityQuery} main:ref(qualifiedName:"${main}"){target{oid}} feature:ref(qualifiedName:"${branch}"){target{oid}} ${optional}}}`;
 }
 const fundingQuery = `{repository(owner:"FLI-Golf",name:"FliHub-3"){${identityQuery} main:ref(qualifiedName:"${main}"){target{oid}} feature:ref(qualifiedName:"${funding}"){target{oid}} pr:pullRequest(number:52){number state isDraft baseRefName baseRefOid headRefName headRefOid headRepository{nameWithOwner}}}}`;
+export const ownerAccountId = 20407445;
+
 const ownerAcceptance = api(
 	'issues/comments/7241436818',
-	'{issue_url,verified:(.body | contains("The owner explicitly accepted the bounded offline simulation scope at [07cc7f6f6bdc08bda6ec5a0d7691cf3cbad19f35]"))}'
+	'{issue_url,author_id:.user.id,author_type:.user.type,verified:(.body | contains("The owner explicitly accepted the bounded offline simulation scope at [07cc7f6f6bdc08bda6ec5a0d7691cf3cbad19f35]"))}'
 );
 const acceptedCI = api(
 	`actions/runs?head_sha=${acceptedSha}&per_page=1`,
@@ -153,6 +155,8 @@ export function createCollector(read: Read = execute, now: () => number = Date.n
 				const owner = jsonRecord(await output(ownerAcceptance));
 				requireFact(
 					owner.verified === true &&
+						owner.author_id === ownerAccountId &&
+						owner.author_type === 'User' &&
 						owner.issue_url === 'https://api.github.com/repos/FLI-Golf/FliHub-3/issues/94'
 				);
 				facts.push(

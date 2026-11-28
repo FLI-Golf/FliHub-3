@@ -83,8 +83,7 @@ ADM-6F and AI-1F retain their independent gates.
 **ADM-6E staging.** The owner accepted ADM-6E.0 discovery. The independent Bash
 marker establishes completion of asserted checks. The displayed remote refs and
 PR description did not receive separate ChatGPT review. ADM-6E.1 implements
-the offline real development context and exact review candidate. It awaits
-independent verification and owner acceptance. Discovering draft PR #52 does
+the offline real development context and exact review candidate. The owner accepted the exact ADM-6E.1 offline checkpoint on November 28, 2026. Independent Bash commands completed, with individual summaries unavailable. The digest capture reached its assertions but failed on a missing cancellation acknowledgement. Manual Enter cancellation succeeded separately. Discovering draft PR #52 does
 not authorize reconciliation of its code or funding implementation.
 
 - ADM-6E.2: Separately authorized live dispatch authorization and mandatory dispatch-time freshness recheck.
@@ -95,6 +94,14 @@ not authorize reconciliation of its code or funding implementation.
 ADM-6E.1 preserves the offline fallback and accepted ADM-6D contracts. Automated
 engineering and production activation retain their separate gates.
 [Assignment #95](https://github.com/FLI-Golf/FliHub-3/issues/95)
+
+**ADM-6E.2 implementation candidate.** Exact fixture request binding, stable
+operator and acceptance author checks, pinned GitHub corroboration, fresh
+evidence checks and process-local single-use redemption are implemented.
+Independent verification and human acceptance remain pending. Redemption
+proves only offline authorization behavior. Durable reservation admission,
+actual provider wire qualification and separately authorized activation remain
+gated. [Assignment #95](https://github.com/FLI-Golf/FliHub-3/issues/95)
 
 **Measurable qualification criteria:** (1) the approved payload digest equals the exact serialized bytes dispatched, and mutation, replay, expiry or cancellation results in zero requests; (2) zero dispatches occur without a distinct, unexpired operator dispatch authorization matching provider, objective and configured request/cost ceilings; (3) tests show request count, concurrency and timeout never exceed configured values, reservations precede calls, unknown usage retains the full reservation, and budget exhaustion closes dispatch; (4) malformed, oversized, unsupported, errored or ambiguous responses are rejected, do not trigger retries, and do not change workflow state or acceptance; (5) provenance records the decision, digest, approvals, provider identity when available, request ID, bounded outcome, timestamps, validated usage and failure class while excluding raw payloads, credentials, source, commands and private evidence; (6) disablement, abstention, provider failure and timeout all leave the manual offline path usable; and (7) independent tests and review reproduce each gate from a clean disposable environment. No acceptance claim is made for an unmeasured control.
 

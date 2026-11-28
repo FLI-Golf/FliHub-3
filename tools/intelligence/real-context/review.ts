@@ -14,9 +14,9 @@ import {
 
 export const contextLifetimeMs = 60_000;
 const purpose = 'bounded-real-development-advisory-review';
-type Collect = (objective: Objective, includeQualification: boolean) => Promise<Context>;
+export type Collect = (objective: Objective, includeQualification: boolean) => Promise<Context>;
 
-function comparable(context: Context): string {
+export function contextIdentity(context: Context): string {
 	return canonicalSha256({
 		...context,
 		facts: context.facts.map(({ observedAt, ...fact }) => {
@@ -26,7 +26,7 @@ function comparable(context: Context): string {
 	});
 }
 
-function checkedClock(now: () => number) {
+export function checkedClock(now: () => number) {
 	const stamp = now();
 	requireFact(
 		Number.isSafeInteger(stamp) && stamp >= Date.UTC(2000, 0, 1) && stamp < Date.UTC(2100, 0, 1)
@@ -71,7 +71,7 @@ export async function prepareRealContextReview(
 	const bytes = Buffer.byteLength(canonicalPayload, 'utf8');
 	requireFact(bytes <= contextLimits.requestBytes);
 	const reviewDigest = canonicalSha256(envelope);
-	const identity = comparable(initial.context);
+	const identity = contextIdentity(initial.context);
 	const expiresAt = initial.oldest + contextLifetimeMs;
 	let available = true;
 	let cancelled = false;
@@ -96,7 +96,7 @@ export async function prepareRealContextReview(
 				requireFact(time >= initial.finish && time < expiresAt);
 				const refreshed = await freshContext();
 				requireFact(refreshed.start >= time && refreshed.finish < expiresAt);
-				return !cancelled && comparable(refreshed.context) === identity;
+				return !cancelled && contextIdentity(refreshed.context) === identity;
 			} catch {
 				return false;
 			}
