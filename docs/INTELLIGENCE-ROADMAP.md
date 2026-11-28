@@ -98,10 +98,14 @@ engineering and production activation retain their separate gates.
 **ADM-6E.2 implementation candidate.** Exact fixture request binding, stable
 operator and acceptance author checks, pinned GitHub corroboration, fresh
 evidence checks and process-local single-use redemption are implemented.
-Independent verification and human acceptance remain pending. Redemption
-proves only offline authorization behavior. Durable reservation admission,
-actual provider wire qualification and separately authorized activation remain
-gated. [Assignment #95](https://github.com/FLI-Golf/FliHub-3/issues/95)
+The owner accepted the exact offline checkpoint at `0636d51101947e77fb55bbf4521bdeb2cba1469c`. Independent regression execution was operator-confirmed and individual output was not fully inspected. The accepted scope remains process-local and fixture-only. [Assignment #95](https://github.com/FLI-Golf/FliHub-3/issues/95)
+
+**ADM-6E.3 implementation candidate.** A bounded private SQLite ledger
+serializes offline reservation, synthetic claims and settlement across local
+processes. Unknown and over-reservation outcomes retain liability. Independent
+verification and human acceptance remain pending. Integrated safety review,
+real wire, billing and egress qualification, and any provider activation remain
+separately gated.
 
 **Measurable qualification criteria:** (1) the approved payload digest equals the exact serialized bytes dispatched, and mutation, replay, expiry or cancellation results in zero requests; (2) zero dispatches occur without a distinct, unexpired operator dispatch authorization matching provider, objective and configured request/cost ceilings; (3) tests show request count, concurrency and timeout never exceed configured values, reservations precede calls, unknown usage retains the full reservation, and budget exhaustion closes dispatch; (4) malformed, oversized, unsupported, errored or ambiguous responses are rejected, do not trigger retries, and do not change workflow state or acceptance; (5) provenance records the decision, digest, approvals, provider identity when available, request ID, bounded outcome, timestamps, validated usage and failure class while excluding raw payloads, credentials, source, commands and private evidence; (6) disablement, abstention, provider failure and timeout all leave the manual offline path usable; and (7) independent tests and review reproduce each gate from a clean disposable environment. No acceptance claim is made for an unmeasured control.
 

@@ -30,7 +30,7 @@ jobs:
         run: npm run lint
 
       - name: Offline intelligence tests
-        run: node tests/intelligence.test.mjs && node tests/development-guardrail.test.mjs && node tests/orchestration.test.mjs && node tests/unified-development.test.mjs && node tests/engineering-worker.test.mjs && node tests/development-advisory.test.mjs && node tests/development-advisory-disclosure.test.mjs && node tests/development-advisory-simulation.test.mjs && node tests/real-development-context.test.mjs && node tests/development-dispatch-authorization.test.mjs
+        run: node tests/intelligence.test.mjs && node tests/development-guardrail.test.mjs && node tests/orchestration.test.mjs && node tests/unified-development.test.mjs && node tests/engineering-worker.test.mjs && node tests/development-advisory.test.mjs && node tests/development-advisory-disclosure.test.mjs && node tests/development-advisory-simulation.test.mjs && node tests/real-development-context.test.mjs && node tests/development-dispatch-authorization.test.mjs && node tests/development-reservation-accounting.test.mjs
 
       - name: Production build
         run: npm run build

@@ -348,6 +348,74 @@ integration and independent safety review follow, with any real transport
 activation separately authorized. Automated engineering and production
 activation remain separate gates.
 
+#### Durable offline reservation accounting
+
+ADM-6E.3 extends the simulated authorization with a distinct accounting
+challenge that binds exact disclosure and fixture request bytes to the fixed
+worst case of 10 synthetic usage units and 20 synthetic credits. The existing
+ADM-6E.2 preview remains available. Successful fresh accounting redemption
+produces an opaque process-local handle. The ledger acquires a SQLite
+`BEGIN IMMEDIATE` lock before consuming the handle and checking budgets.
+The committed row uniquely binds reservation, review and grant IDs, request
+digest, and a digest of the complete authorization and reservation. The handle
+is discarded even after failure. A durable row never acts as a reusable grant.
+
+Use the Node SQLite primitive already used for local intelligence records, in a
+separate synthetic ledger. The private directory and files use 0700/0600,
+canonical paths, inode and identity checks, an exclusive initialization marker,
+and no symlinks or hardlinked database files. Explicit initialization avoids
+recreating a missing ledger on routine open. Strict schema, application ID,
+version, persisted policy, physical size and record limits are checked. SQLite
+uses a local rollback journal, full synchronization and single-writer
+transactions, with bounded waits. This is a single local filesystem design
+across processes, with trusted OS/operator ownership. It does not prevent
+deliberate same-user tampering, restoring a full older copy or a faulty volume
+rollback. Process-death recovery evidence does not establish power-loss behavior.
+
+Reservations move from reserved to claimed, or to released with atomic proof
+that no claim was recorded. Claims are process-local handles. They can settle
+validated synthetic usage once, or retain liability as uncertain. After restart,
+a claimed row is treated as unresolved and can only be explicitly marked
+uncertain in this phase. Invalid settlement retains its reservation. Reported
+overage retains the greater amount on each axis and closes admission. Duplicate
+or conflicting completion attempts cannot change a terminal record. Expiry
+never automatically releases a reservation. An unclaimed reservation may be
+released only through the explicit reconciliation transaction with both IDs. No
+post-claim release, retry or external billing reconciliation is supported here.
+
+The demo policy is eight cumulative requests, two outstanding reservations,
+40 synthetic usage units and 80 synthetic credits. Settled values plus reserved
+and uncertain/claimed liabilities reduce available units and credits. Release
+frees those two balances and does not restore the ordinal request count. The
+ledger accepts bounded integers only, with no rounding, conversion or actual
+provider price. The fixture settlement uses 4 units and 7 credits. The ledger
+caps recorded requests at 128 and the database at 1 MiB.
+
+```sh
+node tools/development/reservation-accounting-preview.mjs init
+node tools/development/reservation-accounting-preview.mjs run qualification-prerequisite
+node tools/development/reservation-accounting-preview.mjs run funding-draft-reconciliation
+node tools/development/reservation-accounting-preview.mjs inspect
+node tools/development/reservation-accounting-preview.mjs reconcile release-unclaimed <reservation-id> <authorization-id>
+```
+
+The terminal demo uses one dedicated ledger under the operator home directory.
+It performs bounded authenticated GitHub reads for real-context evidence. Enter
+the exact disclosure approval and then the displayed separate accounting
+challenge. After reservation, CLAIM and SETTLE exercise the fixture. HOLD leaves
+a reserved row available for inspection by another process, and Enter releases
+an unclaimed row. After claim, Enter instead records uncertainty. Interrupted
+sessions leave durable state for inspection. Use the explicit
+`record-uncertain` reconciliation mode for a retained claim. Every receipt reports
+zero external provider requests, $0.00 actual cost and false provider and
+engineering authorization.
+
+ADM-6E.4 must independently test the integrated boundaries, recovery and manual
+fallback. ADM-6E.5 retains separate authorization, actual wire and destination
+qualification, egress verification, real price/billing semantics, durable
+external reconciliation and controlled provider use. No provider transport is
+reachable from this demo.
+
 ### Completion report ingestion and evidence review
 
 Bind reports to an assignment identity and version, starting and ending commits, and changed-file inventory. Capture implementation summary, verification results, outstanding requirements, blockers and deviations, security checks, Git synchronization evidence and human acceptance status. Track progress and checkpoint history against the assignment and retain provenance for each evidence item.

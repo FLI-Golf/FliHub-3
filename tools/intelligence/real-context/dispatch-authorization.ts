@@ -54,6 +54,27 @@ export type DispatchAuthorization = {
 	expiresAt: number;
 };
 
+export const syntheticReservation = Object.freeze({ units: 10, credits: 20 });
+type Admission = {
+	authorization: DispatchAuthorization;
+	reservation: typeof syntheticReservation;
+	time: number;
+};
+const admissions = new WeakMap<object, () => Admission>();
+
+/** Only the successful, fresh accounting redemption path can mint a handle. */
+export function consumeReservationAdmission(handle: unknown): Admission {
+	requireFact(handle !== null && typeof handle === 'object');
+	const claim = admissions.get(handle);
+	requireFact(claim);
+	admissions.delete(handle);
+	return claim();
+}
+
+export function discardReservationAdmission(handle: unknown) {
+	if (handle !== null && typeof handle === 'object') admissions.delete(handle);
+}
+
 export async function prepareDispatchSession(
 	qualifiedCollect: QualifiedCollect,
 	objective: Objective,
@@ -103,12 +124,15 @@ export async function prepareDispatchSession(
 		scope: 'offline-simulation-only' as const
 	};
 	const bindingDigest = canonicalSha256(binding);
+	const accountingBinding = canonicalJson({ binding, reservation: syntheticReservation });
+	const accountingDigest = createHash('sha256').update(accountingBinding, 'utf8').digest('hex');
 	let confirmed = false;
 	let confirmationStarted = false;
 	let cancelled = false;
 	let issued: DispatchAuthorization | undefined;
 	let state: AuthorizationState | undefined;
 	let redeeming = false;
+	let accounting = false;
 
 	function currentState() {
 		if (state === 'issued' && issued) {
@@ -119,6 +143,82 @@ export async function prepareDispatchSession(
 			}
 		}
 		return state;
+	}
+
+	function authorize(text: string, forAccounting: boolean): string | undefined {
+		if (
+			cancelled ||
+			!confirmed ||
+			issued ||
+			text !==
+				(forAccounting
+					? `AUTHORIZE ACCOUNTING ${accountingDigest}`
+					: `AUTHORIZE SIMULATION ${bindingDigest}`)
+		)
+			return undefined;
+		try {
+			const issuedAt = clock();
+			requireFact(issuedAt < review.expiresAt);
+			issued = {
+				...binding,
+				authorizationId: randomUUID(),
+				issuedAt,
+				expiresAt: Math.min(review.expiresAt, issuedAt + lifetimeMs)
+			};
+			accounting = forAccounting;
+			state = 'issued';
+			return canonicalJson(issued);
+		} catch {
+			state = 'invalidated';
+			cancelled = true;
+			return undefined;
+		}
+	}
+
+	async function redeem(
+		candidate: unknown,
+		exactRequest: unknown,
+		operator: unknown,
+		forAccounting: boolean
+	) {
+		if (
+			currentState() !== 'issued' ||
+			!issued ||
+			redeeming ||
+			cancelled ||
+			accounting !== forAccounting
+		)
+			return undefined;
+		redeeming = true;
+		try {
+			// Exact canonical equality to a locally issued contract rejects changed
+			// fields, unsupported versions, extraneous fields and cross-session grants.
+			requireFact(typeof candidate === 'string' && candidate === canonicalJson(issued));
+			requireFact(
+				typeof exactRequest === 'string' && exactRequest === request && operator === issued.operator
+			);
+			const refreshed = await prepareRealContextReview(
+				collect,
+				objective,
+				includeQualification,
+				clock
+			);
+			try {
+				const current = validateContext(JSON.parse(refreshed.canonicalPayload).context);
+				requireFact(
+					currentState() === 'issued' &&
+						!cancelled &&
+						contextIdentity(current) === issued.pinsDigest
+				);
+			} finally {
+				refreshed.cancel();
+			}
+			state = 'redeemed';
+			return issued;
+		} catch {
+			if (currentState() === 'issued') state = 'invalidated';
+			return undefined;
+		}
 	}
 
 	return Object.freeze({
@@ -135,73 +235,38 @@ export async function prepareDispatchSession(
 			confirmed = (await review.confirm(text)) && !cancelled;
 			return confirmed;
 		},
-		authorize(text: string): string | undefined {
-			if (cancelled || !confirmed || issued || text !== `AUTHORIZE SIMULATION ${bindingDigest}`)
-				return undefined;
-			try {
-				const issuedAt = clock();
-				requireFact(issuedAt < review.expiresAt);
-				issued = {
-					...binding,
-					authorizationId: randomUUID(),
-					issuedAt,
-					expiresAt: Math.min(review.expiresAt, issuedAt + lifetimeMs)
-				};
-				state = 'issued';
-				return canonicalJson(issued);
-			} catch {
-				state = 'invalidated';
-				cancelled = true;
-				return undefined;
-			}
-		},
+		accountingBinding,
+		accountingDigest,
+		authorize: (text: string) => authorize(text, false),
+		authorizeAccounting: (text: string) => authorize(text, true),
 		cancel() {
 			cancelled = true;
 			review.cancel();
 			if (currentState() === 'issued') state = 'cancelled';
 		},
 		async redeem(candidate: unknown, exactRequest: unknown, operator: unknown) {
-			if (currentState() !== 'issued' || !issued || redeeming || cancelled) return undefined;
-			redeeming = true;
-			try {
-				// Exact canonical equality to a locally issued contract rejects changed
-				// fields, unsupported versions, extraneous fields and cross-session grants.
-				requireFact(typeof candidate === 'string' && candidate === canonicalJson(issued));
-				requireFact(
-					typeof exactRequest === 'string' &&
-						exactRequest === request &&
-						operator === issued.operator
-				);
-				const refreshed = await prepareRealContextReview(
-					collect,
-					objective,
-					includeQualification,
-					clock
-				);
-				try {
-					const current = validateContext(JSON.parse(refreshed.canonicalPayload).context);
-					requireFact(
-						currentState() === 'issued' &&
-							!cancelled &&
-							contextIdentity(current) === issued.pinsDigest
-					);
-				} finally {
-					refreshed.cancel();
-				}
-				state = 'redeemed';
+			const accepted = await redeem(candidate, exactRequest, operator, false);
+			if (accepted)
 				return Object.freeze({
-					state,
-					authorizationId: issued.authorizationId,
+					state: 'redeemed' as const,
+					authorizationId: accepted.authorizationId,
 					requestDigest,
 					reservation: 'unavailable' as const,
 					externalRequests: 0,
 					providerDispatchAuthorized: false,
 					engineeringExecutionAuthorized: false
 				});
-			} catch {
-				if (currentState() === 'issued') state = 'invalidated';
-				return undefined;
-			}
+		},
+		async redeemForReservation(candidate: unknown, exactRequest: unknown, operator: unknown) {
+			const accepted = await redeem(candidate, exactRequest, operator, true);
+			if (!accepted) return undefined;
+			const handle = Object.freeze({});
+			admissions.set(handle, () => {
+				const time = clock();
+				requireFact(!cancelled && time < accepted.expiresAt);
+				return { authorization: accepted, reservation: syntheticReservation, time };
+			});
+			return handle;
 		}
 	});
 }
