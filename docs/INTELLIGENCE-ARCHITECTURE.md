@@ -246,6 +246,47 @@ verification and human acceptance apply to the exact offline checkpoint.
 ADM-6E live qualification remains separately gated.
 [Issue #94 acceptance](https://github.com/FLI-Golf/FliHub-3/issues/94#issuecomment-7241436818)
 
+#### Offline real development context
+
+ADM-6E.1 uses a separate versioned fact registry and a bounded read-only Git and
+GitHub collector for FLI-Golf/FliHub-3. It verifies public visibility, pins Git
+revisions and registered evidence references, timestamps each observation, and
+maps eligibility and provenance to closed enums. Selection consists of one
+objective and its required facts, plus an optional registered #62 status fact
+for the qualification objective. The two objectives are qualification prerequisite
+review and funding draft reconciliation. PR #52 is an assessment subject. Charity
+and funding implementation remains deferred, and the old intelligence foundation
+branch remains a historical reference.
+
+Run either command from an interactive terminal with the stored authenticated
+GitHub CLI session and the relevant Git objects already available locally.
+
+```sh
+node tools/development/real-advisory-preview.mjs qualification-prerequisite
+node tools/development/real-advisory-preview.mjs funding-draft-reconciliation
+```
+
+The first command optionally takes `--include-engineering-qualification`. The
+preview performs bounded GitHub reads, displays the exact canonical UTF-8 review
+candidate, both digests, and its offline-only constraints. Confirm by entering
+`APPROVE <review-sha-256>`, or cancel with Enter. Confirmation refreshes the
+selected facts, compares their content and pins, and rejects on change or
+unavailability. Initial observation timestamps remain bound to the reviewed
+bytes. Context expires 60 seconds after the earliest fact observation, shorter
+than the accepted review and approval lifetimes. The preview returns only a
+process-local confirmation. No dispatch or engineering authority is issued.
+For independent verification, hash the exact printed JSON line without its
+terminal newline and compare with the review SHA-256. Repeat with a wrong
+digest and cancel. The synthetic preview, manual assignment builder and evidence
+review remain available.
+
+The offline candidate admits at most eight public facts and 16 KiB canonical
+request bytes. It records the future 4 KiB response and four supporting fact
+limits. Actual response validation and dispatch-time freshness belong to later
+qualification. Raw source, arbitrary prose, credentials, raw command output,
+financial and participant records, and private artifacts are excluded. Public
+classification does not grant permission for external disclosure.
+
 ### Completion report ingestion and evidence review
 
 Bind reports to an assignment identity and version, starting and ending commits, and changed-file inventory. Capture implementation summary, verification results, outstanding requirements, blockers and deviations, security checks, Git synchronization evidence and human acceptance status. Track progress and checkpoint history against the assignment and retain provenance for each evidence item.
