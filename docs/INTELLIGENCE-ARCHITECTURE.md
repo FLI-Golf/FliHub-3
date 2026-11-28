@@ -223,6 +223,25 @@ No provider guarantee is currently established for invoice-level cost finality, 
 
 The proposed ADM-6 qualification subdivisions are recorded in the roadmap. They are stages within existing milestone 6, not replacements for AI-1F, Assignment 12B, ADM milestones, or any independent acceptance gate. ADM-6A is architecture and qualification documentation only; it makes no provider request and does not authorize implementation stages or live activation.
 
+#### Offline development advisory simulation
+
+The ADM-6D candidate uses one process-local review per harness instance and a fixed
+in-process simulator over registered synthetic cases. The preview identifies itself
+as simulation while preserving the accepted disclosure envelope. The harness
+checks the immutable UTF-8 snapshot against the review digest, consumes the exact
+approval before invocation and checks the bytes again at the simulator boundary.
+Replacing or cancelling a review invalidates the prior attempt. A timeout or
+cancellation wins over a delayed fixture result.
+
+Run `node tools/development/advisory-preview.mjs planning` or pass
+`evidence-assessment` in an interactive terminal. The preview displays the complete
+synthetic review and requires explicit digest confirmation. Manual assignment
+preparation and evidence assessment remain available through the existing console.
+Fixture usage exercises local limit checks. Sanitized provenance records reviewed
+digests, size, decision, source categories and bounded outcome. The simulation
+reports advisory results and cannot attest implementation or acceptance. Independent
+review and live qualification remain separate gates.
+
 ### Completion report ingestion and evidence review
 
 Bind reports to an assignment identity and version, starting and ending commits, and changed-file inventory. Capture implementation summary, verification results, outstanding requirements, blockers and deviations, security checks, Git synchronization evidence and human acceptance status. Track progress and checkpoint history against the assignment and retain provenance for each evidence item.
