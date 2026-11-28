@@ -70,10 +70,12 @@ PR #55 merged the accepted JAI-5H protected workspace baseline on November 27.
 The [Intelligence Roadmap](INTELLIGENCE-ROADMAP.md) records main CI for that merge.
 The protected workspace remains offline, synthetic-only, and development-restricted.
 
-GitHub Development Management is pending owner acceptance. ADM-6C is accepted
-at its feature checkpoint. ADM-6D is the next intelligence architecture
-preparation objective after development management closeout and separate
-authorization.
+GitHub Development Management and ADM-6C are accepted at their respective
+feature checkpoints. ADM-6D implementation, independent verification and owner
+acceptance cover the offline simulation checkpoint. ADM-6E is next for separate
+live advisory qualification authorization. ADM-6F integrated advisory acceptance,
+automated engineering qualification, and the semantic UI pilot follow under
+their respective gates. See the [Intelligence Roadmap](INTELLIGENCE-ROADMAP.md).
 
 ## Platform branding initiative
 

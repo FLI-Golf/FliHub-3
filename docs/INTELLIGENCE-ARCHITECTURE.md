@@ -225,7 +225,7 @@ The proposed ADM-6 qualification subdivisions are recorded in the roadmap. They 
 
 #### Offline development advisory simulation
 
-The ADM-6D candidate uses one process-local review per harness instance and a fixed
+The accepted ADM-6D offline workflow uses one process-local review per harness instance and a fixed
 in-process simulator over registered synthetic cases. The preview identifies itself
 as simulation while preserving the accepted disclosure envelope. The harness
 checks the immutable UTF-8 snapshot against the review digest, consumes the exact
@@ -239,8 +239,12 @@ synthetic review and requires explicit digest confirmation. Manual assignment
 preparation and evidence assessment remain available through the existing console.
 Fixture usage exercises local limit checks. Sanitized provenance records reviewed
 digests, size, decision, source categories and bounded outcome. The simulation
-reports advisory results and cannot attest implementation or acceptance. Independent
-review and live qualification remain separate gates.
+reports advisory results. FliHub retains deterministic authorization. Codex
+implements in separately authorized manual sessions, independent verification
+establishes evidence, and the owner controls acceptance. ADM-6D independent
+verification and human acceptance apply to the exact offline checkpoint.
+ADM-6E live qualification remains separately gated.
+[Issue #94 acceptance](https://github.com/FLI-Golf/FliHub-3/issues/94#issuecomment-7241436818)
 
 ### Completion report ingestion and evidence review
 

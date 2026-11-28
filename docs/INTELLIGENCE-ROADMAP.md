@@ -69,11 +69,16 @@ ADM-6 refines proposed milestone 6 into the following implementation stages. The
 - **ADM-6E — Separately authorized live Jev qualification.** Requires a new explicit owner authorization, qualified deployment boundary, approved provider terms/account controls and successful independent safety review before any live request. Require both exact disclosure approval and separate operator dispatch authorization for each bounded run. Demonstrate enforced finite request count, concurrency, request timeout, per-call and aggregate cost ceilings, reservation before dispatch, conservative treatment of unknown usage, no automatic retries on ambiguous outcomes, response size/schema validation, sanitized provenance, secret/data exclusion and deterministic manual fallback. Record actual measured usage and failures without raw sensitive content. A local budget is not a provider-enforced spending cap unless independently verified provider controls establish it.
 - **ADM-6F — Independent acceptance and documentation.** An independent reviewer checks the implementation and raw, privacy-safe evidence against every preceding gate, verifies negative tests and fallback, confirms no unapproved disclosure or dispatch, reviews incident/cancellation/accounting behavior, and records limitations and remaining release gates. Acceptance cannot be inferred from provider confidence, generated reports or a successful happy-path call.
 
-**ADM-6D local candidate.** The development-only fixture harness now composes the
-ADM-6B validators and ADM-6C exact review, with an interactive preview for planning
-or evidence assessment. Local evidence covers one-use snapshot binding, bounded
-simulation, sanitized provenance and manual fallback. Independent candidate
-verification and human acceptance remain pending. ADM-6E and ADM-6F remain gated.
+**ADM-6D accepted offline checkpoint.** Implementation and independent verification
+completed, and the owner accepted the bounded fixture workflow at
+`07cc7f6f6bdc08bda6ec5a0d7691cf3cbad19f35`. Both interactive advice kinds
+matched the reviewed payload digest and invoked the simulator once. Manual
+fallback remains available. This acceptance covers offline simulation. Live
+provider behavior, metering, retention, operating-system egress isolation,
+automated engineering and deployment readiness require separate evidence.
+ADM-6E is the next qualification checkpoint and requires separate authorization.
+ADM-6F and AI-1F retain their independent gates.
+[Issue #94 acceptance](https://github.com/FLI-Golf/FliHub-3/issues/94#issuecomment-7241436818)
 
 **Measurable qualification criteria:** (1) the approved payload digest equals the exact serialized bytes dispatched, and mutation, replay, expiry or cancellation results in zero requests; (2) zero dispatches occur without a distinct, unexpired operator dispatch authorization matching provider, objective and configured request/cost ceilings; (3) tests show request count, concurrency and timeout never exceed configured values, reservations precede calls, unknown usage retains the full reservation, and budget exhaustion closes dispatch; (4) malformed, oversized, unsupported, errored or ambiguous responses are rejected, do not trigger retries, and do not change workflow state or acceptance; (5) provenance records the decision, digest, approvals, provider identity when available, request ID, bounded outcome, timestamps, validated usage and failure class while excluding raw payloads, credentials, source, commands and private evidence; (6) disablement, abstention, provider failure and timeout all leave the manual offline path usable; and (7) independent tests and review reproduce each gate from a clean disposable environment. No acceptance claim is made for an unmeasured control.
 
